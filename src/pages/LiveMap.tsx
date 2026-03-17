@@ -33,8 +33,8 @@ interface GameEvent { id: number; text: string; time: string; color: string; }
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
-const MAP_W = 120;
-const MAP_H = 80;
+const MAP_W = 200;
+const MAP_H = 140;
 const DAY_CYCLE_MS = 120000; // 2 min full cycle
 
 const CLASS_CONFIG: Record<string, { color: string; speed: number; weapon: string }> = {
@@ -132,30 +132,69 @@ function generateTerrain(): number[][] {
 
 // ─── Buildings ──────────────────────────────────────────────────
 const BUILDING_TYPES = [
+  // Core government
   { type: "parliament", name: "Parliament", color: "#9945FF", accent: "#b366ff", w: 5, h: 4, icon: "🏛️", description: "The seat of governance. Laws are voted here." },
   { type: "treasury", name: "MEEET Treasury", color: "#FBBF24", accent: "#fcd34d", w: 4, h: 3, icon: "🏦", description: "Central treasury. 30% flows to the President." },
-  { type: "arena", name: "Combat Arena", color: "#EF4444", accent: "#f87171", w: 5, h: 5, icon: "⚔️", description: "Warriors duel for $MEEET and glory." },
-  { type: "dex", name: "DEX Exchange", color: "#14F195", accent: "#4ade80", w: 4, h: 3, icon: "📊", description: "Traders swap tokens and run arbitrage." },
-  { type: "guild_w", name: "Warriors Guild", color: "#EF4444", accent: "#f87171", w: 3, h: 3, icon: "🛡️", description: "Warrior faction headquarters." },
-  { type: "guild_t", name: "Traders Guild", color: "#14F195", accent: "#4ade80", w: 3, h: 3, icon: "💹", description: "Trader faction headquarters." },
-  { type: "mine", name: "Crystal Mine", color: "#FBBF24", accent: "#fcd34d", w: 3, h: 3, icon: "⛏️", description: "Miners extract rare resources here." },
-  { type: "bank", name: "MEEET Bank", color: "#00C2FF", accent: "#38d9ff", w: 4, h: 3, icon: "🏧", description: "Bankers operate lending and staking." },
-  { type: "oracle", name: "Oracle Tower", color: "#9945FF", accent: "#b366ff", w: 2, h: 4, icon: "🔮", description: "Oracles scan data feeds and predict." },
-  { type: "embassy", name: "Embassy", color: "#34D399", accent: "#6ee7b7", w: 3, h: 3, icon: "🌐", description: "Diplomats negotiate alliances." },
+  { type: "monument", name: "Genesis Monument", color: "#D4AF37", accent: "#FFD700", w: 2, h: 2, icon: "🗽", description: "Commemorates the founding of MEEET State." },
+  // Combat
+  { type: "arena", name: "Grand Arena", color: "#EF4444", accent: "#f87171", w: 6, h: 6, icon: "⚔️", description: "The main colosseum — warriors duel for $MEEET and glory." },
+  { type: "arena", name: "Pit Arena East", color: "#DC2626", accent: "#ef4444", w: 4, h: 4, icon: "⚔️", description: "Eastern combat pit for lower-level fights." },
+  { type: "arena", name: "Pit Arena West", color: "#B91C1C", accent: "#dc2626", w: 4, h: 4, icon: "⚔️", description: "Western combat pit for ranked duels." },
+  // Economy
+  { type: "dex", name: "Central DEX", color: "#14F195", accent: "#4ade80", w: 5, h: 4, icon: "📊", description: "Main exchange — traders swap tokens and run arbitrage." },
+  { type: "dex", name: "South Exchange", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "📊", description: "Southern satellite exchange." },
+  { type: "bank", name: "MEEET Central Bank", color: "#00C2FF", accent: "#38d9ff", w: 5, h: 4, icon: "🏧", description: "Main bank — lending, staking, and reserves." },
+  { type: "bank", name: "North Branch Bank", color: "#0EA5E9", accent: "#38bdf8", w: 3, h: 3, icon: "🏧", description: "Northern branch for local banking." },
+  // Guilds — multiple per type
+  { type: "guild_w", name: "Warriors Guild HQ", color: "#EF4444", accent: "#f87171", w: 4, h: 4, icon: "🛡️", description: "Main warrior faction headquarters." },
+  { type: "guild_w", name: "Warriors Outpost", color: "#DC2626", accent: "#ef4444", w: 3, h: 3, icon: "🛡️", description: "Eastern warrior outpost." },
+  { type: "guild_t", name: "Traders Guild HQ", color: "#14F195", accent: "#4ade80", w: 4, h: 4, icon: "💹", description: "Main trader faction headquarters." },
+  { type: "guild_t", name: "Traders Outpost", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "💹", description: "Trader outpost near the docks." },
+  { type: "guild_w", name: "Scouts Guild", color: "#3B82F6", accent: "#60a5fa", w: 3, h: 3, icon: "🔍", description: "Intelligence and scouting faction." },
+  { type: "guild_t", name: "Builders Guild", color: "#F97316", accent: "#fb923c", w: 3, h: 3, icon: "🏗️", description: "Construction and infrastructure guild." },
+  { type: "guild_t", name: "Hackers Guild", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 3, icon: "💻", description: "Cyber operations and security guild." },
+  // Resources
+  { type: "mine", name: "Crystal Mine Alpha", color: "#FBBF24", accent: "#fcd34d", w: 3, h: 3, icon: "⛏️", description: "Primary crystal extraction site." },
+  { type: "mine", name: "Crystal Mine Beta", color: "#D97706", accent: "#f59e0b", w: 3, h: 3, icon: "⛏️", description: "Secondary mine in the eastern highlands." },
+  { type: "mine", name: "Deep Mine Gamma", color: "#B45309", accent: "#d97706", w: 4, h: 3, icon: "⛏️", description: "Deep underground mine — rare resources." },
+  { type: "farm", name: "Token Farm North", color: "#84CC16", accent: "#a3e635", w: 5, h: 4, icon: "🌾", description: "Yield farming produces passive $MEEET." },
+  { type: "farm", name: "Token Farm South", color: "#65A30D", accent: "#84cc16", w: 4, h: 3, icon: "🌾", description: "Southern farming zone." },
+  // Knowledge
+  { type: "oracle", name: "Oracle Tower", color: "#9945FF", accent: "#b366ff", w: 2, h: 5, icon: "🔮", description: "Oracles scan data feeds and predict." },
+  { type: "oracle", name: "Watchtower", color: "#7C3AED", accent: "#9945ff", w: 2, h: 4, icon: "🔮", description: "Secondary observation tower." },
+  { type: "academy", name: "MEEET Academy", color: "#6366F1", accent: "#818cf8", w: 5, h: 4, icon: "🎓", description: "Premier training facility for agents." },
+  { type: "academy", name: "Combat School", color: "#4F46E5", accent: "#6366f1", w: 3, h: 3, icon: "🎓", description: "Combat training facility." },
+  { type: "lab", name: "Research Lab", color: "#8B5CF6", accent: "#a78bfa", w: 4, h: 3, icon: "🔬", description: "Scientists develop new technologies." },
+  { type: "lab", name: "Biotech Lab", color: "#7C3AED", accent: "#8b5cf6", w: 3, h: 3, icon: "🔬", description: "Experimental biotech research." },
+  // Social
+  { type: "embassy", name: "Grand Embassy", color: "#34D399", accent: "#6ee7b7", w: 4, h: 3, icon: "🌐", description: "Diplomats negotiate alliances." },
+  { type: "embassy", name: "South Embassy", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "🌐", description: "Southern diplomatic outpost." },
   { type: "tavern", name: "Digital Tavern", color: "#F97316", accent: "#fb923c", w: 3, h: 2, icon: "🍺", description: "Agents socialize, share intel, form parties." },
+  { type: "tavern", name: "The Rusty Node", color: "#EA580C", accent: "#f97316", w: 3, h: 2, icon: "🍺", description: "Underground tavern — whispers and deals." },
+  { type: "tavern", name: "Sky Lounge", color: "#C2410C", accent: "#ea580c", w: 3, h: 3, icon: "🍺", description: "High-end social club on the mountain." },
+  // Infrastructure
   { type: "herald", name: "MEEET Herald", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 2, icon: "📰", description: "Auto-generated daily news." },
   { type: "jail", name: "Anti-Abuse Prison", color: "#6B7280", accent: "#9CA3AF", w: 3, h: 3, icon: "🔒", description: "Flagged agents serve time here." },
-  { type: "bazaar", name: "NFT Bazaar", color: "#EC4899", accent: "#f472b6", w: 4, h: 3, icon: "🛒", description: "Trade land NFTs, passports, skins." },
-  { type: "quest", name: "Quest Board", color: "#06B6D4", accent: "#22d3ee", w: 3, h: 2, icon: "📋", description: "Agents pick up and post quests." },
-  { type: "gate", name: "Solana Gateway", color: "#14F195", accent: "#4ade80", w: 2, h: 2, icon: "🌀", description: "Cross-chain bridge portal." },
-  { type: "academy", name: "MEEET Academy", color: "#6366F1", accent: "#818cf8", w: 4, h: 3, icon: "🎓", description: "Train agents and level up skills." },
-  { type: "hospital", name: "Repair Bay", color: "#10B981", accent: "#34d399", w: 3, h: 2, icon: "🏥", description: "Restore HP and cure status effects." },
+  { type: "bazaar", name: "Grand Bazaar", color: "#EC4899", accent: "#f472b6", w: 5, h: 4, icon: "🛒", description: "Main marketplace for NFTs and goods." },
+  { type: "bazaar", name: "Night Market", color: "#DB2777", accent: "#ec4899", w: 3, h: 3, icon: "🛒", description: "Late-night trading market." },
+  { type: "quest", name: "Quest Board Central", color: "#06B6D4", accent: "#22d3ee", w: 4, h: 3, icon: "📋", description: "Main quest posting and pickup point." },
+  { type: "quest", name: "Quest Board East", color: "#0891B2", accent: "#06b6d4", w: 3, h: 2, icon: "📋", description: "Eastern quest board." },
+  { type: "quest", name: "Quest Board West", color: "#0E7490", accent: "#0891b2", w: 3, h: 2, icon: "📋", description: "Western quest board." },
+  // Portals & Transport
+  { type: "gate", name: "Solana Gateway", color: "#14F195", accent: "#4ade80", w: 3, h: 3, icon: "🌀", description: "Main cross-chain bridge portal." },
+  { type: "gate", name: "Teleporter Alpha", color: "#22D3EE", accent: "#67e8f9", w: 2, h: 2, icon: "🌀", description: "Fast travel node — north." },
+  { type: "gate", name: "Teleporter Beta", color: "#06B6D4", accent: "#22d3ee", w: 2, h: 2, icon: "🌀", description: "Fast travel node — south." },
+  // Services
+  { type: "hospital", name: "Central Hospital", color: "#10B981", accent: "#34d399", w: 4, h: 3, icon: "🏥", description: "Full repair and healing facility." },
+  { type: "hospital", name: "Field Clinic", color: "#059669", accent: "#10b981", w: 3, h: 2, icon: "🏥", description: "Quick-heal station near the arena." },
   { type: "lighthouse", name: "Beacon Tower", color: "#F59E0B", accent: "#fbbf24", w: 2, h: 3, icon: "🗼", description: "Illuminates surrounding territories at night." },
-  { type: "dock", name: "Harbor Dock", color: "#3B82F6", accent: "#60a5fa", w: 4, h: 2, icon: "⚓", description: "Ships trade goods across the sea." },
-  { type: "lab", name: "Research Lab", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 3, icon: "🔬", description: "Scientists develop new technologies." },
-  { type: "farm", name: "Token Farm", color: "#84CC16", accent: "#a3e635", w: 4, h: 3, icon: "🌾", description: "Yield farming produces passive $MEEET." },
-  { type: "casino", name: "Prediction Market", color: "#F43F5E", accent: "#fb7185", w: 3, h: 3, icon: "🎰", description: "Bet on agent outcomes and events." },
-  { type: "monument", name: "Genesis Monument", color: "#D4AF37", accent: "#FFD700", w: 2, h: 2, icon: "🗽", description: "Commemorates the founding of MEEET State." },
+  { type: "lighthouse", name: "North Beacon", color: "#D97706", accent: "#f59e0b", w: 2, h: 3, icon: "🗼", description: "Northern lighthouse." },
+  // Maritime
+  { type: "dock", name: "Harbor Dock", color: "#3B82F6", accent: "#60a5fa", w: 5, h: 3, icon: "⚓", description: "Main port — ships trade goods across the sea." },
+  { type: "dock", name: "Fishing Pier", color: "#2563EB", accent: "#3b82f6", w: 3, h: 2, icon: "⚓", description: "Small fishing pier." },
+  // Entertainment
+  { type: "casino", name: "Prediction Market", color: "#F43F5E", accent: "#fb7185", w: 4, h: 4, icon: "🎰", description: "Bet on agent outcomes and events." },
+  { type: "casino", name: "Lucky Seven", color: "#E11D48", accent: "#f43f5e", w: 3, h: 3, icon: "🎰", description: "Small gambling den." },
 ];
 
 function generateBuildings(terrain: number[][]): Building[] {
@@ -191,32 +230,23 @@ function generateBuildings(terrain: number[][]): Building[] {
   return buildings;
 }
 
-// Generate roads between buildings
+// Generate roads between buildings — richer network
 function generateRoads(buildings: Building[]): Road[] {
   const roads: Road[] = [];
+  const roadSet = new Set<string>();
+  const addRoad = (a: Building, b: Building) => {
+    const key = [Math.min(a.id, b.id), Math.max(a.id, b.id)].join("-");
+    if (roadSet.has(key)) return;
+    roadSet.add(key);
+    const cx1 = a.x + (a.w * TILE) / 2, cy1 = a.y + (a.h * TILE) / 2;
+    const cx2 = b.x + (b.w * TILE) / 2, cy2 = b.y + (b.h * TILE) / 2;
+    roads.push({ x1: cx1, y1: cy1, x2: cx2, y2: cy2 });
+  };
   for (let i = 0; i < buildings.length; i++) {
-    let nearest = -1, nearDist = Infinity;
-    for (let j = 0; j < buildings.length; j++) {
-      if (i === j) continue;
-      const d = Math.hypot(buildings[i].x - buildings[j].x, buildings[i].y - buildings[j].y);
-      if (d < nearDist) { nearDist = d; nearest = j; }
-    }
-    if (nearest >= 0 && nearDist < 600) {
-      const a = buildings[i], b = buildings[nearest];
-      const cx = a.x + (a.w * TILE) / 2, cy = a.y + (a.h * TILE) / 2;
-      const dx = b.x + (b.w * TILE) / 2, dy = b.y + (b.h * TILE) / 2;
-      roads.push({ x1: cx, y1: cy, x2: dx, y2: dy });
-    }
-    // Connect to second nearest too for network
-    let second = -1, secDist = Infinity;
-    for (let j = 0; j < buildings.length; j++) {
-      if (i === j || j === nearest) continue;
-      const d = Math.hypot(buildings[i].x - buildings[j].x, buildings[i].y - buildings[j].y);
-      if (d < secDist) { secDist = d; second = j; }
-    }
-    if (second >= 0 && secDist < 500) {
-      const a = buildings[i], b = buildings[second];
-      roads.push({ x1: a.x + (a.w * TILE) / 2, y1: a.y + (a.h * TILE) / 2, x2: b.x + (b.w * TILE) / 2, y2: b.y + (b.h * TILE) / 2 });
+    // Find 3 nearest and connect
+    const dists = buildings.map((b, j) => ({ j, d: i === j ? Infinity : Math.hypot(buildings[i].x - b.x, buildings[i].y - b.y) })).sort((a, b) => a.d - b.d);
+    for (let k = 0; k < Math.min(3, dists.length); k++) {
+      if (dists[k].d < 900) addRoad(buildings[i], buildings[dists[k].j]);
     }
   }
   return roads;
@@ -328,16 +358,31 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
 }
 
 function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: number; y: number }, z: number, nightFactor: number) {
-  ctx.strokeStyle = lerpColor("#8a7a5a", "#4a3a2a", nightFactor);
-  ctx.lineWidth = Math.max(2, 4 * z);
-  ctx.setLineDash([8 * z, 6 * z]);
+  // Road fill — solid cobblestone paths
+  const roadWidth = Math.max(3, 8 * z);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   roads.forEach(r => {
     const sx1 = (r.x1 - cam.x) * z, sy1 = (r.y1 - cam.y) * z;
     const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
-    if (Math.max(sx1, sx2) < -100 || Math.min(sx1, sx2) > ctx.canvas.width + 100) return;
+    if (Math.max(sx1, sx2) < -200 || Math.min(sx1, sx2) > ctx.canvas.width + 200) return;
+    if (Math.max(sy1, sy2) < -200 || Math.min(sy1, sy2) > ctx.canvas.height + 200) return;
+    // Road shadow
+    ctx.strokeStyle = `rgba(0,0,0,${0.15 + nightFactor * 0.1})`;
+    ctx.lineWidth = roadWidth + 3 * z;
+    ctx.beginPath(); ctx.moveTo(sx1 + z, sy1 + z); ctx.lineTo(sx2 + z, sy2 + z); ctx.stroke();
+    // Road base
+    ctx.strokeStyle = lerpColor("#7a6a4a", "#3a2a1a", nightFactor);
+    ctx.lineWidth = roadWidth;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+    // Road center line (lighter)
+    ctx.strokeStyle = lerpColor("#9a8a6a", "#5a4a3a", nightFactor);
+    ctx.lineWidth = Math.max(1, 2 * z);
+    ctx.setLineDash([4 * z, 8 * z]);
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+    ctx.setLineDash([]);
   });
-  ctx.setLineDash([]);
+  ctx.lineCap = "butt";
 }
 
 // ─── Detailed building renderers ────────────────────────────────
@@ -1270,6 +1315,7 @@ const LiveMap = () => {
   const [agentCount, setAgentCount] = useState(0);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [showChat, setShowChat] = useState(true);
+  const [showDirectory, setShowDirectory] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -1301,7 +1347,7 @@ const LiveMap = () => {
   // Init
   useEffect(() => {
     const terrain = terrainRef.current;
-    const count = 60 + Math.floor(Math.random() * 15);
+    const count = 100 + Math.floor(Math.random() * 25);
     const agents: Agent[] = Array.from({ length: count }, (_, i) => {
       const cls = CLASSES[i % CLASSES.length];
       const cfg = CLASS_CONFIG[cls];
@@ -1462,6 +1508,28 @@ const LiveMap = () => {
       // Roads
       drawRoads(ctx, roads, cam, z, clampedNight);
 
+      // Territory zones — colored glow around guild buildings
+      buildings.forEach(b => {
+        if (b.type.startsWith("guild") || b.type === "parliament" || b.type === "arena") {
+          const bx = (b.x + b.w * TILE / 2 - cam.x) * z;
+          const by = (b.y + b.h * TILE / 2 - cam.y) * z;
+          if (bx < -300 || bx > w + 300 || by < -300 || by > h + 300) return;
+          const radius = (b.type === "parliament" ? 180 : b.type === "arena" ? 150 : 100) * z;
+          const zoneGrad = ctx.createRadialGradient(bx, by, 0, bx, by, radius);
+          zoneGrad.addColorStop(0, b.color + "12");
+          zoneGrad.addColorStop(0.6, b.color + "08");
+          zoneGrad.addColorStop(1, "transparent");
+          ctx.fillStyle = zoneGrad;
+          ctx.beginPath(); ctx.arc(bx, by, radius, 0, Math.PI * 2); ctx.fill();
+          // Zone border ring
+          ctx.strokeStyle = b.color + "18";
+          ctx.lineWidth = Math.max(1, 1.5 * z);
+          ctx.setLineDash([6 * z, 8 * z]);
+          ctx.beginPath(); ctx.arc(bx, by, radius * 0.85, 0, Math.PI * 2); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      });
+
       // Buildings
       buildings.forEach(b => drawBuilding(ctx, b, cam, z, t, clampedNight));
 
@@ -1481,14 +1549,18 @@ const LiveMap = () => {
           particles.push({ x: cam.x + Math.random() * w / z, y: cam.y - 10, vx: (Math.random() - 0.5) * 0.5, vy: 0.5 + Math.random(), life: 200, maxLife: 200, color: "#fff", size: 1.5 + Math.random(), type: "snow" });
         }
       }
-      // Fireflies at night
-      if (clampedNight > 0.4 && Math.random() < 0.05) {
+      // Fireflies at night — more dense
+      if (clampedNight > 0.4 && Math.random() < 0.12) {
         const fx = cam.x + Math.random() * w / z;
         const fy = cam.y + Math.random() * h / z;
         const tx = Math.floor(fx / TILE), ty = Math.floor(fy / TILE);
         if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && terrain[ty][tx] >= 3 && terrain[ty][tx] <= 5) {
           particles.push({ x: fx, y: fy, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, life: 120 + Math.random() * 80, maxLife: 200, color: "#aaff77", size: 1.5, type: "firefly" });
         }
+      }
+      // Ambient dust/pollen during day
+      if (clampedNight < 0.3 && Math.random() < 0.04) {
+        particles.push({ x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z, vx: 0.2 + Math.random() * 0.3, vy: -0.1 + Math.random() * 0.2, life: 150, maxLife: 150, color: "#ffe4a0", size: 0.8 + Math.random(), type: "dust" as any });
       }
       // Update
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -1497,7 +1569,7 @@ const LiveMap = () => {
         if (p.type === "firefly") { p.vx += (Math.random() - 0.5) * 0.05; p.vy += (Math.random() - 0.5) * 0.05; }
         if (p.life <= 0) particles.splice(i, 1);
       }
-      if (particles.length > 500) particles.splice(0, particles.length - 500);
+      if (particles.length > 800) particles.splice(0, particles.length - 800);
       drawParticles(ctx, particles, cam, z);
 
       // Floating texts
@@ -1622,7 +1694,7 @@ const LiveMap = () => {
     const onUp = () => { dragRef.current.dragging = false; };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
       const newZoom = Math.max(0.25, Math.min(3.5, zoomRef.current + delta));
       const mx = e.clientX, my = e.clientY;
       const wx = cameraRef.current.x + mx / zoomRef.current;
@@ -1841,7 +1913,42 @@ const LiveMap = () => {
         </div>
       )}
 
-      <div className="absolute bottom-4 left-4 z-10">
+      {/* Building Directory */}
+      {showDirectory && (
+        <div className="absolute top-16 left-4 bottom-16 w-64 z-10 glass-card flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <span className="text-xs font-display uppercase tracking-wider text-muted-foreground">Directory</span>
+            <button onClick={() => setShowDirectory(false)}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+            {buildingsRef.current.map(b => (
+              <button
+                key={b.id}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/40 transition-colors flex items-center gap-2"
+                onClick={() => {
+                  const cx = b.x + (b.w * TILE) / 2;
+                  const cy = b.y + (b.h * TILE) / 2;
+                  cameraRef.current.x = cx - window.innerWidth / zoomRef.current / 2;
+                  cameraRef.current.y = cy - window.innerHeight / zoomRef.current / 2;
+                  setSelectedBuilding(b);
+                  setShowDirectory(false);
+                }}
+              >
+                <span className="text-base">{b.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-display font-semibold truncate" style={{ color: b.accent }}>{b.name}</p>
+                  <p className="text-[9px] text-muted-foreground font-body truncate">{b.description.slice(0, 40)}…</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-2">
+        <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-3 py-1.5 text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors">
+          📍 {buildingsRef.current.length} Buildings
+        </button>
         <span className="text-[10px] text-muted-foreground font-body glass-card px-3 py-1.5">
           ESC — back · Drag to pan · Scroll to zoom · Click to inspect
         </span>
