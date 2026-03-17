@@ -1165,91 +1165,142 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
   const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
   if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
   const s = Math.max(z, 1.5);
-  const px = Math.max(1, s); // pixel unit
 
-  // Shadow — blocky square
-  ctx.fillStyle = `rgba(0,0,0,${0.3 - nightFactor * 0.1})`;
-  ctx.fillRect(sx - 5 * s, sy + 6 * s, 10 * s, 3 * s);
+  // Tiny pixel shadow (just 1-2px, no dark blobs)
+  ctx.fillStyle = `rgba(0,0,0,0.15)`;
+  ctx.fillRect(sx - 4 * s, sy + 7 * s, 8 * s, 1.5 * s);
 
-  // State highlight — simple colored square beneath
+  // State border — thin colored outline, no filled squares
   if (a.state === "combat") {
-    ctx.fillStyle = `rgba(239,68,68,${0.3 + Math.sin(t * 0.01) * 0.15})`;
-    ctx.fillRect(sx - 14 * s, sy - 14 * s, 28 * s, 28 * s);
+    ctx.strokeStyle = `rgba(255,60,60,${0.7 + Math.sin(t * 0.01) * 0.2})`;
+    ctx.lineWidth = Math.max(1, 1.5 * s);
+    ctx.strokeRect(sx - 8 * s, sy - 18 * s, 16 * s, 28 * s);
   } else if (a.state === "trading") {
-    ctx.fillStyle = "rgba(20,241,149,0.2)";
-    ctx.fillRect(sx - 12 * s, sy - 12 * s, 24 * s, 24 * s);
+    ctx.strokeStyle = "rgba(20,241,149,0.6)";
+    ctx.lineWidth = Math.max(1, 1.5 * s);
+    ctx.strokeRect(sx - 8 * s, sy - 18 * s, 16 * s, 28 * s);
   } else if (a.state === "meeting") {
-    ctx.fillStyle = "rgba(251,191,36,0.25)";
-    ctx.fillRect(sx - 12 * s, sy - 12 * s, 24 * s, 24 * s);
+    ctx.strokeStyle = "rgba(251,191,36,0.6)";
+    ctx.lineWidth = Math.max(1, 1.5 * s);
+    ctx.strokeRect(sx - 8 * s, sy - 18 * s, 16 * s, 28 * s);
   }
 
-  // Rep golden outline
-  if (a.reputation > 700) {
-    ctx.strokeStyle = `rgba(255,215,0,${0.5 + Math.sin(t * 0.003) * 0.2})`;
-    ctx.lineWidth = 2 * s;
-    ctx.strokeRect(sx - 6 * s, sy - 16 * s, 12 * s, 24 * s);
-  }
+  // === Bright Minecraft Steve pixel body ===
+  const bodyColor = a.color;
+  const bodyDark = darkenHex(a.color, 0.15);
+  const skinLight = lerpColor("#e8b888", "#c89868", nightFactor * 0.3);
+  const skinDark = lerpColor("#c89868", "#a87848", nightFactor * 0.3);
 
-  // === Minecraft Steve-style pixel body ===
-  const bodyColor = lerpColor(a.color, darkenHex(a.color, 0.3), nightFactor * 0.3);
-  const skinColor = lerpColor("#c8a078", "#8a6848", nightFactor);
-  const darkBody = darkenHex(a.color, 0.25);
-
-  // Head — 8x8 pixel block (scaled)
-  ctx.fillStyle = skinColor;
+  // ── Head (8×8 block) ──
+  // Skin base
+  ctx.fillStyle = skinLight;
   ctx.fillRect(sx - 4 * s, sy - 16 * s, 8 * s, 8 * s);
-  // Hair / helmet top (class color)
+  // Hair/helmet (class color) — top 3 rows
   ctx.fillStyle = bodyColor;
   ctx.fillRect(sx - 4 * s, sy - 16 * s, 8 * s, 3 * s);
-  // Eyes — 2 dark pixels
-  ctx.fillStyle = "#1a1a2e";
-  ctx.fillRect(sx - 2.5 * s, sy - 12 * s, 2 * px, 1.5 * px);
-  ctx.fillRect(sx + 0.5 * s, sy - 12 * s, 2 * px, 1.5 * px);
-  // Mouth
-  ctx.fillStyle = "#3a2020";
-  ctx.fillRect(sx - 1 * s, sy - 10 * s, 2 * px, px);
+  // Side hair strips
+  ctx.fillStyle = bodyDark;
+  ctx.fillRect(sx - 4 * s, sy - 13 * s, 1.5 * s, 4 * s);
+  ctx.fillRect(sx + 2.5 * s, sy - 13 * s, 1.5 * s, 4 * s);
+  // Eyes — white + pupil for expression
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(sx - 3 * s, sy - 13 * s, 2.5 * s, 2 * s);
+  ctx.fillRect(sx + 0.5 * s, sy - 13 * s, 2.5 * s, 2 * s);
+  ctx.fillStyle = "#2a2a4e";
+  ctx.fillRect(sx - 1.5 * s, sy - 12.5 * s, 1.5 * s, 1.5 * s);
+  ctx.fillRect(sx + 1.5 * s, sy - 12.5 * s, 1.5 * s, 1.5 * s);
+  // Smile
+  ctx.fillStyle = skinDark;
+  ctx.fillRect(sx - 1.5 * s, sy - 10 * s, 3 * s, 1 * s);
 
-  // Body — 8x12 block (shirt in class color)
+  // ── Body (8×10 block — class color shirt) ──
   ctx.fillStyle = bodyColor;
   ctx.fillRect(sx - 4 * s, sy - 8 * s, 8 * s, 10 * s);
-  // Body shading (darker left side)
-  ctx.fillStyle = darkBody;
-  ctx.fillRect(sx - 4 * s, sy - 8 * s, 3 * s, 10 * s);
-  // Belt
-  ctx.fillStyle = lerpColor("#5a4a30", "#3a2a18", nightFactor);
-  ctx.fillRect(sx - 4 * s, sy - 1 * s, 8 * s, 2 * s);
+  // Shirt shading — lighter right highlight
+  ctx.fillStyle = lerpColor(bodyColor, "#ffffff", 0.2);
+  ctx.fillRect(sx + 1 * s, sy - 7 * s, 3 * s, 6 * s);
+  // Shirt darker left
+  ctx.fillStyle = bodyDark;
+  ctx.fillRect(sx - 4 * s, sy - 7 * s, 2 * s, 6 * s);
+  // Belt — brown strip
+  ctx.fillStyle = lerpColor("#8a6a38", "#6a4a28", nightFactor * 0.3);
+  ctx.fillRect(sx - 4 * s, sy - 0 * s, 8 * s, 2 * s);
+  // Belt buckle
+  ctx.fillStyle = "#FFD700";
+  ctx.fillRect(sx - 1 * s, sy - 0 * s, 2 * s, 2 * s);
 
-  // Arms — blocky blocks on sides
+  // ── Arms ──
   const isMoving = a.state === "move" || a.state === "visiting";
   if (a.state === "combat") {
     const armOff = Math.sin(t * 0.025 + a.phase) * 4 * s;
-    ctx.fillStyle = skinColor;
-    ctx.fillRect(sx - 7 * s, sy - 8 * s + armOff, 3 * s, 8 * s);
-    ctx.fillRect(sx + 4 * s, sy - 8 * s - armOff, 3 * s, 8 * s);
-    // Weapon flash
-    if (Math.sin(t * 0.025 + a.phase) > 0.8) {
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(sx + 6 * s, sy - 10 * s, 2 * s, 2 * s);
+    // Left arm
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(sx - 7 * s, sy - 8 * s + armOff, 3 * s, 5 * s);
+    ctx.fillStyle = skinLight;
+    ctx.fillRect(sx - 7 * s, sy - 3 * s + armOff, 3 * s, 3 * s);
+    // Right arm
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(sx + 4 * s, sy - 8 * s - armOff, 3 * s, 5 * s);
+    ctx.fillStyle = skinLight;
+    ctx.fillRect(sx + 4 * s, sy - 3 * s - armOff, 3 * s, 3 * s);
+    // Sword pixel
+    if (Math.sin(t * 0.025 + a.phase) > 0.5) {
+      ctx.fillStyle = "#b0b8c8";
+      ctx.fillRect(sx + 6 * s, sy - 12 * s - armOff, 1.5 * s, 6 * s);
+      ctx.fillStyle = "#FFD700";
+      ctx.fillRect(sx + 5.5 * s, sy - 6 * s - armOff, 2.5 * s, 1.5 * s);
     }
   } else {
-    ctx.fillStyle = skinColor;
-    ctx.fillRect(sx - 7 * s, sy - 7 * s, 3 * s, 8 * s);
-    ctx.fillRect(sx + 4 * s, sy - 7 * s, 3 * s, 8 * s);
+    const armSwing = isMoving ? Math.sin(t * 0.01 * a.speed + a.phase) * 2 * s : 0;
+    // Left arm (sleeve + hand)
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(sx - 7 * s, sy - 7 * s + armSwing, 3 * s, 5 * s);
+    ctx.fillStyle = skinLight;
+    ctx.fillRect(sx - 7 * s, sy - 2 * s + armSwing, 3 * s, 2.5 * s);
+    // Right arm
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(sx + 4 * s, sy - 7 * s - armSwing, 3 * s, 5 * s);
+    ctx.fillStyle = skinLight;
+    ctx.fillRect(sx + 4 * s, sy - 2 * s - armSwing, 3 * s, 2.5 * s);
   }
 
-  // Legs — two blocks
-  const legOff = isMoving ? Math.sin(t * 0.012 * a.speed + a.phase) * 3 * s : 0;
-  ctx.fillStyle = lerpColor("#3a4a8a", "#1e2848", nightFactor); // MC jeans blue
-  ctx.fillRect(sx - 4 * s, sy + 2 * s, 3.5 * s, (5 + (isMoving ? legOff / s : 0)) * s);
-  ctx.fillRect(sx + 0.5 * s, sy + 2 * s, 3.5 * s, (5 - (isMoving ? legOff / s : 0)) * s);
+  // ── Legs ──
+  const legSwing = isMoving ? Math.sin(t * 0.012 * a.speed + a.phase) * 3 * s : 0;
+  // Left leg (pants)
+  ctx.fillStyle = lerpColor("#4466aa", "#334488", nightFactor * 0.3);
+  ctx.fillRect(sx - 4 * s, sy + 2 * s, 3.5 * s, (5 + legSwing / s) * s);
+  // Left shoe
+  ctx.fillStyle = lerpColor("#5a4a3a", "#3a2a1a", nightFactor * 0.3);
+  ctx.fillRect(sx - 4 * s, sy + (6 + legSwing / s) * s, 3.5 * s, 1.5 * s);
+  // Right leg
+  ctx.fillStyle = lerpColor("#3a5a98", "#2a4478", nightFactor * 0.3);
+  ctx.fillRect(sx + 0.5 * s, sy + 2 * s, 3.5 * s, (5 - legSwing / s) * s);
+  // Right shoe
+  ctx.fillStyle = lerpColor("#5a4a3a", "#3a2a1a", nightFactor * 0.3);
+  ctx.fillRect(sx + 0.5 * s, sy + (6 - legSwing / s) * s, 3.5 * s, 1.5 * s);
 
-  // Linked crown (gold blocks)
+  // ── Crown for linked agents ──
   if (a.linked) {
     ctx.fillStyle = "#FFD700";
-    ctx.fillRect(sx - 4 * s, sy - 19 * s, 8 * s, 2 * s);
-    ctx.fillRect(sx - 4 * s, sy - 21 * s, 2 * s, 2 * s);
-    ctx.fillRect(sx - 1 * s, sy - 22 * s, 2 * s, 3 * s);
-    ctx.fillRect(sx + 2 * s, sy - 21 * s, 2 * s, 2 * s);
+    ctx.fillRect(sx - 4 * s, sy - 18 * s, 8 * s, 2 * s);
+    ctx.fillRect(sx - 4 * s, sy - 21 * s, 2 * s, 3 * s);
+    ctx.fillRect(sx - 1 * s, sy - 22 * s, 2 * s, 4 * s);
+    ctx.fillRect(sx + 2 * s, sy - 21 * s, 2 * s, 3 * s);
+    // Gem on crown
+    ctx.fillStyle = "#ff3030";
+    ctx.fillRect(sx - 0.5 * s, sy - 21 * s, 1 * s, 1 * s);
+  }
+
+  // Rep golden sparkle (not dark overlay — just small gold pixels orbiting)
+  if (a.reputation > 700) {
+    for (let i = 0; i < 4; i++) {
+      const angle = (t * 0.002 + i * Math.PI / 2 + a.phase) % (Math.PI * 2);
+      const dist = 12 * s;
+      const sparkX = sx + Math.cos(angle) * dist;
+      const sparkY = sy - 4 * s + Math.sin(angle) * dist * 0.6;
+      ctx.fillStyle = `rgba(255,215,0,${0.6 + Math.sin(t * 0.005 + i) * 0.3})`;
+      ctx.fillRect(sparkX - s * 0.5, sparkY - s * 0.5, s, s);
+    }
   }
 
   // State icon
@@ -1261,47 +1312,54 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     else if (a.state === "visiting") icon = "🏠";
     else if (a.state === "idle") icon = "💤";
     if (icon) {
-      ctx.font = `${Math.max(8, 11 * s)}px sans-serif`;
+      ctx.font = `${Math.max(8, 10 * s)}px sans-serif`;
       ctx.textAlign = "center";
       ctx.fillText(icon, sx, sy - 26 * s);
     }
   }
 
-  // HP bar — blocky
+  // HP bar — Minecraft hearts style (red blocks)
   if (z > 0.6 && a.hp < a.maxHp) {
     const barW = 16 * s, barH = 2.5 * s;
     const barX = sx - barW / 2, barY = sy - 28 * s;
-    ctx.fillStyle = "#1a1a1a";
+    ctx.fillStyle = "#3a0808";
     ctx.fillRect(barX, barY, barW, barH);
     const hpPct = a.hp / a.maxHp;
-    ctx.fillStyle = hpPct > 0.5 ? "#22c55e" : hpPct > 0.25 ? "#f59e0b" : "#ef4444";
+    ctx.fillStyle = hpPct > 0.5 ? "#e02020" : hpPct > 0.25 ? "#f59e0b" : "#ff3030";
     ctx.fillRect(barX + 1, barY + 1, (barW - 2) * hpPct, barH - 2);
+    // Border
+    ctx.strokeStyle = "#1a0404";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(barX, barY, barW, barH);
   }
 
-  // Name tag — blocky MC style
+  // Name tag — clean white on semi-transparent dark
   {
     const fs = Math.max(8, 9 * s);
     ctx.font = `bold ${fs}px monospace`;
     ctx.textAlign = "center";
     const nw = ctx.measureText(a.name).width;
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(sx - nw / 2 - 4, sy + 10 * s, nw + 8, fs + 4);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(sx - nw / 2 - 3, sy + 10 * s, nw + 6, fs + 3);
     ctx.fillStyle = "#fff";
-    ctx.fillText(a.name, sx, sy + 10 * s + fs + 1);
+    ctx.fillText(a.name, sx, sy + 10 * s + fs);
     ctx.textAlign = "left";
   }
 
-  // Level badge — square pixel badge
+  // Level badge — small colored square
   {
-    const lvStr = `${a.level}`;
-    const lvFs = Math.max(7, 7 * s);
+    const lvStr = `Lv${a.level}`;
+    const lvFs = Math.max(6, 6 * s);
     ctx.font = `bold ${lvFs}px monospace`;
     ctx.textAlign = "center";
     const lvW = ctx.measureText(lvStr).width;
     ctx.fillStyle = bodyColor;
-    ctx.fillRect(sx + 5 * s, sy - 14 * s, lvW + 6, lvFs + 4);
+    ctx.fillRect(sx + 6 * s, sy - 16 * s, lvW + 4, lvFs + 3);
+    ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(sx + 6 * s, sy - 16 * s, lvW + 4, lvFs + 3);
     ctx.fillStyle = "#fff";
-    ctx.fillText(lvStr, sx + 5 * s + (lvW + 6) / 2, sy - 14 * s + lvFs + 1);
+    ctx.fillText(lvStr, sx + 6 * s + (lvW + 4) / 2, sy - 16 * s + lvFs + 1);
     ctx.textAlign = "left";
   }
 
@@ -1312,10 +1370,10 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.font = `${bFs}px monospace`;
     ctx.textAlign = "center";
     const bw = ctx.measureText(bStr).width;
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(sx - bw / 2 - 2, sy + 10 * s + 14 * s, bw + 4, bFs + 2);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(sx - bw / 2 - 2, sy + 10 * s + fs_offset(s), bw + 4, bFs + 2);
     ctx.fillStyle = "#FBBF24";
-    ctx.fillText(bStr, sx, sy + 10 * s + 14 * s + bFs);
+    ctx.fillText(bStr, sx, sy + 10 * s + fs_offset(s) + bFs);
     ctx.textAlign = "left";
   }
 }
