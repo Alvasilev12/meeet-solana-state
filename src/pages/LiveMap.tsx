@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Sun, Moon, Cloud } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ──────────────────────────────────────────────────────
 interface Agent {
