@@ -481,31 +481,28 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
 }
 
 function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: number; y: number }, z: number, nightFactor: number) {
-  // Road fill — solid cobblestone paths
-  const roadWidth = Math.max(3, 8 * z);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  // Minecraft dirt path style — flat brown blocks
+  const roadWidth = Math.max(4, 10 * z);
+  ctx.lineCap = "butt"; // blocky ends
+  ctx.lineJoin = "miter";
   roads.forEach(r => {
     const sx1 = (r.x1 - cam.x) * z, sy1 = (r.y1 - cam.y) * z;
     const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
     if (Math.max(sx1, sx2) < -200 || Math.min(sx1, sx2) > ctx.canvas.width + 200) return;
     if (Math.max(sy1, sy2) < -200 || Math.min(sy1, sy2) > ctx.canvas.height + 200) return;
-    // Road shadow
-    ctx.strokeStyle = `rgba(0,0,0,${0.15 + nightFactor * 0.1})`;
-    ctx.lineWidth = roadWidth + 3 * z;
-    ctx.beginPath(); ctx.moveTo(sx1 + z, sy1 + z); ctx.lineTo(sx2 + z, sy2 + z); ctx.stroke();
-    // Road base
-    ctx.strokeStyle = lerpColor("#9a8a5a", "#4a3a20", nightFactor);
+    // Dirt path base
+    ctx.strokeStyle = lerpColor("#8a7246", "#4a3820", nightFactor);
     ctx.lineWidth = roadWidth;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-    // Road center line (lighter)
-    ctx.strokeStyle = lerpColor("#b8a878", "#6a5a40", nightFactor);
-    ctx.lineWidth = Math.max(1, 2 * z);
-    ctx.setLineDash([4 * z, 8 * z]);
+    // Lighter center
+    ctx.strokeStyle = lerpColor("#a08a58", "#5a4828", nightFactor);
+    ctx.lineWidth = Math.max(2, roadWidth * 0.5);
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-    ctx.setLineDash([]);
+    // Block edge lines
+    ctx.strokeStyle = lerpColor("#6a5a34", "#3a2a14", nightFactor);
+    ctx.lineWidth = Math.max(1, 1 * z);
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
   });
-  ctx.lineCap = "butt";
 }
 
 // ─── Detailed building renderers ────────────────────────────────
