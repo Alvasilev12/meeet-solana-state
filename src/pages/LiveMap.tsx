@@ -2615,6 +2615,7 @@ const LiveMap = () => {
         </div>
       )}
 
+      {/* Bottom bar */}
       <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 flex-wrap">
         <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
           <MapPin className="w-3 h-3" /> {buildingsRef.current.length} Buildings
@@ -2622,10 +2623,40 @@ const LiveMap = () => {
         <button onClick={() => setShowSearch(!showSearch)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
           <Search className="w-3 h-3" /> Find Agent
         </button>
+        {/* Class filter */}
+        <div className="hidden sm:flex items-center gap-1">
+          {CLASSES.filter(c => c !== "president").map(cls => (
+            <button
+              key={cls}
+              onClick={() => setClassFilter(classFilter === cls ? null : cls)}
+              className={`glass-card px-1.5 py-0.5 text-[9px] font-body transition-colors ${classFilter === cls ? 'ring-1 ring-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}
+              title={`Filter: ${cls}`}
+            >
+              {cls.slice(0, 3).toUpperCase()}
+            </button>
+          ))}
+        </div>
+        {/* FPS toggle */}
+        <button onClick={() => setShowFps(!showFps)} className="glass-card px-2 py-1 text-[9px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
+          <Activity className="w-3 h-3" />
+          {showFps && <span>{fps} FPS</span>}
+        </button>
         <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body glass-card px-2 sm:px-3 py-1 sm:py-1.5 hidden sm:inline-block">
-          WASD/Arrows — move · Scroll — zoom · Dbl-click — follow · Space — pause · F — fast
+          WASD — move · Scroll — zoom · Dbl-click — follow · Space — pause · F — fast
         </span>
       </div>
+
+      {/* FPS overlay */}
+      {showFps && (
+        <div className="absolute bottom-12 sm:bottom-14 right-2 sm:right-4 z-10 glass-card px-2 py-1 text-[10px] font-body text-muted-foreground">
+          <span className={fps < 30 ? 'text-destructive' : fps < 50 ? 'text-amber-400' : 'text-secondary'}>{fps} FPS</span>
+          <span className="mx-1">·</span>
+          <span>{agentsRef.current.length} agents</span>
+          <span className="mx-1">·</span>
+          <span>{particlesRef.current.length} particles</span>
+        </div>
+      )}
 
       {/* Agent search */}
       {showSearch && (
@@ -2642,22 +2673,43 @@ const LiveMap = () => {
             />
             <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
           </div>
+          {/* Class filter chips in search */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {CLASSES.filter(c => c !== "president").map(cls => (
+              <button
+                key={cls}
+                onClick={() => setClassFilter(classFilter === cls ? null : cls)}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-body transition-colors ${classFilter === cls ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
           <div className="max-h-40 overflow-y-auto space-y-0.5">
             {agentsRef.current
-              .filter(a => searchQuery.length > 0 && a.name.toLowerCase().includes(searchQuery.toLowerCase()))
-              .slice(0, 10)
+              .filter(a => {
+                const matchesSearch = searchQuery.length === 0 || a.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesClass = !classFilter || a.cls === classFilter;
+                return matchesSearch && matchesClass && (searchQuery.length > 0 || classFilter);
+              })
+              .slice(0, 15)
               .map(a => (
                 <button
                   key={a.id}
                   className="w-full text-left px-2 py-1 rounded hover:bg-muted/40 transition-colors flex items-center gap-2"
-                  onClick={() => { navigateToAgent(a.id); setShowSearch(false); setSearchQuery(""); }}
+                  onClick={() => { navigateToAgent(a.id); setShowSearch(false); setSearchQuery(""); setClassFilter(null); }}
                 >
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
                   <span className="text-[11px] font-display font-semibold" style={{ color: a.color }}>{a.name}</span>
                   <span className="text-[9px] text-muted-foreground ml-auto">{a.cls} Lv.{a.level}</span>
                 </button>
               ))}
-            {searchQuery.length > 0 && agentsRef.current.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+            {(searchQuery.length > 0 || classFilter) && agentsRef.current.filter(a => {
+              const matchesSearch = searchQuery.length === 0 || a.name.toLowerCase().includes(searchQuery.toLowerCase());
+              const matchesClass = !classFilter || a.cls === classFilter;
+              return matchesSearch && matchesClass;
+            }).length === 0 && (
               <p className="text-[10px] text-muted-foreground text-center py-2">No agents found</p>
             )}
           </div>
