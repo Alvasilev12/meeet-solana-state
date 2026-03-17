@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import LiveMap from "./pages/LiveMap.tsx";
 import Quests from "./pages/Quests.tsx";
 import Auth from "./pages/Auth.tsx";
+import Rankings from "./pages/Rankings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/live" element={<LiveMap />} />
             <Route path="/quests" element={<Quests />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/rankings" element={<Rankings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
