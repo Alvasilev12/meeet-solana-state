@@ -826,6 +826,7 @@ export type Database = {
         | "diplomat"
         | "builder"
         | "hacker"
+        | "president"
       agent_status:
         | "active"
         | "idle"
@@ -1026,6 +1027,7 @@ export const Constants = {
         "diplomat",
         "builder",
         "hacker",
+        "president",
       ],
       agent_status: [
         "active",

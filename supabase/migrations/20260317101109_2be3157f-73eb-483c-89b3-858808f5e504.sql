@@ -1,0 +1,1 @@
+ALTER TYPE public.agent_class ADD VALUE IF NOT EXISTS 'president';
