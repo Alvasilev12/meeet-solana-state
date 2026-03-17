@@ -1794,21 +1794,21 @@ const LiveMap = () => {
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
       {/* HUD top-left */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 flex-wrap">
-        <button onClick={() => navigate("/")} className="glass-card p-2 hover:bg-card/80 transition-colors"><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-        <div className="glass-card px-3 py-2 flex items-center gap-2">
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 flex-wrap max-w-[calc(100%-4rem)] sm:max-w-none">
+        <button onClick={() => navigate("/")} className="glass-card p-1.5 sm:p-2 hover:bg-card/80 transition-colors"><ArrowLeft className="w-4 sm:w-5 h-4 sm:h-5 text-foreground" /></button>
+        <div className="glass-card px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse-glow" />
-          <span className="text-sm font-display font-semibold">{agentCount} AGENTS</span>
+          <span className="text-xs sm:text-sm font-display font-semibold">{agentCount} AGENTS</span>
         </div>
-        <div className="glass-card px-3 py-2 flex items-center gap-2">
+        <div className="glass-card px-2 sm:px-3 py-1.5 sm:py-2 hidden sm:flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-body">{buildingsRef.current.length} buildings</span>
         </div>
-        <div className="glass-card px-3 py-1.5 flex items-center gap-1.5">
+        <div className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1.5">
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300" /> : <Sun className="w-3 h-3 text-amber-400" />}
           <span className="text-[10px] font-body text-muted-foreground">{timeLabel}</span>
         </div>
         {weather !== "clear" && (
-          <div className="glass-card px-3 py-1.5 flex items-center gap-1.5">
+          <div className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1.5">
             <Cloud className="w-3 h-3 text-muted-foreground" />
             <span className="text-[10px] font-body text-muted-foreground capitalize">{weather}</span>
           </div>
