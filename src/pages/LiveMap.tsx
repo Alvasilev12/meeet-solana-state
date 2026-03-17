@@ -2115,12 +2115,28 @@ const LiveMap = () => {
         </div>
       </div>
 
-      {/* Zoom */}
+      {/* Zoom + Speed controls */}
       <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5 sm:gap-2">
         <button onClick={() => handleZoom(0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomIn className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
         <div className="glass-card px-1.5 sm:px-2 py-0.5 sm:py-1 text-center"><span className="text-[9px] sm:text-[10px] font-body text-muted-foreground">{Math.round(zoom * 100)}%</span></div>
         <button onClick={() => handleZoom(-0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomOut className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
+        <div className="w-full h-px bg-border/30 my-0.5" />
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="glass-card p-1.5 sm:p-2 hover:bg-card/80" title="Space to toggle">
+          {simSpeed === 0 ? <Play className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /> : <Pause className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />}
+        </button>
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`glass-card p-1.5 sm:p-2 hover:bg-card/80 ${simSpeed === 2 ? 'ring-1 ring-secondary/50' : ''}`} title="F to fast-forward">
+          <FastForward className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />
+        </button>
       </div>
+
+      {/* Follow mode indicator */}
+      {followAgent !== null && (
+        <div className="absolute top-12 sm:top-16 left-1/2 -translate-x-1/2 z-20 glass-card px-4 py-2 flex items-center gap-2 animate-fade-in">
+          <Crosshair className="w-4 h-4 text-secondary animate-pulse" />
+          <span className="text-xs font-display font-semibold text-secondary">Following {agentsRef.current.find(a => a.id === followAgent)?.name ?? 'agent'}</span>
+          <button onClick={() => { followRef.current = null; setFollowAgent(null); }} className="ml-2 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
 
       {/* Events */}
       {showChat && (
