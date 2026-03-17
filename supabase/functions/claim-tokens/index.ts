@@ -16,6 +16,7 @@ function json(body: Record<string, unknown>, status = 200) {
 const TAX_RATE = 0.05;
 const BURN_RATE = 0.20;
 const MIN_CLAIM = 100;
+const DAILY_LIMIT = 10_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
