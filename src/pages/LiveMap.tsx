@@ -1314,6 +1314,72 @@ function drawMinimap(ctx: CanvasRenderingContext2D, terrain: number[][], buildin
   ctx.fillText("MEEET STATE", mmX + 4, mmY + mmH - 4);
 }
 
+// ─── Aurora Borealis ────────────────────────────────────────────
+function drawAurora(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
+  if (nightFactor < 0.4) return;
+  const alpha = (nightFactor - 0.4) / 0.6;
+  const bands = 5;
+  for (let i = 0; i < bands; i++) {
+    const baseY = h * 0.05 + i * h * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 8) {
+      const wave1 = Math.sin(x * 0.003 + t * 0.0008 + i * 1.5) * 30;
+      const wave2 = Math.sin(x * 0.007 + t * 0.0012 + i * 0.8) * 15;
+      const wave3 = Math.sin(x * 0.001 + t * 0.0005) * 20;
+      ctx.lineTo(x, baseY + wave1 + wave2 + wave3);
+    }
+    ctx.lineTo(w, baseY + 60);
+    ctx.lineTo(0, baseY + 60);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, baseY - 20, 0, baseY + 60);
+    const hue = (120 + i * 30 + Math.sin(t * 0.0003) * 20) % 360;
+    grad.addColorStop(0, `hsla(${hue}, 80%, 60%, ${alpha * 0.03})`);
+    grad.addColorStop(0.4, `hsla(${hue + 20}, 70%, 50%, ${alpha * 0.08})`);
+    grad.addColorStop(0.7, `hsla(${hue + 40}, 60%, 40%, ${alpha * 0.04})`);
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+}
+
+// ─── Agent Trails ───────────────────────────────────────────────
+function drawTrails(ctx: CanvasRenderingContext2D, trails: Trail[], cam: { x: number; y: number }, z: number) {
+  trails.forEach(tr => {
+    const sx = (tr.x - cam.x) * z, sy = (tr.y - cam.y) * z;
+    if (sx < -5 || sx > ctx.canvas.width + 5 || sy < -5 || sy > ctx.canvas.height + 5) return;
+    const alpha = (tr.life / tr.maxLife) * 0.3;
+    ctx.fillStyle = tr.color.replace(")", `,${alpha})`).replace("rgb", "rgba");
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.5 * z * (tr.life / tr.maxLife), 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ─── Water Reflection ───────────────────────────────────────────
+function drawWaterReflection(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, terrain: number[][], nightFactor: number) {
+  buildings.forEach(b => {
+    const bx = (b.x - cam.x) * z, by = (b.y + b.h * TILE - cam.y) * z;
+    const bw = b.w * TILE * z;
+    if (bx + bw < 0 || bx > ctx.canvas.width || by < 0 || by > ctx.canvas.height) return;
+    // Check if water tile is below building
+    const tileY = Math.floor((b.y + b.h * TILE + TILE) / TILE);
+    const tileX = Math.floor((b.x + b.w * TILE / 2) / TILE);
+    if (tileX < 0 || tileX >= MAP_W || tileY < 0 || tileY >= MAP_H) return;
+    if (terrain[tileY][tileX] > 1) return;
+    // Draw wavy reflection
+    const reflH = b.h * TILE * z * 0.4;
+    const wave = Math.sin(t * 0.003 + b.id) * 2 * z;
+    ctx.save();
+    ctx.globalAlpha = 0.12 - nightFactor * 0.04;
+    ctx.translate(bx, by + wave);
+    ctx.scale(1, -0.4);
+    ctx.fillStyle = b.color + "40";
+    ctx.fillRect(0, 0, bw, reflH);
+    ctx.restore();
+  });
+}
+
 // ─── Component ──────────────────────────────────────────────────
 const LiveMap = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
