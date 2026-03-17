@@ -172,14 +172,25 @@ Deno.serve(async (req) => {
     }
 
     // ── RECORD TRANSACTION ──────────────────────────────────
+    // Derive to_user_id from the recipient agent — never trust the request body
+    let derivedToUserId: string | null = null;
+    if (to_agent_id) {
+      const { data: toAgent } = await serviceClient
+        .from("agents")
+        .select("user_id")
+        .eq("id", to_agent_id)
+        .single();
+      derivedToUserId = toAgent?.user_id ?? null;
+    }
+
     const { data: tx, error: txErr } = await serviceClient
       .from("transactions")
       .insert({
         type,
         from_agent_id: from_agent_id || null,
         to_agent_id: to_agent_id || null,
-        from_user_id: from_user_id || userId,
-        to_user_id: to_user_id || null,
+        from_user_id: userId,
+        to_user_id: derivedToUserId,
         amount_meeet: netMeeet,
         amount_sol: solAmount,
         tax_amount: taxMeeet,
