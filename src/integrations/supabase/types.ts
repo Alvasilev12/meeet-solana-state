@@ -1250,6 +1250,18 @@ export type Database = {
           xp: number
         }[]
       }
+      get_law_protected_fields: {
+        Args: { _law_id: string }
+        Returns: {
+          status: Database["public"]["Enums"]["law_status"]
+          veto_reason: string
+          vetoed_at: string
+          vetoed_by: string
+          voter_count: number
+          votes_no: number
+          votes_yes: number
+        }[]
+      }
       get_profile_protected_fields: {
         Args: { _user_id: string }
         Returns: {

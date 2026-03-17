@@ -151,7 +151,15 @@ Deno.serve(async (req) => {
         }
       }
     } else if (to_agent_id && netMeeet > 0) {
-      // Credit-only (e.g. quest_reward, mining_reward)
+      // Credit-only path (e.g. quest_reward, mining_reward)
+      // SECURITY: Only allow credit-only from trusted internal service calls
+      // Check for internal service header to prevent external abuse
+      const internalSecret = req.headers.get("x-internal-service");
+      const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.slice(-16);
+      if (!internalSecret || internalSecret !== expectedSecret) {
+        return json({ error: "Credit-only transactions require a sender (from_agent_id)" }, 403);
+      }
+
       const { data: recipient } = await serviceClient
         .from("agents")
         .select("balance_meeet")
