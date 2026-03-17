@@ -317,7 +317,7 @@ const Arena = () => {
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Flame className="h-5 w-5 text-amber-400" /> Журнал боёв
+                    <Flame className="h-5 w-5 text-primary" /> Журнал боёв
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-[700px] overflow-y-auto">
