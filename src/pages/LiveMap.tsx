@@ -41,6 +41,18 @@ interface Bird {
   flapPhase: number; size: number;
 }
 
+interface ResourceNode {
+  x: number; y: number; type: "gold" | "crystal" | "wood" | "stone";
+  amount: number; respawnTimer: number;
+}
+
+const RESOURCE_CONFIG: Record<string, { color: string; glow: string; icon: string; label: string }> = {
+  gold: { color: "#FFD700", glow: "rgba(255,215,0,", icon: "💰", label: "Gold Vein" },
+  crystal: { color: "#00E5FF", glow: "rgba(0,229,255,", icon: "💎", label: "Crystal Deposit" },
+  wood: { color: "#8B6914", glow: "rgba(139,105,20,", icon: "🪵", label: "Ancient Grove" },
+  stone: { color: "#9CA3AF", glow: "rgba(156,163,175,", icon: "🪨", label: "Quarry" },
+};
+
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
 const MAP_W = 200;
