@@ -187,11 +187,22 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
   const { toast } = useToast();
   const mutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("agents").insert({
-        user_id: userId, name: name.trim(), class: cls as Agent["class"],
-        pos_x: 50 + Math.random() * 200, pos_y: 50 + Math.random() * 200,
-      });
-      if (error) throw error;
+      if (isPresident) {
+        // President class requires service_role — use edge function
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Not authenticated");
+        const res = await supabase.functions.invoke("register-agent", {
+          body: { name: name.trim(), class: "president" },
+        });
+        if (res.error) throw new Error(res.error.message);
+        if (res.data?.error) throw new Error(res.data.error);
+      } else {
+        const { error } = await supabase.from("agents").insert({
+          user_id: userId, name: name.trim(), class: cls as Agent["class"],
+          pos_x: 50 + Math.random() * 200, pos_y: 50 + Math.random() * 200,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-agent", userId] });

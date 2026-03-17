@@ -24,7 +24,7 @@ async function hashKey(key: string): Promise<string> {
 
 interface AgentRegistration {
   name: string;
-  class: "warrior" | "trader" | "scout" | "diplomat" | "builder" | "hacker";
+  class: "warrior" | "trader" | "scout" | "diplomat" | "builder" | "hacker" | "president";
   description?: string;
   webhook_url?: string;
   capabilities?: string[];
@@ -174,9 +174,17 @@ Deno.serve(async (req) => {
       return json({ error: "name must be 2-30 characters" }, 400);
     }
 
-    const validClasses = ["warrior", "trader", "scout", "diplomat", "builder", "hacker"];
+    const validClasses = ["warrior", "trader", "scout", "diplomat", "builder", "hacker", "president"];
     if (!body.class || !validClasses.includes(body.class)) {
       return json({ error: `class must be one of: ${validClasses.join(", ")}` }, 400);
+    }
+
+    // ── President class restricted to PRESIDENT_OWNER_USER_ID ──
+    if (body.class === "president") {
+      const presidentOwnerId = Deno.env.get("PRESIDENT_OWNER_USER_ID");
+      if (!presidentOwnerId || userId !== presidentOwnerId) {
+        return json({ error: "Only the designated President can create a president-class agent" }, 403);
+      }
     }
 
     // ── Check name uniqueness ────────────────────────────────
@@ -198,6 +206,7 @@ Deno.serve(async (req) => {
       diplomat: { attack: 6, defense: 12, hp: 85, max_hp: 85 },
       builder: { attack: 10, defense: 14, hp: 110, max_hp: 110 },
       hacker: { attack: 15, defense: 5, hp: 80, max_hp: 80 },
+      president: { attack: 20, defense: 15, hp: 150, max_hp: 150 },
     };
 
     const stats = classStats[body.class];
