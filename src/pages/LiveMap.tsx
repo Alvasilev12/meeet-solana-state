@@ -1315,6 +1315,7 @@ const LiveMap = () => {
   const [agentCount, setAgentCount] = useState(0);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [showChat, setShowChat] = useState(true);
+  const [showDirectory, setShowDirectory] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [zoom, setZoom] = useState(1);
