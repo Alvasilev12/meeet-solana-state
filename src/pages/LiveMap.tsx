@@ -101,26 +101,26 @@ function fbm(x: number, y: number, seed: number): number {
   return v;
 }
 
-// ─── Tile palette with day/night variants ───────────────────────
+// ─── Tile palette — Bright Fantasy RPG style ───────────────────
 const TILE_PALETTE_DAY = [
-  { fill: "#0a2463", border: "#0d2d78" },
-  { fill: "#1a5276", border: "#1f6090" },
-  { fill: "#d4a76a", border: "#c49a5f" },
-  { fill: "#3a6b1e", border: "#447a24" },
-  { fill: "#245415", border: "#2d651c" },
-  { fill: "#1a4010", border: "#224c16" },
-  { fill: "#5a5a5a", border: "#6a6a6a" },
-  { fill: "#dce6f0", border: "#c8d2dc" },
+  { fill: "#2389da", border: "#1a7cc8" },  // Deep water — vivid blue
+  { fill: "#45a5e6", border: "#3898d9" },  // Shallow water — bright cyan
+  { fill: "#e8c96a", border: "#dbb85e" },  // Sand — warm golden
+  { fill: "#5cb338", border: "#68c040" },  // Light grass — vibrant green
+  { fill: "#3d9920", border: "#48a82a" },  // Forest — rich green
+  { fill: "#2d7a16", border: "#36891e" },  // Dense forest — deep green
+  { fill: "#8a8a96", border: "#9a9aa6" },  // Mountain — warm grey
+  { fill: "#f0f4ff", border: "#e0e6f0" },  // Snow — bright white
 ];
 const TILE_PALETTE_NIGHT = [
-  { fill: "#050e2a", border: "#071440" },
-  { fill: "#0c2840", border: "#103050" },
-  { fill: "#7a6030", border: "#6a5028" },
-  { fill: "#1a3a0e", border: "#224412" },
-  { fill: "#12300a", border: "#1a3c12" },
-  { fill: "#0e2408", border: "#14300c" },
-  { fill: "#2e2e30", border: "#3a3a3c" },
-  { fill: "#8090a0", border: "#707e8c" },
+  { fill: "#1a5a90", border: "#14508a" },  // Deep water night
+  { fill: "#2a7ab0", border: "#2070a0" },  // Shallow water night
+  { fill: "#a08840", border: "#907838" },  // Sand night
+  { fill: "#2e6a18", border: "#367820" },  // Light grass night
+  { fill: "#1e5610", border: "#266418" },  // Forest night
+  { fill: "#164408", border: "#1e5010" },  // Dense forest night
+  { fill: "#505060", border: "#606070" },  // Mountain night
+  { fill: "#b0c0d0", border: "#a0b0c0" },  // Snow night
 ];
 
 function lerpColor(a: string, b: string, t: number): string {
@@ -342,19 +342,19 @@ function drawResourceNodes(ctx: CanvasRenderingContext2D, nodes: ResourceNode[],
 
 // ─── Fog of War ─────────────────────────────────────────────────
 function drawFogOfWar(ctx: CanvasRenderingContext2D, agents: Agent[], cam: { x: number; y: number }, z: number, w: number, h: number, nightFactor: number) {
-  // Create fog overlay
+  // Very subtle exploration veil — fantasy style keeps map bright
   ctx.save();
-  ctx.fillStyle = `rgba(5,5,15,${0.25 + nightFactor * 0.15})`;
+  ctx.fillStyle = `rgba(30,45,70,${0.05 + nightFactor * 0.08})`;
   ctx.fillRect(0, 0, w, h);
-  // Cut out circles around each agent (reveal areas)
+  // Cut out circles around each agent (reveal areas) — larger radius
   ctx.globalCompositeOperation = "destination-out";
   agents.forEach(a => {
     const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
-    if (sx < -200 || sx > w + 200 || sy < -200 || sy > h + 200) return;
-    const visionRadius = (a.cls === "scout" ? 180 : a.cls === "hacker" ? 150 : 120) * z;
+    if (sx < -300 || sx > w + 300 || sy < -300 || sy > h + 300) return;
+    const visionRadius = (a.cls === "scout" ? 260 : a.cls === "hacker" ? 220 : 180) * z;
     const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, visionRadius);
     grad.addColorStop(0, "rgba(0,0,0,1)");
-    grad.addColorStop(0.6, "rgba(0,0,0,0.8)");
+    grad.addColorStop(0.6, "rgba(0,0,0,0.85)");
     grad.addColorStop(0.85, "rgba(0,0,0,0.3)");
     grad.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = grad;
@@ -370,7 +370,7 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
   if (tileType === 3 && r > 0.55) {
     // Grass with wind sway
     const sway = Math.sin(t * 0.001 + col * 0.5) * 2 * z;
-    ctx.strokeStyle = lerpColor("#4a9926", "#243d14", nightFactor);
+    ctx.strokeStyle = lerpColor("#6bc240", "#2d6a18", nightFactor);
     ctx.lineWidth = Math.max(1, 1.5 * z);
     const ox = (noise2d(col, row, 1) - 0.5) * ts * 0.6;
     for (let g = 0; g < 3; g++) {
@@ -397,8 +397,8 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
     ctx.ellipse(sx + ts * 0.5 + ox + 3 * z, sy + ts * 0.75, 8 * z, 4 * z, 0, 0, Math.PI * 2);
     ctx.fill();
     // Tree canopy layers
-    const green1 = lerpColor("#1f6b12", "#0e3a08", nightFactor);
-    const green2 = lerpColor("#2d8a1c", "#184c0e", nightFactor);
+    const green1 = lerpColor("#2d9a1a", "#143e08", nightFactor);
+    const green2 = lerpColor("#40b828", "#1a5c0e", nightFactor);
     ctx.fillStyle = green1;
     ctx.beginPath();
     ctx.moveTo(sx + ts * 0.5 + ox + sway, sy + ts * 0.1);
@@ -412,7 +412,7 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
     ctx.lineTo(sx + ts * 0.75 + ox, sy + ts * 0.65);
     ctx.fill();
     // Trunk
-    ctx.fillStyle = lerpColor("#6b3e1a", "#3d2410", nightFactor);
+    ctx.fillStyle = lerpColor("#8a5c2a", "#4a2e14", nightFactor);
     ctx.fillRect(sx + ts * 0.44 + ox, sy + ts * 0.55, ts * 0.12, ts * 0.2);
   }
   if (tileType === 5) {
@@ -420,26 +420,26 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
       const ox = (noise2d(col + i, row, 3 + i) - 0.5) * ts * 0.6;
       const oy = (noise2d(col, row + i, 4 + i) - 0.5) * ts * 0.3;
       const sway = Math.sin(t * 0.0006 + col * 0.4 + i) * z;
-      ctx.fillStyle = lerpColor(i === 0 ? "#124a08" : "#1a5c0e", "#0a2804", nightFactor);
+      ctx.fillStyle = lerpColor(i === 0 ? "#1e6a10" : "#28800e", "#0e3206", nightFactor);
       ctx.beginPath();
       ctx.moveTo(sx + ts * 0.5 + ox + sway, sy + ts * 0.05 + oy);
       ctx.lineTo(sx + ts * 0.15 + ox, sy + ts * 0.6 + oy);
       ctx.lineTo(sx + ts * 0.85 + ox, sy + ts * 0.6 + oy);
       ctx.fill();
-      ctx.fillStyle = lerpColor("#503018", "#2a180c", nightFactor);
+      ctx.fillStyle = lerpColor("#6a4020", "#3a200e", nightFactor);
       ctx.fillRect(sx + ts * 0.44 + ox, sy + ts * 0.55 + oy, ts * 0.12, ts * 0.22);
     }
   }
   if (tileType === 6 && r > 0.4) {
     const ox = (noise2d(col, row, 5) - 0.5) * ts * 0.5;
-    ctx.fillStyle = lerpColor("#6e6e6e", "#3a3a3c", nightFactor);
+    ctx.fillStyle = lerpColor("#8a8a9a", "#4a4a58", nightFactor);
     ctx.beginPath();
     ctx.moveTo(sx + ts * 0.5 + ox, sy + ts * 0.15);
     ctx.lineTo(sx + ts * 0.2 + ox, sy + ts * 0.8);
     ctx.lineTo(sx + ts * 0.8 + ox, sy + ts * 0.8);
     ctx.fill();
     // Snow cap
-    ctx.fillStyle = lerpColor("#e0e8f0", "#8090a0", nightFactor);
+    ctx.fillStyle = lerpColor("#f0f6ff", "#a0b0c0", nightFactor);
     ctx.beginPath();
     ctx.moveTo(sx + ts * 0.5 + ox, sy + ts * 0.15);
     ctx.lineTo(sx + ts * 0.35 + ox, sy + ts * 0.4);
@@ -483,11 +483,11 @@ function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: numbe
     ctx.lineWidth = roadWidth + 3 * z;
     ctx.beginPath(); ctx.moveTo(sx1 + z, sy1 + z); ctx.lineTo(sx2 + z, sy2 + z); ctx.stroke();
     // Road base
-    ctx.strokeStyle = lerpColor("#7a6a4a", "#3a2a1a", nightFactor);
+    ctx.strokeStyle = lerpColor("#9a8a5a", "#4a3a20", nightFactor);
     ctx.lineWidth = roadWidth;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
     // Road center line (lighter)
-    ctx.strokeStyle = lerpColor("#9a8a6a", "#5a4a3a", nightFactor);
+    ctx.strokeStyle = lerpColor("#b8a878", "#6a5a40", nightFactor);
     ctx.lineWidth = Math.max(1, 2 * z);
     ctx.setLineDash([4 * z, 8 * z]);
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
@@ -2343,8 +2343,10 @@ const LiveMap = () => {
       if (label !== "Day") setTimeLabel(label);
       else setTimeLabel("Day");
 
-      // Sky
-      const skyColor = lerpColor("#050a12", "#010208", clampedNight);
+      // Sky — bright fantasy gradient
+      const skyDay = "#78c8f0";
+      const skyNight = "#0a1e3a";
+      const skyColor = lerpColor(skyDay, skyNight, clampedNight);
       ctx.fillStyle = skyColor;
       ctx.fillRect(0, 0, w, h);
 
@@ -2396,7 +2398,7 @@ const LiveMap = () => {
         Math.abs(tc.camX - cam.x) > TILE * 3 ||
         Math.abs(tc.camY - cam.y) > TILE * 3 ||
         Math.abs(tc.zoom - z) > 0.02 ||
-        Math.abs(tc.nightFactor - clampedNight) > 0.08 ||
+        Math.abs(tc.nightFactor - clampedNight) > 0.04 ||
         tc.w !== w || tc.h !== h;
 
       if (needsRedraw) {
@@ -2691,14 +2693,14 @@ const LiveMap = () => {
         drawAgent(ctx, a, cam, z, t, clampedNight);
       });
 
-      // Night overlay
-      if (clampedNight > 0.1) {
-        ctx.fillStyle = `rgba(5,5,20,${clampedNight * 0.35})`;
+      // Night overlay — softer for fantasy feel
+      if (clampedNight > 0.15) {
+        ctx.fillStyle = `rgba(10,15,40,${clampedNight * 0.25})`;
         ctx.fillRect(0, 0, w, h);
-        // Vignette
-        const vig = ctx.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.7);
+        // Subtle vignette
+        const vig = ctx.createRadialGradient(w / 2, h / 2, w * 0.35, w / 2, h / 2, w * 0.75);
         vig.addColorStop(0, "transparent");
-        vig.addColorStop(1, `rgba(0,0,10,${clampedNight * 0.4})`);
+        vig.addColorStop(1, `rgba(5,10,25,${clampedNight * 0.25})`);
         ctx.fillStyle = vig;
         ctx.fillRect(0, 0, w, h);
       }
