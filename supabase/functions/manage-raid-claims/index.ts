@@ -28,26 +28,40 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const serviceClient = createClient(supabaseUrl, serviceKey);
 
-    // ── Authenticate caller ──
+    const rawBody = await req.json().catch(() => ({}));
+    const body = (rawBody && typeof rawBody === "object") ? rawBody as Record<string, unknown> : {};
+    const action = String(body.action ?? "");
+
+    if (!action) {
+      return json({ error: "Action is required" }, 400);
+    }
+
+    // ── Authenticate caller (my_status may be called anonymously) ──
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
+    let userId: string | null = null;
+
+    if (authHeader.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const authClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
+      userId = typeof claimsData?.claims?.sub === "string" ? claimsData.claims.sub : null;
+
+      if ((claimsErr || !userId) && action !== "my_status") {
+        return json({ error: "Invalid token" }, 401);
+      }
+    } else if (action !== "my_status") {
       return json({ error: "Authorization required" }, 401);
     }
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await userClient.auth.getUser(token);
-    if (authErr || !user) return json({ error: "Invalid token" }, 401);
-
-    const body = await req.json();
-    const action = body.action as string;
 
     // ═══════════════ SUBMIT CLAIM ═══════════════
     if (action === "submit") {
-      const twitterHandle = (body.twitter_handle || "").trim().replace(/^@/, "");
-      const proofUrl = (body.proof_url || "").trim();
-      const proofText = (body.proof_text || "").trim();
+      if (!userId) return json({ error: "Authorization required" }, 401);
+
+      const twitterHandle = String(body.twitter_handle ?? "").trim().replace(/^@/, "");
+      const proofUrl = String(body.proof_url ?? "").trim();
+      const proofText = String(body.proof_text ?? "").trim();
 
       if (!twitterHandle || twitterHandle.length < 1 || twitterHandle.length > 30) {
         return json({ error: "Twitter handle is required (1-30 chars)" }, 400);
@@ -60,7 +74,7 @@ Deno.serve(async (req) => {
       const { data: agent } = await serviceClient
         .from("agents")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!agent) {
@@ -79,7 +93,7 @@ Deno.serve(async (req) => {
       const { data: existing } = await serviceClient
         .from("raid_claims")
         .select("id, status")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("campaign_tag", CAMPAIGN_TAG)
         .maybeSingle();
 
@@ -94,7 +108,7 @@ Deno.serve(async (req) => {
       const { data: claim, error: insertErr } = await serviceClient
         .from("raid_claims")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           agent_id: agent.id,
           twitter_handle: twitterHandle,
           proof_url: proofUrl || null,
@@ -119,18 +133,20 @@ Deno.serve(async (req) => {
 
     // ═══════════════ LIST CLAIMS (President only) ═══════════════
     if (action === "list") {
+      if (!userId) return json({ error: "Authorization required" }, 401);
+
       // Verify president
       const { data: profile } = await serviceClient
         .from("profiles")
         .select("is_president")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!profile?.is_president) {
         return json({ error: "Forbidden — President only" }, 403);
       }
 
-      const statusFilter = body.status_filter || "pending";
+      const statusFilter = String(body.status_filter ?? "pending");
       const { data: claims, error: listErr } = await serviceClient
         .from("raid_claims")
         .select("*")
@@ -155,20 +171,22 @@ Deno.serve(async (req) => {
 
     // ═══════════════ REVIEW CLAIM (President: approve/reject) ═══════════════
     if (action === "review") {
+      if (!userId) return json({ error: "Authorization required" }, 401);
+
       // Verify president
       const { data: profile } = await serviceClient
         .from("profiles")
         .select("is_president")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (!profile?.is_president) {
         return json({ error: "Forbidden — President only" }, 403);
       }
 
-      const claimId = body.claim_id;
+      const claimId = String(body.claim_id ?? "");
       const decision = body.decision as "approved" | "rejected";
-      const rejectionReason = body.rejection_reason || null;
+      const rejectionReason = body.rejection_reason ? String(body.rejection_reason) : null;
 
       if (!claimId || !["approved", "rejected"].includes(decision)) {
         return json({ error: "claim_id and decision (approved/rejected) required" }, 400);
@@ -234,7 +252,7 @@ Deno.serve(async (req) => {
         .from("raid_claims")
         .update({
           status: decision,
-          reviewed_by: user.id,
+          reviewed_by: userId,
           reviewed_at: new Date().toISOString(),
           rejection_reason: decision === "rejected" ? rejectionReason : null,
         })
@@ -262,24 +280,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ═══════════════ MY STATUS ═══════════════
+    // ═══════════════ MY STATUS (works for guests too) ═══════════════
     if (action === "my_status") {
-      const { data: claim } = await serviceClient
-        .from("raid_claims")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("campaign_tag", CAMPAIGN_TAG)
-        .maybeSingle();
-
       const { data: stats } = await serviceClient.rpc("get_raid_campaign_stats", {
         _campaign_tag: CAMPAIGN_TAG,
       });
 
+      const spotsRemaining = stats && stats.length > 0
+        ? Math.max(0, MAX_APPROVED - Number(stats[0].approved_claims))
+        : MAX_APPROVED;
+
+      if (!userId) {
+        return json({
+          claim: null,
+          spots_remaining: spotsRemaining,
+          authenticated: false,
+        });
+      }
+
+      const { data: claim } = await serviceClient
+        .from("raid_claims")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("campaign_tag", CAMPAIGN_TAG)
+        .maybeSingle();
+
       return json({
         claim: claim || null,
-        spots_remaining: stats && stats.length > 0
-          ? Math.max(0, MAX_APPROVED - Number(stats[0].approved_claims))
-          : MAX_APPROVED,
+        spots_remaining: spotsRemaining,
+        authenticated: true,
       });
     }
 
