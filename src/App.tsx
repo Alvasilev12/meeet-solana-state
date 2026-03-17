@@ -25,6 +25,7 @@ const App = () => (
             <Route path="/live" element={<LiveMap />} />
             <Route path="/quests" element={<Quests />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/rankings" element={<Rankings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
