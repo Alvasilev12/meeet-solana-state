@@ -16,7 +16,13 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate("/");
+    if (!loading && user) {
+      // Check if onboarded
+      supabase.from("profiles").select("is_onboarded").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+        if (data?.is_onboarded) navigate("/dashboard");
+        else navigate("/onboarding");
+      });
+    }
   }, [user, loading, navigate]);
 
   if (loading) {
