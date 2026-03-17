@@ -10,6 +10,8 @@ import Navbar from "@/components/Navbar";
 import PresidentInbox from "@/components/PresidentInbox";
 import Footer from "@/components/Footer";
 import ApiKeyManager from "@/components/ApiKeyManager";
+import RaidClaimForm from "@/components/RaidClaimForm";
+import RaidClaimsAdmin from "@/components/RaidClaimsAdmin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -554,8 +556,9 @@ const Dashboard = () => {
           )}
 
           {!agent ? (
-             <div className="max-w-md mx-auto">
+             <div className="max-w-md mx-auto space-y-4">
                <CreateAgentForm userId={user!.id} isPresident={!!profile?.is_president} />
+               {/* Show raid claim form even without agent to inform users */}
              </div>
           ) : (
             <div className="space-y-6">
@@ -764,6 +767,9 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   <MiniLeaderboard agents={topAgents} myAgentId={agent.id} />
 
+                  {/* Raid Claim Widget for regular users */}
+                  {!profile?.is_president && <RaidClaimForm />}
+
                   {/* Milestone mini-widget */}
                   <Card className="glass-card border-border overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary" />
@@ -911,7 +917,7 @@ const Dashboard = () => {
                     </Card>
                   </div>
 
-                  {/* Presidential Actions Row */}
+                  {/* Presidential Actions + Raid Claims Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Quick Presidential Actions */}
                     <Card className="glass-card border-amber-500/15">
@@ -970,6 +976,9 @@ const Dashboard = () => {
                     {/* President Inbox */}
                     <PresidentInbox />
                   </div>
+
+                  {/* Raid Claims Admin Row */}
+                  <RaidClaimsAdmin />
                 </div>
               )}
             </div>

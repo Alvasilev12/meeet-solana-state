@@ -849,6 +849,65 @@ export type Database = {
           },
         ]
       }
+      raid_claims: {
+        Row: {
+          agent_id: string | null
+          campaign_tag: string
+          created_at: string
+          id: string
+          proof_text: string | null
+          proof_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reward_meeet: number
+          status: string
+          twitter_handle: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          campaign_tag?: string
+          created_at?: string
+          id?: string
+          proof_text?: string | null
+          proof_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_meeet?: number
+          status?: string
+          twitter_handle: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          campaign_tag?: string
+          created_at?: string
+          id?: string
+          proof_text?: string | null
+          proof_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reward_meeet?: number
+          status?: string
+          twitter_handle?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raid_claims_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           id: string
@@ -1285,6 +1344,15 @@ export type Database = {
           reward_meeet: number
           reward_sol: number
           status: Database["public"]["Enums"]["quest_status"]
+        }[]
+      }
+      get_raid_campaign_stats: {
+        Args: { _campaign_tag: string }
+        Returns: {
+          approved_claims: number
+          pending_claims: number
+          total_claims: number
+          total_rewarded: number
         }[]
       }
       get_trade_protected_fields: {
