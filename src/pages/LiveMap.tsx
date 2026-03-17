@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Sun, Moon, Cloud } from "lucide-react";
+import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Sun, Moon, Cloud, Search, Crosshair, FastForward, Play, Pause, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -26,6 +26,10 @@ interface Particle {
 
 interface FloatingText {
   x: number; y: number; text: string; color: string; life: number; vy: number;
+}
+
+interface Trail {
+  x: number; y: number; color: string; life: number; maxLife: number;
 }
 
 interface Road { x1: number; y1: number; x2: number; y2: number; }
@@ -1310,6 +1314,72 @@ function drawMinimap(ctx: CanvasRenderingContext2D, terrain: number[][], buildin
   ctx.fillText("MEEET STATE", mmX + 4, mmY + mmH - 4);
 }
 
+// ─── Aurora Borealis ────────────────────────────────────────────
+function drawAurora(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
+  if (nightFactor < 0.4) return;
+  const alpha = (nightFactor - 0.4) / 0.6;
+  const bands = 5;
+  for (let i = 0; i < bands; i++) {
+    const baseY = h * 0.05 + i * h * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 8) {
+      const wave1 = Math.sin(x * 0.003 + t * 0.0008 + i * 1.5) * 30;
+      const wave2 = Math.sin(x * 0.007 + t * 0.0012 + i * 0.8) * 15;
+      const wave3 = Math.sin(x * 0.001 + t * 0.0005) * 20;
+      ctx.lineTo(x, baseY + wave1 + wave2 + wave3);
+    }
+    ctx.lineTo(w, baseY + 60);
+    ctx.lineTo(0, baseY + 60);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, baseY - 20, 0, baseY + 60);
+    const hue = (120 + i * 30 + Math.sin(t * 0.0003) * 20) % 360;
+    grad.addColorStop(0, `hsla(${hue}, 80%, 60%, ${alpha * 0.03})`);
+    grad.addColorStop(0.4, `hsla(${hue + 20}, 70%, 50%, ${alpha * 0.08})`);
+    grad.addColorStop(0.7, `hsla(${hue + 40}, 60%, 40%, ${alpha * 0.04})`);
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+}
+
+// ─── Agent Trails ───────────────────────────────────────────────
+function drawTrails(ctx: CanvasRenderingContext2D, trails: Trail[], cam: { x: number; y: number }, z: number) {
+  trails.forEach(tr => {
+    const sx = (tr.x - cam.x) * z, sy = (tr.y - cam.y) * z;
+    if (sx < -5 || sx > ctx.canvas.width + 5 || sy < -5 || sy > ctx.canvas.height + 5) return;
+    const alpha = (tr.life / tr.maxLife) * 0.3;
+    ctx.fillStyle = tr.color.replace(")", `,${alpha})`).replace("rgb", "rgba");
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.5 * z * (tr.life / tr.maxLife), 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ─── Water Reflection ───────────────────────────────────────────
+function drawWaterReflection(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, terrain: number[][], nightFactor: number) {
+  buildings.forEach(b => {
+    const bx = (b.x - cam.x) * z, by = (b.y + b.h * TILE - cam.y) * z;
+    const bw = b.w * TILE * z;
+    if (bx + bw < 0 || bx > ctx.canvas.width || by < 0 || by > ctx.canvas.height) return;
+    // Check if water tile is below building
+    const tileY = Math.floor((b.y + b.h * TILE + TILE) / TILE);
+    const tileX = Math.floor((b.x + b.w * TILE / 2) / TILE);
+    if (tileX < 0 || tileX >= MAP_W || tileY < 0 || tileY >= MAP_H) return;
+    if (terrain[tileY][tileX] > 1) return;
+    // Draw wavy reflection
+    const reflH = b.h * TILE * z * 0.4;
+    const wave = Math.sin(t * 0.003 + b.id) * 2 * z;
+    ctx.save();
+    ctx.globalAlpha = 0.12 - nightFactor * 0.04;
+    ctx.translate(bx, by + wave);
+    ctx.scale(1, -0.4);
+    ctx.fillStyle = b.color + "40";
+    ctx.fillRect(0, 0, bw, reflH);
+    ctx.restore();
+  });
+}
+
 // ─── Component ──────────────────────────────────────────────────
 const LiveMap = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1324,17 +1394,29 @@ const LiveMap = () => {
   const [weather, setWeather] = useState<"clear" | "rain" | "snow">("clear");
   const [timeLabel, setTimeLabel] = useState("Day");
 
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [followAgent, setFollowAgent] = useState<number | null>(null);
+  const [simSpeed, setSimSpeed] = useState<1 | 2 | 0>(1);
+  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
+
   const agentsRef = useRef<Agent[]>([]);
   const terrainRef = useRef<number[][]>(generateTerrain());
   const buildingsRef = useRef<Building[]>(generateBuildings(terrainRef.current));
   const roadsRef = useRef<Road[]>(generateRoads(buildingsRef.current));
   const cameraRef = useRef({ x: 0, y: 0 });
+  const cameraTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const cameraVelRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef({ dragging: false, lastX: 0, lastY: 0, moved: false });
   const zoomRef = useRef(1);
   const eventIdRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
   const floatingTextsRef = useRef<FloatingText[]>([]);
+  const trailsRef = useRef<Trail[]>([]);
   const weatherRef = useRef<"clear" | "rain" | "snow">("clear");
+  const keysRef = useRef<Set<string>>(new Set());
+  const followRef = useRef<number | null>(null);
+  const simSpeedRef = useRef<number>(1);
 
   const addEvent = useCallback((text: string, color: string) => {
     const now = new Date();
@@ -1514,6 +1596,45 @@ const LiveMap = () => {
       const buildings = buildingsRef.current;
       const roads = roadsRef.current;
       const t = Date.now();
+      const speed = simSpeedRef.current;
+
+      // ─── WASD / Arrow key camera movement ───
+      const keys = keysRef.current;
+      const camSpeed = 5 / z;
+      if (keys.has("w") || keys.has("arrowup")) cam.y -= camSpeed;
+      if (keys.has("s") || keys.has("arrowdown")) cam.y += camSpeed;
+      if (keys.has("a") || keys.has("arrowleft")) cam.x -= camSpeed;
+      if (keys.has("d") || keys.has("arrowright")) cam.x += camSpeed;
+
+      // ─── Follow agent mode ───
+      const followId = followRef.current;
+      if (followId !== null) {
+        const fa = agents.find(a => a.id === followId);
+        if (fa) {
+          const tx = fa.x - w / z / 2;
+          const ty = fa.y - h / z / 2;
+          cam.x += (tx - cam.x) * 0.08;
+          cam.y += (ty - cam.y) * 0.08;
+        }
+      }
+
+      // ─── Smooth camera lerp to target ───
+      if (cameraTargetRef.current) {
+        const ct = cameraTargetRef.current;
+        cam.x += (ct.x - cam.x) * 0.1;
+        cam.y += (ct.y - cam.y) * 0.1;
+        if (Math.abs(ct.x - cam.x) < 1 && Math.abs(ct.y - cam.y) < 1) {
+          cameraTargetRef.current = null;
+        }
+      }
+
+      // ─── Camera inertia ───
+      if (!dragRef.current.dragging && (Math.abs(cameraVelRef.current.x) > 0.1 || Math.abs(cameraVelRef.current.y) > 0.1)) {
+        cam.x += cameraVelRef.current.x;
+        cam.y += cameraVelRef.current.y;
+        cameraVelRef.current.x *= 0.92;
+        cameraVelRef.current.y *= 0.92;
+      }
 
       // Day/night cycle
       const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
@@ -1533,14 +1654,31 @@ const LiveMap = () => {
       // Stars at night
       if (clampedNight > 0.3) {
         const starAlpha = (clampedNight - 0.3) / 0.7;
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 80; i++) {
           const sx = noise2d(i, 0, 1) * w;
           const sy = noise2d(0, i, 2) * h * 0.4;
           const twinkle = 0.3 + Math.sin(t * 0.003 + i * 7) * 0.3;
+          const starSize = noise2d(i, i, 3) > 0.8 ? 2.5 : 1.5;
           ctx.fillStyle = `rgba(255,255,255,${starAlpha * twinkle})`;
-          ctx.fillRect(sx, sy, 1.5, 1.5);
+          ctx.beginPath();
+          ctx.arc(sx, sy, starSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Shooting star occasionally
+        if (Math.sin(t * 0.0001) > 0.995) {
+          const ssX = (t * 0.3) % w;
+          const ssY = noise2d(Math.floor(t * 0.0001), 0, 5) * h * 0.3;
+          ctx.strokeStyle = `rgba(255,255,255,${0.6 * starAlpha})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(ssX, ssY);
+          ctx.lineTo(ssX - 40, ssY + 20);
+          ctx.stroke();
         }
       }
+
+      // ─── Aurora Borealis ───
+      drawAurora(ctx, w, h, t, clampedNight);
 
       // Terrain
       const startCol = Math.max(0, Math.floor(cam.x / TILE));
@@ -1562,6 +1700,7 @@ const LiveMap = () => {
           if (z > 0.5) drawTileDecoration(ctx, tile, sx, sy, col, row, z, t, clampedNight);
         }
       }
+
 
       // Cloud shadows drifting across terrain
       if (weatherRef.current !== "clear" || true) {
@@ -1655,9 +1794,23 @@ const LiveMap = () => {
       }
       drawFloatingTexts(ctx, fts, cam, z);
 
+      // ─── Agent Trails ───
+      const trails = trailsRef.current;
+      for (let i = trails.length - 1; i >= 0; i--) {
+        trails[i].life--;
+        if (trails[i].life <= 0) trails.splice(i, 1);
+      }
+      if (trails.length > 2000) trails.splice(0, trails.length - 2000);
+      drawTrails(ctx, trails, cam, z);
+
+      // ─── Water Reflections ───
+      drawWaterReflection(ctx, buildings, cam, z, t, terrain, clampedNight);
+
       // Agent simulation & draw
       agents.forEach(a => {
-        a.stateTimer--;
+        if (speed === 0) { drawAgent(ctx, a, cam, z, t, clampedNight); return; }
+        const spdMult = speed;
+        a.stateTimer -= spdMult;
         if (a.stateTimer <= 0) {
           if (a.state === "meeting" || a.state === "combat" || a.state === "trading" || a.state === "visiting") {
             a.state = "move"; a.stateTimer = 150 + Math.random() * 300; a.meetingPartner = null; a.targetBuilding = null;
@@ -1713,7 +1866,7 @@ const LiveMap = () => {
         // Movement
         if (a.state === "move" || a.state === "visiting") {
           if (a.state === "move" && Math.random() < 0.02) a.dir += (Math.random() - 0.5) * 1.5;
-          const spd = a.state === "visiting" ? a.speed * 1.3 : a.speed;
+          const spd = (a.state === "visiting" ? a.speed * 1.3 : a.speed) * spdMult;
           const nx = a.x + Math.cos(a.dir) * spd;
           const ny = a.y + Math.sin(a.dir) * spd;
           if (nx < 30 || nx > MAP_W * TILE - 30) a.dir = Math.PI - a.dir;
@@ -1723,7 +1876,15 @@ const LiveMap = () => {
             const tt = terrain[tileY][tileX];
             if (tt <= 1) a.dir += Math.PI / 2 + Math.random() * 0.5;
             else if (tt >= 6) a.dir += Math.PI / 3 + Math.random() * 0.3;
-            else { a.x = nx; a.y = ny; }
+            else {
+              // Add trail particle
+              if (Math.random() < 0.15) {
+                const hex = a.color;
+                const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b2 = parseInt(hex.slice(5,7),16);
+                trails.push({ x: a.x, y: a.y, color: `rgb(${r},${g},${b2})`, life: 40, maxLife: 40 });
+              }
+              a.x = nx; a.y = ny;
+            }
           }
           // Arrived at building
           if (a.state === "visiting" && a.targetBuilding !== null) {
@@ -1757,14 +1918,39 @@ const LiveMap = () => {
     render();
 
     // Input handlers
-    const onDown = (e: MouseEvent) => { dragRef.current = { dragging: true, lastX: e.clientX, lastY: e.clientY, moved: false }; };
+    const onDown = (e: MouseEvent) => { dragRef.current = { dragging: true, lastX: e.clientX, lastY: e.clientY, moved: false }; followRef.current = null; setFollowAgent(null); cameraTargetRef.current = null; };
     const onMove = (e: MouseEvent) => {
-      if (!dragRef.current.dragging) return;
-      const dx = e.clientX - dragRef.current.lastX, dy = e.clientY - dragRef.current.lastY;
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragRef.current.moved = true;
-      cameraRef.current.x -= dx / zoomRef.current;
-      cameraRef.current.y -= dy / zoomRef.current;
-      dragRef.current.lastX = e.clientX; dragRef.current.lastY = e.clientY;
+      if (dragRef.current.dragging) {
+        const dx = e.clientX - dragRef.current.lastX, dy = e.clientY - dragRef.current.lastY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragRef.current.moved = true;
+        cameraRef.current.x -= dx / zoomRef.current;
+        cameraRef.current.y -= dy / zoomRef.current;
+        cameraVelRef.current = { x: -dx / zoomRef.current, y: -dy / zoomRef.current };
+        dragRef.current.lastX = e.clientX; dragRef.current.lastY = e.clientY;
+      } else {
+        // Hover detection
+        const z = zoomRef.current;
+        const worldX = cameraRef.current.x + e.clientX / z;
+        const worldY = cameraRef.current.y + e.clientY / z;
+        let found = false;
+        for (const a of agentsRef.current) {
+          if (Math.hypot(a.x - worldX, a.y - worldY) < 20) {
+            setHoveredEntity(a.name);
+            canvasRef.current!.style.cursor = "pointer";
+            found = true; break;
+          }
+        }
+        if (!found) {
+          for (const b of buildingsRef.current) {
+            if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) {
+              setHoveredEntity(b.name);
+              canvasRef.current!.style.cursor = "pointer";
+              found = true; break;
+            }
+          }
+        }
+        if (!found) { setHoveredEntity(null); canvasRef.current!.style.cursor = "grab"; }
+      }
     };
     const onUp = () => { dragRef.current.dragging = false; };
     const onWheel = (e: WheelEvent) => {
@@ -1792,12 +1978,36 @@ const LiveMap = () => {
       }
       setSelectedAgent(null); setSelectedBuilding(null);
     };
+    const onDblClick = (e: MouseEvent) => {
+      const z = zoomRef.current;
+      const worldX = cameraRef.current.x + e.clientX / z;
+      const worldY = cameraRef.current.y + e.clientY / z;
+      for (const a of agentsRef.current) {
+        if (Math.hypot(a.x - worldX, a.y - worldY) < 25) {
+          followRef.current = a.id;
+          setFollowAgent(a.id);
+          setSelectedAgent({ ...a });
+          addEvent(`👁️ Following ${a.name}`, a.color);
+          return;
+        }
+      }
+      // Minimap click-to-navigate
+      const mmW = 180, mmH = 110;
+      const mmX = canvas.width - mmW - 12, mmY = canvas.height - mmH - 12;
+      if (e.clientX >= mmX && e.clientX <= mmX + mmW && e.clientY >= mmY && e.clientY <= mmY + mmH) {
+        const mmScale = mmW / (MAP_W * TILE);
+        const clickWorldX = (e.clientX - mmX) / mmScale;
+        const clickWorldY = (e.clientY - mmY) / mmScale;
+        cameraTargetRef.current = { x: clickWorldX - canvas.width / z / 2, y: clickWorldY - canvas.height / z / 2 };
+      }
+    };
 
     canvas.addEventListener("mousedown", onDown);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     canvas.addEventListener("wheel", onWheel, { passive: false });
     canvas.addEventListener("click", onClick);
+    canvas.addEventListener("dblclick", onDblClick);
 
     let lastTouchDist = 0;
     const onTouchStart = (e: TouchEvent) => {
@@ -1831,24 +2041,44 @@ const LiveMap = () => {
       window.removeEventListener("mouseup", onUp);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("dblclick", onDblClick);
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
   }, []);
 
+  // WASD + Escape keyboard handler
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (selectedBuilding || selectedAgent) { setSelectedBuilding(null); setSelectedAgent(null); }
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) {
+        keysRef.current.add(key);
+        e.preventDefault();
+      }
+      if (key === "escape") {
+        if (followRef.current !== null) { followRef.current = null; setFollowAgent(null); }
+        else if (selectedBuilding || selectedAgent) { setSelectedBuilding(null); setSelectedAgent(null); }
         else navigate("/");
       }
+      if (key === " ") { e.preventDefault(); simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }
+      if (key === "f" && !e.ctrlKey) { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const onKeyUp = (e: KeyboardEvent) => { keysRef.current.delete(e.key.toLowerCase()); };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("keyup", onKeyUp); };
   }, [navigate, selectedBuilding, selectedAgent]);
 
   const handleZoom = (d: number) => { const nz = Math.max(0.25, Math.min(3.5, zoomRef.current + d)); zoomRef.current = nz; setZoom(nz); };
+  const navigateToAgent = (agentId: number) => {
+    const a = agentsRef.current.find(ag => ag.id === agentId);
+    if (!a) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    cameraTargetRef.current = { x: a.x - canvas.width / zoomRef.current / 2, y: a.y - canvas.height / zoomRef.current / 2 };
+    setSelectedAgent({ ...a });
+  };
 
   return (
     <div className="fixed inset-0 bg-background overflow-hidden cursor-grab active:cursor-grabbing">
@@ -1885,12 +2115,28 @@ const LiveMap = () => {
         </div>
       </div>
 
-      {/* Zoom */}
+      {/* Zoom + Speed controls */}
       <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5 sm:gap-2">
         <button onClick={() => handleZoom(0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomIn className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
         <div className="glass-card px-1.5 sm:px-2 py-0.5 sm:py-1 text-center"><span className="text-[9px] sm:text-[10px] font-body text-muted-foreground">{Math.round(zoom * 100)}%</span></div>
         <button onClick={() => handleZoom(-0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomOut className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
+        <div className="w-full h-px bg-border/30 my-0.5" />
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="glass-card p-1.5 sm:p-2 hover:bg-card/80" title="Space to toggle">
+          {simSpeed === 0 ? <Play className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /> : <Pause className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />}
+        </button>
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`glass-card p-1.5 sm:p-2 hover:bg-card/80 ${simSpeed === 2 ? 'ring-1 ring-secondary/50' : ''}`} title="F to fast-forward">
+          <FastForward className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />
+        </button>
       </div>
+
+      {/* Follow mode indicator */}
+      {followAgent !== null && (
+        <div className="absolute top-12 sm:top-16 left-1/2 -translate-x-1/2 z-20 glass-card px-4 py-2 flex items-center gap-2 animate-fade-in">
+          <Crosshair className="w-4 h-4 text-secondary animate-pulse" />
+          <span className="text-xs font-display font-semibold text-secondary">Following {agentsRef.current.find(a => a.id === followAgent)?.name ?? 'agent'}</span>
+          <button onClick={() => { followRef.current = null; setFollowAgent(null); }} className="ml-2 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
 
       {/* Events */}
       {showChat && (
@@ -2003,8 +2249,7 @@ const LiveMap = () => {
                 onClick={() => {
                   const cx = b.x + (b.w * TILE) / 2;
                   const cy = b.y + (b.h * TILE) / 2;
-                  cameraRef.current.x = cx - window.innerWidth / zoomRef.current / 2;
-                  cameraRef.current.y = cy - window.innerHeight / zoomRef.current / 2;
+                  cameraTargetRef.current = { x: cx - window.innerWidth / zoomRef.current / 2, y: cy - window.innerHeight / zoomRef.current / 2 };
                   setSelectedBuilding(b);
                   setShowDirectory(false);
                 }}
@@ -2020,14 +2265,54 @@ const LiveMap = () => {
         </div>
       )}
 
-      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2">
-        <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors">
-          📍 {buildingsRef.current.length} Buildings
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
+          <MapPin className="w-3 h-3" /> {buildingsRef.current.length} Buildings
+        </button>
+        <button onClick={() => setShowSearch(!showSearch)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
+          <Search className="w-3 h-3" /> Find Agent
         </button>
         <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body glass-card px-2 sm:px-3 py-1 sm:py-1.5 hidden sm:inline-block">
-          ESC — back · Drag to pan · Scroll to zoom · Click to inspect
+          WASD/Arrows — move · Scroll — zoom · Dbl-click — follow · Space — pause · F — fast
         </span>
       </div>
+
+      {/* Agent search */}
+      {showSearch && (
+        <div className="absolute bottom-12 sm:bottom-14 left-2 sm:left-4 z-20 glass-card p-2 w-56 sm:w-64 animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search agents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent text-xs font-body text-foreground outline-none placeholder:text-muted-foreground/50"
+              autoFocus
+            />
+            <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
+          </div>
+          <div className="max-h-40 overflow-y-auto space-y-0.5">
+            {agentsRef.current
+              .filter(a => searchQuery.length > 0 && a.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .slice(0, 10)
+              .map(a => (
+                <button
+                  key={a.id}
+                  className="w-full text-left px-2 py-1 rounded hover:bg-muted/40 transition-colors flex items-center gap-2"
+                  onClick={() => { navigateToAgent(a.id); setShowSearch(false); setSearchQuery(""); }}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                  <span className="text-[11px] font-display font-semibold" style={{ color: a.color }}>{a.name}</span>
+                  <span className="text-[9px] text-muted-foreground ml-auto">{a.cls} Lv.{a.level}</span>
+                </button>
+              ))}
+            {searchQuery.length > 0 && agentsRef.current.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center py-2">No agents found</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
