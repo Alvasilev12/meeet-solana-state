@@ -1676,7 +1676,7 @@ const LiveMap = () => {
     const onUp = () => { dragRef.current.dragging = false; };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
       const newZoom = Math.max(0.25, Math.min(3.5, zoomRef.current + delta));
       const mx = e.clientX, my = e.clientY;
       const wx = cameraRef.current.x + mx / zoomRef.current;
