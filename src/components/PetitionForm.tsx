@@ -22,7 +22,6 @@ const PetitionForm = () => {
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("send-petition", {
         body: {
-          sender_name: senderName.trim(),
           subject: subject.trim(),
           message: message.trim(),
         },
