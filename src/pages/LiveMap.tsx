@@ -1596,6 +1596,45 @@ const LiveMap = () => {
       const buildings = buildingsRef.current;
       const roads = roadsRef.current;
       const t = Date.now();
+      const speed = simSpeedRef.current;
+
+      // ─── WASD / Arrow key camera movement ───
+      const keys = keysRef.current;
+      const camSpeed = 5 / z;
+      if (keys.has("w") || keys.has("arrowup")) cam.y -= camSpeed;
+      if (keys.has("s") || keys.has("arrowdown")) cam.y += camSpeed;
+      if (keys.has("a") || keys.has("arrowleft")) cam.x -= camSpeed;
+      if (keys.has("d") || keys.has("arrowright")) cam.x += camSpeed;
+
+      // ─── Follow agent mode ───
+      const followId = followRef.current;
+      if (followId !== null) {
+        const fa = agents.find(a => a.id === followId);
+        if (fa) {
+          const tx = fa.x - w / z / 2;
+          const ty = fa.y - h / z / 2;
+          cam.x += (tx - cam.x) * 0.08;
+          cam.y += (ty - cam.y) * 0.08;
+        }
+      }
+
+      // ─── Smooth camera lerp to target ───
+      if (cameraTargetRef.current) {
+        const ct = cameraTargetRef.current;
+        cam.x += (ct.x - cam.x) * 0.1;
+        cam.y += (ct.y - cam.y) * 0.1;
+        if (Math.abs(ct.x - cam.x) < 1 && Math.abs(ct.y - cam.y) < 1) {
+          cameraTargetRef.current = null;
+        }
+      }
+
+      // ─── Camera inertia ───
+      if (!dragRef.current.dragging && (Math.abs(cameraVelRef.current.x) > 0.1 || Math.abs(cameraVelRef.current.y) > 0.1)) {
+        cam.x += cameraVelRef.current.x;
+        cam.y += cameraVelRef.current.y;
+        cameraVelRef.current.x *= 0.92;
+        cameraVelRef.current.y *= 0.92;
+      }
 
       // Day/night cycle
       const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
@@ -1615,16 +1654,54 @@ const LiveMap = () => {
       // Stars at night
       if (clampedNight > 0.3) {
         const starAlpha = (clampedNight - 0.3) / 0.7;
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 80; i++) {
           const sx = noise2d(i, 0, 1) * w;
           const sy = noise2d(0, i, 2) * h * 0.4;
           const twinkle = 0.3 + Math.sin(t * 0.003 + i * 7) * 0.3;
+          const starSize = noise2d(i, i, 3) > 0.8 ? 2.5 : 1.5;
           ctx.fillStyle = `rgba(255,255,255,${starAlpha * twinkle})`;
-          ctx.fillRect(sx, sy, 1.5, 1.5);
+          ctx.beginPath();
+          ctx.arc(sx, sy, starSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Shooting star occasionally
+        if (Math.sin(t * 0.0001) > 0.995) {
+          const ssX = (t * 0.3) % w;
+          const ssY = noise2d(Math.floor(t * 0.0001), 0, 5) * h * 0.3;
+          ctx.strokeStyle = `rgba(255,255,255,${0.6 * starAlpha})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(ssX, ssY);
+          ctx.lineTo(ssX - 40, ssY + 20);
+          ctx.stroke();
         }
       }
 
+      // ─── Aurora Borealis ───
+      drawAurora(ctx, w, h, t, clampedNight);
+
       // Terrain
+      const startCol = Math.max(0, Math.floor(cam.x / TILE));
+      const endCol = Math.min(MAP_W, Math.ceil((cam.x + w / z) / TILE));
+      const startRow = Math.max(0, Math.floor(cam.y / TILE));
+      const endRow = Math.min(MAP_H, Math.ceil((cam.y + h / z) / TILE));
+
+      for (let row = startRow; row < endRow; row++) {
+        for (let col = startCol; col < endCol; col++) {
+          const sx = (col * TILE - cam.x) * z, sy = (row * TILE - cam.y) * z;
+          const tile = terrain[row][col];
+          ctx.fillStyle = lerpColor(TILE_PALETTE_DAY[tile].fill, TILE_PALETTE_NIGHT[tile].fill, clampedNight);
+          ctx.fillRect(sx, sy, TILE * z + 1, TILE * z + 1);
+          if (z > 0.5) {
+            ctx.strokeStyle = lerpColor(TILE_PALETTE_DAY[tile].border, TILE_PALETTE_NIGHT[tile].border, clampedNight);
+            ctx.lineWidth = 0.3;
+            ctx.strokeRect(sx, sy, TILE * z, TILE * z);
+          }
+          if (z > 0.5) drawTileDecoration(ctx, tile, sx, sy, col, row, z, t, clampedNight);
+        }
+      }
+
+      // Cloud shadows drifting across terrain
       const startCol = Math.max(0, Math.floor(cam.x / TILE));
       const endCol = Math.min(MAP_W, Math.ceil((cam.x + w / z) / TILE));
       const startRow = Math.max(0, Math.floor(cam.y / TILE));
