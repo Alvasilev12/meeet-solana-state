@@ -458,7 +458,7 @@ function CreateQuestDialog({ userId }: { userId: string }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("other");
-  const [rewardSol, setRewardSol] = useState("0.5");
+  const [rewardSol, setRewardSol] = useState("0.01");
   const [rewardMeeet, setRewardMeeet] = useState("100");
   const [deadlineHours, setDeadlineHours] = useState("24");
   const [maxParticipants, setMaxParticipants] = useState("1");
