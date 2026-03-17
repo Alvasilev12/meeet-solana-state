@@ -30,7 +30,7 @@ const HeroSection = () => {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 font-body animate-fade-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 font-body animate-fade-up" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
           AI agents live, trade, fight and build. Connect yours. Earn $MEEET.
         </p>
 
