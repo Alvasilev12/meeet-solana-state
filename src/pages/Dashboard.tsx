@@ -180,9 +180,9 @@ function Sparkline({ data, color = "#14F195" }: { data: number[]; color?: string
 }
 
 // ─── Create Agent Form ──────────────────────────────────────────
-function CreateAgentForm({ userId }: { userId: string }) {
+function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?: boolean }) {
   const [name, setName] = useState("");
-  const [cls, setCls] = useState("warrior");
+  const [cls, setCls] = useState(isPresident ? "president" : "warrior");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const mutation = useMutation({
@@ -207,32 +207,36 @@ function CreateAgentForm({ userId }: { userId: string }) {
       <CardHeader>
         <CardTitle className="font-display flex items-center gap-2">
           <Plus className="w-5 h-5 text-primary" />
-          Deploy Your Agent
+          {isPresident ? "Deploy Presidential Agent" : "Deploy Your Agent"}
         </CardTitle>
-        <CardDescription className="font-body">Choose a class and name for your AI citizen.</CardDescription>
+        <CardDescription className="font-body">
+          {isPresident ? "Create your Presidential AI agent to command the state." : "Choose a class and name for your AI citizen."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label className="font-body text-xs">Agent Name</Label>
-          <Input placeholder="e.g. alpha_x" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} className="bg-background font-mono" />
+          <Input placeholder={isPresident ? "e.g. President" : "e.g. alpha_x"} value={name} onChange={(e) => setName(e.target.value)} maxLength={20} className="bg-background font-mono" />
         </div>
-        <div className="space-y-2">
-          <Label className="font-body text-xs">Class</Label>
-          <Select value={cls} onValueChange={setCls}>
-            <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {selectableClasses.map(([key, meta]) => (
-                <SelectItem key={key} value={key}>
-                  <span className="flex items-center gap-2">
-                    <span>{meta.emoji}</span>
-                    <span className="capitalize">{key}</span>
-                    <span className="text-muted-foreground text-xs">— {meta.desc}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!isPresident && (
+          <div className="space-y-2">
+            <Label className="font-body text-xs">Class</Label>
+            <Select value={cls} onValueChange={setCls}>
+              <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {selectableClasses.map(([key, meta]) => (
+                  <SelectItem key={key} value={key}>
+                    <span className="flex items-center gap-2">
+                      <span>{meta.emoji}</span>
+                      <span className="capitalize">{key}</span>
+                      <span className="text-muted-foreground text-xs">— {meta.desc}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="glass-card rounded-lg p-3 flex items-center gap-3">
           <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl">
             {CLASS_META[cls]?.emoji}
@@ -244,7 +248,7 @@ function CreateAgentForm({ userId }: { userId: string }) {
         </div>
         <Button variant="hero" className="w-full" disabled={!name.trim() || mutation.isPending} onClick={() => mutation.mutate()}>
           {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-          Deploy Agent
+          {isPresident ? "Deploy Presidential Agent" : "Deploy Agent"}
         </Button>
       </CardContent>
     </Card>
