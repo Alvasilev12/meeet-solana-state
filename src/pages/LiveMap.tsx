@@ -2451,22 +2451,7 @@ const LiveMap = () => {
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
 
-      // Cloud shadows — very subtle
-      if (clampedNight < 0.4) {
-        ctx.fillStyle = `rgba(0,0,0,0.025)`;
-        for (let i = 0; i < 3; i++) {
-          const cloudSpeed = 0.012;
-          const cx = ((t * cloudSpeed + i * 800 + noise2d(i, 0, 99) * 2000) % (MAP_W * TILE + 600)) - 300;
-          const cy = noise2d(0, i, 88) * MAP_H * TILE;
-          const csx = (cx - cam.x) * z;
-          const csy = (cy - cam.y) * z;
-          const cw = (100 + noise2d(i, 1, 77) * 80) * z;
-          const ch = (50 + noise2d(i, 2, 66) * 30) * z;
-          ctx.beginPath();
-          ctx.ellipse(csx, csy, cw, ch, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+      // Cloud shadows — DISABLED (caused dark blobs)
 
       // Roads
       drawRoads(ctx, roads, cam, z, clampedNight);
