@@ -367,16 +367,31 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
 }
 
 function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: number; y: number }, z: number, nightFactor: number) {
-  ctx.strokeStyle = lerpColor("#8a7a5a", "#4a3a2a", nightFactor);
-  ctx.lineWidth = Math.max(2, 4 * z);
-  ctx.setLineDash([8 * z, 6 * z]);
+  // Road fill — solid cobblestone paths
+  const roadWidth = Math.max(3, 8 * z);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   roads.forEach(r => {
     const sx1 = (r.x1 - cam.x) * z, sy1 = (r.y1 - cam.y) * z;
     const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
-    if (Math.max(sx1, sx2) < -100 || Math.min(sx1, sx2) > ctx.canvas.width + 100) return;
+    if (Math.max(sx1, sx2) < -200 || Math.min(sx1, sx2) > ctx.canvas.width + 200) return;
+    if (Math.max(sy1, sy2) < -200 || Math.min(sy1, sy2) > ctx.canvas.height + 200) return;
+    // Road shadow
+    ctx.strokeStyle = `rgba(0,0,0,${0.15 + nightFactor * 0.1})`;
+    ctx.lineWidth = roadWidth + 3 * z;
+    ctx.beginPath(); ctx.moveTo(sx1 + z, sy1 + z); ctx.lineTo(sx2 + z, sy2 + z); ctx.stroke();
+    // Road base
+    ctx.strokeStyle = lerpColor("#7a6a4a", "#3a2a1a", nightFactor);
+    ctx.lineWidth = roadWidth;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+    // Road center line (lighter)
+    ctx.strokeStyle = lerpColor("#9a8a6a", "#5a4a3a", nightFactor);
+    ctx.lineWidth = Math.max(1, 2 * z);
+    ctx.setLineDash([4 * z, 8 * z]);
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+    ctx.setLineDash([]);
   });
-  ctx.setLineDash([]);
+  ctx.lineCap = "butt";
 }
 
 // ─── Detailed building renderers ────────────────────────────────
