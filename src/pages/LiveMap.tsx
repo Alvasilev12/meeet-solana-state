@@ -1314,6 +1314,26 @@ function drawMinimap(ctx: CanvasRenderingContext2D, terrain: number[][], buildin
   ctx.fillText("MEEET STATE", mmX + 4, mmY + mmH - 4);
 }
 
+const EVENT_TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
+  duel: { icon: "⚔️", color: "#EF4444" },
+  trade: { icon: "💰", color: "#14F195" },
+  quest_complete: { icon: "📜", color: "#06B6D4" },
+  quest_created: { icon: "📋", color: "#3B82F6" },
+  level_up: { icon: "🎓", color: "#6366F1" },
+  alliance: { icon: "🤝", color: "#34D399" },
+  vote: { icon: "🗳️", color: "#9945FF" },
+  law: { icon: "🏛️", color: "#9945FF" },
+  burn: { icon: "🔥", color: "#F97316" },
+  mining: { icon: "⛏️", color: "#FBBF24" },
+  transfer: { icon: "💸", color: "#00C2FF" },
+  stake: { icon: "🏦", color: "#00C2FF" },
+  combat: { icon: "⚔️", color: "#EF4444" },
+  death: { icon: "💀", color: "#EF4444" },
+  spawn: { icon: "🆕", color: "#14F195" },
+  petition: { icon: "📨", color: "#A78BFA" },
+  guild: { icon: "🏰", color: "#F59E0B" },
+};
+
 // ─── Aurora Borealis ────────────────────────────────────────────
 function drawAurora(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
   if (nightFactor < 0.4) return;
@@ -1545,35 +1565,62 @@ const LiveMap = () => {
     return () => clearInterval(interval);
   }, [addEvent]);
 
-  // Events
+  // Realtime activity feed from database
   useEffect(() => {
-    const buildings = buildingsRef.current;
+    // Load recent events on mount
+    const loadRecent = async () => {
+      const { data } = await supabase
+        .from("activity_feed")
+        .select("*, agents!activity_feed_agent_id_fkey(name)")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data) {
+        data.reverse().forEach(ev => {
+          const icon = EVENT_TYPE_CONFIG[ev.event_type]?.icon ?? "🔔";
+          const color = EVENT_TYPE_CONFIG[ev.event_type]?.color ?? "#14F195";
+          addEvent(`${icon} ${ev.title}`, color);
+        });
+      }
+    };
+    loadRecent();
+
+    // Subscribe to new events
+    const channel = supabase
+      .channel("activity-feed-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_feed" }, (payload) => {
+        const ev = payload.new as any;
+        const icon = EVENT_TYPE_CONFIG[ev.event_type]?.icon ?? "🔔";
+        const color = EVENT_TYPE_CONFIG[ev.event_type]?.color ?? "#14F195";
+        addEvent(`${icon} ${ev.title}`, color);
+
+        // Find matching agent on map and show floating text
+        if (ev.agent_id) {
+          const agent = agentsRef.current.find(a => a.name === ev.title.split(" ")[0]);
+          if (agent && ev.meeet_amount) {
+            addFloatingText(agent.x, agent.y, `${ev.meeet_amount > 0 ? "+" : ""}${ev.meeet_amount} $M`, color);
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [addEvent, addFloatingText]);
+
+  // Fallback ambient events when DB is quiet
+  useEffect(() => {
     const interval = setInterval(() => {
       const agents = agentsRef.current;
       if (!agents.length) return;
       const a = agents[Math.floor(Math.random() * agents.length)];
-      const b = buildings[Math.floor(Math.random() * buildings.length)];
-      const amount = Math.floor(50 + Math.random() * 500);
-      const evts = [
-        { text: `⚔️ ${a.name} won a duel — earned ${amount} $MEEET`, color: "#EF4444", fx: () => addFloatingText(a.x, a.y, `+${amount} $M`, "rgb(239,68,68)") },
-        { text: `💰 ${a.name} traded ${amount} $MEEET at ${b?.name}`, color: "#14F195", fx: () => addFloatingText(a.x, a.y, `${amount} $M`, "rgb(20,241,149)") },
-        { text: `🏛️ ${a.name} voted on Law #${Math.floor(Math.random() * 100)}`, color: "#9945FF", fx: null },
-        { text: `⛏️ ${a.name} mined ${Math.floor(amount / 3)} crystals`, color: "#FBBF24", fx: () => addFloatingText(a.x, a.y, `+${Math.floor(amount / 3)} 💎`, "rgb(251,191,36)") },
-        { text: `📜 ${a.name} completed quest "${["Data Analysis", "Code Review", "Twitter Raid", "Security Audit", "Market Research"][Math.floor(Math.random() * 5)]}"`, color: "#06B6D4", fx: null },
-        { text: `🔥 Burned ${amount} $MEEET in transaction tax`, color: "#F97316", fx: null },
-        { text: `🤝 ${a.name} formed alliance with ${NAMES[(a.id + 7) % NAMES.length]}`, color: "#34D399", fx: null },
-        { text: `🏦 ${a.name} staked ${amount} $MEEET at MEEET Bank`, color: "#00C2FF", fx: null },
-        { text: `🎓 ${a.name} leveled up to Lv.${a.level + 1}!`, color: "#6366F1", fx: () => { a.level++; addFloatingText(a.x, a.y, `⬆ Lv.${a.level}`, "rgb(99,102,241)"); } },
-        { text: `🗳️ New law proposed: "${["Lower tax to 4%", "Double mining rewards", "Add Spy class", "Ban unlicensed DEX"][Math.floor(Math.random() * 4)]}"`, color: "#9945FF", fx: null },
-        { text: `💀 ${a.name} was defeated in combat — lost ${Math.floor(amount / 5)} $MEEET`, color: "#EF4444", fx: () => addFloatingText(a.x, a.y, `-${Math.floor(amount / 5)} $M`, "rgb(239,68,68)") },
-        { text: `🏗️ ${a.name} upgraded ${b?.name} to level ${2 + Math.floor(Math.random() * 3)}`, color: "#F97316", fx: null },
+      const ambientEvts = [
+        { text: `🔭 ${a.name} is scouting the frontier`, color: "#94A3B8" },
+        { text: `🏃 ${a.name} is traveling across the state`, color: "#64748B" },
       ];
-      const ev = evts[Math.floor(Math.random() * evts.length)];
+      const ev = ambientEvts[Math.floor(Math.random() * ambientEvts.length)];
       addEvent(ev.text, ev.color);
-      ev.fx?.();
-    }, 2200);
+    }, 8000);
     return () => clearInterval(interval);
-  }, [addEvent, addFloatingText]);
+  }, [addEvent]);
 
   // Main loop
   useEffect(() => {
