@@ -2207,7 +2207,7 @@ const LiveMap = () => {
       drawMinimap(ctx, terrain, buildings, agents, cam, z, w, h, clampedNight);
 
       // ─── Hover Tooltip ───
-      drawHoverTooltip(ctx, hoveredEntity, mouseRef.current.x, mouseRef.current.y);
+      drawHoverTooltip(ctx, hoveredEntityRef.current, mouseRef.current.x, mouseRef.current.y);
 
       raf = requestAnimationFrame(render);
     };
