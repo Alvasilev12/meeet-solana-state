@@ -59,10 +59,8 @@ function DonutChart() {
   const colorMap: Record<string, string> = {
     "bg-primary": "hsl(262, 100%, 63.5%)",
     "bg-secondary": "hsl(157, 91%, 51%)",
-    "bg-accent": "hsl(195, 100%, 50%)",
     "bg-amber-400": "#fbbf24",
     "bg-rose-400": "#fb7185",
-    "bg-muted-foreground": "#737373",
   };
 
   return (
