@@ -20,28 +20,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     const authHeader = req.headers.get("Authorization") ?? "";
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Authorization required" }, 401);
+    }
 
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const token = authHeader.replace("Bearer ", "");
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
-    // Verify user
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+    // Validate JWT using getClaims for Lovable Cloud compatibility
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("Auth error:", claimsErr);
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const userId = claimsData.claims.sub as string;
+
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
     // Rate limit
     const rl = RATE_LIMITS.quest_lifecycle;
-    const { allowed } = await checkRateLimit(serviceClient, `quest:${user.id}`, rl.max, rl.window);
+    const { allowed } = await checkRateLimit(serviceClient, `quest:${userId}`, rl.max, rl.window);
     if (!allowed) return rateLimitResponse(rl.window);
 
-    const { action, quest_id, agent_id, result_text, result_url, reason } = await req.json();
+    const body = await req.json();
+    const { action, quest_id, agent_id, result_text, result_url, reason } = body;
+
+    if (!quest_id) return json({ error: "quest_id required" }, 400);
+    if (!action) return json({ error: "action required" }, 400);
 
     // Fetch quest
     const { data: quest, error: qErr } = await serviceClient
@@ -63,11 +75,11 @@ Deno.serve(async (req) => {
           .select("id, user_id")
           .eq("id", agent_id)
           .single();
-        if (!agent || agent.user_id !== user.id)
+        if (!agent || agent.user_id !== userId)
           return json({ error: "Agent not found or not yours" }, 403);
 
         // Cannot accept own quest
-        if (quest.requester_id === user.id)
+        if (quest.requester_id === userId)
           return json({ error: "Cannot accept your own quest" }, 400);
 
         await serviceClient
@@ -99,7 +111,7 @@ Deno.serve(async (req) => {
           .select("user_id")
           .eq("id", quest.assigned_agent_id)
           .single();
-        if (!assignedAgent || assignedAgent.user_id !== user.id)
+        if (!assignedAgent || assignedAgent.user_id !== userId)
           return json({ error: "Only the assigned agent can deliver" }, 403);
 
         await serviceClient
@@ -119,7 +131,7 @@ Deno.serve(async (req) => {
       case "approve": {
         if (quest.status !== "review")
           return json({ error: "Quest is not in review" }, 400);
-        if (quest.requester_id !== user.id)
+        if (quest.requester_id !== userId)
           return json({ error: "Only the requester can approve" }, 403);
 
         const rewardMeeet = Number(quest.reward_meeet) || 0;
@@ -154,13 +166,13 @@ Deno.serve(async (req) => {
             if (executorProfile?.wallet_address) {
               try {
                 const payResponse = await fetch(
-                  `${Deno.env.get("SUPABASE_URL")}/functions/v1/pay-sol`,
+                  `${supabaseUrl}/functions/v1/pay-sol`,
                   {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-                      "x-internal-service": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.slice(-16),
+                      Authorization: `Bearer ${anonKey}`,
+                      "x-internal-service": serviceRoleKey.slice(-16),
                     },
                     body: JSON.stringify({
                       recipient_wallet: executorProfile.wallet_address,
@@ -184,36 +196,43 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Process $MEEET reward via process-transaction
+        // Process $MEEET reward directly (skip process-transaction for reliability)
         if (rewardMeeet > 0 && quest.assigned_agent_id) {
-          const txResponse = await fetch(
-            `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-transaction`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: authHeader,
-                apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
-                "x-internal-service": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.slice(-16),
-              },
-              body: JSON.stringify({
-                type: "quest_reward",
-                from_user_id: quest.requester_id,
-                to_agent_id: quest.assigned_agent_id,
-                amount_meeet: rewardMeeet,
-                amount_sol: rewardSol,
-                quest_id,
-                description: `Quest reward: ${quest.title}`,
-              }),
-            }
-          );
-          await txResponse.json();
+          const { data: agentData } = await serviceClient
+            .from("agents")
+            .select("balance_meeet, xp, quests_completed")
+            .eq("id", quest.assigned_agent_id)
+            .single();
 
+          if (agentData) {
+            await serviceClient
+              .from("agents")
+              .update({
+                balance_meeet: Number(agentData.balance_meeet) + rewardMeeet,
+                xp: agentData.xp + 50,
+                quests_completed: agentData.quests_completed + 1,
+                status: "idle",
+              })
+              .eq("id", quest.assigned_agent_id);
+
+            // Record transaction
+            await serviceClient.from("transactions").insert({
+              type: "quest_reward",
+              to_agent_id: quest.assigned_agent_id,
+              amount_meeet: rewardMeeet,
+              amount_sol: rewardSol,
+              quest_id,
+              description: `Quest reward: ${quest.title}`,
+            });
+          }
+        } else if (quest.assigned_agent_id) {
+          // No MEEET but still update agent stats
           const { data: agentData } = await serviceClient
             .from("agents")
             .select("xp, quests_completed")
             .eq("id", quest.assigned_agent_id)
             .single();
+
           if (agentData) {
             await serviceClient
               .from("agents")
@@ -223,6 +242,17 @@ Deno.serve(async (req) => {
                 status: "idle",
               })
               .eq("id", quest.assigned_agent_id);
+          }
+
+          // Record SOL-only transaction
+          if (rewardSol > 0) {
+            await serviceClient.from("transactions").insert({
+              type: "quest_reward",
+              to_agent_id: quest.assigned_agent_id,
+              amount_sol: rewardSol,
+              quest_id,
+              description: `Quest reward: ${quest.title}`,
+            });
           }
         }
 
@@ -254,13 +284,11 @@ Deno.serve(async (req) => {
         return json({ success: true, status: "completed", sol_payment: solPaymentResult });
       }
 
-
-
       // ── DISPUTE: requester disputes delivery ───────────────────
       case "dispute": {
         if (quest.status !== "review")
           return json({ error: "Quest is not in review" }, 400);
-        if (quest.requester_id !== user.id)
+        if (quest.requester_id !== userId)
           return json({ error: "Only the requester can dispute" }, 403);
         if (!reason) return json({ error: "Dispute reason required" }, 400);
 
@@ -272,7 +300,7 @@ Deno.serve(async (req) => {
         await serviceClient.from("disputes").insert({
           quest_id,
           agent_id: quest.assigned_agent_id!,
-          requester_id: user.id,
+          requester_id: userId,
           reason,
         });
 
@@ -283,7 +311,7 @@ Deno.serve(async (req) => {
       case "cancel": {
         if (quest.status !== "open")
           return json({ error: "Can only cancel open quests" }, 400);
-        if (quest.requester_id !== user.id)
+        if (quest.requester_id !== userId)
           return json({ error: "Only the requester can cancel" }, 403);
 
         await serviceClient
@@ -298,6 +326,7 @@ Deno.serve(async (req) => {
         return json({ error: `Unknown action: ${action}` }, 400);
     }
   } catch (e) {
-    return json({ error: e.message }, 500);
+    console.error("Quest lifecycle error:", e);
+    return json({ error: e.message || "Internal server error" }, 500);
   }
 });
