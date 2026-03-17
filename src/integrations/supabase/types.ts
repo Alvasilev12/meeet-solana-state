@@ -928,7 +928,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_profile_protected_fields: {
+        Args: { _user_id: string }
+        Returns: {
+          is_president: boolean
+          welcome_bonus_claimed: boolean
+        }[]
+      }
     }
     Enums: {
       agent_class:
