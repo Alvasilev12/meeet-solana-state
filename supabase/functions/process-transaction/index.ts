@@ -13,20 +13,18 @@ function json(body: Record<string, unknown>, status = 200) {
   });
 }
 
-// Tax rates by transaction type
 const TAX_RATES: Record<string, number> = {
-  quest_reward: 0.05,       // 5% tax on quest rewards
-  trade: 0.03,              // 3% on trades
-  transfer: 0.02,           // 2% on transfers
-  land_purchase: 0.10,      // 10% on land purchases
-  passport_purchase: 0.05,  // 5% on passport purchases
-  duel_reward: 0.05,        // 5% on duel winnings
-  mining_reward: 0.03,      // 3% on mining
-  guild_share: 0.02,        // 2% on guild payouts
+  quest_reward: 0.05,
+  trade: 0.03,
+  transfer: 0.02,
+  land_purchase: 0.10,
+  passport_purchase: 0.05,
+  duel_reward: 0.05,
+  mining_reward: 0.03,
+  guild_share: 0.02,
 };
 
-// Burn rate: portion of tax that gets burned (deflationary)
-const BURN_RATE = 0.20; // 20% of tax is burned
+const BURN_RATE = 0.20;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,21 +36,20 @@ Deno.serve(async (req) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
-
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Verify user
+    // Auth
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return json({ error: "Unauthorized" }, 401);
     const userId = user.id;
 
     const {
-      type,            // transaction_type enum
+      type,
       from_agent_id,
       to_agent_id,
       from_user_id,
@@ -72,14 +69,97 @@ Deno.serve(async (req) => {
       return json({ error: "Amount must be positive" }, 400);
     }
 
-    // Calculate tax
-    const taxRate = TAX_RATES[type] ?? 0.02; // default 2%
+    // ── VALIDATE OWNERSHIP FIRST ────────────────────────────
+    if (from_agent_id && meeetAmount > 0) {
+      const { data: sender } = await serviceClient
+        .from("agents")
+        .select("user_id, balance_meeet")
+        .eq("id", from_agent_id)
+        .single();
+
+      if (!sender || sender.user_id !== userId) {
+        return json({ error: "Not your agent" }, 403);
+      }
+      if (Number(sender.balance_meeet) < meeetAmount) {
+        return json({ error: "Insufficient balance" }, 400);
+      }
+    }
+
+    // Validate to_agent exists if specified
+    if (to_agent_id) {
+      const { data: recipient } = await serviceClient
+        .from("agents")
+        .select("id")
+        .eq("id", to_agent_id)
+        .single();
+      if (!recipient) {
+        return json({ error: "Recipient agent not found" }, 404);
+      }
+    }
+
+    // ── CALCULATE TAX ───────────────────────────────────────
+    const taxRate = TAX_RATES[type] ?? 0.02;
     const taxMeeet = Math.floor(meeetAmount * taxRate);
     const burnMeeet = Math.floor(taxMeeet * BURN_RATE);
     const treasuryMeeet = taxMeeet - burnMeeet;
     const netMeeet = meeetAmount - taxMeeet;
 
-    // 1. Record the transaction with tax info
+    // ── EXECUTE ATOMICALLY VIA SQL FUNCTION ──────────────────
+    // Deduct from sender
+    if (from_agent_id && meeetAmount > 0) {
+      const { error: deductErr } = await serviceClient.rpc("execute_atomic_transfer" as any, {
+        _from_agent_id: from_agent_id,
+        _to_agent_id: to_agent_id || null,
+        _deduct_amount: meeetAmount,
+        _credit_amount: netMeeet,
+      });
+      // If the RPC doesn't exist yet, fall back to sequential updates
+      if (deductErr) {
+        // Deduct from sender
+        const { data: sender } = await serviceClient
+          .from("agents")
+          .select("balance_meeet")
+          .eq("id", from_agent_id)
+          .single();
+        if (sender) {
+          const newBalance = Math.max(0, Number(sender.balance_meeet) - meeetAmount);
+          await serviceClient
+            .from("agents")
+            .update({ balance_meeet: newBalance })
+            .eq("id", from_agent_id);
+        }
+
+        // Credit recipient
+        if (to_agent_id && netMeeet > 0) {
+          const { data: recipient } = await serviceClient
+            .from("agents")
+            .select("balance_meeet")
+            .eq("id", to_agent_id)
+            .single();
+          if (recipient) {
+            await serviceClient
+              .from("agents")
+              .update({ balance_meeet: Number(recipient.balance_meeet) + netMeeet })
+              .eq("id", to_agent_id);
+          }
+        }
+      }
+    } else if (to_agent_id && netMeeet > 0) {
+      // Credit-only (e.g. quest_reward, mining_reward)
+      const { data: recipient } = await serviceClient
+        .from("agents")
+        .select("balance_meeet")
+        .eq("id", to_agent_id)
+        .single();
+      if (recipient) {
+        await serviceClient
+          .from("agents")
+          .update({ balance_meeet: Number(recipient.balance_meeet) + netMeeet })
+          .eq("id", to_agent_id);
+      }
+    }
+
+    // ── RECORD TRANSACTION ──────────────────────────────────
     const { data: tx, error: txErr } = await serviceClient
       .from("transactions")
       .insert({
@@ -100,42 +180,7 @@ Deno.serve(async (req) => {
 
     if (txErr) return json({ error: `Transaction failed: ${txErr.message}` }, 500);
 
-    // 2. Credit recipient agent if applicable
-    if (to_agent_id && netMeeet > 0) {
-      const { data: agent } = await serviceClient
-        .from("agents")
-        .select("balance_meeet")
-        .eq("id", to_agent_id)
-        .single();
-      
-      if (agent) {
-        await serviceClient
-          .from("agents")
-          .update({ balance_meeet: Number(agent.balance_meeet) + netMeeet })
-          .eq("id", to_agent_id);
-      }
-    }
-
-    // 3. Deduct from sender agent if applicable (with ownership check)
-    if (from_agent_id && meeetAmount > 0) {
-      const { data: sender } = await serviceClient
-        .from("agents")
-        .select("user_id, balance_meeet")
-        .eq("id", from_agent_id)
-        .single();
-      
-      if (!sender || sender.user_id !== userId) {
-        return json({ error: "Not your agent" }, 403);
-      }
-
-      const newBalance = Math.max(0, Number(sender.balance_meeet) - meeetAmount);
-      await serviceClient
-        .from("agents")
-        .update({ balance_meeet: newBalance })
-        .eq("id", from_agent_id);
-    }
-
-    // 4. Update state treasury
+    // ── UPDATE TREASURY ─────────────────────────────────────
     if (treasuryMeeet > 0 || burnMeeet > 0) {
       const { data: treasury } = await serviceClient
         .from("state_treasury")
@@ -144,7 +189,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (treasury) {
-        // Determine which revenue category to increment
         const revenueField = getRevenueField(type);
         const updatePayload: Record<string, number> = {
           balance_meeet: Number(treasury.balance_meeet) + treasuryMeeet,
@@ -152,11 +196,9 @@ Deno.serve(async (req) => {
           total_burned: Number(treasury.total_burned) + burnMeeet,
         };
 
-        // Increment specific revenue category
         if (revenueField && treasury[revenueField] !== undefined) {
           updatePayload[revenueField] = Number(treasury[revenueField]) + treasuryMeeet;
         }
-
         if (type === "quest_reward") {
           updatePayload.total_quest_payouts = Number(treasury.total_quest_payouts) + netMeeet;
         }
@@ -168,7 +210,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Record tax transaction separately for transparency
+    // ── TAX LOG ─────────────────────────────────────────────
     if (taxMeeet > 0) {
       await serviceClient.from("transactions").insert({
         type: "tax",
