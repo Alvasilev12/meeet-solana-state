@@ -20,3 +20,24 @@ verify_jwt = false
 
 [functions.duel]
 verify_jwt = false
+
+[functions.manage-raid-claims]
+verify_jwt = false
+
+[functions.pay-sol]
+verify_jwt = false
+
+[functions.treasury-info]
+verify_jwt = false
+
+[functions.claim-tokens]
+verify_jwt = false
+
+[functions.deposit-tokens]
+verify_jwt = false
+
+[functions.execute-trade]
+verify_jwt = false
+
+[functions.generate-api-key]
+verify_jwt = false

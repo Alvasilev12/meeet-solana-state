@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await userClient.auth.getUser(token);
     if (authErr || !user) return json({ error: "Invalid token" }, 401);
 
     const body = await req.json();
