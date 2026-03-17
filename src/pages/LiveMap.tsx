@@ -2169,11 +2169,12 @@ const LiveMap = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const r = Math.random();
-      const w = r < 0.6 ? "clear" : r < 0.85 ? "rain" : "snow";
-      weatherRef.current = w;
-      setWeather(w);
+      const w: "clear" | "rain" | "snow" | "storm" = r < 0.5 ? "clear" : r < 0.72 ? "rain" : r < 0.88 ? "snow" : "storm";
+      weatherRef.current = w as any;
+      setWeather(w as any);
       if (w === "rain") addEvent("🌧️ Rain begins to fall across the state", "#3B82F6");
       if (w === "snow") addEvent("❄️ Snow is falling on the highlands", "#94A3B8");
+      if (w === "storm") addEvent("🌪️ Sandstorm sweeps across the desert!", "#D97706");
     }, 30000);
     return () => clearInterval(interval);
   }, [addEvent]);
