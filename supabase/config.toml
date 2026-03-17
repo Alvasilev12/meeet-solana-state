@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.quest-lifecycle]
 verify_jwt = false
+
+[functions.send-petition]
+verify_jwt = false
