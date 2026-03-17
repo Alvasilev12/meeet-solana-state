@@ -1854,7 +1854,7 @@ const LiveMap = () => {
 
       {/* Building inspector */}
       {selectedBuilding && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-4 w-80 animate-fade-in">
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-3 sm:p-4 w-[calc(100%-2rem)] sm:w-80 max-w-80 animate-fade-in">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
               <span className="text-3xl">{selectedBuilding.icon}</span>
