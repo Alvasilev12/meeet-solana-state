@@ -2001,7 +2001,7 @@ const LiveMap = () => {
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [weather, setWeather] = useState<"clear" | "rain" | "snow">("clear");
+  const [weather, setWeather] = useState<"clear" | "rain" | "snow" | "storm">("clear");
   const [timeLabel, setTimeLabel] = useState("Day");
 
   const [showSearch, setShowSearch] = useState(false);
