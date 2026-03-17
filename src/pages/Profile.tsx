@@ -14,6 +14,7 @@ import { Loader2, User, Twitter, Wallet, Shield, Save, ArrowLeft } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 import { useEffect } from "react";
+import ConnectWallet from "@/components/ConnectWallet";
 
 type Profile = Tables<"profiles">;
 
