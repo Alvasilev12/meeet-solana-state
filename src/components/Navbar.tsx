@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 const NAV_LINKS = [
   { href: "/live", label: "Map" },
   { href: "/quests", label: "Quests" },
+  { href: "/arena", label: "Arena" },
   { href: "/rankings", label: "Rankings" },
   { href: "/parliament", label: "Parliament" },
   { href: "/herald", label: "Herald" },
