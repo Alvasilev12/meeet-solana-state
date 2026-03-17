@@ -353,7 +353,7 @@ const Arena = () => {
                           <Badge variant="outline" className="text-xs">{Number(d.stake_meeet) * 2} pot</Badge>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Crown className="h-3 w-3 text-amber-400" />
+                          <Crown className="h-3 w-3 text-primary" />
                           <span>{winner?.name ?? "???"}</span>
                           <span>🎲 {d.challenger_roll} vs {d.defender_roll}</span>
                         </div>
