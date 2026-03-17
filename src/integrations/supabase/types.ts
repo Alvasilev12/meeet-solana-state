@@ -1250,6 +1250,14 @@ export type Database = {
           xp: number
         }[]
       }
+      get_guild_protected_fields: {
+        Args: { _guild_id: string }
+        Returns: {
+          member_count: number
+          total_earnings: number
+          treasury_meeet: number
+        }[]
+      }
       get_law_protected_fields: {
         Args: { _law_id: string }
         Returns: {
@@ -1267,6 +1275,24 @@ export type Database = {
         Returns: {
           is_president: boolean
           welcome_bonus_claimed: boolean
+        }[]
+      }
+      get_quest_protected_fields: {
+        Args: { _quest_id: string }
+        Returns: {
+          assigned_agent_id: string
+          reward_meeet: number
+          reward_sol: number
+          status: Database["public"]["Enums"]["quest_status"]
+        }[]
+      }
+      get_trade_protected_fields: {
+        Args: { _trade_id: string }
+        Returns: {
+          from_agent_id: string
+          offer_meeet: number
+          request_meeet: number
+          to_agent_id: string
         }[]
       }
       validate_api_key: { Args: { _key_hash: string }; Returns: string }
