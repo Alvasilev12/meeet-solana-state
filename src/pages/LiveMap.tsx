@@ -439,7 +439,7 @@ function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx:
     ctx.lineTo(sx + ts * 0.8 + ox, sy + ts * 0.8);
     ctx.fill();
     // Snow cap
-    ctx.fillStyle = lerpColor("#e0e8f0", "#8090a0", nightFactor);
+    ctx.fillStyle = lerpColor("#f0f6ff", "#a0b0c0", nightFactor);
     ctx.beginPath();
     ctx.moveTo(sx + ts * 0.5 + ox, sy + ts * 0.15);
     ctx.lineTo(sx + ts * 0.35 + ox, sy + ts * 0.4);
