@@ -2458,8 +2458,17 @@ const LiveMap = () => {
       // ─── Resource Nodes ───
       drawResourceNodes(ctx, resourceNodesRef.current, cam, z, t, clampedNight);
 
+      // ─── Trade Caravans ───
+      drawTradeCaravans(ctx, caravansRef.current, buildings, cam, z, t, clampedNight);
+
+      // ─── Quest Beacons ───
+      drawQuestBeacons(ctx, buildings, cam, z, t, clampedNight);
+
       // Connection lines
       drawConnectionLines(ctx, agents, cam, z, t);
+
+      // ─── Duel Spectacles ───
+      drawDuelSpectacles(ctx, agents, cam, z, t);
 
       // ─── Interaction Particles ───
       drawInteractionParticles(ctx, agents, cam, z, t);
