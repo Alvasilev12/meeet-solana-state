@@ -2013,6 +2013,9 @@ const LiveMap = () => {
   const [classFilter, setClassFilter] = useState<string | null>(null);
   const [fps, setFps] = useState(0);
   const hoveredEntityRef = useRef<string | null>(null);
+  const caravansRef = useRef<Caravan[]>(generateCaravans(buildingsRef.current));
+  const terrainCacheRef = useRef<{ canvas: HTMLCanvasElement; camX: number; camY: number; zoom: number; nightFactor: number; w: number; h: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; agent?: Agent; building?: Building } | null>(null);
 
   const agentsRef = useRef<Agent[]>([]);
   const terrainRef = useRef<number[][]>(generateTerrain());
