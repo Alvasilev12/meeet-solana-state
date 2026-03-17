@@ -2398,7 +2398,7 @@ const LiveMap = () => {
         Math.abs(tc.camX - cam.x) > TILE * 3 ||
         Math.abs(tc.camY - cam.y) > TILE * 3 ||
         Math.abs(tc.zoom - z) > 0.02 ||
-        Math.abs(tc.nightFactor - clampedNight) > 0.08 ||
+        Math.abs(tc.nightFactor - clampedNight) > 0.04 ||
         tc.w !== w || tc.h !== h;
 
       if (needsRedraw) {
