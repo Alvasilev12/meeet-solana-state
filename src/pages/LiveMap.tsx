@@ -1155,12 +1155,30 @@ function darkenHex(hex: string, amount: number): string {
 function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
   const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
   if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
-  const s = z;
+  // Scale agents up so they're always visible — minimum effective size 1.5
+  const s = Math.max(z, 1.5);
+
+  // Pulsing beacon ring — always visible even when zoomed out
+  const beaconR = (22 + Math.sin(t * 0.005 + a.phase) * 5) * s;
+  const beaconAlpha = 0.35 + Math.sin(t * 0.004 + a.phase) * 0.15;
+  ctx.strokeStyle = a.color;
+  ctx.lineWidth = Math.max(2, 2.5 * s);
+  ctx.globalAlpha = beaconAlpha;
+  ctx.beginPath(); ctx.arc(sx, sy, beaconR, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Colored ground disc
+  const discR = 12 * s;
+  const discGrad = ctx.createRadialGradient(sx, sy + 4 * s, 0, sx, sy + 4 * s, discR);
+  discGrad.addColorStop(0, a.color + "50");
+  discGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = discGrad;
+  ctx.beginPath(); ctx.ellipse(sx, sy + 4 * s, discR, discR * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 
   // Shadow
-  ctx.fillStyle = `rgba(0,0,0,${0.2 - nightFactor * 0.1})`;
+  ctx.fillStyle = `rgba(0,0,0,${0.25 - nightFactor * 0.1})`;
   ctx.beginPath();
-  ctx.ellipse(sx, sy + 8 * s, 5 * s, 2.5 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(sx, sy + 8 * s, 6 * s, 3 * s, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Rep golden aura
@@ -1192,10 +1210,10 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(sx, sy, 20 * s, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Glow
-  const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 16 * s);
-  gg.addColorStop(0, a.color + "25"); gg.addColorStop(1, "transparent");
-  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(sx, sy, 16 * s, 0, Math.PI * 2); ctx.fill();
+  // Glow — stronger
+  const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20 * s);
+  gg.addColorStop(0, a.color + "40"); gg.addColorStop(0.5, a.color + "18"); gg.addColorStop(1, "transparent");
+  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(sx, sy, 20 * s, 0, Math.PI * 2); ctx.fill();
 
   // Body — improved pixel sprite
   const bodyColor = lerpColor(a.color, darkenHex(a.color, 0.3), nightFactor * 0.3);
