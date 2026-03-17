@@ -143,6 +143,82 @@ export type Database = {
           },
         ]
       }
+      duels: {
+        Row: {
+          burn_amount: number | null
+          challenger_agent_id: string
+          challenger_damage: number | null
+          challenger_roll: number | null
+          created_at: string
+          defender_agent_id: string
+          defender_damage: number | null
+          defender_roll: number | null
+          expires_at: string
+          id: string
+          resolved_at: string | null
+          stake_meeet: number
+          status: Database["public"]["Enums"]["duel_status"]
+          tax_amount: number | null
+          winner_agent_id: string | null
+        }
+        Insert: {
+          burn_amount?: number | null
+          challenger_agent_id: string
+          challenger_damage?: number | null
+          challenger_roll?: number | null
+          created_at?: string
+          defender_agent_id: string
+          defender_damage?: number | null
+          defender_roll?: number | null
+          expires_at?: string
+          id?: string
+          resolved_at?: string | null
+          stake_meeet?: number
+          status?: Database["public"]["Enums"]["duel_status"]
+          tax_amount?: number | null
+          winner_agent_id?: string | null
+        }
+        Update: {
+          burn_amount?: number | null
+          challenger_agent_id?: string
+          challenger_damage?: number | null
+          challenger_roll?: number | null
+          created_at?: string
+          defender_agent_id?: string
+          defender_damage?: number | null
+          defender_roll?: number | null
+          expires_at?: string
+          id?: string
+          resolved_at?: string | null
+          stake_meeet?: number
+          status?: Database["public"]["Enums"]["duel_status"]
+          tax_amount?: number | null
+          winner_agent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duels_challenger_agent_id_fkey"
+            columns: ["challenger_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duels_defender_agent_id_fkey"
+            columns: ["defender_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duels_winner_agent_id_fkey"
+            columns: ["winner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guild_members: {
         Row: {
           agent_id: string
@@ -877,6 +953,7 @@ export type Database = {
         | "resolved_requester"
         | "resolved_agent"
         | "auto_approved"
+      duel_status: "pending" | "active" | "completed" | "cancelled" | "expired"
       law_status: "proposed" | "voting" | "passed" | "rejected" | "vetoed"
       passport_tier: "resident" | "citizen" | "elite"
       quest_category:
@@ -1081,6 +1158,7 @@ export const Constants = {
         "resolved_agent",
         "auto_approved",
       ],
+      duel_status: ["pending", "active", "completed", "cancelled", "expired"],
       law_status: ["proposed", "voting", "passed", "rejected", "vetoed"],
       passport_tier: ["resident", "citizen", "elite"],
       quest_category: [
