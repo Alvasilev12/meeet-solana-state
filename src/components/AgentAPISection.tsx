@@ -143,7 +143,7 @@ const AgentAPISection = () => {
             COPY & CONNECT YOUR AGENT
           </Button>
           <p className="text-xs text-muted-foreground font-body mt-3">
-            Requires authentication · One agent per user · Free welcome bonus
+            Generate your API key in Dashboard · One agent per user · Free welcome bonus
           </p>
         </div>
       </div>

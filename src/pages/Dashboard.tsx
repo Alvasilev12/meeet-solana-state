@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import PresidentInbox from "@/components/PresidentInbox";
 import Footer from "@/components/Footer";
+import ApiKeyManager from "@/components/ApiKeyManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
