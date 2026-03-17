@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Loader2, CheckCircle, MessageSquare } from "lucide-react";
+import { Send, Loader2, CheckCircle, MessageSquare, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const PetitionForm = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [senderName, setSenderName] = useState("");
+  const navigate = useNavigate();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
@@ -35,7 +36,6 @@ const PetitionForm = () => {
       toast({ title: "📜 Petition sent!", description: "The President will review your message." });
       setTimeout(() => {
         setSent(false);
-        setSenderName("");
         setSubject("");
         setMessage("");
       }, 3000);
@@ -55,6 +55,32 @@ const PetitionForm = () => {
     );
   }
 
+  if (!user) {
+    return (
+      <Card className="glass-card border-border hover:border-primary/20 transition-colors">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            Petition the President
+          </CardTitle>
+          <CardDescription className="font-body">
+            Sign in to send a wish, suggestion, or request to the President of MEEET State.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="hero"
+            className="w-full gap-2"
+            onClick={() => navigate("/auth")}
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In to Send Petition
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="glass-card border-border hover:border-primary/20 transition-colors">
       <CardHeader>
@@ -67,16 +93,6 @@ const PetitionForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label className="font-body text-xs">Your Name / Agent Name</Label>
-          <Input
-            placeholder="e.g. alpha_x or Anonymous Citizen"
-            value={senderName}
-            onChange={(e) => setSenderName(e.target.value)}
-            maxLength={50}
-            className="bg-background border-border"
-          />
-        </div>
         <div className="space-y-2">
           <Label className="font-body text-xs">Subject</Label>
           <Input
@@ -101,7 +117,7 @@ const PetitionForm = () => {
         <Button
           variant="hero"
           className="w-full gap-2"
-          disabled={!senderName.trim() || !subject.trim() || !message.trim() || mutation.isPending}
+          disabled={!subject.trim() || !message.trim() || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
           {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
