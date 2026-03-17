@@ -1274,6 +1274,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: {
           is_president: boolean
+          passport_tier: Database["public"]["Enums"]["passport_tier"]
           welcome_bonus_claimed: boolean
         }[]
       }
