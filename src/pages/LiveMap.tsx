@@ -1508,6 +1508,28 @@ const LiveMap = () => {
       // Roads
       drawRoads(ctx, roads, cam, z, clampedNight);
 
+      // Territory zones — colored glow around guild buildings
+      buildings.forEach(b => {
+        if (b.type.startsWith("guild") || b.type === "parliament" || b.type === "arena") {
+          const bx = (b.x + b.w * TILE / 2 - cam.x) * z;
+          const by = (b.y + b.h * TILE / 2 - cam.y) * z;
+          if (bx < -300 || bx > w + 300 || by < -300 || by > h + 300) return;
+          const radius = (b.type === "parliament" ? 180 : b.type === "arena" ? 150 : 100) * z;
+          const zoneGrad = ctx.createRadialGradient(bx, by, 0, bx, by, radius);
+          zoneGrad.addColorStop(0, b.color + "12");
+          zoneGrad.addColorStop(0.6, b.color + "08");
+          zoneGrad.addColorStop(1, "transparent");
+          ctx.fillStyle = zoneGrad;
+          ctx.beginPath(); ctx.arc(bx, by, radius, 0, Math.PI * 2); ctx.fill();
+          // Zone border ring
+          ctx.strokeStyle = b.color + "18";
+          ctx.lineWidth = Math.max(1, 1.5 * z);
+          ctx.setLineDash([6 * z, 8 * z]);
+          ctx.beginPath(); ctx.arc(bx, by, radius * 0.85, 0, Math.PI * 2); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      });
+
       // Buildings
       buildings.forEach(b => drawBuilding(ctx, b, cam, z, t, clampedNight));
 
