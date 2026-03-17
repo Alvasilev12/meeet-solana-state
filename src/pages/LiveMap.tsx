@@ -2156,6 +2156,9 @@ const LiveMap = () => {
       // ─── Torch Lights ───
       drawTorchLights(ctx, buildings, cam, z, t, clampedNight);
 
+      // ─── Resource Nodes ───
+      drawResourceNodes(ctx, resourceNodesRef.current, cam, z, t, clampedNight);
+
       // Connection lines
       drawConnectionLines(ctx, agents, cam, z, t);
 
