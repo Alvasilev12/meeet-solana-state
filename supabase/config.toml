@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.generate-api-key]
 verify_jwt = false
+
+[functions.agent-ai-loop]
+verify_jwt = false

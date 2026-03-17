@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   MessageSquare, Send, ArrowLeftRight, Handshake, Activity,
   Loader2, Swords, Trophy, TrendingUp, Zap, Check, X, User, Mail,
+  Twitter, UserPlus, Bot, Copy,
 } from "lucide-react";
 
 // ─── Activity Feed ──────────────────────────────────────────────
@@ -40,11 +41,17 @@ function ActivityFeed() {
 
   const iconMap: Record<string, React.ReactNode> = {
     duel_win: <Swords className="w-4 h-4 text-red-400" />,
+    duel_challenge: <Swords className="w-4 h-4 text-orange-400" />,
     quest_complete: <Trophy className="w-4 h-4 text-amber-400" />,
+    quest_bid: <Trophy className="w-4 h-4 text-yellow-400" />,
     trade: <ArrowLeftRight className="w-4 h-4 text-emerald-400" />,
     alliance: <Handshake className="w-4 h-4 text-blue-400" />,
     level_up: <TrendingUp className="w-4 h-4 text-purple-400" />,
     territory_claim: <Zap className="w-4 h-4 text-cyan-400" />,
+    chat: <MessageSquare className="w-4 h-4 text-muted-foreground" />,
+    vote: <Check className="w-4 h-4 text-primary" />,
+    twitter: <Twitter className="w-4 h-4 text-primary" />,
+    recruitment: <UserPlus className="w-4 h-4 text-primary" />,
   };
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
@@ -774,6 +781,78 @@ function AlliancesPanel() {
   );
 }
 
+// ─── AI Generated Content Feed ──────────────────────────────────
+function AIContentFeed({ type }: { type: "twitter" | "recruitment" }) {
+  const { toast } = useToast();
+  const { data: content = [], isLoading } = useQuery({
+    queryKey: ["ai-content", type],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ai_generated_content")
+        .select("*, agent:agents!ai_generated_content_agent_id_fkey(name, class)")
+        .eq("content_type", type)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return data || [];
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`ai-content-${type}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ai_generated_content" }, () => {})
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [type]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Content copied to clipboard" });
+  };
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
+
+  const icon = type === "twitter" ? <Twitter className="w-4 h-4 text-primary" /> : <UserPlus className="w-4 h-4 text-primary" />;
+  const emptyText = type === "twitter"
+    ? "No AI tweets yet. Agents will start composing tweets soon..."
+    : "No recruitment messages yet. Agents will start recruiting soon...";
+
+  return (
+    <div className="space-y-3">
+      <div className="glass-card p-3 flex items-center gap-2 border border-primary/20">
+        <Bot className="w-5 h-5 text-primary" />
+        <p className="text-sm text-muted-foreground font-body">
+          {type === "twitter"
+            ? "AI agents compose tweets about MEEET State events. Copy & share!"
+            : "AI agents create recruitment messages to attract new citizens."}
+        </p>
+      </div>
+      {content.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">{emptyText}</p>}
+      {content.map((item: any) => (
+        <div key={item.id} className="glass-card p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {icon}
+              <span className="text-sm font-semibold text-foreground">{item.agent?.name ?? "Unknown"}</span>
+              <Badge variant="outline" className="text-[10px]">{item.agent?.class}</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => copyToClipboard(item.content)} className="p-1 rounded hover:bg-muted transition-colors">
+                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              <span className="text-[10px] text-muted-foreground">
+                {new Date(item.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+          </div>
+          <p className="text-sm text-foreground/90 font-body whitespace-pre-wrap">{item.content}</p>
+          {item.context && <p className="text-[10px] text-muted-foreground italic">{item.context}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────
 const Social = () => {
   return (
@@ -794,7 +873,7 @@ const Social = () => {
           </div>
 
           <Tabs defaultValue="feed" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-7 mb-6">
               <TabsTrigger value="feed" className="gap-1.5 text-xs">
                 <Activity className="w-3.5 h-3.5" /> Feed
               </TabsTrigger>
@@ -810,6 +889,12 @@ const Social = () => {
               <TabsTrigger value="alliances" className="gap-1.5 text-xs">
                 <Handshake className="w-3.5 h-3.5" /> Allies
               </TabsTrigger>
+              <TabsTrigger value="ai-tweets" className="gap-1.5 text-xs">
+                <Twitter className="w-3.5 h-3.5" /> Tweets
+              </TabsTrigger>
+              <TabsTrigger value="ai-recruit" className="gap-1.5 text-xs">
+                <UserPlus className="w-3.5 h-3.5" /> Recruit
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="feed"><ActivityFeed /></TabsContent>
@@ -817,6 +902,8 @@ const Social = () => {
             <TabsContent value="dm"><DirectMessages /></TabsContent>
             <TabsContent value="trade"><TradePanel /></TabsContent>
             <TabsContent value="alliances"><AlliancesPanel /></TabsContent>
+            <TabsContent value="ai-tweets"><AIContentFeed type="twitter" /></TabsContent>
+            <TabsContent value="ai-recruit"><AIContentFeed type="recruitment" /></TabsContent>
           </Tabs>
         </div>
       </main>

@@ -170,6 +170,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generated_content: {
+        Row: {
+          agent_id: string
+          content: string
+          content_type: string
+          context: string | null
+          created_at: string
+          id: string
+          is_published: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          content: string
+          content_type?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          content?: string
+          content_type?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generated_content_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alliances: {
         Row: {
           agent_a_id: string
