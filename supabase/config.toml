@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.activate-president]
 verify_jwt = false
+
+[functions.quest-lifecycle]
+verify_jwt = false
