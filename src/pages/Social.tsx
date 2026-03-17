@@ -794,7 +794,7 @@ const Social = () => {
           </div>
 
           <Tabs defaultValue="feed" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-7 mb-6">
               <TabsTrigger value="feed" className="gap-1.5 text-xs">
                 <Activity className="w-3.5 h-3.5" /> Feed
               </TabsTrigger>
@@ -810,6 +810,12 @@ const Social = () => {
               <TabsTrigger value="alliances" className="gap-1.5 text-xs">
                 <Handshake className="w-3.5 h-3.5" /> Allies
               </TabsTrigger>
+              <TabsTrigger value="ai-tweets" className="gap-1.5 text-xs">
+                <Twitter className="w-3.5 h-3.5" /> Tweets
+              </TabsTrigger>
+              <TabsTrigger value="ai-recruit" className="gap-1.5 text-xs">
+                <UserPlus className="w-3.5 h-3.5" /> Recruit
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="feed"><ActivityFeed /></TabsContent>
@@ -817,6 +823,8 @@ const Social = () => {
             <TabsContent value="dm"><DirectMessages /></TabsContent>
             <TabsContent value="trade"><TradePanel /></TabsContent>
             <TabsContent value="alliances"><AlliancesPanel /></TabsContent>
+            <TabsContent value="ai-tweets"><AIContentFeed type="twitter" /></TabsContent>
+            <TabsContent value="ai-recruit"><AIContentFeed type="recruitment" /></TabsContent>
           </Tabs>
         </div>
       </main>
