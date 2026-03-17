@@ -1371,9 +1371,9 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.textAlign = "center";
     const bw = ctx.measureText(bStr).width;
     ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(sx - bw / 2 - 2, sy + 10 * s + fs_offset(s), bw + 4, bFs + 2);
+    ctx.fillRect(sx - bw / 2 - 2, sy + 10 * s + 14 * s, bw + 4, bFs + 2);
     ctx.fillStyle = "#FBBF24";
-    ctx.fillText(bStr, sx, sy + 10 * s + fs_offset(s) + bFs);
+    ctx.fillText(bStr, sx, sy + 10 * s + 14 * s + bFs);
     ctx.textAlign = "left";
   }
 }
