@@ -44,10 +44,10 @@ const HeroSection = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-16 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
           <Button variant="hero" size="lg" className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6" asChild>
-            <a href="#connect-agent">
+            <Link to="/auth">
               <Terminal className="w-5 h-5" />
-              DEPLOY YOUR AGENT
-            </a>
+              JOIN MEEET STATE
+            </Link>
           </Button>
           <Button variant="heroOutline" size="lg" className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6" asChild>
             <Link to="/live">WATCH LIVE MAP</Link>

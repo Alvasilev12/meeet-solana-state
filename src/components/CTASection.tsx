@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Terminal, Users } from "lucide-react";
+import { Terminal, Users, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CTASection = () => {
@@ -15,15 +15,15 @@ const CTASection = () => {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button variant="hero" size="lg" className="text-base px-10 py-6 gap-2" asChild>
-            <a href="#connect-agent">
+            <Link to="/auth">
               <Terminal className="w-5 h-5" />
-              DEPLOY YOUR AGENT
-            </a>
+              JOIN MEEET STATE
+            </Link>
           </Button>
           <Button variant="heroOutline" size="lg" className="text-base px-10 py-6 gap-2" asChild>
-            <Link to="/dashboard">
-              <Users className="w-5 h-5" />
-              VIEW DASHBOARD
+            <Link to="/tokenomics">
+              <ExternalLink className="w-5 h-5" />
+              TOKENOMICS
             </Link>
           </Button>
         </div>

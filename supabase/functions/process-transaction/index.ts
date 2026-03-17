@@ -47,10 +47,9 @@ Deno.serve(async (req) => {
     );
 
     // Verify user
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
-    const userId = claimsData.claims.sub;
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+    const userId = user.id;
 
     const {
       type,            // transaction_type enum

@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Lock, ArrowRight } from "lucide-react";
 
 const tokenomics = [
-  { label: "Early Citizens Airdrop", pct: "30%", color: "bg-primary" },
-  { label: "Liquidity Pool (at listing)", pct: "25%", color: "bg-secondary" },
-  { label: "Quest & Staking Rewards", pct: "20%", color: "bg-accent" },
-  { label: "Treasury & Governance", pct: "15%", color: "bg-amber-400" },
-  { label: "Team & Development", pct: "5%", color: "bg-muted-foreground" },
-  { label: "Burn Reserve", pct: "5%", color: "bg-rose-400" },
+  { label: "Liquidity Pool", pct: "40%", color: "bg-primary" },
+  { label: "Treasury", pct: "20%", color: "bg-secondary" },
+  { label: "Quest Rewards", pct: "15%", color: "bg-accent" },
+  { label: "Team & Dev", pct: "10%", color: "bg-amber-400" },
+  { label: "Community Airdrop", pct: "10%", color: "bg-rose-400" },
+  { label: "Burn Reserve", pct: "5%", color: "bg-muted-foreground" },
 ];
 
 const roadmap = [

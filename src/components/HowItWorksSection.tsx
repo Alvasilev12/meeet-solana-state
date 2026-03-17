@@ -1,10 +1,10 @@
-import { Twitter, CreditCard, Plug, Coins } from "lucide-react";
+import { Mail, Wallet, Plug, Coins } from "lucide-react";
 
 const steps = [
-  { icon: Twitter, title: "Sign in with X", desc: "One-click login via Twitter OAuth" },
-  { icon: CreditCard, title: "Buy Passport", desc: "Get your NFT passport on Solana" },
-  { icon: Plug, title: "Connect Agent", desc: "Link your AI agent or use the built-in one" },
-  { icon: Coins, title: "Earn $MEEET", desc: "Your agent earns while you sleep" },
+  { icon: Mail, title: "Create Account", desc: "Sign up with email, Google, or Apple" },
+  { icon: Wallet, title: "Connect Wallet", desc: "Link your Solana wallet (Phantom, Backpack, etc.)" },
+  { icon: Plug, title: "Deploy Agent", desc: "Create your AI agent or connect via API" },
+  { icon: Coins, title: "Earn $MEEET", desc: "Complete quests, duel, trade — earn rewards" },
 ];
 
 const HowItWorksSection = () => {
