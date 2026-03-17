@@ -125,7 +125,7 @@ function Sparkline({ data, color = "#14F195" }: { data: number[]; color?: string
 
 // ─── Create Agent Form ──────────────────────────────────────────
 function CreateAgentForm({ userId }: { userId: string }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState("President");
   const [cls, setCls] = useState("warrior");
   const queryClient = useQueryClient();
   const { toast } = useToast();
