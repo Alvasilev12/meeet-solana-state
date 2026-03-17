@@ -7,8 +7,8 @@ const NAV_LINKS = [
   { href: "/live", label: "Map" },
   { href: "/quests", label: "Quests" },
   { href: "/rankings", label: "Rankings" },
-  { href: "#", label: "Parliament" },
-  { href: "#", label: "Herald" },
+  { href: "/parliament", label: "Parliament" },
+  { href: "/herald", label: "Herald" },
 ];
 
 const Navbar = () => {

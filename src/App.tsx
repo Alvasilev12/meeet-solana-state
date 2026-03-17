@@ -10,6 +10,8 @@ import Quests from "./pages/Quests.tsx";
 import Auth from "./pages/Auth.tsx";
 import Rankings from "./pages/Rankings.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import Parliament from "./pages/Parliament.tsx";
+import Herald from "./pages/Herald.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/parliament" element={<Parliament />} />
+            <Route path="/herald" element={<Herald />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
