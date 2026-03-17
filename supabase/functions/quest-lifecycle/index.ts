@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
           return json({ error: "Only the requester can approve" }, 403);
 
         const rewardMeeet = Number(quest.reward_meeet) || 0;
+        const rewardSol = Number(quest.reward_sol) || 0;
 
         // Mark quest completed
         await serviceClient
@@ -133,8 +134,125 @@ Deno.serve(async (req) => {
           })
           .eq("id", quest_id);
 
-        // Process reward via process-transaction (handles tax + treasury)
+        let solPaymentResult: Record<string, unknown> | null = null;
+
+        // ── SOL Payout: send real SOL to executor's wallet ──
+        if (rewardSol > 0 && quest.assigned_agent_id) {
+          const { data: executorAgent } = await serviceClient
+            .from("agents")
+            .select("user_id")
+            .eq("id", quest.assigned_agent_id)
+            .single();
+
+          if (executorAgent) {
+            const { data: executorProfile } = await serviceClient
+              .from("profiles")
+              .select("wallet_address")
+              .eq("user_id", executorAgent.user_id)
+              .single();
+
+            if (executorProfile?.wallet_address) {
+              try {
+                const payResponse = await fetch(
+                  `${Deno.env.get("SUPABASE_URL")}/functions/v1/pay-sol`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                      "x-internal-service": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.slice(-16),
+                    },
+                    body: JSON.stringify({
+                      recipient_wallet: executorProfile.wallet_address,
+                      amount_sol: rewardSol,
+                      quest_id,
+                      description: `Quest reward: ${quest.title}`,
+                    }),
+                  }
+                );
+                solPaymentResult = await payResponse.json();
+                if (!payResponse.ok) {
+                  console.error("SOL payment failed:", solPaymentResult);
+                }
+              } catch (e) {
+                console.error("SOL payment error:", e.message);
+                solPaymentResult = { error: e.message };
+              }
+            } else {
+              solPaymentResult = { error: "Executor has no wallet address linked" };
+            }
+          }
+        }
+
+        // Process $MEEET reward via process-transaction
         if (rewardMeeet > 0 && quest.assigned_agent_id) {
+          const txResponse = await fetch(
+            `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-transaction`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: authHeader,
+                apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+                "x-internal-service": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.slice(-16),
+              },
+              body: JSON.stringify({
+                type: "quest_reward",
+                from_user_id: quest.requester_id,
+                to_agent_id: quest.assigned_agent_id,
+                amount_meeet: rewardMeeet,
+                amount_sol: rewardSol,
+                quest_id,
+                description: `Quest reward: ${quest.title}`,
+              }),
+            }
+          );
+          await txResponse.json();
+
+          const { data: agentData } = await serviceClient
+            .from("agents")
+            .select("xp, quests_completed")
+            .eq("id", quest.assigned_agent_id)
+            .single();
+          if (agentData) {
+            await serviceClient
+              .from("agents")
+              .update({
+                xp: agentData.xp + 50,
+                quests_completed: agentData.quests_completed + 1,
+                status: "idle",
+              })
+              .eq("id", quest.assigned_agent_id);
+          }
+        }
+
+        // Add reputation
+        if (quest.assigned_agent_id) {
+          await serviceClient.from("reputation_log").insert({
+            agent_id: quest.assigned_agent_id,
+            quest_id,
+            delta: 10,
+            reason: "Quest completed successfully",
+          });
+
+          const { data: completedAgent } = await serviceClient
+            .from("agents").select("name").eq("id", quest.assigned_agent_id).single();
+
+          const solNote = solPaymentResult && (solPaymentResult as any).success
+            ? ` + ${rewardSol} SOL sent`
+            : rewardSol > 0 ? ` (SOL payout pending)` : "";
+
+          await serviceClient.from("activity_feed").insert({
+            agent_id: quest.assigned_agent_id,
+            event_type: "quest_complete",
+            title: `${completedAgent?.name || "Agent"} completed quest "${quest.title}"`,
+            description: `Earned ${Number(quest.reward_meeet || 0).toLocaleString()} $MEEET${solNote}`,
+            meeet_amount: Number(quest.reward_meeet) || 0,
+          });
+        }
+
+        return json({ success: true, status: "completed", sol_payment: solPaymentResult });
+      }
           const txResponse = await fetch(
             `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-transaction`,
             {
