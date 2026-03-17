@@ -983,6 +983,9 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
+                    {/* Treasury SOL Wallet */}
+                    <TreasuryDeposit />
+
                     {/* President Inbox */}
                     <PresidentInbox />
                   </div>
