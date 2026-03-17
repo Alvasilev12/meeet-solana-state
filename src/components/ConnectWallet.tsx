@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useSolanaWallet } from "@/hooks/useSolanaWallet";
+import { useSolanaWallet, WalletId } from "@/hooks/useSolanaWallet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, Wallet, Unplug, Copy, Check, ExternalLink } from "lucide-react";
 
 interface ConnectWalletProps {
@@ -20,10 +21,16 @@ export default function ConnectWallet({ savedAddress, compact = false }: Connect
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const displayAddress = address || savedAddress;
   const isConnected = !!address;
   const needsSave = isConnected && address !== savedAddress;
+
+  const handleConnect = async (id: WalletId) => {
+    const addr = await connect(id);
+    if (addr) setPickerOpen(false);
+  };
 
   const handleSave = async () => {
     if (!user || !address) return;
@@ -53,7 +60,32 @@ export default function ConnectWallet({ savedAddress, compact = false }: Connect
     ? `${displayAddress.slice(0, 4)}...${displayAddress.slice(-4)}`
     : null;
 
-  // Compact mode for dashboard
+  // Wallet picker grid used in both compact and full modes
+  const WalletGrid = ({ columns = 2 }: { columns?: number }) => (
+    <div className={`grid gap-1.5 ${columns === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      {availableWallets
+        .sort((a, b) => (b.installed ? 1 : 0) - (a.installed ? 1 : 0))
+        .map((w) => (
+          <Button
+            key={w.id}
+            variant="outline"
+            className="justify-start gap-2 h-10 hover:border-primary/30 hover:bg-primary/5 text-xs"
+            disabled={connecting}
+            onClick={() => handleConnect(w.id)}
+          >
+            <span className="text-base">{w.icon}</span>
+            <span className="font-semibold truncate">{w.label}</span>
+            {w.installed && (
+              <Badge variant="outline" className="ml-auto bg-secondary/10 text-secondary border-secondary/20 text-[9px] px-1">
+                ✓
+              </Badge>
+            )}
+          </Button>
+        ))}
+    </div>
+  );
+
+  // Compact mode for dashboard header
   if (compact) {
     if (displayAddress) {
       return (
@@ -69,20 +101,29 @@ export default function ConnectWallet({ savedAddress, compact = false }: Connect
       );
     }
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
-        disabled={connecting}
-        onClick={() => {
-          const installed = availableWallets.find(w => w.installed);
-          if (installed) connect(installed.id);
-          else connect("phantom");
-        }}
-      >
-        {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wallet className="w-3 h-3" />}
-        Connect Wallet
-      </Button>
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+            disabled={connecting}
+          >
+            {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wallet className="w-3 h-3" />}
+            Connect Wallet
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-3" align="end">
+          <p className="text-xs font-display font-bold mb-2 text-foreground">Select Wallet</p>
+          <WalletGrid columns={2} />
+          {connecting && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center py-2 mt-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Waiting for approval…
+            </div>
+          )}
+          {error && <p className="text-xs text-red-400 text-center mt-2">{error}</p>}
+        </PopoverContent>
+      </Popover>
     );
   }
 
@@ -121,27 +162,7 @@ export default function ConnectWallet({ savedAddress, compact = false }: Connect
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            {availableWallets
-              .sort((a, b) => (b.installed ? 1 : 0) - (a.installed ? 1 : 0))
-              .map((w) => (
-              <Button
-                key={w.id}
-                variant="outline"
-                className="justify-start gap-2 h-11 hover:border-primary/30 hover:bg-primary/5"
-                disabled={connecting}
-                onClick={() => connect(w.id)}
-              >
-                <span className="text-base">{w.icon}</span>
-                <span className="font-semibold text-xs truncate">{w.label}</span>
-                {w.installed && (
-                  <Badge variant="outline" className="ml-auto bg-secondary/10 text-secondary border-secondary/20 text-[9px] px-1">
-                    ✓
-                  </Badge>
-                )}
-              </Button>
-            ))}
-          </div>
+          <WalletGrid columns={2} />
           {connecting && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center py-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Waiting for wallet approval…
