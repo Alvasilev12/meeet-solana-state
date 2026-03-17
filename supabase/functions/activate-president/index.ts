@@ -13,6 +13,16 @@ function json(body: Record<string, unknown>, status = 200) {
   });
 }
 
+// Timing-safe string comparison to prevent timing attacks
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -37,65 +47,35 @@ Deno.serve(async (req) => {
       }, 409);
     }
 
-    // ── Method 1: API Key activation (for external AI like Claude) ──
+    // Only method: require x-president-key header
     const presidentKey = req.headers.get("x-president-key");
     const storedKey = Deno.env.get("PRESIDENT_API_KEY");
-    const OWNER_USER_ID = "d27b7312-e59a-4651-9cc2-ee07dcd59860";
+    const OWNER_USER_ID = Deno.env.get("PRESIDENT_OWNER_USER_ID");
 
-    if (presidentKey) {
-      if (!storedKey || presidentKey !== storedKey) {
-        return json({ error: "Invalid president key" }, 403);
-      }
-
-      // API key mode: only the owner can be president
-      const { user_id } = await req.json().catch(() => ({}));
-      if (!user_id || user_id !== OWNER_USER_ID) {
-        return json({ error: "Only the designated owner can be president" }, 403);
-      }
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ is_president: true })
-        .eq("user_id", user_id);
-
-      if (updateError) return json({ error: updateError.message }, 500);
-
-      return json({
-        status: "activated",
-        user_id,
-        message: "President activated via API key. This key is now burned — no one else can use it.",
-      });
+    if (!presidentKey || !storedKey) {
+      return json({ error: "x-president-key header required" }, 401);
     }
 
-    // ── Method 2: Bearer token (logged-in user on site) ──
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Unauthorized — provide Authorization header or x-president-key" }, 401);
+    if (!timingSafeEqual(presidentKey, storedKey)) {
+      return json({ error: "Invalid president key" }, 403);
     }
 
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
-      return json({ error: "Invalid token" }, 401);
+    // API key mode: only the designated owner can be president
+    const { user_id } = await req.json().catch(() => ({}));
+    if (!user_id || !OWNER_USER_ID || user_id !== OWNER_USER_ID) {
+      return json({ error: "Only the designated owner can be president" }, 403);
     }
-
-    const userId = claims.claims.sub as string;
 
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ is_president: true })
-      .eq("user_id", userId);
+      .eq("user_id", user_id);
 
     if (updateError) return json({ error: updateError.message }, 500);
 
     return json({
       status: "activated",
-      message: "You are now the President of MEEET State.",
+      message: "President activated via API key.",
     });
 
   } catch (err) {
