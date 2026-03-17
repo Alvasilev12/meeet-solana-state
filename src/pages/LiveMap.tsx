@@ -1394,17 +1394,29 @@ const LiveMap = () => {
   const [weather, setWeather] = useState<"clear" | "rain" | "snow">("clear");
   const [timeLabel, setTimeLabel] = useState("Day");
 
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [followAgent, setFollowAgent] = useState<number | null>(null);
+  const [simSpeed, setSimSpeed] = useState<1 | 2 | 0>(1);
+  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
+
   const agentsRef = useRef<Agent[]>([]);
   const terrainRef = useRef<number[][]>(generateTerrain());
   const buildingsRef = useRef<Building[]>(generateBuildings(terrainRef.current));
   const roadsRef = useRef<Road[]>(generateRoads(buildingsRef.current));
   const cameraRef = useRef({ x: 0, y: 0 });
+  const cameraTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const cameraVelRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef({ dragging: false, lastX: 0, lastY: 0, moved: false });
   const zoomRef = useRef(1);
   const eventIdRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
   const floatingTextsRef = useRef<FloatingText[]>([]);
+  const trailsRef = useRef<Trail[]>([]);
   const weatherRef = useRef<"clear" | "rain" | "snow">("clear");
+  const keysRef = useRef<Set<string>>(new Set());
+  const followRef = useRef<number | null>(null);
+  const simSpeedRef = useRef<number>(1);
 
   const addEvent = useCallback((text: string, color: string) => {
     const now = new Date();
