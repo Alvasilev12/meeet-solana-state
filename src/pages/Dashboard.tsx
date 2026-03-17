@@ -181,9 +181,16 @@ function Sparkline({ data, color = "#14F195" }: { data: number[]; color?: string
 
 // ─── Create Agent Form ──────────────────────────────────────────
 function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?: boolean }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(isPresident ? "Mr President" : "");
   const [cls, setCls] = useState(isPresident ? "president" : "warrior");
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isPresident) {
+      setCls("president");
+      setName((prev) => prev.trim() ? prev : "Mr President");
+    }
+  }, [isPresident]);
   const { toast } = useToast();
   const mutation = useMutation({
     mutationFn: async () => {

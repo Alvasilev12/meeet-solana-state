@@ -40,7 +40,7 @@ async function resolveUser(
   supabaseUrl: string,
   anonKey: string,
   serviceClient: ReturnType<typeof createClient>,
-): Promise<{ userId: string | null; error: string | null }> {
+): Promise<{ userId: string | null; userEmail: string | null; error: string | null }> {
   // ── Try API key first ──
   const apiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
   if (apiKey && apiKey.startsWith("mst_")) {
@@ -54,9 +54,9 @@ async function resolveUser(
         .from("api_keys")
         .update({ last_used_at: new Date().toISOString() })
         .eq("key_hash", keyHash);
-      return { userId, error: null };
+      return { userId, userEmail: null, error: null };
     }
-    return { userId: null, error: "Invalid or inactive API key" };
+    return { userId: null, userEmail: null, error: "Invalid or inactive API key" };
   }
 
   // ── Fall back to JWT ──
@@ -64,6 +64,7 @@ async function resolveUser(
   if (!authHeader.startsWith("Bearer ")) {
     return {
       userId: null,
+      userEmail: null,
       error: "Authentication required. Use X-API-Key header or Authorization: Bearer <jwt>",
     };
   }
@@ -76,9 +77,14 @@ async function resolveUser(
     error: authErr,
   } = await userClient.auth.getUser();
   if (authErr || !user) {
-    return { userId: null, error: "Invalid or expired token" };
+    return { userId: null, userEmail: null, error: "Invalid or expired token" };
   }
-  return { userId: user.id, error: null };
+
+  return {
+    userId: user.id,
+    userEmail: user.email?.toLowerCase() ?? null,
+    error: null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -106,7 +112,7 @@ Deno.serve(async (req) => {
             description: "Register your AI agent in MEEET State",
             body: {
               name: "string (required) — Your agent's name (2-30 chars)",
-              class: "warrior | trader | scout | diplomat | builder | hacker",
+              class: "warrior | trader | scout | diplomat | builder | hacker | president",
               description: "string (optional) — What your agent does",
               webhook_url: "string (optional) — URL for event callbacks",
               capabilities: "string[] (optional) — e.g. ['trading', 'combat']",
@@ -125,6 +131,7 @@ Deno.serve(async (req) => {
           diplomat: "Social-focused. Earns from alliances and governance.",
           builder: "Infrastructure-focused. Earns from structures and land.",
           hacker: "Tech-focused. Earns from security audits and exploits.",
+          president: "State leader class. Restricted to the designated president account.",
         },
       });
     }
@@ -134,7 +141,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Authenticate caller ──────────────────────────────────
-    const { userId, error: authError } = await resolveUser(
+    const { userId, userEmail, error: authError } = await resolveUser(
       req,
       supabaseUrl,
       anonKey,
@@ -179,11 +186,32 @@ Deno.serve(async (req) => {
       return json({ error: `class must be one of: ${validClasses.join(", ")}` }, 400);
     }
 
-    // ── President class restricted to PRESIDENT_OWNER_USER_ID ──
+    // ── President class restricted to designated owner ──
     if (body.class === "president") {
       const presidentOwnerId = Deno.env.get("PRESIDENT_OWNER_USER_ID");
-      if (!presidentOwnerId || userId !== presidentOwnerId) {
+      const allowedPresidentEmail = "alxvasilevv@gmail.com";
+      const isAllowedByOwnerId = !!presidentOwnerId && userId === presidentOwnerId;
+      const isAllowedByEmail = (userEmail ?? "").toLowerCase() === allowedPresidentEmail;
+
+      if (!isAllowedByOwnerId && !isAllowedByEmail) {
         return json({ error: "Only the designated President can create a president-class agent" }, 403);
+      }
+
+      const { data: existingPresident } = await serviceClient
+        .from("agents")
+        .select("id, user_id, name")
+        .eq("class", "president")
+        .maybeSingle();
+
+      if (existingPresident && existingPresident.user_id !== userId) {
+        return json(
+          {
+            error: "President agent already exists",
+            president_agent_id: existingPresident.id,
+            president_name: existingPresident.name,
+          },
+          409,
+        );
       }
     }
 

@@ -56,10 +56,12 @@ Deno.serve(async (req) => {
 
     // ── Step 2: Verify caller IS the designated owner ───────
     const OWNER_USER_ID = Deno.env.get("PRESIDENT_OWNER_USER_ID");
-    if (!OWNER_USER_ID) {
-      return json({ error: "President owner not configured" }, 500);
-    }
-    if (user.id !== OWNER_USER_ID) {
+    const OWNER_EMAIL = "alxvasilevv@gmail.com";
+
+    const isOwnerById = !!OWNER_USER_ID && user.id === OWNER_USER_ID;
+    const isOwnerByEmail = (user.email ?? "").toLowerCase() === OWNER_EMAIL;
+
+    if (!isOwnerById && !isOwnerByEmail) {
       console.warn(`President activation attempt by unauthorized user: ${user.id} (${user.email})`);
       return json({ error: "Forbidden" }, 403);
     }
@@ -83,17 +85,21 @@ Deno.serve(async (req) => {
       .eq("is_president", true)
       .maybeSingle();
 
-    if (existingPres) {
+    if (existingPres && existingPres.user_id !== user.id) {
       return json({
         error: "President already exists",
         president: existingPres.display_name,
       }, 409);
     }
 
-    // ── Step 5: Activate — use authenticated user.id, NOT body ──
+    // ── Step 5: Activate (idempotent) — use authenticated user.id ──
     const { error: updateError } = await serviceClient
       .from("profiles")
-      .update({ is_president: true })
+      .update({
+        is_president: true,
+        display_name: "Mr President",
+        username: "mr_president",
+      })
       .eq("user_id", user.id);
 
     if (updateError) return json({ error: updateError.message }, 500);
@@ -101,8 +107,8 @@ Deno.serve(async (req) => {
     console.log(`President activated: ${user.id} (${user.email})`);
 
     return json({
-      status: "activated",
-      message: "President activated. Welcome to office.",
+      status: existingPres ? "already_active" : "activated",
+      message: existingPres ? "President already active." : "President activated. Welcome to office.",
     });
   } catch (err) {
     console.error("President activation error:", err);
