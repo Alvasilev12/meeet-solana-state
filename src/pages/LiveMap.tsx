@@ -1877,7 +1877,16 @@ const LiveMap = () => {
     window.addEventListener("resize", resize);
 
     const render = () => {
-      const w = canvas.width, h = canvas.height;
+      // FPS tracking
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        setFps(frameCount);
+        frameCount = 0;
+        lastFpsTime = now;
+      }
+
+      const w = window.innerWidth, h = window.innerHeight;
       const cam = cameraRef.current;
       const z = zoomRef.current;
       const terrain = terrainRef.current;
