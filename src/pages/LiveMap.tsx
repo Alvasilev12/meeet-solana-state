@@ -1155,12 +1155,30 @@ function darkenHex(hex: string, amount: number): string {
 function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
   const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
   if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
-  const s = z;
+  // Scale agents up so they're always visible — minimum effective size 1.5
+  const s = Math.max(z, 1.5);
+
+  // Pulsing beacon ring — always visible even when zoomed out
+  const beaconR = (22 + Math.sin(t * 0.005 + a.phase) * 5) * s;
+  const beaconAlpha = 0.35 + Math.sin(t * 0.004 + a.phase) * 0.15;
+  ctx.strokeStyle = a.color;
+  ctx.lineWidth = Math.max(2, 2.5 * s);
+  ctx.globalAlpha = beaconAlpha;
+  ctx.beginPath(); ctx.arc(sx, sy, beaconR, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Colored ground disc
+  const discR = 12 * s;
+  const discGrad = ctx.createRadialGradient(sx, sy + 4 * s, 0, sx, sy + 4 * s, discR);
+  discGrad.addColorStop(0, a.color + "50");
+  discGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = discGrad;
+  ctx.beginPath(); ctx.ellipse(sx, sy + 4 * s, discR, discR * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 
   // Shadow
-  ctx.fillStyle = `rgba(0,0,0,${0.2 - nightFactor * 0.1})`;
+  ctx.fillStyle = `rgba(0,0,0,${0.25 - nightFactor * 0.1})`;
   ctx.beginPath();
-  ctx.ellipse(sx, sy + 8 * s, 5 * s, 2.5 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(sx, sy + 8 * s, 6 * s, 3 * s, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Rep golden aura
@@ -1192,10 +1210,10 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(sx, sy, 20 * s, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Glow
-  const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 16 * s);
-  gg.addColorStop(0, a.color + "25"); gg.addColorStop(1, "transparent");
-  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(sx, sy, 16 * s, 0, Math.PI * 2); ctx.fill();
+  // Glow — stronger
+  const gg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20 * s);
+  gg.addColorStop(0, a.color + "40"); gg.addColorStop(0.5, a.color + "18"); gg.addColorStop(1, "transparent");
+  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(sx, sy, 20 * s, 0, Math.PI * 2); ctx.fill();
 
   // Body — improved pixel sprite
   const bodyColor = lerpColor(a.color, darkenHex(a.color, 0.3), nightFactor * 0.3);
@@ -1276,34 +1294,34 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.fillRect(barX, barY, barW * hpPct, barH);
   }
 
-  // Name tag
-  if (z > 0.45) {
-    const fs = Math.max(6, 8 * s);
+  // Name tag — always visible
+  {
+    const fs = Math.max(8, 9 * s);
     ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
     ctx.textAlign = "center";
     const nw = ctx.measureText(a.name).width;
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillStyle = "rgba(0,0,0,0.75)";
     ctx.beginPath();
-    ctx.roundRect(sx - nw / 2 - 3, sy + 10 * s, nw + 6, fs + 3, 2);
+    ctx.roundRect(sx - nw / 2 - 4, sy + 10 * s, nw + 8, fs + 5, 3);
     ctx.fill();
     ctx.fillStyle = a.color;
-    ctx.fillText(a.name, sx, sy + 10 * s + fs);
+    ctx.fillText(a.name, sx, sy + 10 * s + fs + 1);
     ctx.textAlign = "left";
   }
 
-  // Level badge
-  if (z > 0.7) {
+  // Level badge — always visible
+  {
     const lvStr = `${a.level}`;
-    const lvFs = Math.max(5, 6 * s);
+    const lvFs = Math.max(7, 7 * s);
     ctx.font = `bold ${lvFs}px 'Space Grotesk', sans-serif`;
     ctx.textAlign = "center";
     const lvW = ctx.measureText(lvStr).width;
-    ctx.fillStyle = "rgba(99,102,241,0.8)";
+    ctx.fillStyle = "rgba(99,102,241,0.9)";
     ctx.beginPath();
-    ctx.arc(sx + 6 * s, sy - 8 * s, (lvW + 4) / 2, 0, Math.PI * 2);
+    ctx.arc(sx + 8 * s, sy - 10 * s, (lvW + 6) / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#fff";
-    ctx.fillText(lvStr, sx + 6 * s, sy - 8 * s + lvFs * 0.35);
+    ctx.fillText(lvStr, sx + 8 * s, sy - 10 * s + lvFs * 0.35);
     ctx.textAlign = "left";
   }
 
