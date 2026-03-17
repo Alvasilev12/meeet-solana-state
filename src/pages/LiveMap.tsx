@@ -101,26 +101,26 @@ function fbm(x: number, y: number, seed: number): number {
   return v;
 }
 
-// ─── Tile palette — Bright Fantasy RPG style ───────────────────
+// ─── Tile palette — Minecraft block style ───────────────────────
 const TILE_PALETTE_DAY = [
-  { fill: "#2389da", border: "#1a7cc8" },  // Deep water — vivid blue
-  { fill: "#45a5e6", border: "#3898d9" },  // Shallow water — bright cyan
-  { fill: "#e8c96a", border: "#dbb85e" },  // Sand — warm golden
-  { fill: "#5cb338", border: "#68c040" },  // Light grass — vibrant green
-  { fill: "#3d9920", border: "#48a82a" },  // Forest — rich green
-  { fill: "#2d7a16", border: "#36891e" },  // Dense forest — deep green
-  { fill: "#8a8a96", border: "#9a9aa6" },  // Mountain — warm grey
-  { fill: "#f0f4ff", border: "#e0e6f0" },  // Snow — bright white
+  { fill: "#2856a4", border: "#1e4888" },  // Deep water — MC ocean
+  { fill: "#3b71c8", border: "#2d5ea8" },  // Shallow water — MC river
+  { fill: "#dbc67b", border: "#c4ad62" },  // Sand — MC sand block
+  { fill: "#5b9b2e", border: "#4a8724" },  // Grass — MC grass top
+  { fill: "#3a6e1b", border: "#2d5a14" },  // Forest — MC dark oak leaves
+  { fill: "#2c5516", border: "#1f4010" },  // Dense forest — MC spruce leaves
+  { fill: "#7f7f7f", border: "#6b6b6b" },  // Stone — MC stone block
+  { fill: "#f0f0f0", border: "#dcdcdc" },  // Snow — MC snow block
 ];
 const TILE_PALETTE_NIGHT = [
-  { fill: "#1a5a90", border: "#14508a" },  // Deep water night
-  { fill: "#2a7ab0", border: "#2070a0" },  // Shallow water night
-  { fill: "#a08840", border: "#907838" },  // Sand night
-  { fill: "#2e6a18", border: "#367820" },  // Light grass night
-  { fill: "#1e5610", border: "#266418" },  // Forest night
-  { fill: "#164408", border: "#1e5010" },  // Dense forest night
-  { fill: "#505060", border: "#606070" },  // Mountain night
-  { fill: "#b0c0d0", border: "#a0b0c0" },  // Snow night
+  { fill: "#1a3870", border: "#143060" },  // Deep water night
+  { fill: "#2a5090", border: "#204478" },  // Shallow water night
+  { fill: "#8a7a48", border: "#786838" },  // Sand night
+  { fill: "#2e5018", border: "#244210" },  // Grass night
+  { fill: "#1e3a0e", border: "#162e08" },  // Forest night
+  { fill: "#142a08", border: "#0e2004" },  // Dense forest night
+  { fill: "#4a4a4a", border: "#3e3e3e" },  // Stone night
+  { fill: "#a0a0a8", border: "#909098" },  // Snow night
 ];
 
 function lerpColor(a: string, b: string, t: number): string {
