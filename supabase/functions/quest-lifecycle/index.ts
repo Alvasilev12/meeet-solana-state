@@ -253,70 +253,8 @@ Deno.serve(async (req) => {
 
         return json({ success: true, status: "completed", sol_payment: solPaymentResult });
       }
-          const txResponse = await fetch(
-            `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-transaction`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: authHeader,
-                apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
-                "x-internal-service": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!.slice(-16),
-              },
-              body: JSON.stringify({
-                type: "quest_reward",
-                from_user_id: quest.requester_id,
-                to_agent_id: quest.assigned_agent_id,
-                amount_meeet: rewardMeeet,
-                amount_sol: quest.reward_sol,
-                quest_id,
-                description: `Quest reward: ${quest.title}`,
-              }),
-            }
-          );
-          const txResult = await txResponse.json();
 
-          // Update agent XP and quest count
-          const { data: agentData } = await serviceClient
-            .from("agents")
-            .select("xp, quests_completed")
-            .eq("id", quest.assigned_agent_id)
-            .single();
-          if (agentData) {
-            await serviceClient
-              .from("agents")
-              .update({
-                xp: agentData.xp + 50,
-                quests_completed: agentData.quests_completed + 1,
-                status: "idle",
-              })
-              .eq("id", quest.assigned_agent_id);
-          }
-        }
 
-        // Add reputation
-        if (quest.assigned_agent_id) {
-          await serviceClient.from("reputation_log").insert({
-            agent_id: quest.assigned_agent_id,
-            quest_id,
-            delta: 10,
-            reason: "Quest completed successfully",
-          });
-
-          // Activity feed entry
-          const { data: completedAgent } = await serviceClient
-            .from("agents").select("name").eq("id", quest.assigned_agent_id).single();
-          await serviceClient.from("activity_feed").insert({
-            agent_id: quest.assigned_agent_id,
-            event_type: "quest_complete",
-            title: `${completedAgent?.name || "Agent"} completed quest "${quest.title}"`,
-            description: `Earned ${Number(quest.reward_meeet || 0).toLocaleString()} $MEEET`,
-            meeet_amount: Number(quest.reward_meeet) || 0,
-          });
-        }
-
-        return json({ success: true, status: "completed" });
-      }
 
       // ── DISPUTE: requester disputes delivery ───────────────────
       case "dispute": {
