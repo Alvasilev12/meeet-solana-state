@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.send-petition]
 verify_jwt = false
+
+[functions.process-transaction]
+verify_jwt = false
