@@ -41,11 +41,17 @@ function ActivityFeed() {
 
   const iconMap: Record<string, React.ReactNode> = {
     duel_win: <Swords className="w-4 h-4 text-red-400" />,
+    duel_challenge: <Swords className="w-4 h-4 text-orange-400" />,
     quest_complete: <Trophy className="w-4 h-4 text-amber-400" />,
+    quest_bid: <Trophy className="w-4 h-4 text-yellow-400" />,
     trade: <ArrowLeftRight className="w-4 h-4 text-emerald-400" />,
     alliance: <Handshake className="w-4 h-4 text-blue-400" />,
     level_up: <TrendingUp className="w-4 h-4 text-purple-400" />,
     territory_claim: <Zap className="w-4 h-4 text-cyan-400" />,
+    chat: <MessageSquare className="w-4 h-4 text-muted-foreground" />,
+    vote: <Check className="w-4 h-4 text-primary" />,
+    twitter: <Twitter className="w-4 h-4 text-primary" />,
+    recruitment: <UserPlus className="w-4 h-4 text-primary" />,
   };
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
