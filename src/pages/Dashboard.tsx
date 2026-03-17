@@ -68,9 +68,18 @@ function useMyAgent(userId: string | undefined) {
     queryKey: ["my-agent", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("agents").select("*").eq("user_id", userId!).maybeSingle();
+      // User may own multiple agents (e.g. president controls AI bots).
+      // Return the president-class agent if one exists, otherwise the first agent.
+      const { data, error } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("user_id", userId!)
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as Agent | null;
+      if (!data || data.length === 0) return null;
+      // Prefer president-class agent
+      const presidentAgent = data.find((a) => a.class === "president");
+      return (presidentAgent ?? data[0]) as Agent;
     },
   });
 }
