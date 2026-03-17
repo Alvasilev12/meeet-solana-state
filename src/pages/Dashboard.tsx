@@ -21,6 +21,7 @@ import {
   Star, Trophy, Map, Plus, Sparkles, ArrowUpRight, ArrowDownRight,
   Activity, Users, Flame, Target, Crown, Scroll, MapPin,
   Clock, ChevronRight, Swords, Gift, BarChart3, Globe,
+  Landmark, Banknote, PiggyBank, Receipt,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -106,6 +107,30 @@ function useGlobalStats() {
         claimedTerritories: territories.count ?? 0,
       };
     },
+  });
+}
+function useTreasury() {
+  return useQuery({
+    queryKey: ["state-treasury"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("state_treasury" as any)
+        .select("*")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as {
+        balance_meeet: number;
+        balance_sol: number;
+        total_tax_collected: number;
+        total_burned: number;
+        total_quest_payouts: number;
+        total_passport_revenue: number;
+        total_land_revenue: number;
+        updated_at: string;
+      } | null;
+    },
+    refetchInterval: 30000,
   });
 }
 
@@ -421,6 +446,7 @@ const Dashboard = () => {
   const { data: topAgents = [] } = useTopAgents();
   const { data: globalStats } = useGlobalStats();
   const { data: transactions = [] } = useRecentTransactions(agent?.id);
+  const { data: treasury } = useTreasury();
   const activityFeed = useActivityFeed();
 
   useEffect(() => {
@@ -731,6 +757,59 @@ const Dashboard = () => {
                   </Card>
                 </div>
               </div>
+
+              {/* President: State Treasury */}
+              {profile?.is_president && treasury && (
+                <Card className="glass-card border-amber-500/20 overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500" />
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-display text-lg flex items-center gap-2">
+                      <Landmark className="w-5 h-5 text-amber-400" />
+                      State Treasury
+                      <Badge className="ml-auto text-[9px] bg-amber-500/15 text-amber-400 border-amber-500/20">👑 President Access</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Main balance */}
+                    <div className="glass-card rounded-xl p-5 text-center border-amber-500/10">
+                      <p className="text-xs text-muted-foreground font-body mb-1 uppercase tracking-wider">Treasury Balance</p>
+                      <p className="text-4xl font-display font-bold text-amber-400">
+                        {Number(treasury.balance_meeet).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground font-body">$MEEET</p>
+                      {Number(treasury.balance_sol) > 0 && (
+                        <p className="text-lg font-display font-bold text-foreground mt-1">
+                          + {Number(treasury.balance_sol).toFixed(2)} SOL
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Revenue breakdown */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { icon: <Receipt className="w-4 h-4 text-emerald-400" />, label: "Tax Collected", value: Number(treasury.total_tax_collected).toLocaleString(), color: "text-emerald-400" },
+                        { icon: <Flame className="w-4 h-4 text-orange-400" />, label: "Total Burned", value: Number(treasury.total_burned).toLocaleString(), color: "text-orange-400" },
+                        { icon: <Trophy className="w-4 h-4 text-primary" />, label: "Quest Payouts", value: Number(treasury.total_quest_payouts).toLocaleString(), color: "text-primary" },
+                        { icon: <Shield className="w-4 h-4 text-blue-400" />, label: "Passport Revenue", value: Number(treasury.total_passport_revenue).toLocaleString(), color: "text-blue-400" },
+                        { icon: <MapPin className="w-4 h-4 text-teal-400" />, label: "Land Revenue", value: Number(treasury.total_land_revenue).toLocaleString(), color: "text-teal-400" },
+                        { icon: <PiggyBank className="w-4 h-4 text-amber-400" />, label: "Net Reserve", value: Number(treasury.balance_meeet).toLocaleString(), color: "text-amber-400" },
+                      ].map(item => (
+                        <div key={item.label} className="glass-card rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            {item.icon}
+                            <span className="text-[10px] text-muted-foreground font-body">{item.label}</span>
+                          </div>
+                          <p className={`text-sm font-display font-bold ${item.color}`}>{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground font-body text-center">
+                      All taxes, passport purchases, land sales, and fees flow here automatically
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* President Inbox */}
               {profile?.is_president && <PresidentInbox />}

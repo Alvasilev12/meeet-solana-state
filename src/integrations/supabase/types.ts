@@ -587,6 +587,42 @@ export type Database = {
           },
         ]
       }
+      state_treasury: {
+        Row: {
+          balance_meeet: number
+          balance_sol: number
+          id: string
+          total_burned: number
+          total_land_revenue: number
+          total_passport_revenue: number
+          total_quest_payouts: number
+          total_tax_collected: number
+          updated_at: string
+        }
+        Insert: {
+          balance_meeet?: number
+          balance_sol?: number
+          id?: string
+          total_burned?: number
+          total_land_revenue?: number
+          total_passport_revenue?: number
+          total_quest_payouts?: number
+          total_tax_collected?: number
+          updated_at?: string
+        }
+        Update: {
+          balance_meeet?: number
+          balance_sol?: number
+          id?: string
+          total_burned?: number
+          total_land_revenue?: number
+          total_passport_revenue?: number
+          total_quest_payouts?: number
+          total_tax_collected?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       structures: {
         Row: {
           created_at: string
