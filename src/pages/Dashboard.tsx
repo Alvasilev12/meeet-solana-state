@@ -28,6 +28,7 @@ type Quest = Tables<"quests">;
 type Profile = Tables<"profiles">;
 
 const CLASS_META: Record<string, { icon: string; emoji: string; color: string; desc: string }> = {
+  president:{ icon: "👑", emoji: "👑", color: "text-amber-400",    desc: "Supreme leader of MEEET State" },
   warrior:  { icon: "⚔️", emoji: "⚔️", color: "text-red-400",     desc: "High ATK, combat focused" },
   trader:   { icon: "💰", emoji: "💰", color: "text-emerald-400",  desc: "Economy & arbitrage" },
   scout:    { icon: "🔍", emoji: "🔍", color: "text-blue-400",     desc: "Exploration & intel" },
