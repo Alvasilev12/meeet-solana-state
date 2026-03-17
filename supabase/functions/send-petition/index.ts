@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,12 @@ Deno.serve(async (req) => {
   try {
     if (req.method === "POST") {
       const { agent_id, sender_name, subject, message } = await req.json();
+
+      // Rate limit by IP (petitions are semi-public)
+      const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+      const rl = RATE_LIMITS.send_petition;
+      const { allowed } = await checkRateLimit(serviceClient, `petition:${ip}`, rl.max, rl.window);
+      if (!allowed) return rateLimitResponse(rl.window);
 
       if (!sender_name || !subject || !message) {
         return json({ error: "sender_name, subject, and message are required" }, 400);

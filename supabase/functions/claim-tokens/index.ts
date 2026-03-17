@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,12 @@ Deno.serve(async (req) => {
     // Auth
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+
+    // Rate limit
+    const serviceRL = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const rl = RATE_LIMITS.claim_tokens;
+    const { allowed } = await checkRateLimit(serviceRL, `claim:${user.id}`, rl.max, rl.window);
+    if (!allowed) return rateLimitResponse(rl.window);
 
     const { agent_id, amount } = await req.json();
     const claimAmount = Math.floor(Number(amount));

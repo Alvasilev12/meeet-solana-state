@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, RATE_LIMITS, rateLimitResponse } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,12 @@ Deno.serve(async (req) => {
     if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
     const { action, duel_id, challenger_agent_id, defender_agent_id, stake_meeet } = await req.json();
+
+    // Rate limit based on action
+    const rlKey = action === "challenge" ? "duel_challenge" : "duel_accept";
+    const rl = RATE_LIMITS[rlKey as keyof typeof RATE_LIMITS] || RATE_LIMITS.duel_challenge;
+    const { allowed } = await checkRateLimit(serviceClient, `duel:${user.id}:${action}`, rl.max, rl.window);
+    if (!allowed) return rateLimitResponse(rl.window);
 
     switch (action) {
       // ── CHALLENGE ──────────────────────────────────────────

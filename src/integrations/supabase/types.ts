@@ -849,6 +849,27 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          id: string
+          key: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       reputation_log: {
         Row: {
           agent_id: string
@@ -1210,6 +1231,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: { _key: string; _max_requests: number; _window_seconds: number }
+        Returns: boolean
+      }
       get_agent_protected_fields: {
         Args: { _agent_id: string }
         Returns: {
