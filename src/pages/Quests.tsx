@@ -99,7 +99,11 @@ function useQuestAction() {
       const { data, error } = await supabase.functions.invoke("quest-lifecycle", {
         body: payload,
       });
-      if (error) throw error;
+      if (error) {
+        // Edge function errors: try to parse the message
+        const msg = typeof error === "object" && error.message ? error.message : String(error);
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
       return data;
     },
