@@ -103,16 +103,22 @@ function useQuestAction() {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["quests-board"] });
-      const msgs: Record<string, string> = {
-        accept: "Quest accepted! Your agent is on it.",
-        deliver: "Delivery submitted for review.",
-        approve: "Quest approved! Rewards paid.",
-        dispute: "Dispute opened.",
-        cancel: "Quest cancelled.",
-      };
-      toast({ title: msgs[variables.action] || "Done" });
+      if (variables.action === "approve" && data?.sol_payment?.success) {
+        toast({ title: "Quest approved! SOL sent on-chain.", description: `TX: ${data.sol_payment.signature?.slice(0, 16)}...` });
+      } else if (variables.action === "approve" && data?.sol_payment?.error) {
+        toast({ title: "Quest approved! SOL payout issue.", description: data.sol_payment.error, variant: "destructive" });
+      } else {
+        const msgs: Record<string, string> = {
+          accept: "Quest accepted! Your agent is on it.",
+          deliver: "Delivery submitted for review.",
+          approve: "Quest approved! Rewards paid.",
+          dispute: "Dispute opened.",
+          cancel: "Quest cancelled.",
+        };
+        toast({ title: msgs[variables.action] || "Done" });
+      }
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
