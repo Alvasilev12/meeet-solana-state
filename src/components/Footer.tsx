@@ -9,7 +9,7 @@ const Footer = () => {
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground font-body">
             <a href="https://meeet.world" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">meeet.world</a>
-            <a href="https://twitter.com/MEEET_STATE" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Twitter</a>
+            <a href="https://twitter.com/Meeet_world" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Twitter</a>
             <span>$MEEET on Solana</span>
           </div>
         </div>
