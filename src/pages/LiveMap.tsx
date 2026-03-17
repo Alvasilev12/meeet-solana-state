@@ -1405,6 +1405,215 @@ function drawWaterReflection(ctx: CanvasRenderingContext2D, buildings: Building[
   });
 }
 
+// ─── Celestial Bodies ───────────────────────────────────────────
+function drawCelestialBodies(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
+  const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
+  // Sun
+  if (nightFactor < 0.7) {
+    const sunAngle = cyclePos * Math.PI;
+    const sunX = w * 0.1 + Math.cos(sunAngle) * w * 0.4;
+    const sunY = h * 0.35 - Math.sin(sunAngle) * h * 0.3;
+    const sunAlpha = 1 - nightFactor;
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 90);
+    sunGlow.addColorStop(0, `rgba(255,240,180,${sunAlpha * 0.35})`);
+    sunGlow.addColorStop(0.2, `rgba(255,210,120,${sunAlpha * 0.2})`);
+    sunGlow.addColorStop(0.5, `rgba(255,170,70,${sunAlpha * 0.08})`);
+    sunGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = sunGlow;
+    ctx.beginPath(); ctx.arc(sunX, sunY, 90, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,245,210,${sunAlpha * 0.9})`;
+    ctx.beginPath(); ctx.arc(sunX, sunY, 14, 0, Math.PI * 2); ctx.fill();
+    // Rays
+    for (let i = 0; i < 12; i++) {
+      const rayA = (i / 12) * Math.PI * 2 + t * 0.0003;
+      const rayLen = 20 + Math.sin(t * 0.005 + i * 2) * 6;
+      ctx.strokeStyle = `rgba(255,230,160,${sunAlpha * 0.25})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sunX + Math.cos(rayA) * 16, sunY + Math.sin(rayA) * 16);
+      ctx.lineTo(sunX + Math.cos(rayA) * rayLen, sunY + Math.sin(rayA) * rayLen);
+      ctx.stroke();
+    }
+    // Lens flare
+    if (sunAlpha > 0.5) {
+      const flareX = sunX + (w / 2 - sunX) * 0.3;
+      const flareY = sunY + (h / 2 - sunY) * 0.3;
+      ctx.fillStyle = `rgba(255,200,100,${(sunAlpha - 0.5) * 0.06})`;
+      ctx.beginPath(); ctx.arc(flareX, flareY, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(255,220,150,${(sunAlpha - 0.5) * 0.04})`;
+      ctx.beginPath(); ctx.arc(flareX + 30, flareY + 15, 10, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // Moon
+  if (nightFactor > 0.3) {
+    const moonAngle = ((cyclePos + 0.5) % 1) * Math.PI;
+    const moonX = w * 0.65 + Math.cos(moonAngle) * w * 0.25;
+    const moonY = h * 0.12 - Math.sin(moonAngle) * h * 0.08 + 30;
+    const moonAlpha = Math.min(1, (nightFactor - 0.3) / 0.35);
+    const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 70);
+    moonGlow.addColorStop(0, `rgba(200,215,255,${moonAlpha * 0.18})`);
+    moonGlow.addColorStop(0.4, `rgba(150,175,230,${moonAlpha * 0.08})`);
+    moonGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath(); ctx.arc(moonX, moonY, 70, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(225,230,245,${moonAlpha * 0.88})`;
+    ctx.beginPath(); ctx.arc(moonX, moonY, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(30,35,65,${moonAlpha * 0.55})`;
+    ctx.beginPath(); ctx.arc(moonX + 3.5, moonY - 1.5, 8.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(190,195,215,${moonAlpha * 0.3})`;
+    ctx.beginPath(); ctx.arc(moonX - 3, moonY + 2.5, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(moonX - 1, moonY - 3.5, 1.3, 0, Math.PI * 2); ctx.fill();
+    // Moonlight on terrain
+    ctx.fillStyle = `rgba(180,200,255,${moonAlpha * 0.015})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+// ─── Birds ──────────────────────────────────────────────────────
+function drawBirds(ctx: CanvasRenderingContext2D, birds: Bird[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
+  if (nightFactor > 0.65) return;
+  const alpha = 1 - nightFactor * 1.3;
+  birds.forEach(bird => {
+    const sx = (bird.x - cam.x) * z, sy = (bird.y - cam.y) * z;
+    if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
+    const flapY = Math.sin(bird.flapPhase + t * 0.014) * 3.5 * z * bird.size;
+    const wingSpan = 7 * z * bird.size;
+    ctx.strokeStyle = `rgba(30,30,40,${Math.max(0, alpha * 0.65)})`;
+    ctx.lineWidth = Math.max(0.7, 1.2 * z);
+    ctx.beginPath();
+    ctx.moveTo(sx - wingSpan, sy + flapY);
+    ctx.quadraticCurveTo(sx - wingSpan * 0.4, sy - Math.abs(flapY) * 0.6, sx, sy);
+    ctx.quadraticCurveTo(sx + wingSpan * 0.4, sy - Math.abs(flapY) * 0.6, sx + wingSpan, sy + flapY);
+    ctx.stroke();
+  });
+}
+
+function updateBirds(birds: Bird[], cam: { x: number; y: number }, w: number, h: number, z: number) {
+  birds.forEach(bird => {
+    bird.x += bird.vx;
+    bird.y += bird.vy + Math.sin(bird.flapPhase + Date.now() * 0.001) * 0.015;
+    const margin = 600;
+    if (bird.x > cam.x + w / z + margin) bird.x = cam.x - margin * 0.5;
+    if (bird.x < cam.x - margin) bird.x = cam.x + w / z + margin * 0.5;
+    if (bird.y < cam.y - margin * 0.3) bird.y = cam.y + h / z * 0.25;
+    if (bird.y > cam.y + h / z * 0.4) bird.y = cam.y;
+  });
+}
+
+// ─── Torch Lights ───────────────────────────────────────────────
+function drawTorchLights(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
+  if (nightFactor < 0.2) return;
+  const torchAlpha = Math.min(1, (nightFactor - 0.2) / 0.35);
+  buildings.forEach(b => {
+    const bx = (b.x - cam.x) * z, by = (b.y - cam.y) * z;
+    const bw = b.w * TILE * z, bh = b.h * TILE * z;
+    if (bx + bw < -120 || bx > ctx.canvas.width + 120 || by + bh < -120 || by > ctx.canvas.height + 120) return;
+    const torches = [{ x: bx + bw * 0.15, y: by + bh }, { x: bx + bw * 0.85, y: by + bh }];
+    torches.forEach((tp, i) => {
+      const flicker = 0.55 + Math.sin(t * 0.013 + b.id * 3 + i * 5) * 0.22 + Math.sin(t * 0.029 + i * 7) * 0.12;
+      const radius = (28 + Math.sin(t * 0.009 + i) * 6) * z;
+      const tGlow = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, radius);
+      tGlow.addColorStop(0, `rgba(255,175,55,${torchAlpha * flicker * 0.28})`);
+      tGlow.addColorStop(0.35, `rgba(255,115,25,${torchAlpha * flicker * 0.14})`);
+      tGlow.addColorStop(0.7, `rgba(255,75,15,${torchAlpha * flicker * 0.04})`);
+      tGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = tGlow;
+      ctx.beginPath(); ctx.arc(tp.x, tp.y, radius, 0, Math.PI * 2); ctx.fill();
+      // Flame
+      ctx.fillStyle = `rgba(255,225,90,${torchAlpha * flicker * 0.85})`;
+      ctx.beginPath(); ctx.arc(tp.x, tp.y - 2.5 * z, 1.8 * z, 0, Math.PI * 2); ctx.fill();
+      // Flame tip
+      const tipY = tp.y - 5 * z - Math.sin(t * 0.02 + i + b.id) * 2 * z;
+      ctx.fillStyle = `rgba(255,180,50,${torchAlpha * flicker * 0.5})`;
+      ctx.beginPath(); ctx.arc(tp.x, tipY, 1 * z, 0, Math.PI * 2); ctx.fill();
+    });
+  });
+}
+
+// ─── Valley Fog ─────────────────────────────────────────────────
+function drawValleyFog(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
+  const fogIntensity = nightFactor > 0.25 && nightFactor < 0.75 ? 1 - Math.abs(nightFactor - 0.5) / 0.25 : 0;
+  if (fogIntensity <= 0.01) return;
+  const alpha = fogIntensity * 0.07;
+  for (let i = 0; i < 8; i++) {
+    const fogX = ((t * 0.008 + i * 280) % (w + 500)) - 250;
+    const fogY = h * (0.45 + i * 0.065) + Math.sin(t * 0.0004 + i * 1.8) * 35;
+    const fogW = 220 + noise2d(i, 0, 42) * 180;
+    const fogH = 35 + noise2d(0, i, 43) * 25;
+    const fogGrad = ctx.createRadialGradient(fogX, fogY, 0, fogX, fogY, fogW);
+    fogGrad.addColorStop(0, `rgba(200,215,235,${alpha})`);
+    fogGrad.addColorStop(0.45, `rgba(180,195,220,${alpha * 0.45})`);
+    fogGrad.addColorStop(1, "transparent");
+    ctx.fillStyle = fogGrad;
+    ctx.beginPath(); ctx.ellipse(fogX, fogY, fogW, fogH, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ─── Hover Tooltip ──────────────────────────────────────────────
+function drawHoverTooltip(ctx: CanvasRenderingContext2D, name: string | null, mx: number, my: number) {
+  if (!name || mx <= 0 || my <= 0) return;
+  const fontSize = 11;
+  ctx.font = `bold ${fontSize}px 'Space Grotesk', sans-serif`;
+  const textW = ctx.measureText(name).width;
+  const padX = 10, padY = 6;
+  const tipX = mx + 18, tipY = my - 10;
+  const boxW = textW + padX * 2, boxH = fontSize + padY * 2;
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.beginPath(); ctx.roundRect(tipX + 2, tipY - boxH + 2, boxW, boxH, 5); ctx.fill();
+  // Background
+  ctx.fillStyle = "rgba(10,10,20,0.88)";
+  ctx.beginPath(); ctx.roundRect(tipX, tipY - boxH, boxW, boxH, 5); ctx.fill();
+  // Subtle border
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(tipX, tipY - boxH, boxW, boxH, 5); ctx.stroke();
+  // Text
+  ctx.fillStyle = "#e8e8f0";
+  ctx.textAlign = "left";
+  ctx.fillText(name, tipX + padX, tipY - padY);
+}
+
+// ─── Interaction Particles ──────────────────────────────────────
+function drawInteractionParticles(ctx: CanvasRenderingContext2D, agents: Agent[], cam: { x: number; y: number }, z: number, t: number) {
+  agents.forEach(a => {
+    if (a.state !== "combat" && a.state !== "trading") return;
+    const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
+    if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
+    if (a.state === "combat") {
+      for (let i = 0; i < 4; i++) {
+        const sparkT = (t * 0.012 + i * 1.57 + a.phase) % 6.28;
+        const sparkR = (9 + Math.sin(sparkT * 2.5) * 7) * z;
+        const sparkX = sx + Math.cos(sparkT) * sparkR;
+        const sparkY = sy + Math.sin(sparkT) * sparkR - 6 * z;
+        const sparkAlpha = 0.5 + Math.sin(t * 0.035 + i * 3.5) * 0.35;
+        ctx.fillStyle = `rgba(255,${140 + Math.floor(Math.sin(sparkT) * 110)},40,${sparkAlpha})`;
+        ctx.beginPath(); ctx.arc(sparkX, sparkY, 1.8 * z, 0, Math.PI * 2); ctx.fill();
+      }
+      if (Math.sin(t * 0.028 + a.phase) > 0.88) {
+        const flash = ctx.createRadialGradient(sx, sy - 6 * z, 0, sx, sy - 6 * z, 18 * z);
+        flash.addColorStop(0, "rgba(255,255,200,0.35)");
+        flash.addColorStop(1, "transparent");
+        ctx.fillStyle = flash;
+        ctx.beginPath(); ctx.arc(sx, sy - 6 * z, 18 * z, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (a.state === "trading") {
+      for (let i = 0; i < 3; i++) {
+        const coinT = (t * 0.0045 + i * 2.1 + a.phase) % 6.28;
+        const coinX = sx + Math.sin(coinT * 1.4) * 12 * z;
+        const coinY = sy - 18 * z - (coinT % 3.14) * 4 * z;
+        const coinAlpha = 0.75 - (coinT % 3.14) / 3.14 * 0.55;
+        ctx.fillStyle = `rgba(255,205,45,${coinAlpha})`;
+        ctx.beginPath(); ctx.ellipse(coinX, coinY, 2.2 * z, 1.6 * z, coinT * 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = `rgba(200,155,25,${coinAlpha * 0.7})`;
+        ctx.lineWidth = 0.5 * z;
+        ctx.beginPath(); ctx.ellipse(coinX, coinY, 2.2 * z, 1.6 * z, coinT * 0.5, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+  });
+}
+
 // ─── Component ──────────────────────────────────────────────────
 const LiveMap = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
