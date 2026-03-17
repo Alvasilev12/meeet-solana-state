@@ -1294,34 +1294,34 @@ function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y:
     ctx.fillRect(barX, barY, barW * hpPct, barH);
   }
 
-  // Name tag
-  if (z > 0.45) {
-    const fs = Math.max(6, 8 * s);
+  // Name tag — always visible
+  {
+    const fs = Math.max(8, 9 * s);
     ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
     ctx.textAlign = "center";
     const nw = ctx.measureText(a.name).width;
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillStyle = "rgba(0,0,0,0.75)";
     ctx.beginPath();
-    ctx.roundRect(sx - nw / 2 - 3, sy + 10 * s, nw + 6, fs + 3, 2);
+    ctx.roundRect(sx - nw / 2 - 4, sy + 10 * s, nw + 8, fs + 5, 3);
     ctx.fill();
     ctx.fillStyle = a.color;
-    ctx.fillText(a.name, sx, sy + 10 * s + fs);
+    ctx.fillText(a.name, sx, sy + 10 * s + fs + 1);
     ctx.textAlign = "left";
   }
 
-  // Level badge
-  if (z > 0.7) {
+  // Level badge — always visible
+  {
     const lvStr = `${a.level}`;
-    const lvFs = Math.max(5, 6 * s);
+    const lvFs = Math.max(7, 7 * s);
     ctx.font = `bold ${lvFs}px 'Space Grotesk', sans-serif`;
     ctx.textAlign = "center";
     const lvW = ctx.measureText(lvStr).width;
-    ctx.fillStyle = "rgba(99,102,241,0.8)";
+    ctx.fillStyle = "rgba(99,102,241,0.9)";
     ctx.beginPath();
-    ctx.arc(sx + 6 * s, sy - 8 * s, (lvW + 4) / 2, 0, Math.PI * 2);
+    ctx.arc(sx + 8 * s, sy - 10 * s, (lvW + 6) / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#fff";
-    ctx.fillText(lvStr, sx + 6 * s, sy - 8 * s + lvFs * 0.35);
+    ctx.fillText(lvStr, sx + 8 * s, sy - 10 * s + lvFs * 0.35);
     ctx.textAlign = "left";
   }
 
