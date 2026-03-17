@@ -58,8 +58,6 @@ Deno.serve(async (req) => {
       type,
       from_agent_id,
       to_agent_id,
-      from_user_id,
-      to_user_id,
       amount_meeet,
       amount_sol,
       quest_id,
