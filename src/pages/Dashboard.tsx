@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import PresidentInbox from "@/components/PresidentInbox";
 import Footer from "@/components/Footer";
+import ApiKeyManager from "@/components/ApiKeyManager";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -639,6 +640,9 @@ const Dashboard = () => {
                 <QuickAction icon={<Scroll className="w-5 h-5" />} label="Herald" to="/herald" />
                 <QuickAction icon={<Users className="w-5 h-5" />} label="Profile" to="/profile" />
               </div>
+
+              {/* API Key Manager */}
+              <ApiKeyManager />
 
               {/* Row 2: Tabs (Quests/Transactions/Activity) + Leaderboard */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
