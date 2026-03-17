@@ -2733,15 +2733,9 @@ const LiveMap = () => {
         drawAgent(ctx, a, cam, z, t, clampedNight);
       });
 
-      // Night overlay — softer for fantasy feel
-      if (clampedNight > 0.15) {
-        ctx.fillStyle = `rgba(10,15,40,${clampedNight * 0.25})`;
-        ctx.fillRect(0, 0, w, h);
-        // Subtle vignette
-        const vig = ctx.createRadialGradient(w / 2, h / 2, w * 0.35, w / 2, h / 2, w * 0.75);
-        vig.addColorStop(0, "transparent");
-        vig.addColorStop(1, `rgba(5,10,25,${clampedNight * 0.25})`);
-        ctx.fillStyle = vig;
+      // Night overlay — very light
+      if (clampedNight > 0.3) {
+        ctx.fillStyle = `rgba(10,15,40,${(clampedNight - 0.3) * 0.2})`;
         ctx.fillRect(0, 0, w, h);
       }
 
