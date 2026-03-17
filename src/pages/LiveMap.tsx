@@ -357,116 +357,100 @@ function drawFogOfWar(_ctx: CanvasRenderingContext2D, _agents: Agent[], _cam: { 
 function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx: number, sy: number, col: number, row: number, z: number, t: number, nightFactor: number) {
   const r = noise2d(col, row, 13);
   const ts = TILE * z;
-  const px = Math.max(1, Math.floor(z * 2)); // pixel size for blocky look
 
-  // Grass block — random darker grass patches (Minecraft style)
+  // Grassland — subtle texture dots
   if (tileType === 3) {
-    // Dirt speckles showing through
-    if (r > 0.5) {
-      ctx.fillStyle = lerpColor("#8b6b3a", "#4a3820", nightFactor);
-      const dx = Math.floor((r * 7) % 4) * ts / 4;
-      const dy = Math.floor((r * 11) % 4) * ts / 4;
-      ctx.fillRect(sx + dx, sy + dy, px * 2, px * 2);
+    if (r > 0.55) {
+      ctx.fillStyle = lerpColor("#b8d298", "#5a7a3a", nightFactor);
+      ctx.beginPath();
+      ctx.arc(sx + ts * (0.3 + r * 0.3), sy + ts * 0.5, 1.2 * z, 0, Math.PI * 2);
+      ctx.fill();
     }
-    // Tall grass (blocky pixel stalks)
-    if (r > 0.65) {
-      ctx.fillStyle = lerpColor("#4a8020", "#243e10", nightFactor);
-      const gx = sx + ts * 0.3 + (r - 0.5) * ts * 0.4;
-      ctx.fillRect(gx, sy + ts * 0.3, px, ts * 0.4);
-      ctx.fillRect(gx + px * 3, sy + ts * 0.35, px, ts * 0.35);
-    }
-    // Flowers — small pixel dots
-    if (r > 0.88) {
-      const colors = ["#ff3030", "#ffdd00", "#4488ff", "#ff88cc"];
-      ctx.fillStyle = colors[Math.floor(r * 40) % 4];
-      ctx.fillRect(sx + ts * 0.6, sy + ts * 0.5, px * 2, px * 2);
-      ctx.fillStyle = lerpColor("#3a6e18", "#1e3a0c", nightFactor);
-      ctx.fillRect(sx + ts * 0.6 + px * 0.5, sy + ts * 0.5 + px * 2, px, px * 2);
+    if (r > 0.8) {
+      ctx.fillStyle = lerpColor("#d0c8a0", "#6a6240", nightFactor);
+      ctx.beginPath();
+      ctx.arc(sx + ts * 0.7, sy + ts * 0.3, 0.8 * z, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
-  // Forest — blocky Minecraft oak tree
-  if (tileType === 4 && r > 0.25) {
+  // Park/meadow — rounded soft trees (Apple Maps style)
+  if (tileType === 4 && r > 0.3) {
     const ox = (noise2d(col, row, 2) - 0.5) * ts * 0.3;
     const treeX = sx + ts * 0.5 + ox;
-    // Trunk — brown block
-    const trunkW = Math.max(2, 3 * z);
-    const trunkH = Math.max(4, ts * 0.4);
-    ctx.fillStyle = lerpColor("#6b4c2a", "#3a2810", nightFactor);
-    ctx.fillRect(treeX - trunkW / 2, sy + ts * 0.45, trunkW, trunkH);
-    // Darker bark stripe
-    ctx.fillStyle = lerpColor("#5a3e20", "#2e1e0c", nightFactor);
-    ctx.fillRect(treeX - trunkW / 2, sy + ts * 0.5, trunkW * 0.4, trunkH * 0.6);
-    // Leaf canopy — big blocky square (Minecraft oak tree top-down)
-    const leafSize = Math.max(6, ts * 0.6);
-    ctx.fillStyle = lerpColor("#3a8a1c", "#1c4a0c", nightFactor);
-    ctx.fillRect(treeX - leafSize / 2, sy + ts * 0.1, leafSize, leafSize * 0.7);
-    // Darker leaf pixels for texture
-    ctx.fillStyle = lerpColor("#2e7014", "#184008", nightFactor);
-    ctx.fillRect(treeX - leafSize / 2, sy + ts * 0.1, leafSize * 0.3, leafSize * 0.3);
-    ctx.fillRect(treeX + leafSize * 0.1, sy + ts * 0.1 + leafSize * 0.4, leafSize * 0.3, leafSize * 0.3);
-    // Lighter leaf highlight
-    ctx.fillStyle = lerpColor("#4ca828", "#2a6014", nightFactor);
-    ctx.fillRect(treeX, sy + ts * 0.15, leafSize * 0.25, leafSize * 0.25);
+    // Trunk — thin, soft brown
+    ctx.fillStyle = lerpColor("#8B7355", "#4a3a28", nightFactor);
+    const trunkW = Math.max(1.5, 2 * z);
+    ctx.fillRect(treeX - trunkW / 2, sy + ts * 0.5, trunkW, ts * 0.35);
+    // Canopy — soft round circle
+    const canopyR = Math.max(4, ts * 0.3);
+    const grad = ctx.createRadialGradient(treeX, sy + ts * 0.35, canopyR * 0.2, treeX, sy + ts * 0.35, canopyR);
+    grad.addColorStop(0, lerpColor("#7AB860", "#3A6A28", nightFactor));
+    grad.addColorStop(0.7, lerpColor("#5A9A40", "#2A5A18", nightFactor));
+    grad.addColorStop(1, lerpColor("#4A8A30", "#1A4A0A", nightFactor) + "88");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(treeX, sy + ts * 0.35, canopyR, 0, Math.PI * 2);
+    ctx.fill();
+    // Subtle highlight
+    ctx.fillStyle = lerpColor("#90D070", "#50903A", nightFactor) + "44";
+    ctx.beginPath();
+    ctx.arc(treeX - canopyR * 0.25, sy + ts * 0.3 - canopyR * 0.15, canopyR * 0.4, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Dense forest — spruce trees (taller, darker, pointy blocky)
+  // Forest — clusters of rounded trees
   if (tileType === 5) {
     for (let i = 0; i < 2; i++) {
       const ox = (noise2d(col + i, row, 3 + i) - 0.5) * ts * 0.5;
       const treeX = sx + ts * (0.3 + i * 0.4) + ox;
+      const treeY = sy + ts * (0.25 + noise2d(col, row + i, 8) * 0.15);
       // Trunk
-      ctx.fillStyle = lerpColor("#4a3018", "#28180c", nightFactor);
-      ctx.fillRect(treeX - px, sy + ts * 0.55, px * 2, ts * 0.3);
-      // Spruce leaves — stacked blocks getting smaller (pyramid)
-      const layers = 3;
-      for (let l = 0; l < layers; l++) {
-        const lw = Math.max(3, (ts * 0.5 - l * ts * 0.12));
-        const ly = sy + ts * 0.15 + l * ts * 0.14;
-        ctx.fillStyle = lerpColor(l === 0 ? "#1a5c0a" : "#1e680e", "#0c2e04", nightFactor);
-        ctx.fillRect(treeX - lw / 2, ly, lw, ts * 0.16);
-      }
+      ctx.fillStyle = lerpColor("#6A5A3A", "#3A2A18", nightFactor);
+      ctx.fillRect(treeX - z, treeY + ts * 0.15, 2 * z, ts * 0.35);
+      // Canopy — dense dark green
+      const cr = Math.max(5, ts * 0.28 + i * ts * 0.05);
+      const grad = ctx.createRadialGradient(treeX, treeY, cr * 0.15, treeX, treeY, cr);
+      grad.addColorStop(0, lerpColor("#5A9050", "#2A5020", nightFactor));
+      grad.addColorStop(0.6, lerpColor("#3A7A38", "#1A4018", nightFactor));
+      grad.addColorStop(1, lerpColor("#2A6828", "#0A3008", nightFactor) + "66");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(treeX, treeY, cr, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
-  // Stone/Mountain — blocky ore speckles
-  if (tileType === 6 && r > 0.3) {
-    const ox = (noise2d(col, row, 5) - 0.5) * ts * 0.4;
-    // Cobblestone texture — darker patches
-    ctx.fillStyle = lerpColor("#6a6a6a", "#3a3a3a", nightFactor);
-    ctx.fillRect(sx + ts * 0.2 + ox, sy + ts * 0.3, px * 3, px * 3);
-    ctx.fillRect(sx + ts * 0.6, sy + ts * 0.6, px * 2, px * 2);
-    // Coal/ore speckle
-    if (r > 0.7) {
-      ctx.fillStyle = r > 0.85 ? lerpColor("#c8a83c", "#7a6420", nightFactor) : lerpColor("#3a3a3a", "#1e1e1e", nightFactor);
-      ctx.fillRect(sx + ts * 0.5 + ox, sy + ts * 0.4, px * 2, px * 2);
-    }
-    // Snow on top of mountain blocks
-    if (r > 0.6) {
-      ctx.fillStyle = lerpColor("#f0f0f0", "#a0a0a8", nightFactor);
-      ctx.fillRect(sx + ts * 0.1, sy + ts * 0.05, ts * 0.8, ts * 0.12);
+  // Rocky terrain — subtle stone texture
+  if (tileType === 6 && r > 0.35) {
+    ctx.fillStyle = lerpColor("#BEB8AE", "#6A6460", nightFactor);
+    ctx.beginPath();
+    ctx.arc(sx + ts * (0.3 + r * 0.3), sy + ts * 0.4, 2.5 * z, 0, Math.PI * 2);
+    ctx.fill();
+    if (r > 0.65) {
+      ctx.fillStyle = lerpColor("#A8A298", "#5A5450", nightFactor);
+      ctx.beginPath();
+      ctx.arc(sx + ts * 0.65, sy + ts * 0.65, 1.8 * z, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
-  // Water — animated block highlights
+  // Wetland — soft wave ripple
   if (tileType === 0 || tileType === 1) {
     const wave = Math.sin(t * 0.002 + col * 0.8 + row * 0.5);
-    const alpha = 0.12 + wave * 0.08;
-    ctx.fillStyle = `rgba(150,210,255,${Math.max(0, alpha)})`;
-    // Blocky water highlights
-    const wx = Math.floor((t * 0.001 + col) % 4) * ts / 4;
-    ctx.fillRect(sx + wx, sy + ts * 0.3, ts * 0.25, px * 2);
-    ctx.fillRect(sx + ((wx + ts * 0.5) % ts), sy + ts * 0.6, ts * 0.2, px * 2);
+    const alpha = 0.08 + wave * 0.04;
+    ctx.fillStyle = `rgba(180,210,190,${Math.max(0, alpha)})`;
+    ctx.beginPath();
+    ctx.arc(sx + ts * 0.5, sy + ts * 0.5, ts * 0.25, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Sand — small pixel pebbles
-  if (tileType === 2 && r > 0.65) {
-    ctx.fillStyle = lerpColor("#c4a858", "#7a6830", nightFactor);
-    ctx.fillRect(sx + ts * (0.3 + r * 0.3), sy + ts * 0.6, px * 2, px);
-    if (r > 0.8) {
-      ctx.fillStyle = lerpColor("#a89048", "#686028", nightFactor);
-      ctx.fillRect(sx + ts * 0.5, sy + ts * 0.3, px, px);
-    }
+  // Sandy — small pebble dots
+  if (tileType === 2 && r > 0.6) {
+    ctx.fillStyle = lerpColor("#D0C8A8", "#8A8268", nightFactor);
+    ctx.beginPath();
+    ctx.arc(sx + ts * (0.3 + r * 0.4), sy + ts * 0.6, 1 * z, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
