@@ -260,18 +260,7 @@ function QuestCard({
   const isPending = questAction.isPending;
 
   // Auto-fill wallet from profile
-  const { data: profileWallet } = useQuery({
-    queryKey: ["profile-wallet", userId],
-    enabled: !!userId && quest.status === "in_progress" && isAssignedOwner,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("wallet_address")
-        .eq("user_id", userId!)
-        .maybeSingle();
-      return data?.wallet_address ?? null;
-    },
-  });
+  const { walletAddress: profileWallet } = useProfileWallet();
 
   // Pre-fill wallet when profile data loads
   useEffect(() => {
