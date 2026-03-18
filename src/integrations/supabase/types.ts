@@ -828,6 +828,8 @@ export type Database = {
           is_onboarded: boolean | null
           is_president: boolean | null
           passport_tier: Database["public"]["Enums"]["passport_tier"] | null
+          referral_code: string | null
+          referred_by: string | null
           twitter_handle: string | null
           updated_at: string
           user_id: string
@@ -843,6 +845,8 @@ export type Database = {
           is_onboarded?: boolean | null
           is_president?: boolean | null
           passport_tier?: Database["public"]["Enums"]["passport_tier"] | null
+          referral_code?: string | null
+          referred_by?: string | null
           twitter_handle?: string | null
           updated_at?: string
           user_id: string
@@ -858,6 +862,8 @@ export type Database = {
           is_onboarded?: boolean | null
           is_president?: boolean | null
           passport_tier?: Database["public"]["Enums"]["passport_tier"] | null
+          referral_code?: string | null
+          referred_by?: string | null
           twitter_handle?: string | null
           updated_at?: string
           user_id?: string
@@ -1163,6 +1169,36 @@ export type Database = {
           key?: string
           request_count?: number
           window_start?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          ref_code: string
+          referred_user_id: string
+          referrer_user_id: string
+          status: Database["public"]["Enums"]["referral_status"]
+          total_earned_meeet: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ref_code: string
+          referred_user_id: string
+          referrer_user_id: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          total_earned_meeet?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ref_code?: string
+          referred_user_id?: string
+          referrer_user_id?: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          total_earned_meeet?: number
         }
         Relationships: []
       }
@@ -1753,6 +1789,7 @@ export type Database = {
         | "completed"
         | "disputed"
         | "cancelled"
+      referral_status: "pending" | "registered" | "passport" | "first_quest"
       structure_type:
         | "guild_hall"
         | "bank"
@@ -1967,6 +2004,7 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      referral_status: ["pending", "registered", "passport", "first_quest"],
       structure_type: [
         "guild_hall",
         "bank",
