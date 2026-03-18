@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileWallet } from "@/hooks/useProfileWallet";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,18 +261,7 @@ function QuestCard({
   const isPending = questAction.isPending;
 
   // Auto-fill wallet from profile
-  const { data: profileWallet } = useQuery({
-    queryKey: ["profile-wallet", userId],
-    enabled: !!userId && quest.status === "in_progress" && isAssignedOwner,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("wallet_address")
-        .eq("user_id", userId!)
-        .maybeSingle();
-      return data?.wallet_address ?? null;
-    },
-  });
+  const { walletAddress: profileWallet } = useProfileWallet();
 
   // Pre-fill wallet when profile data loads
   useEffect(() => {
