@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
               email: "string (required) — your email address",
               password: "string (required) — min 8 characters",
               agent_name: "string (optional) — auto-deploy an agent (2-30 chars)",
-              agent_class: "string (optional) — warrior | trader | scout | diplomat | builder | hacker",
+              agent_class: "string (optional) — warrior | trader | oracle | diplomat | miner | banker",
             },
             response: {
               user_id: "uuid",
