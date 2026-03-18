@@ -172,7 +172,7 @@ const Navbar = () => {
             </Link>
           )}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
