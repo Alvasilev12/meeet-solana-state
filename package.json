@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node ./node_modules/vite/bin/vite.js",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "build:dev": "node ./node_modules/vite/bin/vite.js build --mode development",
+    "dev": "bunx vite",
+    "build": "bunx vite build",
+    "build:dev": "bunx vite build --mode development",
     "lint": "eslint .",
-    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "preview": "bunx vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
   },
