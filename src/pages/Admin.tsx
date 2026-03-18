@@ -8,9 +8,23 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
+import * as Recharts from "recharts";
 
 const COLORS = ["#9945FF", "#14F195", "#EF4444", "#FBBF24", "#00C2FF", "#F97316", "#6366F1"];
+const {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  CartesianGrid,
+} = Recharts as any;
 
 function useAdminCheck() {
   const { user } = useAuth();
