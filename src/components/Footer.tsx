@@ -15,7 +15,7 @@ const Footer = () => {
               <span className="text-xs text-muted-foreground">{t("footer.tagline")}</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground font-body">
-              <a href="https://twitter.com/Meeet_world" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">{t("footer.twitter")}</a>
+              
               <Link to="/tokenomics" className="hover:text-foreground transition-colors">$MEEET</Link>
               <Link to="/live" className="hover:text-foreground transition-colors">{t("footer.liveMap")}</Link>
             </div>

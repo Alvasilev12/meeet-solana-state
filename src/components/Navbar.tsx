@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Twitter, Menu, X, LogOut, Bell } from "lucide-react";
+import { Menu, X, LogOut, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -148,9 +148,6 @@ const Navbar = () => {
             </Popover>
           )}
 
-          <a href="https://twitter.com/Meeet_world" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors duration-150">
-            <Twitter className="w-4 h-4" />
-          </a>
           {user ? (
             <>
               <Link
