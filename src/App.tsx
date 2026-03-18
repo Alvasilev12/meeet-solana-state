@@ -25,6 +25,10 @@ import Join from "./pages/Join.tsx";
 import BadgeGenerator from "./pages/BadgeGenerator.tsx";
 import Referrals from "./pages/Referrals.tsx";
 import About from "./pages/About.tsx";
+import World from "./pages/World.tsx";
+import WorldRankings from "./pages/WorldRankings.tsx";
+import CountryPage from "./pages/CountryPage.tsx";
+import Discoveries from "./pages/Discoveries.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -57,6 +61,10 @@ const App = () => (
               <Route path="/tools/badge" element={<BadgeGenerator />} />
               <Route path="/dashboard/referrals" element={<Referrals />} />
               <Route path="/about" element={<About />} />
+              <Route path="/world" element={<World />} />
+              <Route path="/world/rankings" element={<WorldRankings />} />
+              <Route path="/country/:code" element={<CountryPage />} />
+              <Route path="/discoveries" element={<Discoveries />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

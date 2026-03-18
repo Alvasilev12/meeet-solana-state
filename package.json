@@ -51,6 +51,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
+    "mapbox-gl": "^3.9.0",
     "next-themes": "^0.3.0",
     "picomatch": "^4.0.2",
     "react": "^18.3.1",
