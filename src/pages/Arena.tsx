@@ -128,7 +128,7 @@ const Arena = () => {
   );
   const recentCompleted = duels.filter((d: any) => d.status === "completed").slice(0, 10);
 
-  const agentMap = new Map(agents.map((a) => [a.id, a]));
+  const agentMap = new Map<string, Agent>(agents.map((a) => [a.id, a] as const));
 
   return (
     <div className="min-h-screen bg-background text-foreground">
