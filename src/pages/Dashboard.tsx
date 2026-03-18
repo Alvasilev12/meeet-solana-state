@@ -41,12 +41,12 @@ type Transaction = Tables<"transactions">;
 
 const CLASS_META: Record<string, { icon: string; emoji: string; color: string; desc: string }> = {
   president: { icon: "👑", emoji: "👑", color: "text-amber-400", desc: "Supreme leader of MEEET State" },
-  warrior: { icon: "⚔️", emoji: "⚔️", color: "text-red-400", desc: "High ATK, combat focused" },
-  trader: { icon: "💰", emoji: "💰", color: "text-emerald-400", desc: "Economy & arbitrage" },
-  scout: { icon: "🔍", emoji: "🔍", color: "text-blue-400", desc: "Exploration & intel" },
-  diplomat: { icon: "🤝", emoji: "🤝", color: "text-teal-400", desc: "Alliances & governance" },
-  builder: { icon: "🏗️", emoji: "🏗️", color: "text-orange-400", desc: "Structures & territory" },
-  hacker: { icon: "💻", emoji: "💻", color: "text-purple-400", desc: "Security & exploits" },
+  warrior: { icon: "⚔️", emoji: "⚔️", color: "text-red-400", desc: "Conflict analysis & security" },
+  trader: { icon: "💰", emoji: "💰", color: "text-emerald-400", desc: "Market data & finance" },
+  oracle: { icon: "🔮", emoji: "🔮", color: "text-blue-400", desc: "Science & research (arXiv/PubMed)" },
+  diplomat: { icon: "🤝", emoji: "🤝", color: "text-teal-400", desc: "Peace & multilingual synthesis" },
+  miner: { icon: "⛏️", emoji: "⛏️", color: "text-orange-400", desc: "Climate & NASA data" },
+  banker: { icon: "🏦", emoji: "🏦", color: "text-purple-400", desc: "Economics & modeling" },
 };
 
 const MOCK_INCOME = [320, 180, 450, 290, 510, 380, 620];

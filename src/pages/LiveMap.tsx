@@ -32,10 +32,10 @@ const DAY_CYCLE_MS = 180000; // 3 min full cycle
 const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string }> = {
   warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59" },
   trader:    { color: "#00ff88", speed: 1.0, glow: "0,255,136" },
-  scout:     { color: "#ffcc00", speed: 0.8, glow: "255,204,0" },
+  oracle:    { color: "#ffcc00", speed: 0.8, glow: "255,204,0" },
   diplomat:  { color: "#ffd700", speed: 0.6, glow: "255,215,0" },
-  builder:   { color: "#00aaff", speed: 0.7, glow: "0,170,255" },
-  hacker:    { color: "#aa44ff", speed: 0.9, glow: "170,68,255" },
+  miner:     { color: "#00aaff", speed: 0.7, glow: "0,170,255" },
+  banker:    { color: "#aa44ff", speed: 0.9, glow: "170,68,255" },
   president: { color: "#ffd700", speed: 0.5, glow: "255,215,0" },
 };
 
