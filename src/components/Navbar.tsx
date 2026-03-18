@@ -16,6 +16,7 @@ const Navbar = () => {
   const { t } = useLanguage();
 
   const NAV_LINKS = [
+    { href: "/about", label: "О проекте" },
     { href: "/live", label: t("nav.map") },
     { href: "/quests", label: t("nav.quests") },
     { href: "/arena", label: t("nav.arena") },
