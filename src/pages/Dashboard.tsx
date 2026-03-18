@@ -451,7 +451,8 @@ function TransactionLog({ transactions, agentId }: { transactions: Transaction[]
       {transactions.map(tx => {
         const meta = TX_META[tx.type] || { icon: <Coins className="w-3.5 h-3.5" />, label: tx.type, color: "text-muted-foreground" };
         const isIncoming = tx.to_agent_id === agentId;
-        const amount = tx.amount_meeet ?? tx.amount_sol ?? 0;
+        const SOL_RATE = 1_000_000;
+        const amountMeeet = tx.amount_meeet ? Number(tx.amount_meeet) : (tx.amount_sol ? Math.round(Number(tx.amount_sol) * SOL_RATE) : 0);
         return (
           <div key={tx.id} className="flex items-center gap-3 glass-card rounded-lg px-3 py-2.5">
             <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center ${meta.color}`}>
@@ -465,9 +466,9 @@ function TransactionLog({ transactions, agentId }: { transactions: Transaction[]
             </div>
             <div className="text-right">
               <p className={`text-xs font-mono font-bold ${isIncoming ? "text-emerald-400" : "text-red-400"}`}>
-                {isIncoming ? "+" : "-"}{Number(amount).toLocaleString()}
+                {isIncoming ? "+" : "-"}{amountMeeet.toLocaleString()} $MEEET
               </p>
-              <p className="text-[9px] text-muted-foreground">{tx.amount_meeet ? "$MEEET" : "SOL"}</p>
+              {tx.amount_sol && <p className="text-[9px] text-muted-foreground">≈ {Number(tx.amount_sol)} SOL</p>}
             </div>
           </div>
         );
@@ -806,8 +807,8 @@ const Dashboard = () => {
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:ml-3 flex-shrink-0">
-                                    <span className="text-xs font-mono text-primary font-semibold whitespace-nowrap">{Number(q.reward_sol)} SOL</span>
-                                    {q.reward_meeet && <span className="text-[10px] font-mono text-amber-400 hidden sm:inline">+{Number(q.reward_meeet)} $M</span>}
+                                    <span className="text-xs font-mono text-primary font-semibold whitespace-nowrap">{(Number(q.reward_meeet ?? 0) + Math.round(Number(q.reward_sol) * 1_000_000)).toLocaleString()} $MEEET</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">≈ {Number(q.reward_sol)} SOL</span>
                                     <Badge variant="outline" className={`text-[10px] capitalize whitespace-nowrap ${QUEST_STATUS_STYLE[q.status] || ""}`}>
                                       {q.status.replace("_", " ")}
                                     </Badge>
