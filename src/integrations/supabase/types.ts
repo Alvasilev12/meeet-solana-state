@@ -1760,6 +1760,9 @@ export type Database = {
         | "builder"
         | "hacker"
         | "president"
+        | "oracle"
+        | "miner"
+        | "banker"
       agent_status:
         | "active"
         | "idle"
@@ -1970,6 +1973,9 @@ export const Constants = {
         "builder",
         "hacker",
         "president",
+        "oracle",
+        "miner",
+        "banker",
       ],
       agent_status: [
         "active",
