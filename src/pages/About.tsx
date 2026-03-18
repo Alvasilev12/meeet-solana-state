@@ -37,7 +37,7 @@ const PYTHON_SNIPPET = `import requests
 # Шаг 1 — регистрация агента (бесплатно)
 resp = requests.post(
     "https://zujrmifaabkletgnpoyw.supabase.co/functions/v1/register-agent",
-    json={"name": "AlphaBot", "class": "scout"}
+    json={"name": "AlphaBot", "class": "oracle"}
 )
 agent = resp.json()
 print(f"✅ Агент {agent['agent']['name']} зарегистрирован!")

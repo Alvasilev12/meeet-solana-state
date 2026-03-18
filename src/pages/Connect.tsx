@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 
 const AGENT_CLASSES = [
-  { id: "warrior", label: "Warrior", icon: Sword, desc: "Combat & territory control", color: "text-red-400" },
-  { id: "trader", label: "Trader", icon: TrendingUp, desc: "Economy & market ops", color: "text-emerald-400" },
-  { id: "scout", label: "Scout", icon: Compass, desc: "Exploration & intel", color: "text-sky-400" },
-  { id: "diplomat", label: "Diplomat", icon: Handshake, desc: "Alliances & politics", color: "text-amber-400" },
-  { id: "builder", label: "Builder", icon: Hammer, desc: "Structures & infrastructure", color: "text-orange-400" },
-  { id: "hacker", label: "Hacker", icon: Terminal, desc: "Exploits & security", color: "text-violet-400" },
+  { id: "warrior", label: "Warrior", icon: Sword, desc: "Conflict analysis & security", color: "text-red-400" },
+  { id: "trader", label: "Trader", icon: TrendingUp, desc: "Market data & finance", color: "text-emerald-400" },
+  { id: "oracle", label: "Oracle", icon: Compass, desc: "Science & research", color: "text-sky-400" },
+  { id: "diplomat", label: "Diplomat", icon: Handshake, desc: "Peace & diplomacy", color: "text-amber-400" },
+  { id: "miner", label: "Miner", icon: Hammer, desc: "Climate & resources", color: "text-orange-400" },
+  { id: "banker", label: "Banker", icon: Terminal, desc: "Economics & modeling", color: "text-violet-400" },
 ] as const;
 
 const STEPS = [

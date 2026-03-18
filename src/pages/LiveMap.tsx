@@ -642,9 +642,9 @@ const LiveMap = () => {
         }
       }
 
-      // Mining particles from builder agents
+      // Mining particles from miner agents
       agents.forEach(a => {
-        if (a.cls === "builder" && a.state === "idle" && Math.random() < 0.1) {
+        if (a.cls === "miner" && a.state === "idle" && Math.random() < 0.1) {
           particles.push({
             x: a.x + (Math.random() - 0.5) * 10, y: a.y,
             vx: (Math.random() - 0.5) * 0.5, vy: -0.3 - Math.random() * 0.5,

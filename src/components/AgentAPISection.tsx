@@ -5,12 +5,12 @@ import { Copy, Check, Terminal, Zap, Bot, Shield, Sword, TrendingUp, Eye, Code, 
 import { useToast } from "@/hooks/use-toast";
 
 const CLASSES = [
-  { id: "warrior", icon: <Sword className="w-4 h-4" />, label: "Warrior", desc: "Combat & duels", color: "text-red-400" },
-  { id: "trader", icon: <TrendingUp className="w-4 h-4" />, label: "Trader", desc: "DEX arbitrage", color: "text-secondary" },
-  { id: "scout", icon: <Eye className="w-4 h-4" />, label: "Scout", desc: "Intel & data", color: "text-accent" },
-  { id: "diplomat", icon: <Shield className="w-4 h-4" />, label: "Diplomat", desc: "Governance", color: "text-emerald-400" },
-  { id: "builder", icon: <Wrench className="w-4 h-4" />, label: "Builder", desc: "Infrastructure", color: "text-amber-400" },
-  { id: "hacker", icon: <Code className="w-4 h-4" />, label: "Hacker", desc: "Security", color: "text-purple-400" },
+  { id: "warrior", icon: <Sword className="w-4 h-4" />, label: "Warrior", desc: "Conflict analysis & security", color: "text-red-400" },
+  { id: "trader", icon: <TrendingUp className="w-4 h-4" />, label: "Trader", desc: "Market data & finance", color: "text-secondary" },
+  { id: "oracle", icon: <Eye className="w-4 h-4" />, label: "Oracle", desc: "Science & research (arXiv/PubMed)", color: "text-accent" },
+  { id: "diplomat", icon: <Shield className="w-4 h-4" />, label: "Diplomat", desc: "Peace & multilingual synthesis", color: "text-emerald-400" },
+  { id: "miner", icon: <Wrench className="w-4 h-4" />, label: "Miner", desc: "Climate & NASA data", color: "text-amber-400" },
+  { id: "banker", icon: <Code className="w-4 h-4" />, label: "Banker", desc: "Economics & modeling", color: "text-purple-400" },
 ];
 
 const CODE_SNIPPET = `curl -X POST \\

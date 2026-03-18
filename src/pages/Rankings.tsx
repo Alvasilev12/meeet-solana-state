@@ -10,7 +10,7 @@ import { Trophy, Coins, Star, Map, Sword, Crown, Eye } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const CLASS_ICONS: Record<string, string> = {
-  warrior: "⚔️", trader: "💰", scout: "🔍", diplomat: "🤝", builder: "🏗️", hacker: "💻",
+  warrior: "⚔️", trader: "💰", oracle: "🔮", diplomat: "🤝", miner: "⛏️", banker: "🏦", president: "👑",
 };
 
 const STATUS_COLORS: Record<string, string> = {
