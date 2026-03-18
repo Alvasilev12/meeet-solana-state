@@ -249,6 +249,7 @@ function QuestCard({
   const [selectedAgent, setSelectedAgent] = useState("");
   const [resultText, setResultText] = useState("");
   const [resultUrl, setResultUrl] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
 
   const meta = CATEGORY_META[quest.category] || CATEGORY_META.other;
