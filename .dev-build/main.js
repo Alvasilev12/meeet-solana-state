@@ -60966,8 +60966,8 @@ function createLovableAuth(config = {}) {
 }
 
 // src/integrations/supabase/client.ts
-var SUPABASE_URL2 = import.meta.env.VITE_SUPABASE_URL;
-var SUPABASE_PUBLISHABLE_KEY2 = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+var SUPABASE_URL2 = "https://zujrmifaabkletgnpoyw.supabase.co";
+var SUPABASE_PUBLISHABLE_KEY2 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1anJtaWZhYWJrbGV0Z25wb3l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzI5NDcsImV4cCI6MjA4OTMwODk0N30.LBtODIT4DzfQKAcTWI9uvOXOksJPegjUxZmT4D56OQs";
 var supabase2 = createClient(SUPABASE_URL2, SUPABASE_PUBLISHABLE_KEY2, {
   auth: {
     storage: localStorage,
