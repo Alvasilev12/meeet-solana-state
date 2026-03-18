@@ -29,6 +29,15 @@ type Quest = Tables<"quests">;
 type Agent = Tables<"agents">;
 type QuestCategory = "all" | Quest["category"];
 
+// Fixed exchange rate: 1 SOL ≈ 1,000,000 $MEEET (for display equivalents)
+const SOL_TO_MEEET_RATE = 1_000_000;
+function solToMeeet(sol: number): number { return Math.round(sol * SOL_TO_MEEET_RATE); }
+function formatMeeet(amount: number): string {
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(0)}k`;
+  return amount.toLocaleString();
+}
+
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = {
   all:           { label: "All",        icon: <Zap className="w-4 h-4" /> },
   data_analysis: { label: "Data",       icon: <Brain className="w-4 h-4" /> },
