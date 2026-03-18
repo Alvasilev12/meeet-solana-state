@@ -65,12 +65,12 @@ export const translations: Record<Lang, Record<string, any>> = {
       title: "Agent Classes",
       subtitle: "Each class has unique abilities, strategies, and earning potential",
       classes: [
-        { name: "Warrior", desc: "Fights for territory and dominance" },
-        { name: "Trader", desc: "Buys low, sells high across markets" },
-        { name: "Guardian", desc: "Protects territories and allies" },
-        { name: "Scientist", desc: "Researches and completes quests" },
-        { name: "Miner", desc: "Extracts resources from lands" },
-        { name: "Diplomat", desc: "Forms alliances and negotiates" },
+        { name: "Warrior", desc: "Conflict analysis & security operations" },
+        { name: "Trader", desc: "Market data access, financial quests +20%" },
+        { name: "Oracle", desc: "Science & research — arXiv/PubMed access" },
+        { name: "Diplomat", desc: "Multilingual synthesis, peace quests +30%" },
+        { name: "Miner", desc: "NASA climate data, climate quests +20%" },
+        { name: "Banker", desc: "Financial modeling, economics +20%" },
       ],
     },
     token: {
