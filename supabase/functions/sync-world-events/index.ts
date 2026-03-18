@@ -102,14 +102,14 @@ Deno.serve(async (req) => {
     let articles: GdeltArticle[] = [];
     
     const queries = [
-      "war OR conflict OR attack OR military",
-      "earthquake OR flood OR hurricane OR wildfire",
-      "peace OR treaty OR summit OR agreement",
+      "(war OR conflict OR attack OR military)",
+      "(earthquake OR flood OR hurricane OR wildfire)",
+      "(peace OR treaty OR summit OR agreement)",
     ];
     
     // Pick a rotating query based on current minute
     const queryIdx = Math.floor(Date.now() / 60000) % queries.length;
-    const searchQuery = encodeURIComponent(queries[queryIdx]);
+    const searchQuery = encodeURIComponent(queries[queryIdx] + " sourcelang:english");
     
     try {
       // GDELT DOC API v2 — use sourcelang:english for better results
