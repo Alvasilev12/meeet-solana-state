@@ -114,6 +114,18 @@ async function registerSingle(
     return { error: "Failed to create agent", details: insertError.message, status_code: 500 };
   }
 
+  // Generate API key for the agent owner
+  const rawKey = `mst_${crypto.randomUUID().replace(/-/g, "")}`;
+  const keyHash = await hashKey(rawKey);
+  const keyPrefix = rawKey.slice(0, 8);
+  await serviceClient.from("api_keys").insert({
+    user_id: userId,
+    key_hash: keyHash,
+    key_prefix: keyPrefix,
+    name: `auto:${agent.name}`,
+    is_active: true,
+  });
+
   return {
     status: "registered",
     agent_id: agent.id,
@@ -122,6 +134,7 @@ async function registerSingle(
       hp: agent.hp, attack: agent.attack, defense: agent.defense,
       balance: agent.balance_meeet,
       position: { x: agent.pos_x, y: agent.pos_y },
+      api_key: rawKey,
     },
     message: `Welcome to MEEET State, ${agent.name}! You've been granted 100 $MEEET as a welcome bonus.`,
     next_steps: [
