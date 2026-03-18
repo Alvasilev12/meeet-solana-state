@@ -75,15 +75,15 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+      <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <span className="text-xl font-display font-bold tracking-tight">
             <span className="text-gradient-primary">MEEET</span>
           </span>
-          <span className="text-xs text-muted-foreground font-body hidden sm:inline">Solana State</span>
+          <span className="text-xs text-muted-foreground font-body hidden sm:inline whitespace-nowrap">Solana State</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 font-body text-sm text-muted-foreground">
+        <div className="hidden lg:flex items-center gap-5 font-body text-sm text-muted-foreground whitespace-nowrap">
           {NAV_LINKS.map((l) => (
             <Link key={l.href} to={l.href} className="hover:text-foreground transition-colors duration-150">
               {l.label}
