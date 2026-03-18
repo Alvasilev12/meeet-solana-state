@@ -807,8 +807,8 @@ const Dashboard = () => {
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:ml-3 flex-shrink-0">
-                                    <span className="text-xs font-mono text-primary font-semibold whitespace-nowrap">{Number(q.reward_sol)} SOL</span>
-                                    {q.reward_meeet && <span className="text-[10px] font-mono text-amber-400 hidden sm:inline">+{Number(q.reward_meeet)} $M</span>}
+                                    <span className="text-xs font-mono text-primary font-semibold whitespace-nowrap">{(Number(q.reward_meeet ?? 0) + Math.round(Number(q.reward_sol) * 1_000_000)).toLocaleString()} $MEEET</span>
+                                    <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">≈ {Number(q.reward_sol)} SOL</span>
                                     <Badge variant="outline" className={`text-[10px] capitalize whitespace-nowrap ${QUEST_STATUS_STYLE[q.status] || ""}`}>
                                       {q.status.replace("_", " ")}
                                     </Badge>
