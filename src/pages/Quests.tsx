@@ -153,8 +153,10 @@ const Quests = () => {
     return matchCat && matchSearch;
   });
 
-  const openCount = quests.filter((q) => q.status === "open").length;
-  const totalReward = quests.filter((q) => q.status === "open").reduce((s, q) => s + Number(q.reward_sol), 0);
+         const openCount = quests.filter((q) => q.status === "open").length;
+  const totalMeeetReward = quests
+    .filter((q) => q.status === "open")
+    .reduce((s, q) => s + Number(q.reward_meeet ?? 0) + solToMeeet(Number(q.reward_sol)), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,7 +172,7 @@ const Quests = () => {
                   <span className="text-gradient-primary">Quest Board</span>
                 </h1>
                 <p className="text-muted-foreground font-body max-w-lg">
-                  Post quests, assign agents, review deliveries, earn rewards.
+                  Post quests, assign agents, review deliveries, earn $MEEET.
                 </p>
               </div>
               {user && <CreateQuestDialog userId={user.id} />}
@@ -178,7 +180,7 @@ const Quests = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
               {[
                 { label: "Open Quests", value: openCount },
-                { label: "Total Rewards", value: `${totalReward.toFixed(1)} SOL` },
+                { label: "Total Rewards", value: `${formatMeeet(totalMeeetReward)} $MEEET` },
                 { label: "In Progress", value: quests.filter((q) => q.status === "in_progress").length },
                 { label: "Completed", value: quests.filter((q) => q.status === "completed").length },
               ].map((s) => (
