@@ -61,12 +61,13 @@ Deno.serve(async (req) => {
 
     // /badge/:handle/status.svg
     if (segments.length === 2 && segments[1] === "status") {
-      const handle = segments[0];
-      const { data: agent } = await supabase
+      const handle = decodeURIComponent(segments[0]);
+      const { data: agents } = await supabase
         .from("agents")
         .select("name, level, class, status")
         .eq("name", handle)
-        .maybeSingle();
+        .limit(1);
+      const agent = agents?.[0];
 
       if (!agent) {
         return svg("MEEET", "Agent not found", "#ef4444");
