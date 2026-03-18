@@ -647,6 +647,85 @@ const Dashboard = () => {
                     <StatCard icon={<Star className="w-4 h-4" />} label="XP Total" value={Number(agent.xp).toLocaleString()} trend="up" />
                   </div>
 
+                  {/* ── Balance Overview ─────────────────────────── */}
+                  <Card className="glass-card border-border overflow-hidden relative">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 via-primary to-amber-500" />
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                            <PiggyBank className="w-4.5 h-4.5 text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground font-body uppercase tracking-wider">Agent Balance</p>
+                            <p className="text-2xl font-display font-bold text-foreground">
+                              {Number(agent.balance_meeet).toLocaleString()} <span className="text-sm text-muted-foreground">$MEEET</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ConnectWallet savedAddress={profile?.wallet_address} compact />
+                        </div>
+                      </div>
+
+                      {/* Balance breakdown */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-400" />
+                          </div>
+                          <p className="text-lg font-display font-bold text-emerald-400">
+                            {transactions.filter(t => t.to_agent_id === agent.id && t.amount_meeet).reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-body">Total Earned</p>
+                        </div>
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <ArrowDownRight className="w-3 h-3 text-red-400" />
+                          </div>
+                          <p className="text-lg font-display font-bold text-red-400">
+                            {transactions.filter(t => t.from_agent_id === agent.id && t.amount_meeet).reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-body">Total Spent</p>
+                        </div>
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Flame className="w-3 h-3 text-orange-400" />
+                          </div>
+                          <p className="text-lg font-display font-bold text-orange-400">
+                            {transactions.filter(t => t.type === "burn" || t.type === "tax").reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-body">Tax & Burn</p>
+                        </div>
+                      </div>
+
+                      {/* Wallet link */}
+                      {profile?.wallet_address && (
+                        <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs text-muted-foreground font-body">Linked wallet</span>
+                            <span className="text-xs font-mono text-foreground">
+                              {profile.wallet_address.slice(0, 6)}...{profile.wallet_address.slice(-4)}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <ClaimTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} walletAddress={profile?.wallet_address} />
+                            <DepositTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} agentName={agent.name} />
+                          </div>
+                        </div>
+                      )}
+                      {!profile?.wallet_address && (
+                        <div className="mt-4 pt-3 border-t border-border">
+                          <div className="flex items-center gap-2 text-amber-400">
+                            <Gift className="w-3.5 h-3.5" />
+                            <span className="text-xs font-body">Connect a wallet to claim & deposit $MEEET</span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   {/* Income Chart */}
                   <Card className="glass-card border-border">
                     <CardContent className="p-5">
