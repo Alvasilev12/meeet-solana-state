@@ -1,9 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "@/integrations/supabase/runtime-client";
-
-const MAPBOX_TOKEN = "pk.eyJ1IjoiYWx4dmFzaWxldnYiLCJhIjoiY21td2d5d3dqMnBudjJwcHFsNmFqaHRjaiJ9.b5ckcRIEIUCMACPNNxl5RQ";
 
 const CLASS_COLORS: Record<string, string> = {
   warrior: "#ff3b3b",
@@ -46,14 +44,40 @@ interface WorldMapProps {
   onEventClick?: (event: WorldEvent) => void;
 }
 
+// Free dark tile styles
+const DARK_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    "carto-dark": {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+      ],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    },
+  },
+  layers: [
+    {
+      id: "carto-dark-layer",
+      type: "raster",
+      source: "carto-dark",
+      minzoom: 0,
+      maxzoom: 20,
+    },
+  ],
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+};
+
 const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, onEventClick }: WorldMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [events, setEvents] = useState<WorldEvent[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Fetch agents with GPS
   const fetchAgents = useCallback(async () => {
     const { data } = await supabase
       .from("agents_public")
@@ -64,7 +88,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     if (data) setAgents(data as Agent[]);
   }, []);
 
-  // Fetch world events
   const fetchEvents = useCallback(async () => {
     const { data } = await supabase
       .from("world_events")
@@ -78,30 +101,19 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: DARK_STYLE,
       center: [0, 20],
       zoom: 2,
-      projection: "globe",
+      maxZoom: 16,
       interactive,
-    });
-
-    map.on("style.load", () => {
-      map.setFog({
-        color: "rgb(10, 10, 20)",
-        "high-color": "rgb(20, 20, 40)",
-        "horizon-blend": 0.08,
-        "space-color": "rgb(5, 5, 15)",
-        "star-intensity": 0.6,
-      });
     });
 
     map.on("load", () => {
       setMapLoaded(true);
 
-      // Agent source
+      // Agent source with clustering
       map.addSource("agents", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -110,7 +122,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         clusterRadius: 50,
       });
 
-      // Cluster layer
+      // Cluster circles
       map.addLayer({
         id: "agent-clusters",
         type: "circle",
@@ -130,7 +142,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Cluster count
+      // Cluster count labels
       map.addLayer({
         id: "agent-cluster-count",
         type: "symbol",
@@ -138,7 +150,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         filter: ["has", "point_count"],
         layout: {
           "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-font": ["Open Sans Bold"],
           "text-size": 13,
         },
         paint: {
@@ -176,7 +188,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         minzoom: 6,
         layout: {
           "text-field": ["concat", ["get", "name"], "\n", ["get", "balance"], " $M"],
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
+          "text-font": ["Open Sans Regular"],
           "text-size": 11,
           "text-offset": [0, 1.5],
           "text-anchor": "top",
@@ -188,7 +200,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Events source
+      // World events source
       map.addSource("world-events", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -227,7 +239,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Event pulse animation layer
+      // Event pulse
       map.addLayer({
         id: "event-pulse",
         type: "circle",
@@ -248,12 +260,12 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Click on agent
+      // Click handlers
       map.on("click", "agent-dots", (e) => {
         if (!e.features?.[0]) return;
         const props = e.features[0].properties!;
-        const coords = (e.features[0].geometry as any).coordinates;
-        new mapboxgl.Popup({ className: "meeet-popup", maxWidth: "260px" })
+        const coords = (e.features[0].geometry as any).coordinates.slice();
+        new maplibregl.Popup({ className: "meeet-popup", maxWidth: "260px" })
           .setLngLat(coords)
           .setHTML(`
             <div style="background:#111;padding:12px;border-radius:8px;color:#fff;font-family:monospace;">
@@ -266,12 +278,11 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
           .addTo(map);
       });
 
-      // Click on event
       map.on("click", "event-markers", (e) => {
         if (!e.features?.[0]) return;
         const props = e.features[0].properties!;
-        const coords = (e.features[0].geometry as any).coordinates;
-        new mapboxgl.Popup({ className: "meeet-popup", maxWidth: "300px" })
+        const coords = (e.features[0].geometry as any).coordinates.slice();
+        new maplibregl.Popup({ className: "meeet-popup", maxWidth: "300px" })
           .setLngLat(coords)
           .setHTML(`
             <div style="background:#111;padding:12px;border-radius:8px;color:#fff;font-family:monospace;">
@@ -286,29 +297,28 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         }
       });
 
-      // Cursor change
+      // Cursors
       map.on("mouseenter", "agent-dots", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "agent-dots", () => { map.getCanvas().style.cursor = ""; });
       map.on("mouseenter", "event-markers", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "event-markers", () => { map.getCanvas().style.cursor = ""; });
 
-      // Click cluster to zoom
+      // Cluster zoom
       map.on("click", "agent-clusters", (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ["agent-clusters"] });
         if (!features[0]) return;
         const clusterId = features[0].properties!.cluster_id;
-        (map.getSource("agents") as mapboxgl.GeoJSONSource).getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err || zoom === undefined || zoom === null) return;
+        (map.getSource("agents") as maplibregl.GeoJSONSource).getClusterExpansionZoom(clusterId).then((zoom) => {
           map.easeTo({
             center: (features[0].geometry as any).coordinates,
-            zoom: zoom,
+            zoom,
           });
         });
       });
     });
 
     if (interactive) {
-      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     }
 
     mapRef.current = map;
@@ -319,7 +329,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     };
   }, [interactive, onEventClick]);
 
-  // Fetch data on mount
+  // Fetch data
   useEffect(() => {
     fetchAgents();
     fetchEvents();
@@ -330,10 +340,10 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     return () => clearInterval(interval);
   }, [fetchAgents, fetchEvents]);
 
-  // Update agent data on map
+  // Update agents on map
   useEffect(() => {
     if (!mapRef.current || !mapLoaded || agents.length === 0) return;
-    const source = mapRef.current.getSource("agents") as mapboxgl.GeoJSONSource;
+    const source = mapRef.current.getSource("agents") as maplibregl.GeoJSONSource;
     if (!source) return;
 
     const features = agents
@@ -362,7 +372,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   // Update events on map
   useEffect(() => {
     if (!mapRef.current || !mapLoaded || events.length === 0) return;
-    const source = mapRef.current.getSource("world-events") as mapboxgl.GeoJSONSource;
+    const source = mapRef.current.getSource("world-events") as maplibregl.GeoJSONSource;
     if (!source) return;
 
     const features = events
@@ -385,7 +395,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     source.setData({ type: "FeatureCollection", features });
   }, [events, mapLoaded]);
 
-  // Realtime agent updates
+  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel("world-map-agents")
@@ -410,7 +420,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   return (
     <div className="relative w-full" style={{ height }}>
       <div ref={mapContainer} className="absolute inset-0" />
-      {/* Map overlay gradient for blending into dark UI */}
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none" />
     </div>
