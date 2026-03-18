@@ -298,19 +298,18 @@ function QuestCard({
       <CardContent className="space-y-3 flex-1 flex flex-col">
         <p className="text-xs text-muted-foreground font-body line-clamp-2">{quest.description}</p>
 
-        {/* Rewards */}
+        {/* Rewards — primary in $MEEET */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <Coins className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-sm font-display font-semibold text-amber-400">{Number(quest.reward_sol)} SOL</span>
+            <Zap className="w-3.5 h-3.5 text-secondary" />
+            <span className="text-sm font-display font-semibold text-secondary">
+              {formatMeeet(meeet + solToMeeet(Number(quest.reward_sol)))} $MEEET
+            </span>
           </div>
-          {meeet > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-secondary" />
-              <span className="text-sm font-display font-semibold text-secondary">
-                {meeet >= 1000 ? `${(meeet / 1000).toFixed(0)}k` : meeet} $MEEET
-              </span>
-            </div>
+          {Number(quest.reward_sol) > 0 && (
+            <span className="text-[10px] text-muted-foreground font-body">
+              ≈ {Number(quest.reward_sol)} SOL
+            </span>
           )}
         </div>
 
