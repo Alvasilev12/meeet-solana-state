@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     
     try {
       // GDELT DOC API v2 — use sourcelang:english for better results
-      const docUrl = `${GDELT_DOC_API}?query=${searchQuery} sourcelang:english&mode=ArtList&maxrecords=10&format=json&sort=DateDesc&TIMESPAN=60min`;
+      const docUrl = `${GDELT_DOC_API}?query=${searchQuery}&mode=ArtList&maxrecords=10&format=json&sort=DateDesc&TIMESPAN=60min`;
       console.log("Fetching GDELT:", docUrl);
       const docRes = await fetch(docUrl);
       console.log("GDELT status:", docRes.status);
