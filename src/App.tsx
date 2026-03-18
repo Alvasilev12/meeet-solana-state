@@ -61,6 +61,10 @@ const App = () => (
               <Route path="/tools/badge" element={<BadgeGenerator />} />
               <Route path="/dashboard/referrals" element={<Referrals />} />
               <Route path="/about" element={<About />} />
+              <Route path="/world" element={<World />} />
+              <Route path="/world/rankings" element={<WorldRankings />} />
+              <Route path="/country/:code" element={<CountryPage />} />
+              <Route path="/discoveries" element={<Discoveries />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

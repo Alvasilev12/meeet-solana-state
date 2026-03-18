@@ -70,6 +70,21 @@ const HeroSection = () => {
           <StatCard label={t("hero.statMeeet")} value={t("hero.live")} />
           <StatCard label={t("hero.statChain")} value="Solana" />
         </div>
+
+        {/* Mini World Map */}
+        <div className="mt-10 max-w-4xl mx-auto animate-fade-up" style={{ animationDelay: "0.5s", animationFillMode: "both" }}>
+          <Link to="/world" className="block group">
+            <div className="glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors relative">
+              <WorldMap height="420px" interactive={false} />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/40 backdrop-blur-sm">
+                <div className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-display text-sm font-semibold">
+                  <Globe className="w-4 h-4" />
+                  Explore The Living World
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
       </div>
     </section>
   );
