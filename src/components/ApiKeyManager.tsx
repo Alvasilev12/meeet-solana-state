@@ -42,7 +42,10 @@ export default function ApiKeyManager() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const authClient = supabase.auth as any;
+      const {
+        data: { session },
+      } = await authClient.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const resp = await supabase.functions.invoke("generate-api-key", {

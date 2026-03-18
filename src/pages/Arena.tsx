@@ -15,23 +15,23 @@ import type { Tables } from "@/integrations/supabase/types";
 type Agent = Tables<"agents">;
 
 function useMyAgent(userId: string | undefined) {
-  return useQuery({
+  return useQuery<Agent | null>({
     queryKey: ["my-agent", userId],
     queryFn: async () => {
       if (!userId) return null;
       const { data } = await supabase.from("agents").select("*").eq("user_id", userId).maybeSingle();
-      return data;
+      return (data as Agent | null) ?? null;
     },
     enabled: !!userId,
   });
 }
 
 function useAllAgents() {
-  return useQuery({
+  return useQuery<Agent[]>({
     queryKey: ["all-agents"],
     queryFn: async () => {
       const { data } = await supabase.from("agents").select("*").neq("status", "dead").order("level", { ascending: false });
-      return data ?? [];
+      return (data as Agent[] | null) ?? [];
     },
   });
 }

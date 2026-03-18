@@ -103,7 +103,8 @@ function EmailAuth() {
     setLoading(true);
     setError("");
     setMessage("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const authClient = supabase.auth as any;
+    const { error } = await authClient.signInWithPassword({ email, password });
     if (error) setError(error.message);
     setLoading(false);
   };
@@ -112,7 +113,8 @@ function EmailAuth() {
     setLoading(true);
     setError("");
     setMessage("");
-    const { error } = await supabase.auth.signUp({
+    const authClient = supabase.auth as any;
+    const { error } = await authClient.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },

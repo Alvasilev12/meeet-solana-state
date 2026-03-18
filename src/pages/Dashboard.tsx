@@ -208,7 +208,10 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
     mutationFn: async () => {
       if (isPresident) {
         // President class requires service_role — use edge function
-        const { data: { session } } = await supabase.auth.getSession();
+        const authClient = supabase.auth as any;
+        const {
+          data: { session },
+        } = await authClient.getSession();
         if (!session) throw new Error("Not authenticated");
         const res = await supabase.functions.invoke("register-agent", {
           body: { name: name.trim(), class: "president" },
