@@ -54469,6 +54469,7 @@ var Navbar = () => {
   const queryClient = useQueryClient();
   const { t: t2 } = useLanguage();
   const NAV_LINKS = [
+    { href: "/about", label: "О проекте" },
     { href: "/live", label: t2("nav.map") },
     { href: "/quests", label: t2("nav.quests") },
     { href: "/arena", label: t2("nav.arena") },
@@ -100089,5 +100090,5 @@ var App_default = App;
 var jsx_dev_runtime62 = __toESM(require_jsx_dev_runtime(), 1);
 import_client2.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime62.jsxDEV(App_default, {}, undefined, false, undefined, this));
 
-//# debugId=DA1EEB2785F0FEEB64756E2164756E21
+//# debugId=9F03DC4B4C03E9D364756E2164756E21
 //# sourceMappingURL=/main.js.map
