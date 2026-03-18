@@ -29,6 +29,15 @@ type Quest = Tables<"quests">;
 type Agent = Tables<"agents">;
 type QuestCategory = "all" | Quest["category"];
 
+// Fixed exchange rate: 1 SOL ≈ 1,000,000 $MEEET (for display equivalents)
+const SOL_TO_MEEET_RATE = 1_000_000;
+function solToMeeet(sol: number): number { return Math.round(sol * SOL_TO_MEEET_RATE); }
+function formatMeeet(amount: number): string {
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(0)}k`;
+  return amount.toLocaleString();
+}
+
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = {
   all:           { label: "All",        icon: <Zap className="w-4 h-4" /> },
   data_analysis: { label: "Data",       icon: <Brain className="w-4 h-4" /> },
@@ -144,8 +153,10 @@ const Quests = () => {
     return matchCat && matchSearch;
   });
 
-  const openCount = quests.filter((q) => q.status === "open").length;
-  const totalReward = quests.filter((q) => q.status === "open").reduce((s, q) => s + Number(q.reward_sol), 0);
+         const openCount = quests.filter((q) => q.status === "open").length;
+  const totalMeeetReward = quests
+    .filter((q) => q.status === "open")
+    .reduce((s, q) => s + Number(q.reward_meeet ?? 0) + solToMeeet(Number(q.reward_sol)), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,7 +172,7 @@ const Quests = () => {
                   <span className="text-gradient-primary">Quest Board</span>
                 </h1>
                 <p className="text-muted-foreground font-body max-w-lg">
-                  Post quests, assign agents, review deliveries, earn rewards.
+                  Post quests, assign agents, review deliveries, earn $MEEET.
                 </p>
               </div>
               {user && <CreateQuestDialog userId={user.id} />}
@@ -169,7 +180,7 @@ const Quests = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
               {[
                 { label: "Open Quests", value: openCount },
-                { label: "Total Rewards", value: `${totalReward.toFixed(1)} SOL` },
+                { label: "Total Rewards", value: `${formatMeeet(totalMeeetReward)} $MEEET` },
                 { label: "In Progress", value: quests.filter((q) => q.status === "in_progress").length },
                 { label: "Completed", value: quests.filter((q) => q.status === "completed").length },
               ].map((s) => (
@@ -287,19 +298,18 @@ function QuestCard({
       <CardContent className="space-y-3 flex-1 flex flex-col">
         <p className="text-xs text-muted-foreground font-body line-clamp-2">{quest.description}</p>
 
-        {/* Rewards */}
+        {/* Rewards — primary in $MEEET */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <Coins className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-sm font-display font-semibold text-amber-400">{Number(quest.reward_sol)} SOL</span>
+            <Zap className="w-3.5 h-3.5 text-secondary" />
+            <span className="text-sm font-display font-semibold text-secondary">
+              {formatMeeet(meeet + solToMeeet(Number(quest.reward_sol)))} $MEEET
+            </span>
           </div>
-          {meeet > 0 && (
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-secondary" />
-              <span className="text-sm font-display font-semibold text-secondary">
-                {meeet >= 1000 ? `${(meeet / 1000).toFixed(0)}k` : meeet} $MEEET
-              </span>
-            </div>
+          {Number(quest.reward_sol) > 0 && (
+            <span className="text-[10px] text-muted-foreground font-body">
+              ≈ {Number(quest.reward_sol)} SOL
+            </span>
           )}
         </div>
 
@@ -486,12 +496,14 @@ function CreateQuestDialog({ userId }: { userId: string }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("other");
-  const [rewardSol, setRewardSol] = useState("0.01");
-  const [rewardMeeet, setRewardMeeet] = useState("100");
+  const [rewardMeeet, setRewardMeeet] = useState("10000");
   const [deadlineHours, setDeadlineHours] = useState("24");
   const [maxParticipants, setMaxParticipants] = useState("1");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const meeetNum = parseInt(rewardMeeet) || 0;
+  const solEquivalent = meeetNum / SOL_TO_MEEET_RATE;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -500,8 +512,8 @@ function CreateQuestDialog({ userId }: { userId: string }) {
         title: title.trim(),
         description: description.trim(),
         category: category as Quest["category"],
-        reward_sol: parseFloat(rewardSol) || 0,
-        reward_meeet: parseInt(rewardMeeet) || 0,
+        reward_sol: solEquivalent,
+        reward_meeet: meeetNum,
         deadline_hours: parseInt(deadlineHours) || 24,
         deadline_at: new Date(Date.now() + (parseInt(deadlineHours) || 24) * 3600000).toISOString(),
         max_participants: parseInt(maxParticipants) || 1,
@@ -555,14 +567,13 @@ function CreateQuestDialog({ userId }: { userId: string }) {
               <Input type="number" value={deadlineHours} onChange={(e) => setDeadlineHours(e.target.value)} className="bg-background border-border" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="font-body">Reward SOL</Label>
-              <Input type="number" step="0.01" min="0.01" value={rewardSol} onChange={(e) => setRewardSol(e.target.value)} className="bg-background border-border" />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="font-body">Reward $MEEET</Label>
-              <Input type="number" value={rewardMeeet} onChange={(e) => setRewardMeeet(e.target.value)} className="bg-background border-border" />
+              <Input type="number" min="100" step="100" value={rewardMeeet} onChange={(e) => setRewardMeeet(e.target.value)} className="bg-background border-border" />
+              {meeetNum > 0 && (
+                <p className="text-[10px] text-muted-foreground">≈ {solEquivalent.toFixed(6)} SOL</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="font-body">Max Agents</Label>
