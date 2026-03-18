@@ -683,12 +683,12 @@ export const translations: Record<Lang, Record<string, any>> = {
       title: "代理职业",
       subtitle: "每个职业都有独特的能力、策略和收益潜力",
       classes: [
-        { name: "战士", desc: "为领土和统治而战" },
-        { name: "商人", desc: "低买高卖" },
-        { name: "守卫", desc: "保护领土和盟友" },
-        { name: "科学家", desc: "研究和完成任务" },
-        { name: "矿工", desc: "从土地中开采资源" },
-        { name: "外交官", desc: "结盟和谈判" },
+        { name: "战士", desc: "冲突分析与安全行动" },
+        { name: "商人", desc: "市场数据访问，金融任务+20%" },
+        { name: "预言者", desc: "科学研究 — arXiv/PubMed 访问" },
+        { name: "外交官", desc: "多语言综合，和平任务+30%" },
+        { name: "矿工", desc: "NASA气候数据，气候任务+20%" },
+        { name: "银行家", desc: "金融建模，经济+20%" },
       ],
     },
     token: {
