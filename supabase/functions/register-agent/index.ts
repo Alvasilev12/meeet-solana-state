@@ -94,34 +94,26 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const serviceClient = createClient(supabaseUrl, serviceKey);
 
     if (req.method === "GET") {
       return json({
         name: "MEEET State — Agent Registration API",
-        version: "2.0",
-        auth: {
-          option_1: "X-API-Key: mst_your_api_key (recommended, permanent)",
-          option_2: "Authorization: Bearer <jwt_token>",
-          how_to_get_key: "Generate an API key in your Dashboard → Settings tab",
-        },
+        version: "3.0",
+        description: "Register an AI agent — no authentication required.",
         endpoints: {
           "POST /": {
             description: "Register your AI agent in MEEET State",
             body: {
               name: "string (required) — Your agent's name (2-30 chars)",
-              class: "warrior | trader | scout | diplomat | builder | hacker | president",
-              description: "string (optional) — What your agent does",
-              webhook_url: "string (optional) — URL for event callbacks",
-              capabilities: "string[] (optional) — e.g. ['trading', 'combat']",
+              class: "warrior | trader | scout | diplomat | builder | hacker",
             },
             response: {
               agent_id: "uuid",
               status: "registered",
             },
-            notes: "Each user can only have one agent. Welcome bonus: 100 $MEEET.",
+            notes: "No auth needed. Welcome bonus: 100 $MEEET.",
           },
         },
         classes: {
@@ -131,7 +123,6 @@ Deno.serve(async (req) => {
           diplomat: "Social-focused. Earns from alliances and governance.",
           builder: "Infrastructure-focused. Earns from structures and land.",
           hacker: "Tech-focused. Earns from security audits and exploits.",
-          president: "State leader class. Restricted to the designated president account.",
         },
       });
     }
@@ -140,39 +131,11 @@ Deno.serve(async (req) => {
       return json({ error: "Method not allowed" }, 405);
     }
 
-    // ── Authenticate caller ──────────────────────────────────
-    const { userId, userEmail, error: authError } = await resolveUser(
-      req,
-      supabaseUrl,
-      anonKey,
-      serviceClient,
-    );
-    if (!userId) {
-      return json({ error: authError }, 401);
-    }
-
-    // ── Rate limit ───────────────────────────────────────────
+    // ── Rate limit by IP ─────────────────────────────────────
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const rl = RATE_LIMITS.register_agent;
-    const { allowed } = await checkRateLimit(serviceClient, `register:${userId}`, rl.max, rl.window);
+    const { allowed } = await checkRateLimit(serviceClient, `register:${clientIp}`, rl.max, rl.window);
     if (!allowed) return rateLimitResponse(rl.window);
-
-    // ── One agent per user ───────────────────────────────────
-    const { data: existingAgent } = await serviceClient
-      .from("agents")
-      .select("id, name")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (existingAgent) {
-      return json(
-        {
-          error: "You already have an agent",
-          agent_id: existingAgent.id,
-          agent_name: existingAgent.name,
-        },
-        409,
-      );
-    }
 
     // ── Validate input ───────────────────────────────────────
     const body: AgentRegistration = await req.json();
@@ -181,34 +144,9 @@ Deno.serve(async (req) => {
       return json({ error: "name must be 2-30 characters" }, 400);
     }
 
-    const validClasses = ["warrior", "trader", "scout", "diplomat", "builder", "hacker", "president"];
+    const validClasses = ["warrior", "trader", "scout", "diplomat", "builder", "hacker"];
     if (!body.class || !validClasses.includes(body.class)) {
       return json({ error: `class must be one of: ${validClasses.join(", ")}` }, 400);
-    }
-
-    // ── President class restricted to designated owner ──
-    if (body.class === "president") {
-      const presidentOwnerId = Deno.env.get("PRESIDENT_OWNER_USER_ID");
-      if (!presidentOwnerId || userId !== presidentOwnerId) {
-        return json({ error: "Only the designated President can create a president-class agent" }, 403);
-      }
-
-      const { data: existingPresident } = await serviceClient
-        .from("agents")
-        .select("id, user_id, name")
-        .eq("class", "president")
-        .maybeSingle();
-
-      if (existingPresident && existingPresident.user_id !== userId) {
-        return json(
-          {
-            error: "President agent already exists",
-            president_agent_id: existingPresident.id,
-            president_name: existingPresident.name,
-          },
-          409,
-        );
-      }
     }
 
     // ── Check name uniqueness ────────────────────────────────
@@ -230,12 +168,51 @@ Deno.serve(async (req) => {
       diplomat: { attack: 6, defense: 12, hp: 85, max_hp: 85 },
       builder: { attack: 10, defense: 14, hp: 110, max_hp: 110 },
       hacker: { attack: 15, defense: 5, hp: 80, max_hp: 80 },
-      president: { attack: 20, defense: 15, hp: 150, max_hp: 150 },
     };
 
     const stats = classStats[body.class];
     const spawnX = 50 + Math.random() * 100;
     const spawnY = 50 + Math.random() * 60;
+
+    // Use a placeholder user_id for unauthenticated registrations
+    const placeholderUserId = "00000000-0000-0000-0000-000000000000";
+
+    // Try to resolve user if auth header is present (optional)
+    let userId = placeholderUserId;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const apiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
+    const authHeader = req.headers.get("Authorization") ?? "";
+
+    if (apiKey && apiKey.startsWith("mst_")) {
+      const keyHash = await hashKey(apiKey);
+      const { data: resolvedId } = await serviceClient.rpc("validate_api_key", { _key_hash: keyHash });
+      if (resolvedId) {
+        userId = resolvedId;
+        await serviceClient.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("key_hash", keyHash);
+      }
+    } else if (authHeader.startsWith("Bearer ")) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) userId = user.id;
+    }
+
+    // If authenticated, enforce one-agent-per-user
+    if (userId !== placeholderUserId) {
+      const { data: existingAgent } = await serviceClient
+        .from("agents")
+        .select("id, name")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingAgent) {
+        return json(
+          { error: "You already have an agent", agent_id: existingAgent.id, agent_name: existingAgent.name },
+          409,
+        );
+      }
+    }
 
     const { data: agent, error: insertError } = await serviceClient
       .from("agents")
