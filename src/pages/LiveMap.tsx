@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Sun, Moon, Cloud, Search, Crosshair, FastForward, Play, Pause, MapPin, Activity, Filter } from "lucide-react";
+import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Sun, Moon, Cloud, Search, Crosshair, FastForward, Play, Pause, MapPin, Activity, Compass, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 
 // ─── Types ──────────────────────────────────────────────────────
@@ -33,40 +33,22 @@ interface Trail {
 }
 
 interface Road { x1: number; y1: number; x2: number; y2: number; }
-
 interface GameEvent { id: number; text: string; time: string; color: string; }
-
-interface Bird {
-  x: number; y: number; vx: number; vy: number;
-  flapPhase: number; size: number;
-}
-
-interface ResourceNode {
-  x: number; y: number; type: "gold" | "crystal" | "wood" | "stone";
-  amount: number; respawnTimer: number;
-}
-
-const RESOURCE_CONFIG: Record<string, { color: string; glow: string; icon: string; label: string }> = {
-  gold: { color: "#FFD700", glow: "rgba(255,215,0,", icon: "💰", label: "Gold Vein" },
-  crystal: { color: "#00E5FF", glow: "rgba(0,229,255,", icon: "💎", label: "Crystal Deposit" },
-  wood: { color: "#8B6914", glow: "rgba(139,105,20,", icon: "🪵", label: "Ancient Grove" },
-  stone: { color: "#9CA3AF", glow: "rgba(156,163,175,", icon: "🪨", label: "Quarry" },
-};
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
 const MAP_W = 200;
 const MAP_H = 140;
-const DAY_CYCLE_MS = 120000; // 2 min full cycle
+const DAY_CYCLE_MS = 120000;
 
-const CLASS_CONFIG: Record<string, { color: string; speed: number; weapon: string }> = {
-  warrior:   { color: "#EF4444", speed: 1.4, weapon: "sword" },
-  trader:    { color: "#14F195", speed: 1.0, weapon: "bag" },
-  scout:     { color: "#FBBF24", speed: 0.8, weapon: "pick" },
-  diplomat:  { color: "#34D399", speed: 0.6, weapon: "scroll" },
-  builder:   { color: "#00C2FF", speed: 0.7, weapon: "coin" },
-  hacker:    { color: "#9945FF", speed: 0.9, weapon: "orb" },
-  president: { color: "#FFD700", speed: 0.5, weapon: "crown" },
+const CLASS_CONFIG: Record<string, { color: string; speed: number; icon: string }> = {
+  warrior:   { color: "#EF4444", speed: 1.4, icon: "⚔️" },
+  trader:    { color: "#14F195", speed: 1.0, icon: "💹" },
+  scout:     { color: "#FBBF24", speed: 0.8, icon: "🔍" },
+  diplomat:  { color: "#34D399", speed: 0.6, icon: "🌐" },
+  builder:   { color: "#00C2FF", speed: 0.7, icon: "🏗️" },
+  hacker:    { color: "#9945FF", speed: 0.9, icon: "💻" },
+  president: { color: "#FFD700", speed: 0.5, icon: "👑" },
 };
 const CLASSES = Object.keys(CLASS_CONFIG);
 
@@ -97,30 +79,31 @@ function smoothNoise(x: number, y: number, seed: number): number {
 }
 function fbm(x: number, y: number, seed: number): number {
   let v = 0, amp = 0.5, freq = 1;
-  for (let i = 0; i < 5; i++) { v += amp * smoothNoise(x * freq, y * freq, seed); amp *= 0.5; freq *= 2; }
+  for (let i = 0; i < 6; i++) { v += amp * smoothNoise(x * freq, y * freq, seed); amp *= 0.5; freq *= 2; }
   return v;
 }
 
-// ─── Tile palette — Apple Maps clean style ──────────────────────
-const TILE_PALETTE_DAY = [
-  { fill: "#C8D8C4", border: "#B8C8B4" },  // Wetland / low area
-  { fill: "#B8CCAE", border: "#A8BCA0" },  // Marsh / transition
-  { fill: "#E8DFC8", border: "#D8CFBA" },  // Sandy path / dry terrain
-  { fill: "#C5D9A8", border: "#B5C998" },  // Light grassland — Apple Maps green
-  { fill: "#A4C88A", border: "#94B87A" },  // Park / meadow — richer green
-  { fill: "#7AAF6A", border: "#6A9F5A" },  // Forest canopy — deep green
-  { fill: "#D4CEC4", border: "#C4BEB4" },  // Rocky terrain — warm gray
-  { fill: "#E8E4E0", border: "#D8D4D0" },  // Highland — light warm gray
+// ─── Terrain — Realistic Island ─────────────────────────────────
+// Tile types: 0=deep ocean, 1=shallow water, 2=beach, 3=lowland, 4=grassland, 5=forest, 6=mountain, 7=snow peak
+const TERRAIN_COLORS_DAY = [
+  { fill: "#0a2463", border: "#081d52" },  // deep ocean
+  { fill: "#1a5276", border: "#154565" },  // shallow water
+  { fill: "#e8d5a3", border: "#d4c193" },  // beach/sand
+  { fill: "#7ab648", border: "#6aa438" },  // lowland
+  { fill: "#4a8c32", border: "#3a7c22" },  // grassland
+  { fill: "#2d6a1e", border: "#1d5a0e" },  // forest
+  { fill: "#8a7d6b", border: "#7a6d5b" },  // mountain
+  { fill: "#e8e8f0", border: "#d0d0e0" },  // snow peak
 ];
-const TILE_PALETTE_NIGHT = [
-  { fill: "#6A7A68", border: "#5A6A58" },  // Wetland night
-  { fill: "#5E7058", border: "#4E604A" },  // Marsh night
-  { fill: "#8A8268", border: "#7A7258" },  // Sandy night
-  { fill: "#5E7A48", border: "#4E6A3A" },  // Grass night
-  { fill: "#4A6838", border: "#3A582A" },  // Park night
-  { fill: "#385A2E", border: "#284A1E" },  // Forest night
-  { fill: "#6A6660", border: "#5A5650" },  // Rock night
-  { fill: "#7A7670", border: "#6A6660" },  // Highland night
+const TERRAIN_COLORS_NIGHT = [
+  { fill: "#040e28", border: "#030b20" },  // deep ocean night
+  { fill: "#0c2840", border: "#0a2030" },  // shallow water night
+  { fill: "#6a5d3a", border: "#5a4d2a" },  // beach night
+  { fill: "#2a4a18", border: "#1a3a08" },  // lowland night
+  { fill: "#1a3a0e", border: "#0a2a04" },  // grassland night
+  { fill: "#0e2a08", border: "#041a02" },  // forest night
+  { fill: "#4a4338", border: "#3a3328" },  // mountain night
+  { fill: "#8888a0", border: "#787890" },  // snow night
 ];
 
 function lerpColor(a: string, b: string, t: number): string {
@@ -136,25 +119,40 @@ function lerpColor(a: string, b: string, t: number): string {
 function generateTerrain(): number[][] {
   const tiles: number[][] = [];
   const seed = 42;
+  const cx = MAP_W / 2, cy = MAP_H / 2;
   for (let y = 0; y < MAP_H; y++) {
     tiles[y] = [];
     for (let x = 0; x < MAP_W; x++) {
-      const elevation = fbm(x * 0.05, y * 0.05, seed);
-      const moisture = fbm(x * 0.07 + 100, y * 0.07 + 100, seed + 7);
-      // Smooth terrain distribution — no water borders
-      // Slight elevation variation at edges for natural feel
-      const edgeX = Math.min(x, MAP_W - 1 - x) / 10;
-      const edgeY = Math.min(y, MAP_H - 1 - y) / 10;
-      const edgeFactor = Math.min(1, Math.min(edgeX, edgeY));
-      const adj = elevation * (0.85 + edgeFactor * 0.15);
+      const elevation = fbm(x * 0.04, y * 0.04, seed);
+      const moisture = fbm(x * 0.06 + 100, y * 0.06 + 100, seed + 7);
+      
+      // Island shape — distance from center creates ocean
+      const dx = (x - cx) / (MAP_W * 0.42);
+      const dy = (y - cy) / (MAP_H * 0.38);
+      const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+      // Irregular coastline using secondary noise
+      const coastNoise = fbm(x * 0.03, y * 0.03, seed + 13) * 0.2;
+      const islandFactor = 1 - distFromCenter - coastNoise;
+      
+      // Additional continent shapes — create archipelago feel
+      const dx2 = (x - cx * 0.5) / (MAP_W * 0.2);
+      const dy2 = (y - cy * 0.7) / (MAP_H * 0.2);
+      const island2 = 1 - Math.sqrt(dx2 * dx2 + dy2 * dy2) - coastNoise * 0.8;
+      
+      const dx3 = (x - cx * 1.4) / (MAP_W * 0.15);
+      const dy3 = (y - cy * 0.5) / (MAP_H * 0.18);
+      const island3 = 1 - Math.sqrt(dx3 * dx3 + dy3 * dy3) - coastNoise * 0.7;
+      
+      const landValue = Math.max(islandFactor, island2, island3);
+      const adj = elevation * 0.6 + landValue * 0.5;
 
-      if (adj < 0.22) tiles[y][x] = 0;       // wetland (rare low areas)
-      else if (adj < 0.28) tiles[y][x] = 1;   // marsh transition
-      else if (adj < 0.32) tiles[y][x] = 2;   // sandy/dry path
-      else if (adj < 0.52) tiles[y][x] = moisture > 0.55 ? 4 : 3;  // grass or park
-      else if (adj < 0.62) tiles[y][x] = 5;   // forest
-      else if (adj < 0.78) tiles[y][x] = 6;   // rocky
-      else tiles[y][x] = 7;                    // highland
+      if (adj < 0.15) tiles[y][x] = 0;       // deep ocean
+      else if (adj < 0.28) tiles[y][x] = 1;   // shallow water
+      else if (adj < 0.32) tiles[y][x] = 2;   // beach
+      else if (adj < 0.44) tiles[y][x] = moisture > 0.55 ? 4 : 3;
+      else if (adj < 0.55) tiles[y][x] = 5;   // forest
+      else if (adj < 0.68) tiles[y][x] = 6;   // mountain
+      else tiles[y][x] = 7;                    // snow peak
     }
   }
   return tiles;
@@ -162,69 +160,35 @@ function generateTerrain(): number[][] {
 
 // ─── Buildings ──────────────────────────────────────────────────
 const BUILDING_TYPES = [
-  // Core government
   { type: "parliament", name: "Parliament", color: "#9945FF", accent: "#b366ff", w: 5, h: 4, icon: "🏛️", description: "The seat of governance. Laws are voted here." },
   { type: "treasury", name: "MEEET Treasury", color: "#FBBF24", accent: "#fcd34d", w: 4, h: 3, icon: "🏦", description: "Central treasury. 30% flows to the President." },
   { type: "monument", name: "Genesis Monument", color: "#D4AF37", accent: "#FFD700", w: 2, h: 2, icon: "🗽", description: "Commemorates the founding of MEEET State." },
-  // Combat
-  { type: "arena", name: "Grand Arena", color: "#EF4444", accent: "#f87171", w: 6, h: 6, icon: "⚔️", description: "The main colosseum — warriors duel for $MEEET and glory." },
-  { type: "arena", name: "Pit Arena East", color: "#DC2626", accent: "#ef4444", w: 4, h: 4, icon: "⚔️", description: "Eastern combat pit for lower-level fights." },
-  { type: "arena", name: "Pit Arena West", color: "#B91C1C", accent: "#dc2626", w: 4, h: 4, icon: "⚔️", description: "Western combat pit for ranked duels." },
-  // Economy
-  { type: "dex", name: "Central DEX", color: "#14F195", accent: "#4ade80", w: 5, h: 4, icon: "📊", description: "Main exchange — traders swap tokens and run arbitrage." },
-  { type: "dex", name: "South Exchange", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "📊", description: "Southern satellite exchange." },
-  { type: "bank", name: "MEEET Central Bank", color: "#00C2FF", accent: "#38d9ff", w: 5, h: 4, icon: "🏧", description: "Main bank — lending, staking, and reserves." },
-  { type: "bank", name: "North Branch Bank", color: "#0EA5E9", accent: "#38bdf8", w: 3, h: 3, icon: "🏧", description: "Northern branch for local banking." },
-  // Guilds — multiple per type
-  { type: "guild_w", name: "Warriors Guild HQ", color: "#EF4444", accent: "#f87171", w: 4, h: 4, icon: "🛡️", description: "Main warrior faction headquarters." },
-  { type: "guild_w", name: "Warriors Outpost", color: "#DC2626", accent: "#ef4444", w: 3, h: 3, icon: "🛡️", description: "Eastern warrior outpost." },
-  { type: "guild_t", name: "Traders Guild HQ", color: "#14F195", accent: "#4ade80", w: 4, h: 4, icon: "💹", description: "Main trader faction headquarters." },
-  { type: "guild_t", name: "Traders Outpost", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "💹", description: "Trader outpost near the docks." },
-  { type: "guild_w", name: "Scouts Guild", color: "#3B82F6", accent: "#60a5fa", w: 3, h: 3, icon: "🔍", description: "Intelligence and scouting faction." },
-  { type: "guild_t", name: "Builders Guild", color: "#F97316", accent: "#fb923c", w: 3, h: 3, icon: "🏗️", description: "Construction and infrastructure guild." },
-  { type: "guild_t", name: "Hackers Guild", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 3, icon: "💻", description: "Cyber operations and security guild." },
-  // Resources
-  { type: "mine", name: "Crystal Mine Alpha", color: "#FBBF24", accent: "#fcd34d", w: 3, h: 3, icon: "⛏️", description: "Primary crystal extraction site." },
-  { type: "mine", name: "Crystal Mine Beta", color: "#D97706", accent: "#f59e0b", w: 3, h: 3, icon: "⛏️", description: "Secondary mine in the eastern highlands." },
-  { type: "mine", name: "Deep Mine Gamma", color: "#B45309", accent: "#d97706", w: 4, h: 3, icon: "⛏️", description: "Deep underground mine — rare resources." },
-  { type: "farm", name: "Token Farm North", color: "#84CC16", accent: "#a3e635", w: 5, h: 4, icon: "🌾", description: "Yield farming produces passive $MEEET." },
-  { type: "farm", name: "Token Farm South", color: "#65A30D", accent: "#84cc16", w: 4, h: 3, icon: "🌾", description: "Southern farming zone." },
-  // Knowledge
-  { type: "oracle", name: "Oracle Tower", color: "#9945FF", accent: "#b366ff", w: 2, h: 5, icon: "🔮", description: "Oracles scan data feeds and predict." },
-  { type: "oracle", name: "Watchtower", color: "#7C3AED", accent: "#9945ff", w: 2, h: 4, icon: "🔮", description: "Secondary observation tower." },
-  { type: "academy", name: "MEEET Academy", color: "#6366F1", accent: "#818cf8", w: 5, h: 4, icon: "🎓", description: "Premier training facility for agents." },
-  { type: "academy", name: "Combat School", color: "#4F46E5", accent: "#6366f1", w: 3, h: 3, icon: "🎓", description: "Combat training facility." },
-  { type: "lab", name: "Research Lab", color: "#8B5CF6", accent: "#a78bfa", w: 4, h: 3, icon: "🔬", description: "Scientists develop new technologies." },
-  { type: "lab", name: "Biotech Lab", color: "#7C3AED", accent: "#8b5cf6", w: 3, h: 3, icon: "🔬", description: "Experimental biotech research." },
-  // Social
-  { type: "embassy", name: "Grand Embassy", color: "#34D399", accent: "#6ee7b7", w: 4, h: 3, icon: "🌐", description: "Diplomats negotiate alliances." },
-  { type: "embassy", name: "South Embassy", color: "#10B981", accent: "#34d399", w: 3, h: 3, icon: "🌐", description: "Southern diplomatic outpost." },
-  { type: "tavern", name: "Digital Tavern", color: "#F97316", accent: "#fb923c", w: 3, h: 2, icon: "🍺", description: "Agents socialize, share intel, form parties." },
-  { type: "tavern", name: "The Rusty Node", color: "#EA580C", accent: "#f97316", w: 3, h: 2, icon: "🍺", description: "Underground tavern — whispers and deals." },
-  { type: "tavern", name: "Sky Lounge", color: "#C2410C", accent: "#ea580c", w: 3, h: 3, icon: "🍺", description: "High-end social club on the mountain." },
-  // Infrastructure
-  { type: "herald", name: "MEEET Herald", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 2, icon: "📰", description: "Auto-generated daily news." },
-  { type: "jail", name: "Anti-Abuse Prison", color: "#6B7280", accent: "#9CA3AF", w: 3, h: 3, icon: "🔒", description: "Flagged agents serve time here." },
-  { type: "bazaar", name: "Grand Bazaar", color: "#EC4899", accent: "#f472b6", w: 5, h: 4, icon: "🛒", description: "Main marketplace for NFTs and goods." },
-  { type: "bazaar", name: "Night Market", color: "#DB2777", accent: "#ec4899", w: 3, h: 3, icon: "🛒", description: "Late-night trading market." },
-  { type: "quest", name: "Quest Board Central", color: "#06B6D4", accent: "#22d3ee", w: 4, h: 3, icon: "📋", description: "Main quest posting and pickup point." },
-  { type: "quest", name: "Quest Board East", color: "#0891B2", accent: "#06b6d4", w: 3, h: 2, icon: "📋", description: "Eastern quest board." },
-  { type: "quest", name: "Quest Board West", color: "#0E7490", accent: "#0891b2", w: 3, h: 2, icon: "📋", description: "Western quest board." },
-  // Portals & Transport
-  { type: "gate", name: "Solana Gateway", color: "#14F195", accent: "#4ade80", w: 3, h: 3, icon: "🌀", description: "Main cross-chain bridge portal." },
-  { type: "gate", name: "Teleporter Alpha", color: "#22D3EE", accent: "#67e8f9", w: 2, h: 2, icon: "🌀", description: "Fast travel node — north." },
-  { type: "gate", name: "Teleporter Beta", color: "#06B6D4", accent: "#22d3ee", w: 2, h: 2, icon: "🌀", description: "Fast travel node — south." },
-  // Services
-  { type: "hospital", name: "Central Hospital", color: "#10B981", accent: "#34d399", w: 4, h: 3, icon: "🏥", description: "Full repair and healing facility." },
-  { type: "hospital", name: "Field Clinic", color: "#059669", accent: "#10b981", w: 3, h: 2, icon: "🏥", description: "Quick-heal station near the arena." },
-  { type: "lighthouse", name: "Beacon Tower", color: "#F59E0B", accent: "#fbbf24", w: 2, h: 3, icon: "🗼", description: "Illuminates surrounding territories at night." },
-  { type: "lighthouse", name: "North Beacon", color: "#D97706", accent: "#f59e0b", w: 2, h: 3, icon: "🗼", description: "Northern lighthouse." },
-  // Maritime
-  { type: "dock", name: "Harbor Dock", color: "#3B82F6", accent: "#60a5fa", w: 5, h: 3, icon: "⚓", description: "Main port — ships trade goods across the sea." },
-  { type: "dock", name: "Fishing Pier", color: "#2563EB", accent: "#3b82f6", w: 3, h: 2, icon: "⚓", description: "Small fishing pier." },
-  // Entertainment
-  { type: "casino", name: "Prediction Market", color: "#F43F5E", accent: "#fb7185", w: 4, h: 4, icon: "🎰", description: "Bet on agent outcomes and events." },
-  { type: "casino", name: "Lucky Seven", color: "#E11D48", accent: "#f43f5e", w: 3, h: 3, icon: "🎰", description: "Small gambling den." },
+  { type: "arena", name: "Grand Arena", color: "#EF4444", accent: "#f87171", w: 6, h: 6, icon: "⚔️", description: "The main colosseum — warriors duel for $MEEET." },
+  { type: "arena", name: "Pit Arena East", color: "#DC2626", accent: "#ef4444", w: 4, h: 4, icon: "⚔️", description: "Eastern combat pit." },
+  { type: "dex", name: "Central DEX", color: "#14F195", accent: "#4ade80", w: 5, h: 4, icon: "📊", description: "Main exchange — traders swap tokens." },
+  { type: "bank", name: "MEEET Central Bank", color: "#00C2FF", accent: "#38d9ff", w: 5, h: 4, icon: "🏧", description: "Main bank — lending, staking." },
+  { type: "guild_w", name: "Warriors Guild", color: "#EF4444", accent: "#f87171", w: 4, h: 4, icon: "🛡️", description: "Warrior faction HQ." },
+  { type: "guild_t", name: "Traders Guild", color: "#14F195", accent: "#4ade80", w: 4, h: 4, icon: "💹", description: "Trader faction HQ." },
+  { type: "guild_t", name: "Hackers Guild", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 3, icon: "💻", description: "Cyber ops guild." },
+  { type: "mine", name: "Crystal Mine Alpha", color: "#FBBF24", accent: "#fcd34d", w: 3, h: 3, icon: "⛏️", description: "Primary crystal extraction." },
+  { type: "mine", name: "Deep Mine Gamma", color: "#B45309", accent: "#d97706", w: 4, h: 3, icon: "⛏️", description: "Deep underground mine." },
+  { type: "farm", name: "Token Farm", color: "#84CC16", accent: "#a3e635", w: 5, h: 4, icon: "🌾", description: "Yield farming." },
+  { type: "oracle", name: "Oracle Tower", color: "#9945FF", accent: "#b366ff", w: 2, h: 5, icon: "🔮", description: "Oracles scan data feeds." },
+  { type: "academy", name: "MEEET Academy", color: "#6366F1", accent: "#818cf8", w: 5, h: 4, icon: "🎓", description: "Training facility." },
+  { type: "lab", name: "Research Lab", color: "#8B5CF6", accent: "#a78bfa", w: 4, h: 3, icon: "🔬", description: "R&D technologies." },
+  { type: "embassy", name: "Grand Embassy", color: "#34D399", accent: "#6ee7b7", w: 4, h: 3, icon: "🌐", description: "Diplomats negotiate." },
+  { type: "tavern", name: "Digital Tavern", color: "#F97316", accent: "#fb923c", w: 3, h: 2, icon: "🍺", description: "Socialize and trade intel." },
+  { type: "tavern", name: "Sky Lounge", color: "#C2410C", accent: "#ea580c", w: 3, h: 3, icon: "🍺", description: "High-end social club." },
+  { type: "herald", name: "MEEET Herald", color: "#8B5CF6", accent: "#a78bfa", w: 3, h: 2, icon: "📰", description: "Daily AI news." },
+  { type: "jail", name: "Anti-Abuse Prison", color: "#6B7280", accent: "#9CA3AF", w: 3, h: 3, icon: "🔒", description: "Flagged agents." },
+  { type: "bazaar", name: "Grand Bazaar", color: "#EC4899", accent: "#f472b6", w: 5, h: 4, icon: "🛒", description: "NFT marketplace." },
+  { type: "quest", name: "Quest Board", color: "#06B6D4", accent: "#22d3ee", w: 4, h: 3, icon: "📋", description: "Quest posting." },
+  { type: "quest", name: "Quest Board East", color: "#0891B2", accent: "#06b6d4", w: 3, h: 2, icon: "📋", description: "Eastern quests." },
+  { type: "gate", name: "Solana Gateway", color: "#14F195", accent: "#4ade80", w: 3, h: 3, icon: "🌀", description: "Cross-chain bridge." },
+  { type: "hospital", name: "Central Hospital", color: "#10B981", accent: "#34d399", w: 4, h: 3, icon: "🏥", description: "Heal & repair." },
+  { type: "lighthouse", name: "Beacon Tower", color: "#F59E0B", accent: "#fbbf24", w: 2, h: 3, icon: "🗼", description: "Lighthouse." },
+  { type: "dock", name: "Harbor Dock", color: "#3B82F6", accent: "#60a5fa", w: 5, h: 3, icon: "⚓", description: "Main port." },
+  { type: "casino", name: "Prediction Market", color: "#F43F5E", accent: "#fb7185", w: 4, h: 4, icon: "🎰", description: "Bet on outcomes." },
 ];
 
 function generateBuildings(terrain: number[][]): Building[] {
@@ -236,18 +200,33 @@ function generateBuildings(terrain: number[][]): Building[] {
         const tx = bx + dx, ty = by + dy;
         if (tx >= MAP_W || ty >= MAP_H) return false;
         const t = terrain[ty][tx];
-        if (t <= 1 || t >= 6) return false;
+        if (t <= 1 || t >= 7) return false; // not on water or snow
         if (placed.has(`${tx},${ty}`)) return false;
       }
     return true;
   };
+  // Docks can go on shallow water
+  const canPlaceDock = (bx: number, by: number, bw: number, bh: number) => {
+    let hasWater = false, hasLand = false;
+    for (let dy = 0; dy < bh; dy++)
+      for (let dx = 0; dx < bw; dx++) {
+        const tx = bx + dx, ty = by + dy;
+        if (tx >= MAP_W || ty >= MAP_H) return false;
+        const t = terrain[ty][tx];
+        if (t <= 1) hasWater = true;
+        if (t >= 2 && t <= 5) hasLand = true;
+        if (placed.has(`${tx},${ty}`)) return false;
+      }
+    return hasWater && hasLand;
+  };
   let id = 0;
   for (const bt of BUILDING_TYPES) {
     let attempts = 0;
-    while (attempts < 400) {
+    while (attempts < 600) {
       const bx = 5 + Math.floor(noise2d(attempts * 7 + id * 13, id * 3, 99) * (MAP_W - 15));
       const by = 5 + Math.floor(noise2d(id * 5, attempts * 11 + id * 7, 77) * (MAP_H - 15));
-      if (canPlace(bx, by, bt.w, bt.h)) {
+      const canP = bt.type === "dock" ? canPlaceDock(bx, by, bt.w, bt.h) : canPlace(bx, by, bt.w, bt.h);
+      if (canP) {
         for (let dy = 0; dy < bt.h; dy++)
           for (let dx = 0; dx < bt.w; dx++)
             placed.add(`${bx + dx},${by + dy}`);
@@ -260,7 +239,6 @@ function generateBuildings(terrain: number[][]): Building[] {
   return buildings;
 }
 
-// Generate roads between buildings — richer network
 function generateRoads(buildings: Building[]): Road[] {
   const roads: Road[] = [];
   const roadSet = new Set<string>();
@@ -268,195 +246,438 @@ function generateRoads(buildings: Building[]): Road[] {
     const key = [Math.min(a.id, b.id), Math.max(a.id, b.id)].join("-");
     if (roadSet.has(key)) return;
     roadSet.add(key);
-    const cx1 = a.x + (a.w * TILE) / 2, cy1 = a.y + (a.h * TILE) / 2;
-    const cx2 = b.x + (b.w * TILE) / 2, cy2 = b.y + (b.h * TILE) / 2;
-    roads.push({ x1: cx1, y1: cy1, x2: cx2, y2: cy2 });
+    roads.push({
+      x1: a.x + (a.w * TILE) / 2, y1: a.y + (a.h * TILE) / 2,
+      x2: b.x + (b.w * TILE) / 2, y2: b.y + (b.h * TILE) / 2,
+    });
   };
   for (let i = 0; i < buildings.length; i++) {
-    // Find 3 nearest and connect
     const dists = buildings.map((b, j) => ({ j, d: i === j ? Infinity : Math.hypot(buildings[i].x - b.x, buildings[i].y - b.y) })).sort((a, b) => a.d - b.d);
     for (let k = 0; k < Math.min(3, dists.length); k++) {
-      if (dists[k].d < 900) addRoad(buildings[i], buildings[dists[k].j]);
+      if (dists[k].d < 1200) addRoad(buildings[i], buildings[dists[k].j]);
     }
   }
   return roads;
 }
 
-// ─── Resource Node Generation ───────────────────────────────────
-function generateResourceNodes(terrain: number[][]): ResourceNode[] {
-  const nodes: ResourceNode[] = [];
-  const seed = 137;
-  const types: Array<"gold" | "crystal" | "wood" | "stone"> = ["gold", "crystal", "wood", "stone"];
-  for (let i = 0; i < 40; i++) {
-    const rx = 5 + Math.floor(noise2d(i * 3, i * 7, seed) * (MAP_W - 10));
-    const ry = 5 + Math.floor(noise2d(i * 11, i * 5, seed + 1) * (MAP_H - 10));
-    const tile = terrain[ry]?.[rx] ?? 0;
-    if (tile <= 1 || tile >= 7) continue; // skip water/snow
-    const type = types[Math.floor(noise2d(i, 0, seed + 2) * 4)];
-    // stone on mountains, wood in forests, gold/crystal anywhere
-    if (type === "stone" && tile < 5) continue;
-    if (type === "wood" && tile < 3) continue;
-    nodes.push({ x: rx * TILE + TILE / 2, y: ry * TILE + TILE / 2, type, amount: 50 + Math.floor(noise2d(i, i, seed + 3) * 200), respawnTimer: 0 });
+// ─── Rendering Helpers ──────────────────────────────────────────
+
+function drawOceanWaves(ctx: CanvasRenderingContext2D, sx: number, sy: number, ts: number, t: number, nightFactor: number, col: number, row: number, tileType: number) {
+  if (tileType > 1) return;
+  // Animated wave pattern
+  const wavePhase = t * 0.001 + col * 0.15 + row * 0.12;
+  const waveAlpha = tileType === 0 ? 0.06 : 0.1;
+  const waveColor = lerpColor("#3388cc", "#1a3366", nightFactor);
+  
+  // Wave lines
+  for (let i = 0; i < 2; i++) {
+    const wy = sy + ts * (0.3 + i * 0.35);
+    ctx.strokeStyle = waveColor + Math.floor((waveAlpha + Math.sin(wavePhase + i * 2) * 0.04) * 255).toString(16).padStart(2, "0");
+    ctx.lineWidth = Math.max(0.5, ts * 0.03);
+    ctx.beginPath();
+    for (let wx = 0; wx < ts; wx += ts * 0.1) {
+      const wvy = wy + Math.sin(wavePhase + wx * 0.08 + i) * ts * 0.06;
+      wx === 0 ? ctx.moveTo(sx + wx, wvy) : ctx.lineTo(sx + wx, wvy);
+    }
+    ctx.stroke();
   }
-  return nodes;
-}
-
-// ─── Draw Resource Nodes ────────────────────────────────────────
-function drawResourceNodes(ctx: CanvasRenderingContext2D, nodes: ResourceNode[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  nodes.forEach(node => {
-    const sx = (node.x - cam.x) * z, sy = (node.y - cam.y) * z;
-    if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
-    const cfg = RESOURCE_CONFIG[node.type];
-    const pulse = 0.5 + Math.sin(t * 0.004 + node.x * 0.01 + node.y * 0.01) * 0.3;
-    const radius = (18 + Math.sin(t * 0.003 + node.x) * 4) * z;
-    // Glow
-    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
-    glow.addColorStop(0, cfg.glow + `${pulse * 0.35})`);
-    glow.addColorStop(0.5, cfg.glow + `${pulse * 0.12})`);
-    glow.addColorStop(1, "transparent");
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(sx, sy, radius, 0, Math.PI * 2); ctx.fill();
-    // Core dot
-    ctx.fillStyle = cfg.color;
-    ctx.globalAlpha = 0.7 + pulse * 0.3;
-    ctx.beginPath(); ctx.arc(sx, sy, 3 * z, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-    // Sparkle particles
-    for (let i = 0; i < 3; i++) {
-      const angle = (t * 0.002 + i * 2.1 + node.x) % (Math.PI * 2);
-      const dist = (6 + Math.sin(t * 0.005 + i * 3) * 3) * z;
-      const px = sx + Math.cos(angle) * dist;
-      const py = sy + Math.sin(angle) * dist;
-      const pa = Math.max(0, 0.5 + Math.sin(t * 0.008 + i * 5 + node.y) * 0.4);
-      ctx.fillStyle = cfg.glow + `${pa})`;
-      ctx.beginPath(); ctx.arc(px, py, 1.2 * z, 0, Math.PI * 2); ctx.fill();
+  
+  // Foam/sparkle on shallow water
+  if (tileType === 1) {
+    const sparkle = Math.sin(t * 0.003 + col * 3 + row * 7) > 0.85;
+    if (sparkle) {
+      ctx.fillStyle = `rgba(255,255,255,${0.15 + Math.sin(t * 0.01 + col) * 0.1})`;
+      const sx2 = sx + ts * noise2d(col, row, 5);
+      const sy2 = sy + ts * noise2d(row, col, 6);
+      ctx.beginPath(); ctx.arc(sx2, sy2, ts * 0.04, 0, Math.PI * 2); ctx.fill();
     }
-    // Label at close zoom
-    if (z > 0.6) {
-      ctx.font = `${Math.max(8, 10 * z)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(cfg.icon, sx, sy - 10 * z);
-      ctx.font = `bold ${Math.max(6, 7 * z)}px 'Space Grotesk', sans-serif`;
-      ctx.fillStyle = cfg.color;
-      ctx.fillText(cfg.label, sx, sy + 14 * z);
-      ctx.fillStyle = `rgba(255,255,255,0.5)`;
-      ctx.font = `${Math.max(5, 6 * z)}px 'Space Grotesk', sans-serif`;
-      ctx.fillText(`${node.amount} units`, sx, sy + 22 * z);
-      ctx.textAlign = "left";
-    }
-  });
+  }
 }
 
-// ─── Fog of War (DISABLED — no dark spots) ─────────────────────
-function drawFogOfWar(_ctx: CanvasRenderingContext2D, _agents: Agent[], _cam: { x: number; y: number }, _z: number, _w: number, _h: number, _nightFactor: number) {
-  // Completely disabled to remove dark blobs
-  return;
-}
-
-// ─── Draw functions ─────────────────────────────────────────────
-function drawTileDecoration(ctx: CanvasRenderingContext2D, tileType: number, sx: number, sy: number, col: number, row: number, z: number, t: number, nightFactor: number) {
-  const r = noise2d(col, row, 13);
+function drawTerrainDetail(ctx: CanvasRenderingContext2D, tileType: number, sx: number, sy: number, col: number, row: number, z: number, t: number, nightFactor: number) {
   const ts = TILE * z;
-
-  // Grassland — subtle texture dots
-  if (tileType === 3) {
-    if (r > 0.55) {
-      ctx.fillStyle = lerpColor("#b8d298", "#5a7a3a", nightFactor);
-      ctx.beginPath();
-      ctx.arc(sx + ts * (0.3 + r * 0.3), sy + ts * 0.5, 1.2 * z, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (r > 0.8) {
-      ctx.fillStyle = lerpColor("#d0c8a0", "#6a6240", nightFactor);
-      ctx.beginPath();
-      ctx.arc(sx + ts * 0.7, sy + ts * 0.3, 0.8 * z, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  const r = noise2d(col, row, 13);
+  
+  // Ocean waves
+  if (tileType <= 1) {
+    drawOceanWaves(ctx, sx, sy, ts, t, nightFactor, col, row, tileType);
+    return;
   }
 
-  // Park/meadow — rounded soft trees (Apple Maps style)
-  if (tileType === 4 && r > 0.3) {
-    const ox = (noise2d(col, row, 2) - 0.5) * ts * 0.3;
-    const treeX = sx + ts * 0.5 + ox;
-    // Trunk — thin, soft brown
-    ctx.fillStyle = lerpColor("#8B7355", "#4a3a28", nightFactor);
-    const trunkW = Math.max(1.5, 2 * z);
-    ctx.fillRect(treeX - trunkW / 2, sy + ts * 0.5, trunkW, ts * 0.35);
-    // Canopy — soft round circle
-    const canopyR = Math.max(4, ts * 0.3);
-    const grad = ctx.createRadialGradient(treeX, sy + ts * 0.35, canopyR * 0.2, treeX, sy + ts * 0.35, canopyR);
-    grad.addColorStop(0, lerpColor("#7AB860", "#3A6A28", nightFactor));
-    grad.addColorStop(0.7, lerpColor("#5A9A40", "#2A5A18", nightFactor));
-    grad.addColorStop(1, lerpColor("#4A8A30", "#1A4A0A", nightFactor) + "88");
-    ctx.fillStyle = grad;
+  // Beach — wave foam at edges
+  if (tileType === 2 && r > 0.5) {
+    ctx.fillStyle = lerpColor("#f0e4c0", "#8a7d58", nightFactor) + "60";
     ctx.beginPath();
-    ctx.arc(treeX, sy + ts * 0.35, canopyR, 0, Math.PI * 2);
-    ctx.fill();
-    // Subtle highlight
-    ctx.fillStyle = lerpColor("#90D070", "#50903A", nightFactor) + "44";
-    ctx.beginPath();
-    ctx.arc(treeX - canopyR * 0.25, sy + ts * 0.3 - canopyR * 0.15, canopyR * 0.4, 0, Math.PI * 2);
+    ctx.arc(sx + ts * r, sy + ts * 0.7, ts * 0.06, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Forest — clusters of rounded trees
-  if (tileType === 5) {
-    for (let i = 0; i < 2; i++) {
-      const ox = (noise2d(col + i, row, 3 + i) - 0.5) * ts * 0.5;
-      const treeX = sx + ts * (0.3 + i * 0.4) + ox;
-      const treeY = sy + ts * (0.25 + noise2d(col, row + i, 8) * 0.15);
-      // Trunk
-      ctx.fillStyle = lerpColor("#6A5A3A", "#3A2A18", nightFactor);
-      ctx.fillRect(treeX - z, treeY + ts * 0.15, 2 * z, ts * 0.35);
-      // Canopy — dense dark green
-      const cr = Math.max(5, ts * 0.28 + i * ts * 0.05);
-      const grad = ctx.createRadialGradient(treeX, treeY, cr * 0.15, treeX, treeY, cr);
-      grad.addColorStop(0, lerpColor("#5A9050", "#2A5020", nightFactor));
-      grad.addColorStop(0.6, lerpColor("#3A7A38", "#1A4018", nightFactor));
-      grad.addColorStop(1, lerpColor("#2A6828", "#0A3008", nightFactor) + "66");
+  // Grassland — subtle vegetation
+  if (tileType === 3 || tileType === 4) {
+    if (r > 0.4 && z > 0.4) {
+      const treeCount = tileType === 4 ? 2 : 1;
+      for (let i = 0; i < treeCount; i++) {
+        const tx = sx + ts * (0.2 + noise2d(col + i, row, 20) * 0.6);
+        const ty = sy + ts * (0.3 + noise2d(col, row + i, 21) * 0.4);
+        const treeR = ts * (0.08 + noise2d(col + i, row + i, 22) * 0.06);
+        // Shadow
+        ctx.fillStyle = `rgba(0,0,0,0.08)`;
+        ctx.beginPath(); ctx.ellipse(tx + treeR * 0.3, ty + treeR * 1.2, treeR * 0.8, treeR * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        // Canopy
+        const grad = ctx.createRadialGradient(tx, ty, 0, tx, ty, treeR);
+        grad.addColorStop(0, lerpColor("#5a9a40", "#2a5020", nightFactor));
+        grad.addColorStop(0.7, lerpColor("#3a7a28", "#1a4010", nightFactor));
+        grad.addColorStop(1, lerpColor("#2a6a18", "#0a3008", nightFactor) + "00");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(tx, ty, treeR, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+
+  // Forest — dense tree clusters
+  if (tileType === 5 && z > 0.35) {
+    for (let i = 0; i < 3; i++) {
+      const fx = sx + ts * (0.15 + noise2d(col + i * 3, row, 30) * 0.7);
+      const fy = sy + ts * (0.15 + noise2d(col, row + i * 3, 31) * 0.6);
+      const fr = ts * (0.1 + noise2d(col + i, row + i, 32) * 0.08);
+      const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+      grad.addColorStop(0, lerpColor("#2d6a1e", "#0e3a08", nightFactor));
+      grad.addColorStop(0.6, lerpColor("#1e5a10", "#082a04", nightFactor));
+      grad.addColorStop(1, "transparent");
       ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(treeX, treeY, cr, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI * 2); ctx.fill();
     }
   }
 
-  // Rocky terrain — subtle stone texture
-  if (tileType === 6 && r > 0.35) {
-    ctx.fillStyle = lerpColor("#BEB8AE", "#6A6460", nightFactor);
+  // Mountain — rocky texture
+  if (tileType === 6 && z > 0.4 && r > 0.3) {
+    ctx.fillStyle = lerpColor("#a09888", "#585048", nightFactor) + "60";
     ctx.beginPath();
-    ctx.arc(sx + ts * (0.3 + r * 0.3), sy + ts * 0.4, 2.5 * z, 0, Math.PI * 2);
+    ctx.moveTo(sx + ts * 0.3, sy + ts * 0.7);
+    ctx.lineTo(sx + ts * 0.5, sy + ts * (0.2 + r * 0.15));
+    ctx.lineTo(sx + ts * 0.7, sy + ts * 0.7);
     ctx.fill();
+    // Snow cap on peaks
     if (r > 0.65) {
-      ctx.fillStyle = lerpColor("#A8A298", "#5A5450", nightFactor);
+      ctx.fillStyle = lerpColor("#e0e0e8", "#808090", nightFactor) + "50";
       ctx.beginPath();
-      ctx.arc(sx + ts * 0.65, sy + ts * 0.65, 1.8 * z, 0, Math.PI * 2);
+      ctx.moveTo(sx + ts * 0.4, sy + ts * 0.35);
+      ctx.lineTo(sx + ts * 0.5, sy + ts * 0.2);
+      ctx.lineTo(sx + ts * 0.6, sy + ts * 0.35);
       ctx.fill();
     }
   }
 
-  // Wetland — soft wave ripple
-  if (tileType === 0 || tileType === 1) {
-    const wave = Math.sin(t * 0.002 + col * 0.8 + row * 0.5);
-    const alpha = 0.08 + wave * 0.04;
-    ctx.fillStyle = `rgba(180,210,190,${Math.max(0, alpha)})`;
-    ctx.beginPath();
-    ctx.arc(sx + ts * 0.5, sy + ts * 0.5, ts * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Sandy — small pebble dots
-  if (tileType === 2 && r > 0.6) {
-    ctx.fillStyle = lerpColor("#D0C8A8", "#8A8268", nightFactor);
-    ctx.beginPath();
-    ctx.arc(sx + ts * (0.3 + r * 0.4), sy + ts * 0.6, 1 * z, 0, Math.PI * 2);
-    ctx.fill();
+  // Snow — sparkle
+  if (tileType === 7 && z > 0.5) {
+    const sparkle = Math.sin(t * 0.003 + col * 5 + row * 3) > 0.9;
+    if (sparkle) {
+      ctx.fillStyle = `rgba(255,255,255,${0.4 + Math.sin(t * 0.01) * 0.2})`;
+      ctx.beginPath(); ctx.arc(sx + ts * r, sy + ts * (1 - r), ts * 0.02, 0, Math.PI * 2); ctx.fill();
+    }
   }
 }
 
-function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: number; y: number }, z: number, nightFactor: number) {
-  // Apple Maps style — clean, smooth paths
-  const roadWidth = Math.max(3, 8 * z);
+// ─── Building Renderer — Premium City Markers ───────────────────
+function drawBuilding(ctx: CanvasRenderingContext2D, b: Building, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
+  const cx = (b.x + b.w * TILE / 2 - cam.x) * z;
+  const cy = (b.y + b.h * TILE / 2 - cam.y) * z;
+  if (cx < -120 || cx > ctx.canvas.width + 120 || cy < -120 || cy > ctx.canvas.height + 120) return;
+
+  const size = Math.max(8, (Math.max(b.w, b.h) * TILE * z) * 0.35);
+  const pulse = 0.7 + Math.sin(t * 0.003 + b.id) * 0.15;
+  
+  // Territory glow — large soft radial
+  const glowR = size * 4;
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+  const glowAlpha = (nightFactor > 0.3 ? 0.15 : 0.06) * pulse;
+  glow.addColorStop(0, b.color + Math.floor(glowAlpha * 255).toString(16).padStart(2, "0"));
+  glow.addColorStop(0.4, b.color + "08");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, Math.PI * 2); ctx.fill();
+
+  // Base platform — subtle shadow ring
+  ctx.fillStyle = `rgba(0,0,0,${0.15 + nightFactor * 0.1})`;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + size * 0.3, size * 1.2, size * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Building body — 3D isometric block
+  const bh = size * 0.8; // building height
+  const bw = size * 1.4;
+  const bd = size * 0.5; // depth
+
+  // Right face (darker)
+  ctx.fillStyle = lerpColor(b.color, "#000000", 0.35 + nightFactor * 0.2);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + bw / 2, cy - bd / 2);
+  ctx.lineTo(cx + bw / 2, cy - bd / 2 - bh);
+  ctx.lineTo(cx, cy - bh);
+  ctx.fill();
+
+  // Left face (medium)
+  ctx.fillStyle = lerpColor(b.color, "#000000", 0.15 + nightFactor * 0.15);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx - bw / 2, cy - bd / 2);
+  ctx.lineTo(cx - bw / 2, cy - bd / 2 - bh);
+  ctx.lineTo(cx, cy - bh);
+  ctx.fill();
+
+  // Top face (lightest)
+  ctx.fillStyle = lerpColor(b.accent, "#ffffff", 0.1 - nightFactor * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - bh);
+  ctx.lineTo(cx + bw / 2, cy - bd / 2 - bh);
+  ctx.lineTo(cx, cy - bd - bh);
+  ctx.lineTo(cx - bw / 2, cy - bd / 2 - bh);
+  ctx.fill();
+
+  // Windows — lit at night
+  if (z > 0.5) {
+    const winRows = Math.max(1, Math.floor(bh / (5 * z)));
+    const winCols = Math.max(1, Math.floor(bw / (8 * z)));
+    for (let wr = 0; wr < winRows; wr++) {
+      for (let wc = 0; wc < winCols; wc++) {
+        const isLit = noise2d(b.id + wc, wr, 42) > 0.35;
+        const flicker = 0.6 + Math.sin(t * 0.005 + b.id + wc * 3 + wr * 7) * 0.2;
+        if (nightFactor > 0.3 && isLit) {
+          const wx = cx - bw * 0.35 + wc * (bw * 0.7 / winCols);
+          const wy = cy - bh * 0.9 + wr * (bh * 0.7 / winRows);
+          const winGlow = ctx.createRadialGradient(wx, wy, 0, wx, wy, 4 * z);
+          winGlow.addColorStop(0, `rgba(255,200,80,${nightFactor * flicker * 0.7})`);
+          winGlow.addColorStop(1, "transparent");
+          ctx.fillStyle = winGlow;
+          ctx.beginPath(); ctx.arc(wx, wy, 4 * z, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(255,220,100,${nightFactor * flicker})`;
+          ctx.fillRect(wx - 1.5 * z, wy - 1 * z, 3 * z, 2 * z);
+        }
+      }
+    }
+  }
+
+  // Roof accent — type-specific
+  if (b.type === "parliament" || b.type === "monument") {
+    // Dome/spire
+    ctx.fillStyle = lerpColor("#FFD700", "#aa8800", nightFactor);
+    ctx.beginPath();
+    ctx.arc(cx, cy - bh - bd / 2, size * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    // Glow on dome
+    const domeGlow = ctx.createRadialGradient(cx, cy - bh - bd / 2, 0, cx, cy - bh - bd / 2, size * 0.4);
+    domeGlow.addColorStop(0, `rgba(255,215,0,${0.15 * pulse})`);
+    domeGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = domeGlow;
+    ctx.beginPath(); ctx.arc(cx, cy - bh - bd / 2, size * 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (b.type === "oracle" || b.type === "lighthouse") {
+    // Beacon light
+    const beamAlpha = nightFactor > 0.3 ? nightFactor * pulse * 0.5 : 0.1;
+    const beamGlow = ctx.createRadialGradient(cx, cy - bh - bd, 0, cx, cy - bh - bd, size * 0.8);
+    beamGlow.addColorStop(0, `rgba(153,69,255,${beamAlpha})`);
+    beamGlow.addColorStop(0.5, `rgba(153,69,255,${beamAlpha * 0.3})`);
+    beamGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = beamGlow;
+    ctx.beginPath(); ctx.arc(cx, cy - bh - bd, size * 0.8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(200,150,255,${0.6 + pulse * 0.4})`;
+    ctx.beginPath(); ctx.arc(cx, cy - bh - bd, size * 0.06, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (b.type === "gate") {
+    // Portal ring
+    for (let i = 0; i < 6; i++) {
+      const angle = t * 0.003 + i * Math.PI / 3;
+      const pr = size * 0.5;
+      const px = cx + Math.cos(angle) * pr;
+      const py = cy - bh / 2 + Math.sin(angle) * pr * 0.4;
+      ctx.fillStyle = `rgba(20,241,149,${0.3 + Math.sin(t * 0.005 + i) * 0.2})`;
+      ctx.beginPath(); ctx.arc(px, py, 2 * z, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Icon
+  if (z > 0.3) {
+    ctx.font = `${Math.max(12, 18 * z)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(b.icon, cx, cy - bh - bd / 2 + (b.type === "parliament" ? -size * 0.3 : 6 * z));
+  }
+
+  // Label
+  if (z > 0.4) {
+    const fs = Math.max(8, 10 * z);
+    ctx.font = `600 ${fs}px 'Space Grotesk', sans-serif`;
+    ctx.textAlign = "center";
+    const tw = ctx.measureText(b.name).width;
+    
+    // Label background
+    ctx.fillStyle = `rgba(0,0,0,${0.7 + nightFactor * 0.15})`;
+    ctx.beginPath();
+    ctx.roundRect(cx - tw / 2 - 6, cy + size * 0.5, tw + 12, fs + 6, 4);
+    ctx.fill();
+    // Border
+    ctx.strokeStyle = b.color + "40";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.roundRect(cx - tw / 2 - 6, cy + size * 0.5, tw + 12, fs + 6, 4);
+    ctx.stroke();
+    // Text
+    ctx.fillStyle = b.accent;
+    ctx.fillText(b.name, cx, cy + size * 0.5 + fs + 1);
+    ctx.textAlign = "left";
+  }
+}
+
+// ─── Agent Renderer — Premium Map Markers ───────────────────────
+function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
+  const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
+  if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
+  const s = Math.max(z * 1.2, 1.2);
+
+  // State glow
+  if (a.state === "combat" || a.state === "trading" || a.state === "meeting") {
+    const stateColor = a.state === "combat" ? "239,68,68" : a.state === "trading" ? "20,241,149" : "251,191,36";
+    const pulse = 0.3 + Math.sin(t * 0.01) * 0.15;
+    const stGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20 * s);
+    stGlow.addColorStop(0, `rgba(${stateColor},${pulse})`);
+    stGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = stGlow;
+    ctx.beginPath(); ctx.arc(sx, sy, 20 * s, 0, Math.PI * 2); ctx.fill();
+  }
+
+  const isMoving = a.state === "move" || a.state === "visiting";
+  const bounce = isMoving ? Math.abs(Math.sin(t * 0.012 * a.speed + a.phase)) * 2 * s : 0;
+
+  // Drop shadow
+  ctx.fillStyle = `rgba(0,0,0,0.2)`;
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 2 * s, 6 * s, 2 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pin body — teardrop shape
+  const pinH = 16 * s;
+  const pinR = 5 * s;
+  const pinTip = sy + 2 * s - bounce;
+  const pinTop = pinTip - pinH;
+
+  // Pin shadow/outline
+  ctx.fillStyle = `rgba(0,0,0,0.3)`;
+  ctx.beginPath();
+  ctx.moveTo(sx, pinTip + 1);
+  ctx.bezierCurveTo(sx - pinR * 1.3, pinTop + pinH * 0.4, sx - pinR * 1.3, pinTop, sx, pinTop);
+  ctx.bezierCurveTo(sx + pinR * 1.3, pinTop, sx + pinR * 1.3, pinTop + pinH * 0.4, sx, pinTip + 1);
+  ctx.fill();
+
+  // Pin gradient
+  const pinGrad = ctx.createLinearGradient(sx - pinR, pinTop, sx + pinR, pinTip);
+  pinGrad.addColorStop(0, lerpColor(a.color, "#ffffff", 0.25));
+  pinGrad.addColorStop(0.4, a.color);
+  pinGrad.addColorStop(1, lerpColor(a.color, "#000000", 0.3));
+  ctx.fillStyle = pinGrad;
+  ctx.beginPath();
+  ctx.moveTo(sx, pinTip);
+  ctx.bezierCurveTo(sx - pinR * 1.2, pinTop + pinH * 0.4, sx - pinR * 1.2, pinTop, sx, pinTop);
+  ctx.bezierCurveTo(sx + pinR * 1.2, pinTop, sx + pinR * 1.2, pinTop + pinH * 0.4, sx, pinTip);
+  ctx.fill();
+
+  // Inner circle (white)
+  ctx.fillStyle = `rgba(255,255,255,${0.85 + Math.sin(t * 0.005 + a.phase) * 0.1})`;
+  ctx.beginPath();
+  ctx.arc(sx, pinTop + pinR * 0.9, pinR * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Class icon in circle
+  if (z > 0.5) {
+    const cfg = CLASS_CONFIG[a.cls] || CLASS_CONFIG.warrior;
+    ctx.font = `${Math.max(6, 7 * s)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(cfg.icon, sx, pinTop + pinR * 0.9 + 2.5 * s);
+  }
+
+  // Crown for president / linked
+  if (a.linked || a.cls === "president") {
+    ctx.fillStyle = "#FFD700";
+    ctx.font = `${Math.max(8, 10 * s)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("👑", sx, pinTop - 2 * s);
+  }
+
+  // Name tag
+  if (z > 0.45) {
+    const fs = Math.max(7, 8.5 * s);
+    ctx.font = `600 ${fs}px 'Space Grotesk', sans-serif`;
+    ctx.textAlign = "center";
+    const tw = ctx.measureText(a.name).width;
+    ctx.fillStyle = `rgba(0,0,0,${0.75 + nightFactor * 0.15})`;
+    ctx.beginPath();
+    ctx.roundRect(sx - tw / 2 - 4, sy + 5 * s, tw + 8, fs + 4, 3);
+    ctx.fill();
+    ctx.fillStyle = a.color;
+    ctx.fillRect(sx - tw / 2 - 4, sy + 5 * s + fs + 2, tw + 8, 1.5);
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fillText(a.name, sx, sy + 5 * s + fs + 1);
+    ctx.textAlign = "left";
+  }
+
+  // Level badge
+  if (z > 0.6) {
+    const lvStr = `${a.level}`;
+    const lvFs = Math.max(6, 6.5 * s);
+    ctx.font = `bold ${lvFs}px 'Space Grotesk', sans-serif`;
+    ctx.textAlign = "center";
+    const lvW = ctx.measureText(lvStr).width;
+    ctx.fillStyle = a.color;
+    ctx.beginPath(); ctx.arc(sx + pinR * 1.1, pinTop, (lvW + 6) / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.fillText(lvStr, sx + pinR * 1.1, pinTop + lvFs * 0.35);
+    ctx.textAlign = "left";
+  }
+
+  // HP bar when damaged
+  if (z > 0.5 && a.hp < a.maxHp) {
+    const barW = 20 * s, barH = 2.5 * s;
+    const barX = sx - barW / 2, barY = pinTop - 5 * s;
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, barH / 2); ctx.fill();
+    const hpPct = a.hp / a.maxHp;
+    const hpColor = hpPct > 0.5 ? "#22c55e" : hpPct > 0.25 ? "#f59e0b" : "#ef4444";
+    ctx.fillStyle = hpColor;
+    ctx.beginPath(); ctx.roundRect(barX + 0.5, barY + 0.5, (barW - 1) * hpPct, barH - 1, (barH - 1) / 2); ctx.fill();
+  }
+
+  // State emoji
+  if (z > 0.55) {
+    let icon = "";
+    if (a.state === "trading") icon = "💰";
+    else if (a.state === "combat") icon = "⚔️";
+    else if (a.state === "meeting") icon = "🤝";
+    else if (a.state === "idle") icon = "💤";
+    if (icon) {
+      ctx.font = `${Math.max(8, 10 * s)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText(icon, sx + pinR * 1.5, pinTop + pinR * 0.5);
+    }
+  }
+
+  // Reputation sparkle
+  if (a.reputation > 700) {
+    for (let i = 0; i < 4; i++) {
+      const angle = (t * 0.002 + i * Math.PI / 2 + a.phase) % (Math.PI * 2);
+      const dist = 12 * s;
+      const spX = sx + Math.cos(angle) * dist;
+      const spY = pinTop + pinR + Math.sin(angle) * dist * 0.5;
+      const spAlpha = 0.3 + Math.sin(t * 0.005 + i) * 0.2;
+      ctx.fillStyle = `rgba(255,215,0,${spAlpha})`;
+      ctx.beginPath(); ctx.arc(spX, spY, 1.5 * s, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+// ─── Roads ──────────────────────────────────────────────────────
+function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
+  const roadW = Math.max(2, 4 * z);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   roads.forEach(r => {
@@ -464,953 +685,30 @@ function drawRoads(ctx: CanvasRenderingContext2D, roads: Road[], cam: { x: numbe
     const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
     if (Math.max(sx1, sx2) < -200 || Math.min(sx1, sx2) > ctx.canvas.width + 200) return;
     if (Math.max(sy1, sy2) < -200 || Math.min(sy1, sy2) > ctx.canvas.height + 200) return;
-    // Road outline
-    ctx.strokeStyle = lerpColor("#D8D0C0", "#5A5448", nightFactor);
-    ctx.lineWidth = roadWidth + 2 * z;
+    
+    // Glowing route
+    ctx.strokeStyle = lerpColor("#d8c888", "#4a4030", nightFactor) + "50";
+    ctx.lineWidth = roadW + 2 * z;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-    // Road fill — clean white/cream
-    ctx.strokeStyle = lerpColor("#F5F0E8", "#7A7468", nightFactor);
-    ctx.lineWidth = roadWidth;
+    ctx.strokeStyle = lerpColor("#f5e8c0", "#6a5a40", nightFactor) + "70";
+    ctx.lineWidth = roadW;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+
+    // Animated trade dot
+    const prog = ((t * 0.0005 + r.x1 * 0.0001) % 1);
+    const px = sx1 + (sx2 - sx1) * prog;
+    const py = sy1 + (sy2 - sy1) * prog;
+    ctx.fillStyle = `rgba(255,200,50,${0.5 + Math.sin(t * 0.005) * 0.2})`;
+    ctx.beginPath(); ctx.arc(px, py, 2 * z, 0, Math.PI * 2); ctx.fill();
   });
 }
 
-// ─── Detailed building renderers ────────────────────────────────
-function drawWindow(ctx: CanvasRenderingContext2D, x: number, y: number, ww: number, wh: number, t: number, id: number, nightFactor: number, col: number) {
-  const isLit = noise2d(id + col, Math.floor(y), 42) > 0.3;
-  const flicker = 0.7 + Math.sin(t * 0.005 + id + col * 3) * 0.15;
-  if (isLit && nightFactor > 0.3) {
-    const wGlow = ctx.createRadialGradient(x + ww / 2, y + wh / 2, 0, x + ww / 2, y + wh / 2, ww * 2.5);
-    wGlow.addColorStop(0, `rgba(255,200,80,${0.12 * nightFactor})`);
-    wGlow.addColorStop(1, "transparent");
-    ctx.fillStyle = wGlow;
-    ctx.beginPath(); ctx.arc(x + ww / 2, y + wh / 2, ww * 2.5, 0, Math.PI * 2); ctx.fill();
-  }
-  if (isLit) {
-    ctx.fillStyle = nightFactor > 0.3 ? `rgba(255,220,100,${flicker * Math.max(0.3, nightFactor)})` : `rgba(180,210,230,0.4)`;
-  } else {
-    ctx.fillStyle = `rgba(0,0,0,${0.3 + nightFactor * 0.2})`;
-  }
-  ctx.fillRect(x, y, ww, wh);
-  ctx.strokeStyle = `rgba(0,0,0,0.3)`;
-  ctx.lineWidth = 0.5;
-  ctx.strokeRect(x, y, ww, wh);
-}
-
-function drawFlag(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, t: number, id: number, color: string, nightFactor: number) {
-  const flagWave = Math.sin(t * 0.006 + id) * 3 * z;
-  // Pole
-  ctx.strokeStyle = lerpColor("#888", "#444", nightFactor);
-  ctx.lineWidth = Math.max(1, 1.5 * z);
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 22 * z); ctx.stroke();
-  // Flag fabric
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.quadraticCurveTo(x + 8 * z + flagWave, y + 2 * z, x + 14 * z + flagWave * 0.7, y + 5 * z);
-  ctx.lineTo(x, y + 10 * z);
-  ctx.fill();
-  // Flag highlight
-  ctx.fillStyle = "rgba(255,255,255,0.2)";
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.quadraticCurveTo(x + 5 * z + flagWave * 0.5, y + 1 * z, x + 10 * z + flagWave * 0.5, y + 3 * z);
-  ctx.lineTo(x, y + 4 * z);
-  ctx.fill();
-}
-
-function drawSmoke(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, t: number, id: number) {
-  for (let i = 0; i < 4; i++) {
-    const age = ((t * 0.001 + i * 0.7 + id) % 3) / 3;
-    const sx = x + Math.sin(t * 0.002 + i * 2 + id) * 4 * z * age;
-    const sy = y - age * 20 * z;
-    const size = (2 + age * 5) * z;
-    const alpha = (1 - age) * 0.25;
-    ctx.fillStyle = `rgba(180,180,190,${alpha})`;
-    ctx.beginPath(); ctx.arc(sx, sy, size, 0, Math.PI * 2); ctx.fill();
-  }
-}
-
-function drawBuilding(ctx: CanvasRenderingContext2D, b: Building, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  const sx = (b.x - cam.x) * z, sy = (b.y - cam.y) * z;
-  const w = b.w * TILE * z, h = b.h * TILE * z;
-  if (sx + w < -80 || sx > ctx.canvas.width + 80 || sy + h < -80 || sy > ctx.canvas.height + 80) return;
-
-  const wallBase = lerpColor(b.color, darkenHex(b.color, 0.4), nightFactor * 0.5);
-  const wallDark = darkenHex(wallBase, 0.25);
-  const wallLight = lerpColor(wallBase, "#ffffff", 0.15);
-  const roofColor = lerpColor(b.accent, darkenHex(b.accent, 0.3), nightFactor);
-  const roofDark = darkenHex(roofColor, 0.2);
-  const winSize = Math.max(2, 3.5 * z);
-
-  // Ground shadow — very subtle, no dark blobs
-  ctx.fillStyle = `rgba(0,0,0,0.06)`;
-  ctx.beginPath();
-  ctx.ellipse(sx + w / 2, sy + h + 2 * z, w * 0.4, 2 * z, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // ──── Per-type rendering ────
-  if (b.type === "parliament") {
-    // Grand building with dome and columns
-    // Base platform
-    ctx.fillStyle = lerpColor("#d0c8b8", "#6a6258", nightFactor);
-    ctx.fillRect(sx - 6 * z, sy + h - 6 * z, w + 12 * z, 8 * z);
-    ctx.fillRect(sx - 3 * z, sy + h - 10 * z, w + 6 * z, 6 * z);
-    // Main wall
-    ctx.fillStyle = wallBase + "ee";
-    ctx.fillRect(sx + 4 * z, sy + h * 0.3, w - 8 * z, h * 0.72);
-    // Side shadow
-    ctx.fillStyle = wallDark + "44";
-    ctx.fillRect(sx + 4 * z, sy + h * 0.3, 6 * z, h * 0.72);
-    // Columns
-    const numCols = Math.max(3, Math.floor(b.w * 1.2));
-    for (let i = 0; i < numCols; i++) {
-      const cx = sx + 6 * z + i * ((w - 12 * z) / (numCols - 1));
-      ctx.fillStyle = lerpColor("#e8e0d0", "#7a7268", nightFactor);
-      ctx.fillRect(cx - 2 * z, sy + h * 0.28, 4 * z, h * 0.72);
-      // Column cap
-      ctx.fillStyle = lerpColor("#f0e8d8", "#8a8278", nightFactor);
-      ctx.fillRect(cx - 3 * z, sy + h * 0.26, 6 * z, 3 * z);
-      ctx.fillRect(cx - 3 * z, sy + h - 2 * z, 6 * z, 3 * z);
-    }
-    // Dome
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.arc(sx + w / 2, sy + h * 0.3, w * 0.28, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = roofDark;
-    ctx.beginPath();
-    ctx.arc(sx + w / 2, sy + h * 0.3, w * 0.28, Math.PI, Math.PI + Math.PI * 0.3);
-    ctx.fill();
-    // Dome pinnacle
-    ctx.fillStyle = lerpColor("#FFD700", "#aa8800", nightFactor);
-    ctx.beginPath();
-    ctx.arc(sx + w / 2, sy + h * 0.3 - w * 0.27, 2.5 * z, 0, Math.PI * 2);
-    ctx.fill();
-    // Pediment (triangle above columns)
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(sx, sy + h * 0.28);
-    ctx.lineTo(sx + w / 2, sy + h * 0.12);
-    ctx.lineTo(sx + w, sy + h * 0.28);
-    ctx.fill();
-    // Windows
-    for (let i = 0; i < numCols - 1; i++) {
-      const wx = sx + 8 * z + i * ((w - 16 * z) / (numCols - 1));
-      drawWindow(ctx, wx - winSize / 2, sy + h * 0.5, winSize, winSize * 1.5, t, b.id, nightFactor, i);
-    }
-    // Flag on dome
-    drawFlag(ctx, sx + w / 2, sy + h * 0.3 - w * 0.28 - 10 * z, z, t, b.id, "#9945FF", nightFactor);
-
-  } else if (b.type === "arena") {
-    // Circular colosseum-style
-    const cx = sx + w / 2, cy = sy + h / 2;
-    const rx = w * 0.48, ry = h * 0.45;
-    // Outer wall
-    ctx.fillStyle = wallBase + "dd";
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-    // Inner pit (darker)
-    ctx.fillStyle = darkenHex(wallBase, 0.5) + "cc";
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx * 0.6, ry * 0.55, 0, 0, Math.PI * 2); ctx.fill();
-    // Sand floor
-    ctx.fillStyle = lerpColor("#d4a76a", "#7a6030", nightFactor);
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx * 0.5, ry * 0.42, 0, 0, Math.PI * 2); ctx.fill();
-    // Wall tiers (arches)
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
-      const ax = cx + Math.cos(angle) * rx * 0.85;
-      const ay = cy + Math.sin(angle) * ry * 0.85;
-      ctx.fillStyle = darkenHex(wallBase, 0.15) + "88";
-      ctx.beginPath(); ctx.arc(ax, ay, 3 * z, 0, Math.PI * 2); ctx.fill();
-    }
-    // Combat sparks in arena
-    if (Math.sin(t * 0.01) > 0.7) {
-      const sparkAngle = t * 0.005;
-      ctx.fillStyle = `rgba(255,200,50,${0.4 + Math.sin(t * 0.02) * 0.3})`;
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(sparkAngle) * rx * 0.3, cy + Math.sin(sparkAngle) * ry * 0.25, 2 * z, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Flags around rim
-    for (let i = 0; i < 4; i++) {
-      const angle = (i / 4) * Math.PI * 2 - Math.PI / 4;
-      drawFlag(ctx, cx + Math.cos(angle) * rx, cy + Math.sin(angle) * ry - 6 * z, z * 0.7, t, b.id + i, b.color, nightFactor);
-    }
-
-  } else if (b.type === "treasury" || b.type === "bank") {
-    // Classical bank with pillars and vault door
-    // Base steps
-    ctx.fillStyle = lerpColor("#c8c0b0", "#5a5248", nightFactor);
-    for (let step = 0; step < 3; step++) {
-      const inset = step * 3 * z;
-      ctx.fillRect(sx - 4 * z + inset, sy + h - (3 - step) * 4 * z, w + 8 * z - inset * 2, 4 * z);
-    }
-    // Main wall
-    ctx.fillStyle = wallBase + "ee";
-    ctx.fillRect(sx, sy + h * 0.2, w, h * 0.7);
-    // Highlight
-    ctx.fillStyle = wallLight + "22";
-    ctx.fillRect(sx + w * 0.6, sy + h * 0.2, w * 0.4, h * 0.7);
-    // Pillars
-    const pillars = 4;
-    for (let i = 0; i < pillars; i++) {
-      const px = sx + 4 * z + i * ((w - 8 * z) / (pillars - 1));
-      ctx.fillStyle = lerpColor("#e0d8c8", "#706858", nightFactor);
-      ctx.fillRect(px - 2.5 * z, sy + h * 0.18, 5 * z, h * 0.74);
-      ctx.fillStyle = lerpColor("#ece4d4", "#807868", nightFactor);
-      ctx.fillRect(px - 3.5 * z, sy + h * 0.16, 7 * z, 3 * z);
-    }
-    // Triangular pediment
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(sx - 4 * z, sy + h * 0.2);
-    ctx.lineTo(sx + w / 2, sy + h * 0.02);
-    ctx.lineTo(sx + w + 4 * z, sy + h * 0.2);
-    ctx.fill();
-    // Vault door (circle)
-    ctx.fillStyle = lerpColor("#8a7a50", "#4a3a20", nightFactor);
-    ctx.beginPath();
-    ctx.arc(sx + w / 2, sy + h * 0.6, Math.min(w, h) * 0.15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = lerpColor("#c8b060", "#6a5a30", nightFactor);
-    ctx.lineWidth = Math.max(1, 1.5 * z);
-    ctx.beginPath(); ctx.arc(sx + w / 2, sy + h * 0.6, Math.min(w, h) * 0.15, 0, Math.PI * 2); ctx.stroke();
-    // Dollar sign on vault
-    if (z > 0.5) {
-      ctx.font = `bold ${Math.max(6, 8 * z)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillStyle = lerpColor("#FFD700", "#aa8800", nightFactor);
-      ctx.fillText("$", sx + w / 2, sy + h * 0.63);
-      ctx.textAlign = "left";
-    }
-    // Windows
-    for (let i = 0; i < 3; i++) {
-      const wx = sx + w * 0.2 + i * w * 0.25;
-      drawWindow(ctx, wx, sy + h * 0.3, winSize, winSize * 1.8, t, b.id, nightFactor, i);
-    }
-
-  } else if (b.type === "oracle") {
-    // Tall mystical tower with glowing orb
-    const tw = w * 0.6, tx = sx + (w - tw) / 2;
-    // Tower body (tapered)
-    ctx.fillStyle = wallBase + "dd";
-    ctx.beginPath();
-    ctx.moveTo(tx + tw * 0.15, sy + h);
-    ctx.lineTo(tx, sy + h);
-    ctx.lineTo(tx + tw * 0.1, sy + h * 0.15);
-    ctx.lineTo(tx + tw * 0.9, sy + h * 0.15);
-    ctx.lineTo(tx + tw, sy + h);
-    ctx.lineTo(tx + tw * 0.85, sy + h);
-    ctx.fill();
-    // Dark side
-    ctx.fillStyle = wallDark + "44";
-    ctx.beginPath();
-    ctx.moveTo(tx, sy + h);
-    ctx.lineTo(tx + tw * 0.1, sy + h * 0.15);
-    ctx.lineTo(tx + tw * 0.4, sy + h * 0.15);
-    ctx.lineTo(tx + tw * 0.35, sy + h);
-    ctx.fill();
-    // Windows (narrow slits)
-    for (let i = 0; i < 4; i++) {
-      const wy = sy + h * 0.25 + i * h * 0.16;
-      drawWindow(ctx, tx + tw * 0.42, wy, winSize * 0.7, winSize * 1.2, t, b.id, nightFactor, i);
-    }
-    // Pointed roof
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(tx + tw / 2, sy - 8 * z);
-    ctx.lineTo(tx - 2 * z, sy + h * 0.17);
-    ctx.lineTo(tx + tw + 2 * z, sy + h * 0.17);
-    ctx.fill();
-    // Orb on top
-    const orbPulse = 0.5 + Math.sin(t * 0.004 + b.id) * 0.3;
-    const orbGlow = ctx.createRadialGradient(tx + tw / 2, sy - 8 * z, 0, tx + tw / 2, sy - 8 * z, 12 * z);
-    orbGlow.addColorStop(0, `rgba(153,69,255,${orbPulse})`);
-    orbGlow.addColorStop(0.5, `rgba(153,69,255,${orbPulse * 0.3})`);
-    orbGlow.addColorStop(1, "transparent");
-    ctx.fillStyle = orbGlow;
-    ctx.beginPath(); ctx.arc(tx + tw / 2, sy - 8 * z, 12 * z, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(200,150,255,${0.7 + orbPulse * 0.3})`;
-    ctx.beginPath(); ctx.arc(tx + tw / 2, sy - 8 * z, 3 * z, 0, Math.PI * 2); ctx.fill();
-
-  } else if (b.type === "tavern") {
-    // Cozy building with pitched roof, chimney, signboard
-    // Main body
-    ctx.fillStyle = lerpColor("#8B6914", "#4a3808", nightFactor);
-    ctx.fillRect(sx, sy + h * 0.3, w, h * 0.7);
-    // Wood planks
-    ctx.strokeStyle = `rgba(0,0,0,0.1)`;
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i < 5; i++) {
-      const py = sy + h * 0.3 + i * h * 0.14;
-      ctx.beginPath(); ctx.moveTo(sx, py); ctx.lineTo(sx + w, py); ctx.stroke();
-    }
-    // Door
-    ctx.fillStyle = lerpColor("#5a3a10", "#2a1a08", nightFactor);
-    ctx.beginPath();
-    ctx.roundRect(sx + w * 0.38, sy + h * 0.55, w * 0.24, h * 0.45, [3 * z, 3 * z, 0, 0]);
-    ctx.fill();
-    // Door handle
-    ctx.fillStyle = lerpColor("#FFD700", "#aa8800", nightFactor);
-    ctx.beginPath(); ctx.arc(sx + w * 0.56, sy + h * 0.78, 1.5 * z, 0, Math.PI * 2); ctx.fill();
-    // Windows (warm lit)
-    drawWindow(ctx, sx + w * 0.08, sy + h * 0.42, winSize * 1.5, winSize * 1.5, t, b.id, nightFactor, 0);
-    drawWindow(ctx, sx + w * 0.7, sy + h * 0.42, winSize * 1.5, winSize * 1.5, t, b.id, nightFactor, 1);
-    // Pitched roof
-    ctx.fillStyle = lerpColor("#8B4513", "#4a2208", nightFactor);
-    ctx.beginPath();
-    ctx.moveTo(sx - 4 * z, sy + h * 0.32);
-    ctx.lineTo(sx + w / 2, sy);
-    ctx.lineTo(sx + w + 4 * z, sy + h * 0.32);
-    ctx.fill();
-    // Roof highlight
-    ctx.fillStyle = lerpColor("#a05820", "#5a3010", nightFactor);
-    ctx.beginPath();
-    ctx.moveTo(sx + w / 2, sy);
-    ctx.lineTo(sx + w + 4 * z, sy + h * 0.32);
-    ctx.lineTo(sx + w / 2, sy + h * 0.32);
-    ctx.fill();
-    // Chimney
-    ctx.fillStyle = lerpColor("#6a4a2a", "#3a2a18", nightFactor);
-    ctx.fillRect(sx + w * 0.75, sy - 4 * z, 6 * z, h * 0.2);
-    // Smoke
-    drawSmoke(ctx, sx + w * 0.75 + 3 * z, sy - 4 * z, z, t, b.id);
-    // Hanging sign
-    if (z > 0.5) {
-      ctx.strokeStyle = lerpColor("#666", "#333", nightFactor);
-      ctx.lineWidth = z;
-      ctx.beginPath(); ctx.moveTo(sx + w * 0.2, sy + h * 0.32); ctx.lineTo(sx + w * 0.2, sy + h * 0.32 + 8 * z); ctx.stroke();
-      ctx.fillStyle = lerpColor("#5a3a10", "#2a1a08", nightFactor);
-      ctx.fillRect(sx + w * 0.1, sy + h * 0.32 + 8 * z, w * 0.2, 6 * z);
-      ctx.font = `${Math.max(4, 5 * z)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText("🍺", sx + w * 0.2, sy + h * 0.32 + 13 * z);
-      ctx.textAlign = "left";
-    }
-
-  } else if (b.type === "mine") {
-    // Mine entrance with wooden supports
-    // Mountain/hill backdrop
-    ctx.fillStyle = lerpColor("#6a6a5a", "#3a3a30", nightFactor);
-    ctx.beginPath();
-    ctx.moveTo(sx, sy + h);
-    ctx.lineTo(sx + w * 0.15, sy + h * 0.15);
-    ctx.lineTo(sx + w * 0.5, sy);
-    ctx.lineTo(sx + w * 0.85, sy + h * 0.2);
-    ctx.lineTo(sx + w, sy + h);
-    ctx.fill();
-    // Entrance arch (dark)
-    ctx.fillStyle = `rgba(10,5,0,0.85)`;
-    ctx.beginPath();
-    ctx.arc(sx + w / 2, sy + h * 0.6, w * 0.2, Math.PI, 0);
-    ctx.lineTo(sx + w / 2 + w * 0.2, sy + h);
-    ctx.lineTo(sx + w / 2 - w * 0.2, sy + h);
-    ctx.fill();
-    // Wooden beams
-    ctx.fillStyle = lerpColor("#8B6914", "#4a3808", nightFactor);
-    ctx.fillRect(sx + w / 2 - w * 0.22, sy + h * 0.35, 3 * z, h * 0.65);
-    ctx.fillRect(sx + w / 2 + w * 0.2, sy + h * 0.35, 3 * z, h * 0.65);
-    ctx.fillRect(sx + w / 2 - w * 0.22, sy + h * 0.35, w * 0.44, 3 * z);
-    // Cart tracks (rails)
-    ctx.strokeStyle = lerpColor("#888", "#444", nightFactor);
-    ctx.lineWidth = z;
-    ctx.beginPath();
-    ctx.moveTo(sx + w * 0.35, sy + h); ctx.lineTo(sx + w * 0.4, sy + h * 0.8);
-    ctx.moveTo(sx + w * 0.65, sy + h); ctx.lineTo(sx + w * 0.6, sy + h * 0.8);
-    ctx.stroke();
-    // Crystal sparkles
-    for (let i = 0; i < 3; i++) {
-      const sparkle = Math.sin(t * 0.006 + i * 2 + b.id) > 0.7;
-      if (sparkle) {
-        const gx = sx + w * (0.2 + noise2d(i, b.id, 5) * 0.6);
-        const gy = sy + h * (0.15 + noise2d(b.id, i, 6) * 0.35);
-        ctx.fillStyle = `rgba(255,220,80,${0.6 + Math.sin(t * 0.01 + i) * 0.3})`;
-        ctx.beginPath(); ctx.arc(gx, gy, 1.5 * z, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-
-  } else if (b.type === "gate" || b.type === "monument") {
-    // Portal / monument with energy ring
-    const cx = sx + w / 2, cy = sy + h / 2;
-    // Stone base
-    ctx.fillStyle = lerpColor("#888", "#444", nightFactor);
-    ctx.fillRect(sx + w * 0.2, sy + h * 0.7, w * 0.6, h * 0.3);
-    // Archway
-    ctx.fillStyle = wallBase + "cc";
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.min(w, h) * 0.35, 0, Math.PI * 2);
-    ctx.fill();
-    // Inner void
-    ctx.fillStyle = `rgba(5,2,15,0.9)`;
-    ctx.beginPath();
-    ctx.arc(cx, cy, Math.min(w, h) * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-    // Spinning energy ring
-    const ringAngle = t * 0.003;
-    const ringR = Math.min(w, h) * 0.3;
-    for (let i = 0; i < 8; i++) {
-      const a = ringAngle + (i / 8) * Math.PI * 2;
-      const px = cx + Math.cos(a) * ringR;
-      const py = cy + Math.sin(a) * ringR * 0.6;
-      const pulse = 0.4 + Math.sin(t * 0.005 + i) * 0.3;
-      ctx.fillStyle = b.type === "gate" ? `rgba(20,241,149,${pulse})` : `rgba(255,215,55,${pulse})`;
-      ctx.beginPath(); ctx.arc(px, py, 2 * z, 0, Math.PI * 2); ctx.fill();
-    }
-    // Central glow
-    const portalGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, ringR * 1.5);
-    portalGlow.addColorStop(0, b.type === "gate" ? "rgba(20,241,149,0.15)" : "rgba(255,215,55,0.15)");
-    portalGlow.addColorStop(1, "transparent");
-    ctx.fillStyle = portalGlow;
-    ctx.beginPath(); ctx.arc(cx, cy, ringR * 1.5, 0, Math.PI * 2); ctx.fill();
-
-  } else if (b.type === "lighthouse") {
-    // Tall lighthouse with rotating beam
-    const tw = w * 0.5, tx = sx + (w - tw) / 2;
-    // Tapered tower
-    ctx.fillStyle = lerpColor("#e8e0d0", "#7a7268", nightFactor);
-    ctx.beginPath();
-    ctx.moveTo(tx + tw * 0.1, sy + h);
-    ctx.lineTo(tx + tw * 0.25, sy + h * 0.2);
-    ctx.lineTo(tx + tw * 0.75, sy + h * 0.2);
-    ctx.lineTo(tx + tw * 0.9, sy + h);
-    ctx.fill();
-    // Red stripes
-    ctx.fillStyle = lerpColor("#cc3333", "#661a1a", nightFactor);
-    for (let i = 0; i < 3; i++) {
-      const stripY = sy + h * (0.35 + i * 0.2);
-      ctx.fillRect(tx + tw * 0.15, stripY, tw * 0.7, h * 0.08);
-    }
-    // Lantern room
-    ctx.fillStyle = lerpColor("#333", "#111", nightFactor);
-    ctx.fillRect(tx + tw * 0.15, sy + h * 0.15, tw * 0.7, h * 0.08);
-    // Light beam (at night)
-    if (nightFactor > 0.3) {
-      const beamAngle = t * 0.002;
-      const beamLen = 80 * z;
-      ctx.strokeStyle = `rgba(255,240,180,${nightFactor * 0.2})`;
-      ctx.lineWidth = 6 * z;
-      ctx.beginPath();
-      ctx.moveTo(tx + tw / 2, sy + h * 0.17);
-      ctx.lineTo(tx + tw / 2 + Math.cos(beamAngle) * beamLen, sy + h * 0.17 + Math.sin(beamAngle) * beamLen);
-      ctx.stroke();
-      ctx.strokeStyle = `rgba(255,240,180,${nightFactor * 0.1})`;
-      ctx.lineWidth = 12 * z;
-      ctx.beginPath();
-      ctx.moveTo(tx + tw / 2, sy + h * 0.17);
-      ctx.lineTo(tx + tw / 2 + Math.cos(beamAngle) * beamLen, sy + h * 0.17 + Math.sin(beamAngle) * beamLen);
-      ctx.stroke();
-    }
-    // Cap
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(tx + tw / 2, sy - 2 * z);
-    ctx.lineTo(tx + tw * 0.1, sy + h * 0.17);
-    ctx.lineTo(tx + tw * 0.9, sy + h * 0.17);
-    ctx.fill();
-
-  } else if (b.type === "dock") {
-    // Harbor with wooden pier and ship
-    // Water
-    ctx.fillStyle = lerpColor("#1a5276", "#0c2840", nightFactor);
-    ctx.fillRect(sx, sy + h * 0.5, w, h * 0.5);
-    // Water waves
-    ctx.strokeStyle = `rgba(120,200,255,${0.2 + Math.sin(t * 0.003) * 0.1})`;
-    ctx.lineWidth = z;
-    for (let i = 0; i < 3; i++) {
-      const wy = sy + h * 0.6 + i * h * 0.12;
-      ctx.beginPath();
-      for (let wx = 0; wx < w; wx += 4 * z) {
-        const wvy = wy + Math.sin(t * 0.003 + wx * 0.02 + i) * 2 * z;
-        wx === 0 ? ctx.moveTo(sx + wx, wvy) : ctx.lineTo(sx + wx, wvy);
-      }
-      ctx.stroke();
-    }
-    // Pier (wooden planks)
-    ctx.fillStyle = lerpColor("#8B6914", "#4a3808", nightFactor);
-    ctx.fillRect(sx + w * 0.3, sy + h * 0.3, w * 0.4, h * 0.7);
-    // Pier posts
-    ctx.fillStyle = lerpColor("#6a4a10", "#3a2808", nightFactor);
-    ctx.fillRect(sx + w * 0.3, sy + h * 0.3, 3 * z, h * 0.7);
-    ctx.fillRect(sx + w * 0.7 - 3 * z, sy + h * 0.3, 3 * z, h * 0.7);
-    // Building on pier
-    ctx.fillStyle = wallBase + "dd";
-    ctx.fillRect(sx, sy, w, h * 0.45);
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(sx - 3 * z, sy + h * 0.08);
-    ctx.lineTo(sx + w / 2, sy - 6 * z);
-    ctx.lineTo(sx + w + 3 * z, sy + h * 0.08);
-    ctx.fill();
-    // Windows
-    drawWindow(ctx, sx + w * 0.15, sy + h * 0.15, winSize * 1.3, winSize * 1.3, t, b.id, nightFactor, 0);
-    drawWindow(ctx, sx + w * 0.6, sy + h * 0.15, winSize * 1.3, winSize * 1.3, t, b.id, nightFactor, 1);
-
-  } else if (b.type === "farm") {
-    // Barn with crops
-    // Field (crop rows)
-    const fieldColor = lerpColor("#5a8a20", "#2a4a10", nightFactor);
-    for (let row = 0; row < 3; row++) {
-      const fy = sy + h * 0.65 + row * h * 0.1;
-      ctx.fillStyle = row % 2 === 0 ? fieldColor : darkenHex(fieldColor, 0.15);
-      ctx.fillRect(sx, fy, w, h * 0.1);
-      // Crop stalks
-      if (z > 0.5) {
-        ctx.strokeStyle = lerpColor("#7ab030", "#3a5818", nightFactor);
-        ctx.lineWidth = z;
-        for (let cx = 0; cx < w; cx += 5 * z) {
-          const sway = Math.sin(t * 0.002 + cx * 0.1 + row) * 1.5 * z;
-          ctx.beginPath();
-          ctx.moveTo(sx + cx, fy + h * 0.1);
-          ctx.lineTo(sx + cx + sway, fy);
-          ctx.stroke();
-        }
-      }
-    }
-    // Barn
-    ctx.fillStyle = lerpColor("#cc3333", "#661a1a", nightFactor);
-    ctx.fillRect(sx + w * 0.1, sy + h * 0.15, w * 0.8, h * 0.52);
-    // Barn door
-    ctx.fillStyle = lerpColor("#8B2020", "#441010", nightFactor);
-    ctx.fillRect(sx + w * 0.35, sy + h * 0.4, w * 0.3, h * 0.27);
-    // X pattern on door
-    ctx.strokeStyle = lerpColor("#6a1a1a", "#330a0a", nightFactor);
-    ctx.lineWidth = Math.max(1, 1.5 * z);
-    ctx.beginPath();
-    ctx.moveTo(sx + w * 0.35, sy + h * 0.4); ctx.lineTo(sx + w * 0.65, sy + h * 0.67);
-    ctx.moveTo(sx + w * 0.65, sy + h * 0.4); ctx.lineTo(sx + w * 0.35, sy + h * 0.67);
-    ctx.stroke();
-    // Barn roof
-    ctx.fillStyle = lerpColor("#8B4513", "#4a2208", nightFactor);
-    ctx.beginPath();
-    ctx.moveTo(sx + w * 0.05, sy + h * 0.17);
-    ctx.lineTo(sx + w / 2, sy);
-    ctx.lineTo(sx + w * 0.95, sy + h * 0.17);
-    ctx.fill();
-    // Silo
-    ctx.fillStyle = lerpColor("#aaa", "#555", nightFactor);
-    ctx.fillRect(sx + w * 0.82, sy + h * 0.1, w * 0.12, h * 0.55);
-    ctx.fillStyle = lerpColor("#888", "#444", nightFactor);
-    ctx.beginPath();
-    ctx.arc(sx + w * 0.88, sy + h * 0.1, w * 0.06, Math.PI, 0);
-    ctx.fill();
-
-  } else if (b.type === "casino") {
-    // Flashy building with neon-like elements
-    // Main body
-    ctx.fillStyle = wallBase + "ee";
-    ctx.fillRect(sx, sy + h * 0.2, w, h * 0.8);
-    // Neon border
-    const neonPulse = 0.4 + Math.sin(t * 0.008 + b.id) * 0.3;
-    ctx.strokeStyle = `rgba(244,63,94,${neonPulse})`;
-    ctx.lineWidth = Math.max(1, 2 * z);
-    ctx.strokeRect(sx + 2 * z, sy + h * 0.22, w - 4 * z, h * 0.76);
-    // Marquee roof
-    ctx.fillStyle = roofColor;
-    ctx.fillRect(sx - 4 * z, sy + h * 0.15, w + 8 * z, h * 0.08);
-    // Neon lights on marquee
-    for (let i = 0; i < 6; i++) {
-      const on = Math.sin(t * 0.01 + i * 1.2) > 0;
-      ctx.fillStyle = on ? `rgba(255,200,50,0.8)` : `rgba(100,80,30,0.3)`;
-      ctx.beginPath();
-      ctx.arc(sx + 2 * z + i * ((w + 4 * z) / 6), sy + h * 0.19, 1.5 * z, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Windows
-    for (let i = 0; i < 3; i++) {
-      drawWindow(ctx, sx + w * 0.12 + i * w * 0.28, sy + h * 0.35, winSize * 1.3, winSize * 1.8, t, b.id, nightFactor, i);
-    }
-    // Door
-    ctx.fillStyle = lerpColor("#3a1a30", "#1a0a18", nightFactor);
-    ctx.beginPath();
-    ctx.roundRect(sx + w * 0.35, sy + h * 0.65, w * 0.3, h * 0.35, [3 * z, 3 * z, 0, 0]);
-    ctx.fill();
-    // Glow effect
-    const casinoGlow = ctx.createRadialGradient(sx + w / 2, sy + h * 0.2, 0, sx + w / 2, sy + h * 0.2, w * 0.8);
-    casinoGlow.addColorStop(0, `rgba(244,63,94,${nightFactor * 0.1})`);
-    casinoGlow.addColorStop(1, "transparent");
-    ctx.fillStyle = casinoGlow;
-    ctx.beginPath(); ctx.arc(sx + w / 2, sy + h * 0.2, w * 0.8, 0, Math.PI * 2); ctx.fill();
-
-  } else {
-    // ──── Default generic building (improved) ────
-    // Ground pad — subtle
-    ctx.fillStyle = `rgba(0,0,0,0.06)`;
-    ctx.fillRect(sx - 3 * z, sy + h - 2 * z, w + 6 * z, 3 * z);
-
-    // Shadow — minimal offset
-    ctx.fillStyle = `rgba(0,0,0,0.04)`;
-    ctx.fillRect(sx + 2 * z, sy + 2 * z, w, h);
-
-    // Main walls
-    ctx.fillStyle = wallBase + "dd";
-    ctx.fillRect(sx, sy + h * 0.15, w, h * 0.85);
-
-    // Side shading
-    ctx.fillStyle = wallDark + "33";
-    ctx.fillRect(sx, sy + h * 0.15, w * 0.15, h * 0.85);
-
-    // Pitched roof
-    ctx.fillStyle = roofColor;
-    ctx.beginPath();
-    ctx.moveTo(sx - 3 * z, sy + h * 0.17);
-    ctx.lineTo(sx + w / 2, sy - 2 * z);
-    ctx.lineTo(sx + w + 3 * z, sy + h * 0.17);
-    ctx.fill();
-    // Roof highlight
-    ctx.fillStyle = lerpColor(b.accent, "#ffffff", 0.15);
-    ctx.beginPath();
-    ctx.moveTo(sx + w / 2, sy - 2 * z);
-    ctx.lineTo(sx + w + 3 * z, sy + h * 0.17);
-    ctx.lineTo(sx + w / 2, sy + h * 0.17);
-    ctx.fill();
-
-    // Door
-    ctx.fillStyle = darkenHex(wallBase, 0.3);
-    ctx.beginPath();
-    ctx.roundRect(sx + w * 0.38, sy + h * 0.6, w * 0.24, h * 0.4, [2 * z, 2 * z, 0, 0]);
-    ctx.fill();
-
-    // Windows
-    const winCols = Math.max(2, Math.floor(b.w));
-    for (let i = 0; i < winCols; i++) {
-      const wx = sx + w * 0.1 + i * (w * 0.8 / winCols);
-      drawWindow(ctx, wx, sy + h * 0.3, winSize, winSize * 1.3, t, b.id, nightFactor, i);
-    }
-  }
-
-  // ──── Common overlays ────
-  // Pulsing glow
-  const glowStr = nightFactor > 0.3 ? 0.18 : 0.08;
-  const glowAlpha = glowStr + Math.sin(t * 0.003 + b.id) * 0.05;
-  const glow = ctx.createRadialGradient(sx + w / 2, sy + h / 2, 0, sx + w / 2, sy + h / 2, Math.max(w, h) * 1.1);
-  glow.addColorStop(0, b.color + Math.floor(glowAlpha * 255).toString(16).padStart(2, "0"));
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(sx + w / 2, sy + h / 2, Math.max(w, h) * 1.1, 0, Math.PI * 2); ctx.fill();
-
-  // Icon (only at far zoom where detail is lost)
-  if (z > 0.3 && z < 0.55) {
-    ctx.font = `${Math.max(14, 24 * z)}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.fillText(b.icon, sx + w / 2, sy + h / 2 + 8 * z);
-    ctx.textAlign = "left";
-  }
-
-  // Label
-  if (z > 0.35) {
-    const ls = Math.max(7, 10 * z);
-    ctx.font = `bold ${ls}px 'Space Grotesk', sans-serif`;
-    ctx.textAlign = "center";
-    const nw = ctx.measureText(b.name).width;
-    ctx.fillStyle = "rgba(0,0,0,0.8)";
-    const lbg = { x: sx + w / 2 - nw / 2 - 6, y: sy + h + 5 * z, w: nw + 12, h: ls + 6 };
-    ctx.beginPath();
-    ctx.roundRect(lbg.x, lbg.y, lbg.w, lbg.h, 3 * z);
-    ctx.fill();
-    ctx.fillStyle = b.accent;
-    ctx.fillText(b.name, sx + w / 2, sy + h + 5 * z + ls + 1);
-    if (z > 0.6) {
-      ctx.font = `${Math.max(5, 7 * z)}px 'Space Grotesk', sans-serif`;
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${b.visitors} inside`, sx + w / 2, sy + h + 5 * z + ls + 1 + 10 * z);
-    }
-    ctx.textAlign = "left";
-  }
-
-  // Flags on guilds
-  if (b.type.startsWith("guild") && z > 0.5) {
-    drawFlag(ctx, sx + w - 4 * z, sy - 12 * z, z, t, b.id, b.color, nightFactor);
-  }
-}
-
-function darkenHex(hex: string, amount: number): string {
-  const h = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, Math.round(((h >> 16) & 255) * (1 - amount)));
-  const g = Math.max(0, Math.round(((h >> 8) & 255) * (1 - amount)));
-  const b = Math.max(0, Math.round((h & 255) * (1 - amount)));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
-
-function drawAgent(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
-  if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
-  const s = Math.max(z, 1.5);
-  const p = s; // pixel unit
-
-  // ── Class-specific skin & accent palettes ──
-  const CLASS_SKINS: Record<string, { skin: string; hair: string; shirt: string; shirtHi: string; pants: string; shoes: string; accessory: string }> = {
-    warrior:  { skin: "#f0c8a0", hair: "#8b4513", shirt: "#c0392b", shirtHi: "#e74c3c", pants: "#2c3e50", shoes: "#3a2520", accessory: "#b8b8b8" },
-    trader:   { skin: "#f5d5b0", hair: "#d4a847", shirt: "#27ae60", shirtHi: "#2ecc71", pants: "#8b7355", shoes: "#5a4020", accessory: "#ffd700" },
-    scout:    { skin: "#e8b888", hair: "#2c3e50", shirt: "#2980b9", shirtHi: "#3498db", pants: "#34495e", shoes: "#2c2c2c", accessory: "#1abc9c" },
-    diplomat: { skin: "#f0d0b8", hair: "#c0c0c0", shirt: "#8e44ad", shirtHi: "#9b59b6", pants: "#2c2c4e", shoes: "#3a2a3a", accessory: "#f1c40f" },
-    builder:  { skin: "#e0a878", hair: "#e67e22", shirt: "#d35400", shirtHi: "#e67e22", pants: "#7f8c8d", shoes: "#5a4a3a", accessory: "#f39c12" },
-    hacker:   { skin: "#d8c8b8", hair: "#1a1a2e", shirt: "#16a085", shirtHi: "#1abc9c", pants: "#1a1a2e", shoes: "#0a0a1e", accessory: "#00ff88" },
-    president:{ skin: "#f5d5b0", hair: "#2c2c2c", shirt: "#2c3e50", shirtHi: "#34495e", pants: "#1a1a2e", shoes: "#1a1010", accessory: "#ffd700" },
-  };
-  const pal = CLASS_SKINS[a.cls] || CLASS_SKINS.warrior;
-
-  // ── Subtle ground dot (no dark blobs) ──
-  ctx.fillStyle = `rgba(0,0,0,0.08)`;
-  ctx.fillRect(sx - 3 * p, sy + 8 * p, 6 * p, p);
-
-  // ── State glow ring ──
-  if (a.state === "combat") {
-    const pulse = 0.5 + Math.sin(t * 0.012) * 0.3;
-    ctx.strokeStyle = `rgba(255,60,60,${pulse})`;
-    ctx.lineWidth = p;
-    ctx.beginPath(); ctx.arc(sx, sy - 4 * p, 14 * p, 0, Math.PI * 2); ctx.stroke();
-  } else if (a.state === "trading") {
-    ctx.strokeStyle = "rgba(46,204,113,0.4)";
-    ctx.lineWidth = p;
-    ctx.beginPath(); ctx.arc(sx, sy - 4 * p, 14 * p, 0, Math.PI * 2); ctx.stroke();
-  } else if (a.state === "meeting") {
-    ctx.strokeStyle = "rgba(241,196,15,0.4)";
-    ctx.lineWidth = p;
-    ctx.beginPath(); ctx.arc(sx, sy - 4 * p, 14 * p, 0, Math.PI * 2); ctx.stroke();
-  }
-
-  const isMoving = a.state === "move" || a.state === "visiting";
-  const bounce = isMoving ? Math.abs(Math.sin(t * 0.015 * a.speed + a.phase)) * 1.5 * p : 0;
-  const bodyY = sy - bounce;
-
-  // ── Legs (animated walk) ──
-  const legSwing = isMoving ? Math.sin(t * 0.014 * a.speed + a.phase) * 3 * p : 0;
-  // Left leg
-  ctx.fillStyle = pal.pants;
-  ctx.fillRect(sx - 3 * p, bodyY + 2 * p, 2.5 * p, (5 + legSwing / p) * p);
-  ctx.fillStyle = pal.shoes;
-  ctx.fillRect(sx - 3.5 * p, bodyY + (6.5 + legSwing / p) * p, 3 * p, 1.5 * p);
-  // Right leg
-  ctx.fillStyle = darkenHex(pal.pants, 0.08);
-  ctx.fillRect(sx + 0.5 * p, bodyY + 2 * p, 2.5 * p, (5 - legSwing / p) * p);
-  ctx.fillStyle = pal.shoes;
-  ctx.fillRect(sx + 0.5 * p, bodyY + (6.5 - legSwing / p) * p, 3 * p, 1.5 * p);
-
-  // ── Body/Torso (class-colored shirt) ──
-  ctx.fillStyle = pal.shirt;
-  ctx.fillRect(sx - 4 * p, bodyY - 8 * p, 8 * p, 10 * p);
-  // Highlight stripe
-  ctx.fillStyle = pal.shirtHi;
-  ctx.fillRect(sx + p, bodyY - 7 * p, 3 * p, 7 * p);
-  // Dark side
-  ctx.fillStyle = darkenHex(pal.shirt, 0.2);
-  ctx.fillRect(sx - 4 * p, bodyY - 7 * p, 1.5 * p, 7 * p);
-  // Belt
-  ctx.fillStyle = "#6b5335";
-  ctx.fillRect(sx - 4 * p, bodyY + 0.5 * p, 8 * p, 1.5 * p);
-  ctx.fillStyle = pal.accessory;
-  ctx.fillRect(sx - 0.8 * p, bodyY + 0.5 * p, 1.6 * p, 1.5 * p);
-
-  // ── Arms ──
-  const armSwing = isMoving ? Math.sin(t * 0.012 * a.speed + a.phase) * 3 * p : 0;
-  if (a.state === "combat") {
-    const cSwing = Math.sin(t * 0.025 + a.phase) * 4 * p;
-    // Left arm raised
-    ctx.fillStyle = pal.shirt;
-    ctx.fillRect(sx - 7 * p, bodyY - 8 * p + cSwing, 3 * p, 5 * p);
-    ctx.fillStyle = pal.skin;
-    ctx.fillRect(sx - 7 * p, bodyY - 3 * p + cSwing, 3 * p, 2.5 * p);
-    // Right arm with sword
-    ctx.fillStyle = pal.shirt;
-    ctx.fillRect(sx + 4 * p, bodyY - 10 * p - cSwing, 3 * p, 5 * p);
-    ctx.fillStyle = pal.skin;
-    ctx.fillRect(sx + 4 * p, bodyY - 5 * p - cSwing, 3 * p, 2.5 * p);
-    // Pixel sword
-    ctx.fillStyle = "#d0d8e8";
-    ctx.fillRect(sx + 5 * p, bodyY - 18 * p - cSwing, 1.5 * p, 8 * p);
-    ctx.fillStyle = "#ffd700";
-    ctx.fillRect(sx + 4 * p, bodyY - 10 * p - cSwing, 3.5 * p, 1.5 * p);
-    ctx.fillStyle = "#8b4513";
-    ctx.fillRect(sx + 5 * p, bodyY - 8.5 * p - cSwing, 1.5 * p, 3 * p);
-  } else {
-    // Left arm
-    ctx.fillStyle = pal.shirt;
-    ctx.fillRect(sx - 7 * p, bodyY - 7 * p + armSwing, 3 * p, 5 * p);
-    ctx.fillStyle = pal.skin;
-    ctx.fillRect(sx - 7 * p, bodyY - 2 * p + armSwing, 3 * p, 2 * p);
-    // Right arm
-    ctx.fillStyle = pal.shirt;
-    ctx.fillRect(sx + 4 * p, bodyY - 7 * p - armSwing, 3 * p, 5 * p);
-    ctx.fillStyle = pal.skin;
-    ctx.fillRect(sx + 4 * p, bodyY - 2 * p - armSwing, 3 * p, 2 * p);
-    // Class-specific held item
-    if (a.cls === "trader") {
-      ctx.fillStyle = "#ffd700";
-      ctx.fillRect(sx + 5 * p, bodyY - 4 * p - armSwing, 2 * p, 2 * p);
-    } else if (a.cls === "builder") {
-      ctx.fillStyle = "#8b6914";
-      ctx.fillRect(sx + 5 * p, bodyY - 6 * p - armSwing, 1.5 * p, 5 * p);
-      ctx.fillStyle = "#a0a0a0";
-      ctx.fillRect(sx + 4 * p, bodyY - 8 * p - armSwing, 3.5 * p, 2 * p);
-    } else if (a.cls === "hacker") {
-      ctx.fillStyle = "#00ff88";
-      ctx.fillRect(sx + 5 * p, bodyY - 5 * p - armSwing, 2 * p, 3 * p);
-      ctx.fillStyle = "#003322";
-      ctx.fillRect(sx + 5.3 * p, bodyY - 4.5 * p - armSwing, 1.4 * p, 2 * p);
-    }
-  }
-
-  // ── Head (10×10 pixel block with character) ──
-  // Base skin
-  ctx.fillStyle = pal.skin;
-  ctx.fillRect(sx - 5 * p, bodyY - 18 * p, 10 * p, 10 * p);
-  // Hair/helmet top (3 rows)
-  ctx.fillStyle = pal.hair;
-  ctx.fillRect(sx - 5 * p, bodyY - 18 * p, 10 * p, 3 * p);
-  // Side hair
-  ctx.fillStyle = darkenHex(pal.hair, 0.15);
-  ctx.fillRect(sx - 5 * p, bodyY - 15 * p, 1.5 * p, 4 * p);
-  ctx.fillRect(sx + 3.5 * p, bodyY - 15 * p, 1.5 * p, 4 * p);
-  // Eyes — white with colored iris
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(sx - 3.5 * p, bodyY - 14 * p, 3 * p, 2.5 * p);
-  ctx.fillRect(sx + 0.5 * p, bodyY - 14 * p, 3 * p, 2.5 * p);
-  // Iris (class-colored)
-  ctx.fillStyle = pal.shirt;
-  ctx.fillRect(sx - 2 * p, bodyY - 13.5 * p, 1.5 * p, 2 * p);
-  ctx.fillRect(sx + 1.5 * p, bodyY - 13.5 * p, 1.5 * p, 2 * p);
-  // Pupils
-  ctx.fillStyle = "#1a1a2e";
-  ctx.fillRect(sx - 1.5 * p, bodyY - 13 * p, p, 1.5 * p);
-  ctx.fillRect(sx + 2 * p, bodyY - 13 * p, p, 1.5 * p);
-  // Smile / mouth
-  ctx.fillStyle = darkenHex(pal.skin, 0.2);
-  ctx.fillRect(sx - 1.5 * p, bodyY - 10.5 * p, 3 * p, p);
-
-  // ── Class accessories on head ──
-  if (a.cls === "scout") {
-    // Headband
-    ctx.fillStyle = "#1abc9c";
-    ctx.fillRect(sx - 5 * p, bodyY - 15.5 * p, 10 * p, 1.2 * p);
-  } else if (a.cls === "diplomat") {
-    // Monocle
-    ctx.strokeStyle = "#ffd700";
-    ctx.lineWidth = p * 0.6;
-    ctx.beginPath(); ctx.arc(sx + 2 * p, bodyY - 13 * p, 2 * p, 0, Math.PI * 2); ctx.stroke();
-  } else if (a.cls === "hacker") {
-    // VR visor
-    ctx.fillStyle = "rgba(0,255,136,0.4)";
-    ctx.fillRect(sx - 4 * p, bodyY - 14.5 * p, 8 * p, 2.5 * p);
-    ctx.strokeStyle = "#00ff88";
-    ctx.lineWidth = p * 0.4;
-    ctx.strokeRect(sx - 4 * p, bodyY - 14.5 * p, 8 * p, 2.5 * p);
-  }
-
-  // ── Crown for President or linked agents ──
-  if (a.linked || a.cls === "president") {
-    ctx.fillStyle = "#FFD700";
-    ctx.fillRect(sx - 5 * p, bodyY - 20 * p, 10 * p, 2 * p);
-    ctx.fillRect(sx - 5 * p, bodyY - 24 * p, 2 * p, 4 * p);
-    ctx.fillRect(sx - 1 * p, bodyY - 25 * p, 2 * p, 5 * p);
-    ctx.fillRect(sx + 3 * p, bodyY - 24 * p, 2 * p, 4 * p);
-    // Gems
-    ctx.fillStyle = "#ff3030";
-    ctx.fillRect(sx - 0.5 * p, bodyY - 24 * p, p, p);
-    ctx.fillStyle = "#3498db";
-    ctx.fillRect(sx - 4.5 * p, bodyY - 23 * p, p, p);
-    ctx.fillStyle = "#2ecc71";
-    ctx.fillRect(sx + 3.5 * p, bodyY - 23 * p, p, p);
-  }
-
-  // ── Reputation sparkles ──
-  if (a.reputation > 700) {
-    for (let i = 0; i < 5; i++) {
-      const angle = (t * 0.003 + i * Math.PI * 2 / 5 + a.phase) % (Math.PI * 2);
-      const dist = 14 * p;
-      const sparkX = sx + Math.cos(angle) * dist;
-      const sparkY = bodyY - 5 * p + Math.sin(angle) * dist * 0.5;
-      const sparkAlpha = 0.5 + Math.sin(t * 0.006 + i * 1.2) * 0.4;
-      ctx.fillStyle = `rgba(255,215,0,${sparkAlpha})`;
-      ctx.fillRect(sparkX - p * 0.7, sparkY - p * 0.7, p * 1.4, p * 1.4);
-    }
-  }
-
-  // ── State emoji ──
-  if (z > 0.5) {
-    let icon = "";
-    if (a.state === "trading") icon = "💰";
-    else if (a.state === "combat") icon = "⚔️";
-    else if (a.state === "meeting") icon = "🤝";
-    else if (a.state === "visiting") icon = "🏠";
-    else if (a.state === "idle") icon = "💤";
-    if (icon) {
-      ctx.font = `${Math.max(8, 10 * p)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(icon, sx, bodyY - 28 * p);
-    }
-  }
-
-  // ── HP bar (Minecraft hearts) ──
-  if (z > 0.6 && a.hp < a.maxHp) {
-    const barW = 18 * p, barH = 2.5 * p;
-    const barX = sx - barW / 2, barY = bodyY - 30 * p;
-    ctx.fillStyle = "#2c1010";
-    ctx.fillRect(barX, barY, barW, barH);
-    const hpPct = a.hp / a.maxHp;
-    const hpGrad = ctx.createLinearGradient(barX, barY, barX + barW * hpPct, barY);
-    hpGrad.addColorStop(0, hpPct > 0.5 ? "#e74c3c" : "#f39c12");
-    hpGrad.addColorStop(1, hpPct > 0.5 ? "#c0392b" : "#e67e22");
-    ctx.fillStyle = hpGrad;
-    ctx.fillRect(barX + 0.5, barY + 0.5, (barW - 1) * hpPct, barH - 1);
-    ctx.strokeStyle = "#1a0808";
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(barX, barY, barW, barH);
-  }
-
-  // ── Name tag ──
-  {
-    const fs = Math.max(8, 9 * p);
-    ctx.font = `bold ${fs}px "Courier New", monospace`;
-    ctx.textAlign = "center";
-    const nw = ctx.measureText(a.name).width;
-    // Clean plate background
-    ctx.fillStyle = "rgba(20,20,35,0.55)";
-    const plateX = sx - nw / 2 - 4, plateY = bodyY + 10 * p;
-    ctx.beginPath(); ctx.roundRect(plateX, plateY, nw + 8, fs + 4, 2); ctx.fill();
-    // Class-colored underline
-    ctx.fillStyle = pal.shirt;
-    ctx.fillRect(plateX + 2, plateY + fs + 2, nw + 4, 1.5);
-    // Name text
-    ctx.fillStyle = "#f0f0f0";
-    ctx.fillText(a.name, sx, plateY + fs + 1);
-    ctx.textAlign = "left";
-  }
-
-  // ── Level badge ──
-  {
-    const lvStr = `Lv${a.level}`;
-    const lvFs = Math.max(6, 6.5 * p);
-    ctx.font = `bold ${lvFs}px monospace`;
-    ctx.textAlign = "center";
-    const lvW = ctx.measureText(lvStr).width;
-    const bx = sx + 7 * p, by = bodyY - 18 * p;
-    ctx.fillStyle = pal.shirt;
-    ctx.beginPath(); ctx.roundRect(bx, by, lvW + 5, lvFs + 3, 2); ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.fillText(lvStr, bx + (lvW + 5) / 2, by + lvFs + 1);
-    ctx.textAlign = "left";
-  }
-
-  // Balance for linked
-  if (a.linked && z > 0.55) {
-    const bStr = `${a.balance} $M`;
-    const bFs = Math.max(5, 6 * s);
-    ctx.font = `${bFs}px monospace`;
-    ctx.textAlign = "center";
-    const bw = ctx.measureText(bStr).width;
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(sx - bw / 2 - 2, sy + 10 * s + 14 * s, bw + 4, bFs + 2);
-    ctx.fillStyle = "#FBBF24";
-    ctx.fillText(bStr, sx, sy + 10 * s + 14 * s + bFs);
-    ctx.textAlign = "left";
-  }
-}
-
+// ─── Connection Lines ───────────────────────────────────────────
 function drawConnectionLines(ctx: CanvasRenderingContext2D, agents: Agent[], cam: { x: number; y: number }, z: number, t: number) {
   agents.forEach(a => {
     if ((a.state === "meeting" || a.state === "trading" || a.state === "combat") && a.meetingPartner !== null) {
       const other = agents.find(o => o.id === a.meetingPartner);
-      if (!other || a.id > (other?.id ?? 0)) return; // draw once
+      if (!other || a.id > (other?.id ?? 0)) return;
       const sx1 = (a.x - cam.x) * z, sy1 = (a.y - cam.y) * z;
       const sx2 = (other.x - cam.x) * z, sy2 = (other.y - cam.y) * z;
       const pulse = 0.3 + Math.sin(t * 0.008) * 0.15;
@@ -1419,174 +717,102 @@ function drawConnectionLines(ctx: CanvasRenderingContext2D, agents: Agent[], cam
       ctx.setLineDash([4 * z, 4 * z]);
       ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
       ctx.setLineDash([]);
-      // Animated particle along line
       const prog = (t * 0.002) % 1;
-      const px = sx1 + (sx2 - sx1) * prog;
-      const py = sy1 + (sy2 - sy1) * prog;
       ctx.fillStyle = ctx.strokeStyle;
-      ctx.beginPath(); ctx.arc(px, py, 2.5 * z, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx1 + (sx2 - sx1) * prog, sy1 + (sy2 - sy1) * prog, 2.5 * z, 0, Math.PI * 2); ctx.fill();
     }
   });
 }
 
+// ─── Floating Texts ─────────────────────────────────────────────
 function drawFloatingTexts(ctx: CanvasRenderingContext2D, texts: FloatingText[], cam: { x: number; y: number }, z: number) {
   texts.forEach(ft => {
     const sx = (ft.x - cam.x) * z, sy = (ft.y - cam.y) * z;
     const alpha = ft.life / 60;
-    ctx.font = `bold ${Math.max(8, 10 * z)}px 'Space Grotesk', sans-serif`;
+    ctx.font = `bold ${Math.max(9, 11 * z)}px 'Space Grotesk', sans-serif`;
     ctx.textAlign = "center";
+    // Shadow
+    ctx.fillStyle = `rgba(0,0,0,${alpha * 0.5})`;
+    ctx.fillText(ft.text, sx + 1, sy + 1);
     ctx.fillStyle = ft.color.replace(")", `,${alpha})`).replace("rgb", "rgba");
     ctx.fillText(ft.text, sx, sy);
     ctx.textAlign = "left";
   });
 }
 
+// ─── Particles ──────────────────────────────────────────────────
 function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[], cam: { x: number; y: number }, z: number) {
   particles.forEach(p => {
     const sx = (p.x - cam.x) * z, sy = (p.y - cam.y) * z;
     if (sx < -10 || sx > ctx.canvas.width + 10 || sy < -10 || sy > ctx.canvas.height + 10) return;
     const alpha = p.life / p.maxLife;
     if (p.type === "firefly") {
-      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.size * z * 3);
-      glow.addColorStop(0, `rgba(200,255,100,${alpha * 0.6})`);
+      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.size * z * 4);
+      glow.addColorStop(0, `rgba(200,255,100,${alpha * 0.5})`);
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(sx, sy, p.size * z * 3, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = `rgba(220,255,150,${alpha})`;
+      ctx.beginPath(); ctx.arc(sx, sy, p.size * z * 4, 0, Math.PI * 2); ctx.fill();
     } else if (p.type === "rain") {
-      ctx.strokeStyle = `rgba(150,200,255,${alpha * 0.4})`;
+      ctx.strokeStyle = `rgba(150,200,255,${alpha * 0.35})`;
       ctx.lineWidth = z;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - z, sy + 6 * z); ctx.stroke();
       return;
     } else if (p.type === "snow") {
-      ctx.fillStyle = `rgba(255,255,255,${alpha * 0.6})`;
+      ctx.fillStyle = `rgba(255,255,255,${alpha * 0.5})`;
     } else {
-      ctx.fillStyle = `rgba(255,200,100,${alpha * 0.5})`;
+      ctx.fillStyle = `rgba(255,200,100,${alpha * 0.4})`;
     }
     ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
   });
 }
 
+// ─── Minimap ────────────────────────────────────────────────────
 function drawMinimap(ctx: CanvasRenderingContext2D, terrain: number[][], buildings: Building[], agents: Agent[], cam: { x: number; y: number }, z: number, w: number, h: number, nightFactor: number) {
-  const mmW = 180, mmH = 110;
-  const mmX = w - mmW - 12, mmY = h - mmH - 12;
-  ctx.fillStyle = `rgba(0,0,0,${0.75 + nightFactor * 0.1})`;
-  ctx.beginPath(); ctx.roundRect(mmX - 2, mmY - 2, mmW + 4, mmH + 4, 6); ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.1)";
+  const mmW = 200, mmH = 130;
+  const mmX = w - mmW - 16, mmY = h - mmH - 16;
+  
+  // Premium glass background
+  ctx.fillStyle = `rgba(0,0,0,${0.6 + nightFactor * 0.2})`;
+  ctx.beginPath(); ctx.roundRect(mmX - 4, mmY - 4, mmW + 8, mmH + 8, 8); ctx.fill();
+  // Border glow
+  ctx.strokeStyle = `rgba(153,69,255,0.2)`;
   ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(mmX - 4, mmY - 4, mmW + 8, mmH + 8, 8); ctx.stroke();
+  // Inner border
+  ctx.strokeStyle = `rgba(255,255,255,0.08)`;
+  ctx.lineWidth = 0.5;
   ctx.beginPath(); ctx.roundRect(mmX - 2, mmY - 2, mmW + 4, mmH + 4, 6); ctx.stroke();
 
-  const palettes = [TILE_PALETTE_DAY, TILE_PALETTE_NIGHT];
   const mmScale = mmW / (MAP_W * TILE);
+  // Terrain
   for (let row = 0; row < MAP_H; row += 2) {
     for (let col = 0; col < MAP_W; col += 2) {
       const tile = terrain[row][col];
-      ctx.fillStyle = lerpColor(palettes[0][tile].fill, palettes[1][tile].fill, nightFactor);
+      ctx.fillStyle = lerpColor(TERRAIN_COLORS_DAY[tile].fill, TERRAIN_COLORS_NIGHT[tile].fill, nightFactor);
       ctx.fillRect(mmX + col * TILE * mmScale, mmY + row * TILE * mmScale, Math.max(2, 2 * TILE * mmScale), Math.max(2, 2 * TILE * mmScale));
     }
   }
+  // Buildings
   buildings.forEach(b => {
-    ctx.fillStyle = b.color + "cc";
-    ctx.fillRect(mmX + b.x * mmScale, mmY + b.y * mmScale, Math.max(3, b.w * TILE * mmScale), Math.max(3, b.h * TILE * mmScale));
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.arc(mmX + (b.x + b.w * TILE / 2) * mmScale, mmY + (b.y + b.h * TILE / 2) * mmScale, 2, 0, Math.PI * 2);
+    ctx.fill();
   });
+  // Agents
   agents.forEach(a => {
     ctx.fillStyle = a.color;
     ctx.fillRect(mmX + a.x * mmScale - 0.5, mmY + a.y * mmScale - 0.5, 2, 2);
   });
-  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  // Camera view
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
   ctx.lineWidth = 1;
   ctx.strokeRect(mmX + cam.x * mmScale, mmY + cam.y * mmScale, (w / z) * mmScale, (h / z) * mmScale);
   // Label
-  ctx.font = "bold 8px 'Space Grotesk', sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  ctx.font = "bold 9px 'Space Grotesk', sans-serif";
+  ctx.fillStyle = "rgba(153,69,255,0.6)";
   ctx.textAlign = "left";
-  ctx.fillText("MEEET STATE", mmX + 4, mmY + mmH - 4);
-}
-
-const EVENT_TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
-  duel: { icon: "⚔️", color: "#EF4444" },
-  trade: { icon: "💰", color: "#14F195" },
-  quest_complete: { icon: "📜", color: "#06B6D4" },
-  quest_created: { icon: "📋", color: "#3B82F6" },
-  level_up: { icon: "🎓", color: "#6366F1" },
-  alliance: { icon: "🤝", color: "#34D399" },
-  vote: { icon: "🗳️", color: "#9945FF" },
-  law: { icon: "🏛️", color: "#9945FF" },
-  burn: { icon: "🔥", color: "#F97316" },
-  mining: { icon: "⛏️", color: "#FBBF24" },
-  transfer: { icon: "💸", color: "#00C2FF" },
-  stake: { icon: "🏦", color: "#00C2FF" },
-  combat: { icon: "⚔️", color: "#EF4444" },
-  death: { icon: "💀", color: "#EF4444" },
-  spawn: { icon: "🆕", color: "#14F195" },
-  petition: { icon: "📨", color: "#A78BFA" },
-  guild: { icon: "🏰", color: "#F59E0B" },
-};
-
-// ─── Aurora Borealis ────────────────────────────────────────────
-function drawAurora(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
-  if (nightFactor < 0.4) return;
-  const alpha = (nightFactor - 0.4) / 0.6;
-  const bands = 5;
-  for (let i = 0; i < bands; i++) {
-    const baseY = h * 0.05 + i * h * 0.06;
-    ctx.beginPath();
-    ctx.moveTo(0, baseY);
-    for (let x = 0; x <= w; x += 8) {
-      const wave1 = Math.sin(x * 0.003 + t * 0.0008 + i * 1.5) * 30;
-      const wave2 = Math.sin(x * 0.007 + t * 0.0012 + i * 0.8) * 15;
-      const wave3 = Math.sin(x * 0.001 + t * 0.0005) * 20;
-      ctx.lineTo(x, baseY + wave1 + wave2 + wave3);
-    }
-    ctx.lineTo(w, baseY + 60);
-    ctx.lineTo(0, baseY + 60);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(0, baseY - 20, 0, baseY + 60);
-    const hue = (120 + i * 30 + Math.sin(t * 0.0003) * 20) % 360;
-    grad.addColorStop(0, `hsla(${hue}, 80%, 60%, ${alpha * 0.03})`);
-    grad.addColorStop(0.4, `hsla(${hue + 20}, 70%, 50%, ${alpha * 0.08})`);
-    grad.addColorStop(0.7, `hsla(${hue + 40}, 60%, 40%, ${alpha * 0.04})`);
-    grad.addColorStop(1, "transparent");
-    ctx.fillStyle = grad;
-    ctx.fill();
-  }
-}
-
-// ─── Agent Trails ───────────────────────────────────────────────
-function drawTrails(ctx: CanvasRenderingContext2D, trails: Trail[], cam: { x: number; y: number }, z: number) {
-  trails.forEach(tr => {
-    const sx = (tr.x - cam.x) * z, sy = (tr.y - cam.y) * z;
-    if (sx < -5 || sx > ctx.canvas.width + 5 || sy < -5 || sy > ctx.canvas.height + 5) return;
-    const alpha = (tr.life / tr.maxLife) * 0.3;
-    ctx.fillStyle = tr.color.replace(")", `,${alpha})`).replace("rgb", "rgba");
-    ctx.beginPath();
-    ctx.arc(sx, sy, 1.5 * z * (tr.life / tr.maxLife), 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
-
-// ─── Water Reflection ───────────────────────────────────────────
-function drawWaterReflection(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, terrain: number[][], nightFactor: number) {
-  buildings.forEach(b => {
-    const bx = (b.x - cam.x) * z, by = (b.y + b.h * TILE - cam.y) * z;
-    const bw = b.w * TILE * z;
-    if (bx + bw < 0 || bx > ctx.canvas.width || by < 0 || by > ctx.canvas.height) return;
-    // Check if water tile is below building
-    const tileY = Math.floor((b.y + b.h * TILE + TILE) / TILE);
-    const tileX = Math.floor((b.x + b.w * TILE / 2) / TILE);
-    if (tileX < 0 || tileX >= MAP_W || tileY < 0 || tileY >= MAP_H) return;
-    if (terrain[tileY][tileX] > 1) return;
-    // Draw wavy reflection
-    const reflH = b.h * TILE * z * 0.4;
-    const wave = Math.sin(t * 0.003 + b.id) * 2 * z;
-    ctx.save();
-    ctx.globalAlpha = 0.12 - nightFactor * 0.04;
-    ctx.translate(bx, by + wave);
-    ctx.scale(1, -0.4);
-    ctx.fillStyle = b.color + "40";
-    ctx.fillRect(0, 0, bw, reflH);
-    ctx.restore();
-  });
+  ctx.fillText("MEEET STATE", mmX + 6, mmY + mmH - 5);
 }
 
 // ─── Celestial Bodies ───────────────────────────────────────────
@@ -1596,382 +822,70 @@ function drawCelestialBodies(ctx: CanvasRenderingContext2D, w: number, h: number
   if (nightFactor < 0.7) {
     const sunAngle = cyclePos * Math.PI;
     const sunX = w * 0.1 + Math.cos(sunAngle) * w * 0.4;
-    const sunY = h * 0.35 - Math.sin(sunAngle) * h * 0.3;
+    const sunY = h * 0.3 - Math.sin(sunAngle) * h * 0.25;
     const sunAlpha = 1 - nightFactor;
-    const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 90);
-    sunGlow.addColorStop(0, `rgba(255,240,180,${sunAlpha * 0.35})`);
-    sunGlow.addColorStop(0.2, `rgba(255,210,120,${sunAlpha * 0.2})`);
-    sunGlow.addColorStop(0.5, `rgba(255,170,70,${sunAlpha * 0.08})`);
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 120);
+    sunGlow.addColorStop(0, `rgba(255,240,180,${sunAlpha * 0.4})`);
+    sunGlow.addColorStop(0.15, `rgba(255,210,120,${sunAlpha * 0.2})`);
+    sunGlow.addColorStop(0.4, `rgba(255,170,70,${sunAlpha * 0.06})`);
     sunGlow.addColorStop(1, "transparent");
     ctx.fillStyle = sunGlow;
-    ctx.beginPath(); ctx.arc(sunX, sunY, 90, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sunX, sunY, 120, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = `rgba(255,245,210,${sunAlpha * 0.9})`;
-    ctx.beginPath(); ctx.arc(sunX, sunY, 14, 0, Math.PI * 2); ctx.fill();
-    // Rays
-    for (let i = 0; i < 12; i++) {
-      const rayA = (i / 12) * Math.PI * 2 + t * 0.0003;
-      const rayLen = 20 + Math.sin(t * 0.005 + i * 2) * 6;
-      ctx.strokeStyle = `rgba(255,230,160,${sunAlpha * 0.25})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(sunX + Math.cos(rayA) * 16, sunY + Math.sin(rayA) * 16);
-      ctx.lineTo(sunX + Math.cos(rayA) * rayLen, sunY + Math.sin(rayA) * rayLen);
-      ctx.stroke();
-    }
-    // Lens flare
-    if (sunAlpha > 0.5) {
-      const flareX = sunX + (w / 2 - sunX) * 0.3;
-      const flareY = sunY + (h / 2 - sunY) * 0.3;
-      ctx.fillStyle = `rgba(255,200,100,${(sunAlpha - 0.5) * 0.06})`;
-      ctx.beginPath(); ctx.arc(flareX, flareY, 20, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = `rgba(255,220,150,${(sunAlpha - 0.5) * 0.04})`;
-      ctx.beginPath(); ctx.arc(flareX + 30, flareY + 15, 10, 0, Math.PI * 2); ctx.fill();
-    }
+    ctx.beginPath(); ctx.arc(sunX, sunY, 16, 0, Math.PI * 2); ctx.fill();
   }
   // Moon
   if (nightFactor > 0.3) {
     const moonAngle = ((cyclePos + 0.5) % 1) * Math.PI;
     const moonX = w * 0.65 + Math.cos(moonAngle) * w * 0.25;
-    const moonY = h * 0.12 - Math.sin(moonAngle) * h * 0.08 + 30;
+    const moonY = h * 0.1 - Math.sin(moonAngle) * h * 0.06 + 40;
     const moonAlpha = Math.min(1, (nightFactor - 0.3) / 0.35);
-    const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 70);
-    moonGlow.addColorStop(0, `rgba(200,215,255,${moonAlpha * 0.18})`);
-    moonGlow.addColorStop(0.4, `rgba(150,175,230,${moonAlpha * 0.08})`);
+    const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 80);
+    moonGlow.addColorStop(0, `rgba(200,215,255,${moonAlpha * 0.2})`);
+    moonGlow.addColorStop(0.4, `rgba(150,175,230,${moonAlpha * 0.06})`);
     moonGlow.addColorStop(1, "transparent");
     ctx.fillStyle = moonGlow;
-    ctx.beginPath(); ctx.arc(moonX, moonY, 70, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(225,230,245,${moonAlpha * 0.88})`;
-    ctx.beginPath(); ctx.arc(moonX, moonY, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(30,35,65,${moonAlpha * 0.55})`;
-    ctx.beginPath(); ctx.arc(moonX + 3.5, moonY - 1.5, 8.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(190,195,215,${moonAlpha * 0.3})`;
-    ctx.beginPath(); ctx.arc(moonX - 3, moonY + 2.5, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(moonX - 1, moonY - 3.5, 1.3, 0, Math.PI * 2); ctx.fill();
-    // Moonlight on terrain
-    ctx.fillStyle = `rgba(180,200,255,${moonAlpha * 0.015})`;
-    ctx.fillRect(0, 0, w, h);
+    ctx.beginPath(); ctx.arc(moonX, moonY, 80, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(225,230,245,${moonAlpha * 0.9})`;
+    ctx.beginPath(); ctx.arc(moonX, moonY, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(30,35,65,${moonAlpha * 0.5})`;
+    ctx.beginPath(); ctx.arc(moonX + 4, moonY - 2, 9, 0, Math.PI * 2); ctx.fill();
   }
 }
 
-// ─── Birds ──────────────────────────────────────────────────────
-function drawBirds(ctx: CanvasRenderingContext2D, birds: Bird[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  if (nightFactor > 0.65) return;
-  const alpha = 1 - nightFactor * 1.3;
-  birds.forEach(bird => {
-    const sx = (bird.x - cam.x) * z, sy = (bird.y - cam.y) * z;
-    if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
-    const flapY = Math.sin(bird.flapPhase + t * 0.014) * 3.5 * z * bird.size;
-    const wingSpan = 7 * z * bird.size;
-    ctx.strokeStyle = `rgba(30,30,40,${Math.max(0, alpha * 0.65)})`;
-    ctx.lineWidth = Math.max(0.7, 1.2 * z);
+// ─── Aurora ─────────────────────────────────────────────────────
+function drawAurora(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
+  if (nightFactor < 0.4) return;
+  const alpha = (nightFactor - 0.4) / 0.6;
+  for (let i = 0; i < 4; i++) {
+    const baseY = h * 0.04 + i * h * 0.05;
     ctx.beginPath();
-    ctx.moveTo(sx - wingSpan, sy + flapY);
-    ctx.quadraticCurveTo(sx - wingSpan * 0.4, sy - Math.abs(flapY) * 0.6, sx, sy);
-    ctx.quadraticCurveTo(sx + wingSpan * 0.4, sy - Math.abs(flapY) * 0.6, sx + wingSpan, sy + flapY);
-    ctx.stroke();
-  });
-}
-
-function updateBirds(birds: Bird[], cam: { x: number; y: number }, w: number, h: number, z: number) {
-  birds.forEach(bird => {
-    bird.x += bird.vx;
-    bird.y += bird.vy + Math.sin(bird.flapPhase + Date.now() * 0.001) * 0.015;
-    const margin = 600;
-    if (bird.x > cam.x + w / z + margin) bird.x = cam.x - margin * 0.5;
-    if (bird.x < cam.x - margin) bird.x = cam.x + w / z + margin * 0.5;
-    if (bird.y < cam.y - margin * 0.3) bird.y = cam.y + h / z * 0.25;
-    if (bird.y > cam.y + h / z * 0.4) bird.y = cam.y;
-  });
-}
-
-// ─── Torch Lights ───────────────────────────────────────────────
-function drawTorchLights(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  if (nightFactor < 0.2) return;
-  const torchAlpha = Math.min(1, (nightFactor - 0.2) / 0.35);
-  buildings.forEach(b => {
-    const bx = (b.x - cam.x) * z, by = (b.y - cam.y) * z;
-    const bw = b.w * TILE * z, bh = b.h * TILE * z;
-    if (bx + bw < -120 || bx > ctx.canvas.width + 120 || by + bh < -120 || by > ctx.canvas.height + 120) return;
-    const torches = [{ x: bx + bw * 0.15, y: by + bh }, { x: bx + bw * 0.85, y: by + bh }];
-    torches.forEach((tp, i) => {
-      const flicker = 0.55 + Math.sin(t * 0.013 + b.id * 3 + i * 5) * 0.22 + Math.sin(t * 0.029 + i * 7) * 0.12;
-      const radius = (28 + Math.sin(t * 0.009 + i) * 6) * z;
-      const tGlow = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, radius);
-      tGlow.addColorStop(0, `rgba(255,175,55,${torchAlpha * flicker * 0.28})`);
-      tGlow.addColorStop(0.35, `rgba(255,115,25,${torchAlpha * flicker * 0.14})`);
-      tGlow.addColorStop(0.7, `rgba(255,75,15,${torchAlpha * flicker * 0.04})`);
-      tGlow.addColorStop(1, "transparent");
-      ctx.fillStyle = tGlow;
-      ctx.beginPath(); ctx.arc(tp.x, tp.y, radius, 0, Math.PI * 2); ctx.fill();
-      // Flame
-      ctx.fillStyle = `rgba(255,225,90,${torchAlpha * flicker * 0.85})`;
-      ctx.beginPath(); ctx.arc(tp.x, tp.y - 2.5 * z, 1.8 * z, 0, Math.PI * 2); ctx.fill();
-      // Flame tip
-      const tipY = tp.y - 5 * z - Math.sin(t * 0.02 + i + b.id) * 2 * z;
-      ctx.fillStyle = `rgba(255,180,50,${torchAlpha * flicker * 0.5})`;
-      ctx.beginPath(); ctx.arc(tp.x, tipY, 1 * z, 0, Math.PI * 2); ctx.fill();
-    });
-  });
-}
-
-// ─── Valley Fog (DISABLED — no dark spots) ─────────────────────
-function drawValleyFog(_ctx: CanvasRenderingContext2D, _w: number, _h: number, _t: number, _nightFactor: number) {
-  return;
-}
-
-// ─── Hover Tooltip ──────────────────────────────────────────────
-function drawHoverTooltip(ctx: CanvasRenderingContext2D, name: string | null, mx: number, my: number) {
-  if (!name || mx <= 0 || my <= 0) return;
-  const fontSize = 11;
-  ctx.font = `bold ${fontSize}px 'Space Grotesk', sans-serif`;
-  const textW = ctx.measureText(name).width;
-  const padX = 10, padY = 6;
-  const tipX = mx + 18, tipY = my - 10;
-  const boxW = textW + padX * 2, boxH = fontSize + padY * 2;
-  // Shadow
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  ctx.beginPath(); ctx.roundRect(tipX + 2, tipY - boxH + 2, boxW, boxH, 5); ctx.fill();
-  // Background
-  ctx.fillStyle = "rgba(10,10,20,0.88)";
-  ctx.beginPath(); ctx.roundRect(tipX, tipY - boxH, boxW, boxH, 5); ctx.fill();
-  // Subtle border
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.roundRect(tipX, tipY - boxH, boxW, boxH, 5); ctx.stroke();
-  // Text
-  ctx.fillStyle = "#e8e8f0";
-  ctx.textAlign = "left";
-  ctx.fillText(name, tipX + padX, tipY - padY);
-}
-
-// ─── Interaction Particles ──────────────────────────────────────
-function drawInteractionParticles(ctx: CanvasRenderingContext2D, agents: Agent[], cam: { x: number; y: number }, z: number, t: number) {
-  agents.forEach(a => {
-    if (a.state !== "combat" && a.state !== "trading") return;
-    const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
-    if (sx < -60 || sx > ctx.canvas.width + 60 || sy < -60 || sy > ctx.canvas.height + 60) return;
-    if (a.state === "combat") {
-      for (let i = 0; i < 4; i++) {
-        const sparkT = (t * 0.012 + i * 1.57 + a.phase) % 6.28;
-        const sparkR = (9 + Math.sin(sparkT * 2.5) * 7) * z;
-        const sparkX = sx + Math.cos(sparkT) * sparkR;
-        const sparkY = sy + Math.sin(sparkT) * sparkR - 6 * z;
-        const sparkAlpha = 0.5 + Math.sin(t * 0.035 + i * 3.5) * 0.35;
-        ctx.fillStyle = `rgba(255,${140 + Math.floor(Math.sin(sparkT) * 110)},40,${sparkAlpha})`;
-        ctx.beginPath(); ctx.arc(sparkX, sparkY, 1.8 * z, 0, Math.PI * 2); ctx.fill();
-      }
-      if (Math.sin(t * 0.028 + a.phase) > 0.88) {
-        const flash = ctx.createRadialGradient(sx, sy - 6 * z, 0, sx, sy - 6 * z, 18 * z);
-        flash.addColorStop(0, "rgba(255,255,200,0.35)");
-        flash.addColorStop(1, "transparent");
-        ctx.fillStyle = flash;
-        ctx.beginPath(); ctx.arc(sx, sy - 6 * z, 18 * z, 0, Math.PI * 2); ctx.fill();
-      }
+    ctx.moveTo(0, baseY);
+    for (let x = 0; x <= w; x += 10) {
+      const wave = Math.sin(x * 0.003 + t * 0.0008 + i * 1.5) * 25 + Math.sin(x * 0.007 + t * 0.0012) * 12;
+      ctx.lineTo(x, baseY + wave);
     }
-    if (a.state === "trading") {
-      for (let i = 0; i < 3; i++) {
-        const coinT = (t * 0.0045 + i * 2.1 + a.phase) % 6.28;
-        const coinX = sx + Math.sin(coinT * 1.4) * 12 * z;
-        const coinY = sy - 18 * z - (coinT % 3.14) * 4 * z;
-        const coinAlpha = 0.75 - (coinT % 3.14) / 3.14 * 0.55;
-        ctx.fillStyle = `rgba(255,205,45,${coinAlpha})`;
-        ctx.beginPath(); ctx.ellipse(coinX, coinY, 2.2 * z, 1.6 * z, coinT * 0.5, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = `rgba(200,155,25,${coinAlpha * 0.7})`;
-        ctx.lineWidth = 0.5 * z;
-        ctx.beginPath(); ctx.ellipse(coinX, coinY, 2.2 * z, 1.6 * z, coinT * 0.5, 0, Math.PI * 2); ctx.stroke();
-      }
-    }
-  });
-}
-
-// ─── God Rays (Dawn/Dusk) ───────────────────────────────────────
-function drawGodRays(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, nightFactor: number) {
-  // Only during dawn/dusk transitions
-  const intensity = nightFactor > 0.15 && nightFactor < 0.55 ? 1 - Math.abs(nightFactor - 0.35) / 0.2 : 0;
-  if (intensity <= 0.01) return;
-  const alpha = intensity * 0.12;
-  const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
-  const sunX = w * 0.1 + Math.cos(cyclePos * Math.PI) * w * 0.4;
-  const sunY = h * 0.35 - Math.sin(cyclePos * Math.PI) * h * 0.3;
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 0.8 - Math.PI * 0.1 + Math.sin(t * 0.0003 + i) * 0.08;
-    const rayLen = h * (0.8 + Math.sin(t * 0.001 + i * 1.7) * 0.3);
-    const rayWidth = 25 + Math.sin(t * 0.002 + i * 2.3) * 15;
-    const rayAlpha = alpha * (0.5 + Math.sin(t * 0.0015 + i * 3) * 0.3);
-    ctx.save();
-    ctx.translate(sunX, sunY);
-    ctx.rotate(angle);
-    const grad = ctx.createLinearGradient(0, 0, 0, rayLen);
-    grad.addColorStop(0, `rgba(255,220,130,${rayAlpha})`);
-    grad.addColorStop(0.3, `rgba(255,180,80,${rayAlpha * 0.6})`);
-    grad.addColorStop(0.7, `rgba(255,140,50,${rayAlpha * 0.2})`);
+    ctx.lineTo(w, baseY + 50);
+    ctx.lineTo(0, baseY + 50);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, baseY - 20, 0, baseY + 50);
+    const hue = (120 + i * 35 + Math.sin(t * 0.0003) * 20) % 360;
+    grad.addColorStop(0, `hsla(${hue}, 80%, 60%, ${alpha * 0.03})`);
+    grad.addColorStop(0.4, `hsla(${hue + 20}, 70%, 50%, ${alpha * 0.06})`);
     grad.addColorStop(1, "transparent");
     ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(-rayWidth / 2, 0);
-    ctx.lineTo(-rayWidth * 1.5, rayLen);
-    ctx.lineTo(rayWidth * 1.5, rayLen);
-    ctx.lineTo(rayWidth / 2, 0);
     ctx.fill();
-    ctx.restore();
   }
-}
-
-// ─── Trade Caravans ─────────────────────────────────────────────
-interface Caravan { fromId: number; toId: number; color: string; speed: number; }
-
-function generateCaravans(buildings: Building[]): Caravan[] {
-  const economyTypes = ["dex", "bank", "bazaar", "treasury", "farm", "mine"];
-  const econBuildings = buildings.filter(b => economyTypes.includes(b.type));
-  const caravans: Caravan[] = [];
-  for (let i = 0; i < econBuildings.length; i++) {
-    for (let j = i + 1; j < econBuildings.length; j++) {
-      const dist = Math.hypot(econBuildings[i].x - econBuildings[j].x, econBuildings[i].y - econBuildings[j].y);
-      if (dist < 800 && caravans.length < 15) {
-        caravans.push({
-          fromId: econBuildings[i].id,
-          toId: econBuildings[j].id,
-          color: econBuildings[i].color,
-          speed: 0.0008 + Math.random() * 0.0006,
-        });
-      }
-    }
-  }
-  return caravans;
-}
-
-function drawTradeCaravans(ctx: CanvasRenderingContext2D, caravans: Caravan[], buildings: Building[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  caravans.forEach((c, ci) => {
-    const from = buildings.find(b => b.id === c.fromId);
-    const to = buildings.find(b => b.id === c.toId);
-    if (!from || !to) return;
-    const fx = from.x + from.w * TILE / 2, fy = from.y + from.h * TILE / 2;
-    const tx = to.x + to.w * TILE / 2, ty = to.y + to.h * TILE / 2;
-    const sfx = (fx - cam.x) * z, sfy = (fy - cam.y) * z;
-    const stx = (tx - cam.x) * z, sty = (ty - cam.y) * z;
-    // Skip if off-screen
-    if (Math.max(sfx, stx) < -100 || Math.min(sfx, stx) > ctx.canvas.width + 100) return;
-    if (Math.max(sfy, sty) < -100 || Math.min(sfy, sty) > ctx.canvas.height + 100) return;
-    // Dotted trade route
-    ctx.strokeStyle = `rgba(255,200,50,${0.06 + (1 - nightFactor) * 0.04})`;
-    ctx.lineWidth = Math.max(0.5, z);
-    ctx.setLineDash([3 * z, 8 * z]);
-    ctx.beginPath(); ctx.moveTo(sfx, sfy); ctx.lineTo(stx, sty); ctx.stroke();
-    ctx.setLineDash([]);
-    // Animated caravan dots (3 per route)
-    for (let d = 0; d < 3; d++) {
-      const prog = ((t * c.speed + d * 0.33 + ci * 0.17) % 1);
-      const px = sfx + (stx - sfx) * prog;
-      const py = sfy + (sty - sfy) * prog;
-      const dotAlpha = 0.7 + Math.sin(t * 0.01 + d * 2 + ci) * 0.2;
-      // Glow
-      const glow = ctx.createRadialGradient(px, py, 0, px, py, 6 * z);
-      glow.addColorStop(0, `rgba(255,205,45,${dotAlpha * 0.3})`);
-      glow.addColorStop(1, "transparent");
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(px, py, 6 * z, 0, Math.PI * 2); ctx.fill();
-      // Dot
-      ctx.fillStyle = `rgba(255,205,45,${dotAlpha})`;
-      ctx.beginPath(); ctx.arc(px, py, 2 * z, 0, Math.PI * 2); ctx.fill();
-    }
-  });
-}
-
-// ─── Quest Beacons ──────────────────────────────────────────────
-function drawQuestBeacons(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number, nightFactor: number) {
-  buildings.forEach(b => {
-    if (b.type !== "quest") return;
-    const bx = (b.x + b.w * TILE / 2 - cam.x) * z;
-    const by = (b.y - cam.y) * z;
-    if (bx < -60 || bx > ctx.canvas.width + 60 || by < -200 || by > ctx.canvas.height + 60) return;
-    const pulse = 0.4 + Math.sin(t * 0.005 + b.id) * 0.25;
-    const beamH = 80 * z;
-    // Beam column
-    const beamGrad = ctx.createLinearGradient(bx, by, bx, by - beamH);
-    beamGrad.addColorStop(0, `rgba(6,182,212,${pulse * 0.25})`);
-    beamGrad.addColorStop(0.5, `rgba(6,182,212,${pulse * 0.12})`);
-    beamGrad.addColorStop(1, "transparent");
-    ctx.fillStyle = beamGrad;
-    ctx.fillRect(bx - 3 * z, by - beamH, 6 * z, beamH);
-    // Orbiting particles
-    for (let i = 0; i < 4; i++) {
-      const angle = t * 0.004 + i * Math.PI / 2 + b.id;
-      const radius = (6 + Math.sin(t * 0.006 + i * 3) * 2) * z;
-      const py = by - beamH * (0.3 + i * 0.15) + Math.sin(t * 0.003 + i) * 5 * z;
-      const px = bx + Math.cos(angle) * radius;
-      ctx.fillStyle = `rgba(34,211,238,${pulse * 0.7})`;
-      ctx.beginPath(); ctx.arc(px, py, 1.5 * z, 0, Math.PI * 2); ctx.fill();
-    }
-    // Diamond marker at top
-    const dy = by - beamH - 5 * z;
-    const ds = 4 * z;
-    ctx.fillStyle = `rgba(6,182,212,${pulse})`;
-    ctx.beginPath();
-    ctx.moveTo(bx, dy - ds);
-    ctx.lineTo(bx + ds, dy);
-    ctx.lineTo(bx, dy + ds);
-    ctx.lineTo(bx - ds, dy);
-    ctx.fill();
-  });
-}
-
-// ─── Duel Spectacle Rings ───────────────────────────────────────
-function drawDuelSpectacles(ctx: CanvasRenderingContext2D, agents: Agent[], cam: { x: number; y: number }, z: number, t: number) {
-  agents.forEach(a => {
-    if (a.state !== "combat" || a.meetingPartner === null) return;
-    const other = agents.find(o => o.id === a.meetingPartner);
-    if (!other || a.id > other.id) return; // draw once per pair
-    const mx = ((a.x + other.x) / 2 - cam.x) * z;
-    const my = ((a.y + other.y) / 2 - cam.y) * z;
-    if (mx < -100 || mx > ctx.canvas.width + 100 || my < -100 || my > ctx.canvas.height + 100) return;
-    const ringR = Math.hypot(a.x - other.x, a.y - other.y) * z / 2 + 15 * z;
-    // Spinning ring
-    const ringAlpha = 0.3 + Math.sin(t * 0.01) * 0.15;
-    ctx.strokeStyle = `rgba(239,68,68,${ringAlpha})`;
-    ctx.lineWidth = Math.max(1, 2 * z);
-    ctx.setLineDash([4 * z, 4 * z]);
-    const dashOffset = t * 0.05;
-    ctx.lineDashOffset = dashOffset;
-    ctx.beginPath(); ctx.arc(mx, my, ringR, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.lineDashOffset = 0;
-    // Shockwave effect periodically
-    if (Math.sin(t * 0.015 + a.phase) > 0.92) {
-      const shockR = ringR * (1 + (t * 0.03 % 1) * 0.5);
-      const shockAlpha = 0.3 * (1 - (t * 0.03 % 1));
-      ctx.strokeStyle = `rgba(255,200,100,${shockAlpha})`;
-      ctx.lineWidth = Math.max(0.5, z);
-      ctx.beginPath(); ctx.arc(mx, my, shockR, 0, Math.PI * 2); ctx.stroke();
-    }
-    // "VS" text
-    if (z > 0.5) {
-      const vsAlpha = 0.5 + Math.sin(t * 0.008) * 0.3;
-      ctx.font = `bold ${Math.max(8, 12 * z)}px 'Space Grotesk', sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillStyle = `rgba(255,100,100,${vsAlpha})`;
-      ctx.fillText("⚔ VS", mx, my - ringR - 6 * z);
-      ctx.textAlign = "left";
-    }
-  });
 }
 
 // ─── Enhanced Tooltip ───────────────────────────────────────────
-function drawEnhancedTooltip(
-  ctx: CanvasRenderingContext2D,
-  agents: Agent[],
-  buildings: Building[],
-  mx: number, my: number,
-  cam: { x: number; y: number }, z: number
-) {
+function drawEnhancedTooltip(ctx: CanvasRenderingContext2D, agents: Agent[], buildings: Building[], mx: number, my: number, cam: { x: number; y: number }, z: number) {
   if (mx <= 0 || my <= 0) return;
-  const worldX = cam.x + mx / z;
-  const worldY = cam.y + my / z;
-  // Check agents
+  const worldX = cam.x + mx / z, worldY = cam.y + my / z;
   for (const a of agents) {
     if (Math.hypot(a.x - worldX, a.y - worldY) < 20) {
-      const tipX = mx + 18, tipY = my - 8;
-      const padX = 10, padY = 6;
-      const lineH = 14;
+      const tipX = mx + 20, tipY = my - 10;
+      const lineH = 16;
       const lines = [
         { label: a.name, color: a.color, bold: true },
         { label: `${a.cls} · Lv.${a.level}`, color: "#94a3b8", bold: false },
@@ -1979,86 +893,63 @@ function drawEnhancedTooltip(
         { label: `${a.balance} $MEEET`, color: "#fbbf24", bold: false },
         { label: `State: ${a.state}`, color: "#64748b", bold: false },
       ];
-      const boxW = 140, boxH = lines.length * lineH + padY * 2;
-      // Shadow
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.beginPath(); ctx.roundRect(tipX + 2, tipY + 2, boxW, boxH, 6); ctx.fill();
-      // BG
-      ctx.fillStyle = "rgba(10,10,25,0.92)";
-      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 6); ctx.fill();
-      // Border
-      ctx.strokeStyle = a.color + "40";
+      const boxW = 160, boxH = lines.length * lineH + 16;
+      ctx.fillStyle = "rgba(5,5,15,0.92)";
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 8); ctx.fill();
+      ctx.strokeStyle = a.color + "50";
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 6); ctx.stroke();
-      // Accent bar
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 8); ctx.stroke();
       ctx.fillStyle = a.color;
-      ctx.fillRect(tipX, tipY, 3, boxH);
-      // Lines
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, 3, boxH, [8, 0, 0, 8]); ctx.fill();
       lines.forEach((line, i) => {
-        ctx.font = `${line.bold ? "bold" : ""} 10px 'Space Grotesk', sans-serif`;
+        ctx.font = `${line.bold ? "bold" : ""} 11px 'Space Grotesk', sans-serif`;
         ctx.fillStyle = line.color;
         ctx.textAlign = "left";
-        ctx.fillText(line.label, tipX + padX + 4, tipY + padY + (i + 1) * lineH - 3);
+        ctx.fillText(line.label, tipX + 12, tipY + 14 + i * lineH);
       });
       return;
     }
   }
-  // Check buildings
   for (const b of buildings) {
     if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) {
-      const tipX = mx + 18, tipY = my - 8;
-      const padX = 10, padY = 6, lineH = 14;
+      const tipX = mx + 20, tipY = my - 10;
+      const lineH = 16;
       const lines = [
         { label: `${b.icon} ${b.name}`, color: b.accent, bold: true },
-        { label: b.description.slice(0, 45), color: "#94a3b8", bold: false },
+        { label: b.description.slice(0, 50), color: "#94a3b8", bold: false },
         { label: `${b.visitors} visitors · ${b.income} $M/d`, color: "#fbbf24", bold: false },
       ];
-      const boxW = 180, boxH = lines.length * lineH + padY * 2;
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.beginPath(); ctx.roundRect(tipX + 2, tipY + 2, boxW, boxH, 6); ctx.fill();
-      ctx.fillStyle = "rgba(10,10,25,0.92)";
-      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 6); ctx.fill();
-      ctx.strokeStyle = b.color + "40";
+      const boxW = 200, boxH = lines.length * lineH + 16;
+      ctx.fillStyle = "rgba(5,5,15,0.92)";
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 8); ctx.fill();
+      ctx.strokeStyle = b.color + "50";
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 6); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, boxW, boxH, 8); ctx.stroke();
       ctx.fillStyle = b.color;
-      ctx.fillRect(tipX, tipY, 3, boxH);
+      ctx.beginPath(); ctx.roundRect(tipX, tipY, 3, boxH, [8, 0, 0, 8]); ctx.fill();
       lines.forEach((line, i) => {
-        ctx.font = `${line.bold ? "bold" : ""} 10px 'Space Grotesk', sans-serif`;
+        ctx.font = `${line.bold ? "bold" : ""} 11px 'Space Grotesk', sans-serif`;
         ctx.fillStyle = line.color;
         ctx.textAlign = "left";
-        ctx.fillText(line.label, tipX + padX + 4, tipY + padY + (i + 1) * lineH - 3);
+        ctx.fillText(line.label, tipX + 12, tipY + 14 + i * lineH);
       });
       return;
     }
   }
 }
 
-// ─── Pulsing Guild Borders ──────────────────────────────────────
-function drawGuildTerritoryPulse(ctx: CanvasRenderingContext2D, buildings: Building[], cam: { x: number; y: number }, z: number, t: number) {
-  buildings.forEach(b => {
-    if (!b.type.startsWith("guild")) return;
-    const bx = (b.x + b.w * TILE / 2 - cam.x) * z;
-    const by = (b.y + b.h * TILE / 2 - cam.y) * z;
-    if (bx < -200 || bx > ctx.canvas.width + 200 || by < -200 || by > ctx.canvas.height + 200) return;
-    const baseR = 100 * z;
-    // Pulsing outer ring
-    const pulse = (t * 0.002 + b.id) % (Math.PI * 2);
-    const pulseR = baseR + Math.sin(pulse) * 15 * z;
-    const pulseAlpha = 0.08 + Math.sin(pulse) * 0.04;
-    ctx.strokeStyle = b.color + Math.floor(pulseAlpha * 255).toString(16).padStart(2, "0");
-    ctx.lineWidth = Math.max(1, 2 * z);
-    ctx.beginPath(); ctx.arc(bx, by, pulseR, 0, Math.PI * 2); ctx.stroke();
-    // Inner rotating markers
-    for (let i = 0; i < 6; i++) {
-      const angle = t * 0.001 + i * Math.PI / 3;
-      const mx = bx + Math.cos(angle) * baseR * 0.9;
-      const my = by + Math.sin(angle) * baseR * 0.9;
-      ctx.fillStyle = b.color + "30";
-      ctx.beginPath(); ctx.arc(mx, my, 2 * z, 0, Math.PI * 2); ctx.fill();
-    }
-  });
-}
+// ─── Event Config ───────────────────────────────────────────────
+const EVENT_TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
+  duel: { icon: "⚔️", color: "#EF4444" }, trade: { icon: "💰", color: "#14F195" },
+  quest_complete: { icon: "📜", color: "#06B6D4" }, quest_created: { icon: "📋", color: "#3B82F6" },
+  level_up: { icon: "🎓", color: "#6366F1" }, alliance: { icon: "🤝", color: "#34D399" },
+  vote: { icon: "🗳️", color: "#9945FF" }, law: { icon: "🏛️", color: "#9945FF" },
+  burn: { icon: "🔥", color: "#F97316" }, mining: { icon: "⛏️", color: "#FBBF24" },
+  transfer: { icon: "💸", color: "#00C2FF" }, stake: { icon: "🏦", color: "#00C2FF" },
+  combat: { icon: "⚔️", color: "#EF4444" }, death: { icon: "💀", color: "#EF4444" },
+  spawn: { icon: "🆕", color: "#14F195" }, petition: { icon: "📨", color: "#A78BFA" },
+  guild: { icon: "🏰", color: "#F59E0B" },
+};
 
 // ─── Component ──────────────────────────────────────────────────
 const LiveMap = () => {
@@ -2073,12 +964,10 @@ const LiveMap = () => {
   const [zoom, setZoom] = useState(1);
   const [weather, setWeather] = useState<"clear" | "rain" | "snow" | "storm">("clear");
   const [timeLabel, setTimeLabel] = useState("Day");
-
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [followAgent, setFollowAgent] = useState<number | null>(null);
   const [simSpeed, setSimSpeed] = useState<1 | 2 | 0>(1);
-  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
   const [showFps, setShowFps] = useState(false);
   const [classFilter, setClassFilter] = useState<string | null>(null);
   const [fps, setFps] = useState(0);
@@ -2090,8 +979,6 @@ const LiveMap = () => {
   const terrainRef = useRef<number[][]>(generateTerrain());
   const buildingsRef = useRef<Building[]>(generateBuildings(terrainRef.current));
   const roadsRef = useRef<Road[]>(generateRoads(buildingsRef.current));
-  const resourceNodesRef = useRef<ResourceNode[]>(generateResourceNodes(terrainRef.current));
-  const caravansRef = useRef<Caravan[]>(generateCaravans(buildingsRef.current));
   const cameraRef = useRef({ x: 0, y: 0 });
   const cameraTargetRef = useRef<{ x: number; y: number } | null>(null);
   const cameraVelRef = useRef({ x: 0, y: 0 });
@@ -2101,7 +988,6 @@ const LiveMap = () => {
   const particlesRef = useRef<Particle[]>([]);
   const floatingTextsRef = useRef<FloatingText[]>([]);
   const trailsRef = useRef<Trail[]>([]);
-  const birdsRef = useRef<Bird[]>([]);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const weatherRef = useRef<"clear" | "rain" | "snow" | "storm">("clear");
   const keysRef = useRef<Set<string>>(new Set());
@@ -2118,27 +1004,39 @@ const LiveMap = () => {
     floatingTextsRef.current.push({ x, y, text, color, life: 60, vy: -0.5 });
   }, []);
 
-  // Init — fetch real agents from database
+  // Init — fetch real agents
   useEffect(() => {
     const terrain = terrainRef.current;
-
     const initAgents = async () => {
       const { data: dbAgents } = await supabase
         .from("agents")
         .select("id, name, class, level, balance_meeet, hp, max_hp, status, pos_x, pos_y")
         .order("created_at", { ascending: true });
-
       const realAgents = dbAgents ?? [];
       const agents: Agent[] = realAgents.map((db, i) => {
         const cls = db.class || "warrior";
         const cfg = CLASS_CONFIG[cls] || CLASS_CONFIG.warrior;
-        // Use stored position or find a valid spawn
         let x = (db.pos_x || 50) * TILE;
         let y = (db.pos_y || 50) * TILE;
-        // Ensure position is within map bounds
         x = Math.max(TILE, Math.min(x, (MAP_W - 1) * TILE));
         y = Math.max(TILE, Math.min(y, (MAP_H - 1) * TILE));
-
+        // Ensure agent is on land
+        const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+        if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && terrain[ty][tx] <= 1) {
+          // Move to nearest land
+          for (let r = 1; r < 20; r++) {
+            let found = false;
+            for (let dy = -r; dy <= r && !found; dy++) {
+              for (let dx = -r; dx <= r && !found; dx++) {
+                const nx = tx + dx, ny = ty + dy;
+                if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H && terrain[ny][nx] > 1 && terrain[ny][nx] < 7) {
+                  x = nx * TILE; y = ny * TILE; found = true;
+                }
+              }
+            }
+            if (found) break;
+          }
+        }
         return {
           id: i, x, y, dir: Math.random() * Math.PI * 2, speed: cfg.speed,
           name: db.name, cls, color: cfg.color,
@@ -2149,89 +1047,52 @@ const LiveMap = () => {
           targetBuilding: null, hp: db.hp || 100, maxHp: db.max_hp || 100,
         };
       });
-
       agentsRef.current = agents;
       setAgentCount(agents.length);
       cameraRef.current = { x: (MAP_W * TILE) / 2 - window.innerWidth / 2, y: (MAP_H * TILE) / 2 - window.innerHeight / 2 };
-      // Init birds
-      const birds: Bird[] = [];
-      for (let i = 0; i < 25; i++) {
-        birds.push({
-          x: (MAP_W * TILE) * Math.random(),
-          y: (MAP_H * TILE) * 0.15 * Math.random(),
-          vx: 0.3 + Math.random() * 0.6,
-          vy: (Math.random() - 0.5) * 0.15,
-          flapPhase: Math.random() * Math.PI * 2,
-          size: 0.7 + Math.random() * 0.6,
-        });
-      }
-      birdsRef.current = birds;
       addEvent("🌐 Welcome to MEEET State — The First AI Nation on Solana", "#14F195");
-      addEvent(`👥 ${agents.length} agents roaming across ${buildingsRef.current.length} structures`, "#00C2FF");
-      addEvent("🏛️ Parliament is in session — laws pending vote", "#9945FF");
+      addEvent(`👥 ${agents.length} agents across ${buildingsRef.current.length} structures`, "#00C2FF");
     };
-
     initAgents();
-
-    // Realtime subscription for agent updates
-    const channel = supabase
-      .channel('agents-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'agents' },
-        (payload) => {
-          const agents = agentsRef.current;
-          if (payload.eventType === 'INSERT') {
-            const db = payload.new as any;
-            const cls = db.class || 'warrior';
-            const cfg = CLASS_CONFIG[cls] || CLASS_CONFIG.warrior;
-            let x = (db.pos_x || 50) * TILE;
-            let y = (db.pos_y || 50) * TILE;
-            x = Math.max(TILE, Math.min(x, (MAP_W - 1) * TILE));
-            y = Math.max(TILE, Math.min(y, (MAP_H - 1) * TILE));
-            agents.push({
-              id: agents.length, x, y, dir: Math.random() * Math.PI * 2, speed: cfg.speed,
-              name: db.name, cls, color: cfg.color,
-              phase: Math.random() * Math.PI * 2, linked: false,
-              state: 'move', stateTimer: 200, meetingPartner: null,
-              reputation: 100, balance: Number(db.balance_meeet) || 0, level: db.level || 1,
-              targetBuilding: null, hp: db.hp || 100, maxHp: db.max_hp || 100,
-            });
-            setAgentCount(agents.length);
-            addEvent(`🆕 ${db.name} joined the state!`, cfg.color);
-            addFloatingText(x, y, `NEW: ${db.name}`, cfg.color);
-          } else if (payload.eventType === 'UPDATE') {
-            const db = payload.new as any;
-            const agent = agents.find(a => a.name === db.name);
-            if (agent) {
-              agent.balance = Number(db.balance_meeet) || agent.balance;
-              agent.level = db.level || agent.level;
-              agent.hp = db.hp ?? agent.hp;
-              agent.maxHp = db.max_hp ?? agent.maxHp;
-              if (db.status === 'in_combat' && agent.state !== 'combat') {
-                agent.state = 'combat';
-                agent.stateTimer = 200;
-                addEvent(`⚔️ ${agent.name} entered combat!`, '#EF4444');
-              }
-              if (db.status === 'trading' && agent.state !== 'trading') {
-                agent.state = 'trading';
-                agent.stateTimer = 150;
-                addEvent(`💰 ${agent.name} is trading`, '#14F195');
-              }
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const db = payload.old as any;
-            const idx = agents.findIndex(a => a.name === db.name);
-            if (idx !== -1) {
-              addEvent(`💀 ${agents[idx].name} has fallen`, '#EF4444');
-              agents.splice(idx, 1);
-              setAgentCount(agents.length);
-            }
+    // Realtime
+    const channel = supabase.channel('agents-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, (payload) => {
+        const agents = agentsRef.current;
+        if (payload.eventType === 'INSERT') {
+          const db = payload.new as any;
+          const cls = db.class || 'warrior';
+          const cfg = CLASS_CONFIG[cls] || CLASS_CONFIG.warrior;
+          let x = (db.pos_x || 50) * TILE, y = (db.pos_y || 50) * TILE;
+          x = Math.max(TILE, Math.min(x, (MAP_W - 1) * TILE));
+          y = Math.max(TILE, Math.min(y, (MAP_H - 1) * TILE));
+          agents.push({
+            id: agents.length, x, y, dir: Math.random() * Math.PI * 2, speed: cfg.speed,
+            name: db.name, cls, color: cfg.color, phase: Math.random() * Math.PI * 2, linked: false,
+            state: 'move', stateTimer: 200, meetingPartner: null,
+            reputation: 100, balance: Number(db.balance_meeet) || 0, level: db.level || 1,
+            targetBuilding: null, hp: db.hp || 100, maxHp: db.max_hp || 100,
+          });
+          setAgentCount(agents.length);
+          addEvent(`🆕 ${db.name} joined!`, cfg.color);
+          addFloatingText(x, y, `NEW: ${db.name}`, cfg.color);
+        } else if (payload.eventType === 'UPDATE') {
+          const db = payload.new as any;
+          const agent = agents.find(a => a.name === db.name);
+          if (agent) {
+            agent.balance = Number(db.balance_meeet) || agent.balance;
+            agent.level = db.level || agent.level;
+            agent.hp = db.hp ?? agent.hp;
+            agent.maxHp = db.max_hp ?? agent.maxHp;
+            if (db.status === 'in_combat' && agent.state !== 'combat') { agent.state = 'combat'; agent.stateTimer = 200; addEvent(`⚔️ ${agent.name} in combat!`, '#EF4444'); }
+            if (db.status === 'trading' && agent.state !== 'trading') { agent.state = 'trading'; agent.stateTimer = 150; addEvent(`💰 ${agent.name} trading`, '#14F195'); }
           }
+        } else if (payload.eventType === 'DELETE') {
+          const db = payload.old as any;
+          const idx = agents.findIndex(a => a.name === db.name);
+          if (idx !== -1) { addEvent(`💀 ${agents[idx].name} has fallen`, '#EF4444'); agents.splice(idx, 1); setAgentCount(agents.length); }
         }
-      )
+      })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [addEvent, addFloatingText]);
 
@@ -2239,74 +1100,55 @@ const LiveMap = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const r = Math.random();
-      const w: "clear" | "rain" | "snow" | "storm" = r < 0.5 ? "clear" : r < 0.72 ? "rain" : r < 0.88 ? "snow" : "storm";
-      weatherRef.current = w;
-      setWeather(w);
-      if (w === "rain") addEvent("🌧️ Rain begins to fall across the state", "#3B82F6");
-      if (w === "snow") addEvent("❄️ Snow is falling on the highlands", "#94A3B8");
-      if (w === "storm") addEvent("🌪️ Sandstorm sweeps across the desert!", "#D97706");
+      const w: typeof weather = r < 0.5 ? "clear" : r < 0.72 ? "rain" : r < 0.88 ? "snow" : "storm";
+      weatherRef.current = w; setWeather(w);
+      if (w === "rain") addEvent("🌧️ Rain across the archipelago", "#3B82F6");
+      if (w === "snow") addEvent("❄️ Snow on the peaks", "#94A3B8");
+      if (w === "storm") addEvent("🌪️ Storm sweeps the coast!", "#D97706");
     }, 30000);
     return () => clearInterval(interval);
   }, [addEvent]);
 
-  // Realtime activity feed from database
+  // Realtime activity feed
   useEffect(() => {
-    // Load recent events on mount
     const loadRecent = async () => {
-      const { data } = await supabase
-        .from("activity_feed")
+      const { data } = await supabase.from("activity_feed")
         .select("*, agents!activity_feed_agent_id_fkey(name)")
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (data) {
-        data.reverse().forEach(ev => {
-          const icon = EVENT_TYPE_CONFIG[ev.event_type]?.icon ?? "🔔";
-          const color = EVENT_TYPE_CONFIG[ev.event_type]?.color ?? "#14F195";
-          addEvent(`${icon} ${ev.title}`, color);
-        });
-      }
+        .order("created_at", { ascending: false }).limit(10);
+      if (data) data.reverse().forEach(ev => {
+        const icon = EVENT_TYPE_CONFIG[ev.event_type]?.icon ?? "🔔";
+        const color = EVENT_TYPE_CONFIG[ev.event_type]?.color ?? "#14F195";
+        addEvent(`${icon} ${ev.title}`, color);
+      });
     };
     loadRecent();
-
-    // Subscribe to new events
-    const channel = supabase
-      .channel("activity-feed-realtime")
+    const channel = supabase.channel("activity-feed-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_feed" }, (payload) => {
         const ev = payload.new as any;
         const icon = EVENT_TYPE_CONFIG[ev.event_type]?.icon ?? "🔔";
         const color = EVENT_TYPE_CONFIG[ev.event_type]?.color ?? "#14F195";
         addEvent(`${icon} ${ev.title}`, color);
-
-        // Find matching agent on map and show floating text
         if (ev.agent_id) {
           const agent = agentsRef.current.find(a => a.name === ev.title.split(" ")[0]);
-          if (agent && ev.meeet_amount) {
-            addFloatingText(agent.x, agent.y, `${ev.meeet_amount > 0 ? "+" : ""}${ev.meeet_amount} $M`, color);
-          }
+          if (agent && ev.meeet_amount) addFloatingText(agent.x, agent.y, `${ev.meeet_amount > 0 ? "+" : ""}${ev.meeet_amount} $M`, color);
         }
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [addEvent, addFloatingText]);
 
-  // Fallback ambient events when DB is quiet
+  // Ambient events
   useEffect(() => {
     const interval = setInterval(() => {
       const agents = agentsRef.current;
       if (!agents.length) return;
       const a = agents[Math.floor(Math.random() * agents.length)];
-      const ambientEvts = [
-        { text: `🔭 ${a.name} is scouting the frontier`, color: "#94A3B8" },
-        { text: `🏃 ${a.name} is traveling across the state`, color: "#64748B" },
-      ];
-      const ev = ambientEvts[Math.floor(Math.random() * ambientEvts.length)];
-      addEvent(ev.text, ev.color);
-    }, 8000);
+      addEvent(`🔭 ${a.name} exploring the frontier`, "#64748B");
+    }, 10000);
     return () => clearInterval(interval);
   }, [addEvent]);
 
-  // Main loop
+  // Main render loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -2328,14 +1170,9 @@ const LiveMap = () => {
     window.addEventListener("resize", resize);
 
     const render = () => {
-      // FPS tracking
       frameCount++;
       const now = performance.now();
-      if (now - lastFpsTime >= 1000) {
-        setFps(frameCount);
-        frameCount = 0;
-        lastFpsTime = now;
-      }
+      if (now - lastFpsTime >= 1000) { setFps(frameCount); frameCount = 0; lastFpsTime = now; }
 
       const w = window.innerWidth, h = window.innerHeight;
       const cam = cameraRef.current;
@@ -2347,7 +1184,7 @@ const LiveMap = () => {
       const t = Date.now();
       const speed = simSpeedRef.current;
 
-      // ─── WASD / Arrow key camera movement ───
+      // Camera movement
       const keys = keysRef.current;
       const camSpeed = 5 / z;
       if (keys.has("w") || keys.has("arrowup")) cam.y -= camSpeed;
@@ -2355,88 +1192,57 @@ const LiveMap = () => {
       if (keys.has("a") || keys.has("arrowleft")) cam.x -= camSpeed;
       if (keys.has("d") || keys.has("arrowright")) cam.x += camSpeed;
 
-      // ─── Follow agent mode ───
+      // Follow agent
       const followId = followRef.current;
       if (followId !== null) {
         const fa = agents.find(a => a.id === followId);
-        if (fa) {
-          const tx = fa.x - w / z / 2;
-          const ty = fa.y - h / z / 2;
-          cam.x += (tx - cam.x) * 0.08;
-          cam.y += (ty - cam.y) * 0.08;
-        }
+        if (fa) { cam.x += (fa.x - w / z / 2 - cam.x) * 0.08; cam.y += (fa.y - h / z / 2 - cam.y) * 0.08; }
       }
-
-      // ─── Smooth camera lerp to target ───
       if (cameraTargetRef.current) {
         const ct = cameraTargetRef.current;
-        cam.x += (ct.x - cam.x) * 0.1;
-        cam.y += (ct.y - cam.y) * 0.1;
-        if (Math.abs(ct.x - cam.x) < 1 && Math.abs(ct.y - cam.y) < 1) {
-          cameraTargetRef.current = null;
-        }
+        cam.x += (ct.x - cam.x) * 0.1; cam.y += (ct.y - cam.y) * 0.1;
+        if (Math.abs(ct.x - cam.x) < 1 && Math.abs(ct.y - cam.y) < 1) cameraTargetRef.current = null;
       }
-
-      // ─── Camera inertia ───
       if (!dragRef.current.dragging && (Math.abs(cameraVelRef.current.x) > 0.1 || Math.abs(cameraVelRef.current.y) > 0.1)) {
-        cam.x += cameraVelRef.current.x;
-        cam.y += cameraVelRef.current.y;
-        cameraVelRef.current.x *= 0.92;
-        cameraVelRef.current.y *= 0.92;
+        cam.x += cameraVelRef.current.x; cam.y += cameraVelRef.current.y;
+        cameraVelRef.current.x *= 0.92; cameraVelRef.current.y *= 0.92;
       }
 
-      // Day/night cycle
+      // Day/night
       const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
       const nightFactor = cyclePos < 0.25 ? 0 : cyclePos < 0.4 ? (cyclePos - 0.25) / 0.15 : cyclePos < 0.75 ? 1 : 1 - (cyclePos - 0.75) / 0.25;
       const clampedNight = Math.max(0, Math.min(1, nightFactor));
-
-      // Update time label
       const label = clampedNight < 0.2 ? "Day" : clampedNight < 0.5 ? "Dusk" : clampedNight < 0.8 ? "Night" : "Dawn";
-      if (label !== "Day") setTimeLabel(label);
-      else setTimeLabel("Day");
+      setTimeLabel(label);
 
-      // Sky — Apple Maps clean sky
-      const skyDay = "#E8EDF2";
-      const skyNight = "#0E1218";
-      const skyColor = lerpColor(skyDay, skyNight, clampedNight);
+      // Sky gradient — deep ocean blue
+      const skyDay = "#b8d4e8";
+      const skyDusk = "#e8a060";
+      const skyNight = "#060e1e";
+      let skyColor: string;
+      if (clampedNight < 0.3) skyColor = lerpColor(skyDay, skyDusk, clampedNight / 0.3 * 0.5);
+      else if (clampedNight < 0.5) skyColor = lerpColor(skyDusk, skyNight, (clampedNight - 0.3) / 0.2);
+      else skyColor = lerpColor(skyNight, skyDusk, Math.max(0, (clampedNight - 0.8) / 0.2));
+      if (clampedNight >= 0.5 && clampedNight < 0.8) skyColor = skyNight;
       ctx.fillStyle = skyColor;
       ctx.fillRect(0, 0, w, h);
 
-      // Stars at night
+      // Stars
       if (clampedNight > 0.3) {
         const starAlpha = (clampedNight - 0.3) / 0.7;
-        for (let i = 0; i < 80; i++) {
-          const sx = noise2d(i, 0, 1) * w;
-          const sy = noise2d(0, i, 2) * h * 0.4;
+        for (let i = 0; i < 100; i++) {
+          const sx2 = noise2d(i, 0, 1) * w;
+          const sy2 = noise2d(0, i, 2) * h * 0.5;
           const twinkle = 0.3 + Math.sin(t * 0.003 + i * 7) * 0.3;
-          const starSize = noise2d(i, i, 3) > 0.8 ? 2.5 : 1.5;
           ctx.fillStyle = `rgba(255,255,255,${starAlpha * twinkle})`;
           ctx.beginPath();
-          ctx.arc(sx, sy, starSize, 0, Math.PI * 2);
+          ctx.arc(sx2, sy2, noise2d(i, i, 3) > 0.8 ? 2 : 1, 0, Math.PI * 2);
           ctx.fill();
-        }
-        // Shooting star occasionally
-        if (Math.sin(t * 0.0001) > 0.995) {
-          const ssX = (t * 0.3) % w;
-          const ssY = noise2d(Math.floor(t * 0.0001), 0, 5) * h * 0.3;
-          ctx.strokeStyle = `rgba(255,255,255,${0.6 * starAlpha})`;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(ssX, ssY);
-          ctx.lineTo(ssX - 40, ssY + 20);
-          ctx.stroke();
         }
       }
 
-      // ─── Celestial Bodies ───
       drawCelestialBodies(ctx, w, h, t, clampedNight);
-
-      // ─── Aurora Borealis ───
       drawAurora(ctx, w, h, t, clampedNight);
-
-      // ─── Birds ───
-      updateBirds(birdsRef.current, cam, w, h, z);
-      drawBirds(ctx, birdsRef.current, cam, z, t, clampedNight);
 
       // Terrain
       const startCol = Math.max(0, Math.floor(cam.x / TILE));
@@ -2444,173 +1250,115 @@ const LiveMap = () => {
       const startRow = Math.max(0, Math.floor(cam.y / TILE));
       const endRow = Math.min(MAP_H, Math.ceil((cam.y + h / z) / TILE));
 
-      // ─── Terrain Caching ───
+      // Terrain caching
       const tc = terrainCacheRef.current;
       const needsRedraw = !tc ||
-        Math.abs(tc.camX - cam.x) > TILE * 3 ||
-        Math.abs(tc.camY - cam.y) > TILE * 3 ||
-        Math.abs(tc.zoom - z) > 0.02 ||
-        Math.abs(tc.nightFactor - clampedNight) > 0.04 ||
+        Math.abs(tc.camX - cam.x) > TILE * 2 || Math.abs(tc.camY - cam.y) > TILE * 2 ||
+        Math.abs(tc.zoom - z) > 0.02 || Math.abs(tc.nightFactor - clampedNight) > 0.04 ||
         tc.w !== w || tc.h !== h;
 
       if (needsRedraw) {
         let offCanvas: HTMLCanvasElement;
         if (tc) { offCanvas = tc.canvas; } else { offCanvas = document.createElement("canvas"); }
-        offCanvas.width = w;
-        offCanvas.height = h;
+        offCanvas.width = w; offCanvas.height = h;
         const offCtx = offCanvas.getContext("2d")!;
         offCtx.clearRect(0, 0, w, h);
 
         for (let row = startRow; row < endRow; row++) {
           for (let col = startCol; col < endCol; col++) {
-            const sx = (col * TILE - cam.x) * z, sy = (row * TILE - cam.y) * z;
+            const sx2 = (col * TILE - cam.x) * z, sy2 = (row * TILE - cam.y) * z;
             const tile = terrain[row][col];
-            // Minecraft-style flat block fill
-            offCtx.fillStyle = lerpColor(TILE_PALETTE_DAY[tile].fill, TILE_PALETTE_NIGHT[tile].fill, clampedNight);
-            offCtx.fillRect(sx, sy, TILE * z + 1, TILE * z + 1);
-            // Block grid lines — always visible for Minecraft feel
-            if (z > 0.35) {
-              offCtx.strokeStyle = lerpColor(TILE_PALETTE_DAY[tile].border, TILE_PALETTE_NIGHT[tile].border, clampedNight);
-              offCtx.lineWidth = z > 0.8 ? 0.8 : 0.4;
-              offCtx.strokeRect(sx, sy, TILE * z, TILE * z);
+            const ts = TILE * z;
+            
+            // Base fill
+            offCtx.fillStyle = lerpColor(TERRAIN_COLORS_DAY[tile].fill, TERRAIN_COLORS_NIGHT[tile].fill, clampedNight);
+            offCtx.fillRect(sx2, sy2, ts + 1, ts + 1);
+            
+            // Subtle elevation gradient overlay
+            if (tile >= 2 && tile <= 7) {
+              const elev = tile / 7;
+              offCtx.fillStyle = `rgba(255,255,255,${elev * 0.03})`;
+              offCtx.fillRect(sx2, sy2, ts + 1, ts + 1);
             }
-            if (z > 0.4) drawTileDecoration(offCtx, tile, sx, sy, col, row, z, t, clampedNight);
+            
+            // No harsh grid lines — soft border only at high zoom for land
+            if (z > 0.8 && tile >= 2) {
+              offCtx.strokeStyle = lerpColor(TERRAIN_COLORS_DAY[tile].border, TERRAIN_COLORS_NIGHT[tile].border, clampedNight) + "20";
+              offCtx.lineWidth = 0.3;
+              offCtx.strokeRect(sx2, sy2, ts, ts);
+            }
+
+            if (z > 0.35) drawTerrainDetail(offCtx, tile, sx2, sy2, col, row, z, t, clampedNight);
           }
         }
         terrainCacheRef.current = { canvas: offCanvas, camX: cam.x, camY: cam.y, zoom: z, nightFactor: clampedNight, w, h };
       }
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
-
-      // Cloud shadows — DISABLED (caused dark blobs)
+      // Coastal foam line
+      if (z > 0.3) {
+        for (let row = startRow; row < endRow; row++) {
+          for (let col = startCol; col < endCol; col++) {
+            const tile = terrain[row][col];
+            if (tile !== 2) continue; // beach tiles
+            // Check if adjacent to water
+            let nearWater = false;
+            for (let dy = -1; dy <= 1 && !nearWater; dy++) {
+              for (let dx = -1; dx <= 1 && !nearWater; dx++) {
+                const nx = col + dx, ny = row + dy;
+                if (nx >= 0 && nx < MAP_W && ny >= 0 && ny < MAP_H && terrain[ny][nx] <= 1) nearWater = true;
+              }
+            }
+            if (nearWater) {
+              const sx2 = (col * TILE - cam.x) * z, sy2 = (row * TILE - cam.y) * z;
+              const ts = TILE * z;
+              const foamAlpha = 0.15 + Math.sin(t * 0.002 + col * 0.5 + row * 0.3) * 0.08;
+              ctx.fillStyle = `rgba(255,255,255,${foamAlpha})`;
+              ctx.fillRect(sx2, sy2, ts, ts);
+            }
+          }
+        }
+      }
 
       // Roads
-      drawRoads(ctx, roads, cam, z, clampedNight);
-
-      // Territory zones — colored glow around guild buildings
-      buildings.forEach(b => {
-        if (b.type.startsWith("guild") || b.type === "parliament" || b.type === "arena") {
-          const bx = (b.x + b.w * TILE / 2 - cam.x) * z;
-          const by = (b.y + b.h * TILE / 2 - cam.y) * z;
-          if (bx < -300 || bx > w + 300 || by < -300 || by > h + 300) return;
-          const radius = (b.type === "parliament" ? 180 : b.type === "arena" ? 150 : 100) * z;
-          const zoneGrad = ctx.createRadialGradient(bx, by, 0, bx, by, radius);
-          zoneGrad.addColorStop(0, b.color + "12");
-          zoneGrad.addColorStop(0.6, b.color + "08");
-          zoneGrad.addColorStop(1, "transparent");
-          ctx.fillStyle = zoneGrad;
-          ctx.beginPath(); ctx.arc(bx, by, radius, 0, Math.PI * 2); ctx.fill();
-          // Zone border ring
-          ctx.strokeStyle = b.color + "18";
-          ctx.lineWidth = Math.max(1, 1.5 * z);
-          ctx.setLineDash([6 * z, 8 * z]);
-          ctx.beginPath(); ctx.arc(bx, by, radius * 0.85, 0, Math.PI * 2); ctx.stroke();
-          ctx.setLineDash([]);
-        }
-      });
-
+      drawRoads(ctx, roads, cam, z, t, clampedNight);
       // Buildings
       buildings.forEach(b => drawBuilding(ctx, b, cam, z, t, clampedNight));
-
-      // ─── Torch Lights ───
-      drawTorchLights(ctx, buildings, cam, z, t, clampedNight);
-
-      // ─── Resource Nodes ───
-      drawResourceNodes(ctx, resourceNodesRef.current, cam, z, t, clampedNight);
-
-      // ─── Trade Caravans ───
-      drawTradeCaravans(ctx, caravansRef.current, buildings, cam, z, t, clampedNight);
-
-      // ─── Quest Beacons ───
-      drawQuestBeacons(ctx, buildings, cam, z, t, clampedNight);
-
       // Connection lines
       drawConnectionLines(ctx, agents, cam, z, t);
 
-      // ─── Duel Spectacles ───
-      drawDuelSpectacles(ctx, agents, cam, z, t);
-
-      // ─── Interaction Particles ───
-      drawInteractionParticles(ctx, agents, cam, z, t);
-
-      // Update particles
+      // Particles
       const particles = particlesRef.current;
-      // Spawn weather particles
       if (weatherRef.current === "rain") {
-        for (let i = 0; i < 3; i++) {
-          particles.push({ x: cam.x + Math.random() * w / z, y: cam.y - 10, vx: -0.3, vy: 4, life: 60, maxLife: 60, color: "#6ba3d6", size: 1, type: "rain" });
-        }
+        for (let i = 0; i < 4; i++) particles.push({ x: cam.x + Math.random() * w / z, y: cam.y - 10, vx: -0.3, vy: 4, life: 60, maxLife: 60, color: "#6ba3d6", size: 1, type: "rain" });
       }
-      if (weatherRef.current === "snow") {
-        if (Math.random() < 0.3) {
-          particles.push({ x: cam.x + Math.random() * w / z, y: cam.y - 10, vx: (Math.random() - 0.5) * 0.5, vy: 0.5 + Math.random(), life: 200, maxLife: 200, color: "#fff", size: 1.5 + Math.random(), type: "snow" });
-        }
+      if (weatherRef.current === "snow" && Math.random() < 0.3) {
+        particles.push({ x: cam.x + Math.random() * w / z, y: cam.y - 10, vx: (Math.random() - 0.5) * 0.5, vy: 0.5 + Math.random(), life: 200, maxLife: 200, color: "#fff", size: 1.5 + Math.random(), type: "snow" });
       }
-      // Fireflies at night — more dense
-      if (clampedNight > 0.4 && Math.random() < 0.12) {
-        const fx = cam.x + Math.random() * w / z;
-        const fy = cam.y + Math.random() * h / z;
-        const tx = Math.floor(fx / TILE), ty = Math.floor(fy / TILE);
-        if (tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H && terrain[ty][tx] >= 3 && terrain[ty][tx] <= 5) {
+      if (clampedNight > 0.4 && Math.random() < 0.08) {
+        const fx = cam.x + Math.random() * w / z, fy = cam.y + Math.random() * h / z;
+        const tx2 = Math.floor(fx / TILE), ty2 = Math.floor(fy / TILE);
+        if (tx2 >= 0 && tx2 < MAP_W && ty2 >= 0 && ty2 < MAP_H && terrain[ty2][tx2] >= 3 && terrain[ty2][tx2] <= 5) {
           particles.push({ x: fx, y: fy, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, life: 120 + Math.random() * 80, maxLife: 200, color: "#aaff77", size: 1.5, type: "firefly" });
         }
       }
-      // Ambient dust/pollen during day
-      if (clampedNight < 0.3 && Math.random() < 0.04) {
-        particles.push({ x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z, vx: 0.2 + Math.random() * 0.3, vy: -0.1 + Math.random() * 0.2, life: 150, maxLife: 150, color: "#ffe4a0", size: 0.8 + Math.random(), type: "dust" as any });
-      }
-      // Sandstorm particles
       if (weatherRef.current === "storm") {
-        for (let i = 0; i < 5; i++) {
-          particles.push({
-            x: cam.x - 20 + Math.random() * (w / z + 40),
-            y: cam.y + Math.random() * h / z,
-            vx: 3 + Math.random() * 2,
-            vy: (Math.random() - 0.5) * 0.8,
-            life: 80 + Math.random() * 40,
-            maxLife: 120,
-            color: "#d4a76a",
-            size: 1 + Math.random() * 2,
-            type: "dust" as any
-          });
-        }
-        // Sandstorm overlay
-        ctx.fillStyle = `rgba(180,140,70,0.06)`;
+        for (let i = 0; i < 4; i++) particles.push({ x: cam.x + Math.random() * (w / z), y: cam.y + Math.random() * h / z, vx: 3 + Math.random() * 2, vy: (Math.random() - 0.5) * 0.8, life: 80, maxLife: 120, color: "#d4a76a", size: 1 + Math.random() * 2, type: "dust" });
+        ctx.fillStyle = `rgba(180,140,70,0.04)`;
         ctx.fillRect(0, 0, w, h);
+      }
+      // Lightning
+      if (weatherRef.current === "rain" && Math.random() < 0.003) {
+        ctx.fillStyle = `rgba(255,255,255,0.12)`; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = `rgba(200,220,255,0.8)`; ctx.lineWidth = 2;
+        ctx.shadowColor = "rgba(180,200,255,0.6)"; ctx.shadowBlur = 12;
+        ctx.beginPath();
+        let lx = Math.random() * w, ly = 0;
+        ctx.moveTo(lx, ly);
+        while (ly < h * 0.6) { lx += (Math.random() - 0.5) * 40; ly += 15 + Math.random() * 25; ctx.lineTo(lx, ly); }
+        ctx.stroke(); ctx.shadowBlur = 0;
       }
 
-      // ─── Lightning during rain ───
-      if (weatherRef.current === "rain" && Math.random() < 0.003) {
-        // Flash
-        ctx.fillStyle = `rgba(255,255,255,0.15)`;
-        ctx.fillRect(0, 0, w, h);
-        // Lightning bolt
-        const lx = Math.random() * w;
-        const ly = 0;
-        ctx.strokeStyle = `rgba(200,220,255,0.9)`;
-        ctx.lineWidth = 2;
-        ctx.shadowColor = "rgba(180,200,255,0.8)";
-        ctx.shadowBlur = 15;
-        ctx.beginPath();
-        ctx.moveTo(lx, ly);
-        let cx = lx, cy = ly;
-        while (cy < h * 0.6) {
-          cx += (Math.random() - 0.5) * 40;
-          cy += 15 + Math.random() * 25;
-          ctx.lineTo(cx, cy);
-          // Branch
-          if (Math.random() < 0.3) {
-            const bx = cx + (Math.random() - 0.5) * 60;
-            const by = cy + 20 + Math.random() * 30;
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(bx, by);
-            ctx.moveTo(cx, cy);
-          }
-        }
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-      // Update
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy; p.life--;
@@ -2622,23 +1370,13 @@ const LiveMap = () => {
 
       // Floating texts
       const fts = floatingTextsRef.current;
-      for (let i = fts.length - 1; i >= 0; i--) {
-        fts[i].y += fts[i].vy; fts[i].life--;
-        if (fts[i].life <= 0) fts.splice(i, 1);
-      }
+      for (let i = fts.length - 1; i >= 0; i--) { fts[i].y += fts[i].vy; fts[i].life--; if (fts[i].life <= 0) fts.splice(i, 1); }
       drawFloatingTexts(ctx, fts, cam, z);
 
-      // ─── Agent Trails ───
+      // Trails
       const trails = trailsRef.current;
-      for (let i = trails.length - 1; i >= 0; i--) {
-        trails[i].life--;
-        if (trails[i].life <= 0) trails.splice(i, 1);
-      }
-      if (trails.length > 2000) trails.splice(0, trails.length - 2000);
-      drawTrails(ctx, trails, cam, z);
-
-      // ─── Water Reflections ───
-      drawWaterReflection(ctx, buildings, cam, z, t, terrain, clampedNight);
+      for (let i = trails.length - 1; i >= 0; i--) { trails[i].life--; if (trails[i].life <= 0) trails.splice(i, 1); }
+      if (trails.length > 1500) trails.splice(0, trails.length - 1500);
 
       // Agent simulation & draw
       agents.forEach(a => {
@@ -2646,7 +1384,7 @@ const LiveMap = () => {
         const spdMult = speed;
         a.stateTimer -= spdMult;
         if (a.stateTimer <= 0) {
-          if (a.state === "meeting" || a.state === "combat" || a.state === "trading" || a.state === "visiting") {
+          if (["meeting", "combat", "trading", "visiting"].includes(a.state)) {
             a.state = "move"; a.stateTimer = 150 + Math.random() * 300; a.meetingPartner = null; a.targetBuilding = null;
           } else if (a.state === "idle") {
             a.state = "move"; a.stateTimer = 200 + Math.random() * 400;
@@ -2654,20 +1392,16 @@ const LiveMap = () => {
             const r = Math.random();
             if (r < 0.02) { a.state = "idle"; a.stateTimer = 60 + Math.random() * 120; }
             else if (r < 0.06) {
-              // Visit nearest building
               let nearest = -1, nd = Infinity;
               for (const b of buildings) {
                 const d = Math.hypot(a.x - (b.x + b.w * TILE / 2), a.y - (b.y + b.h * TILE / 2));
                 if (d < nd) { nd = d; nearest = b.id; }
               }
-              if (nearest >= 0 && nd < 400) {
-                a.state = "visiting"; a.targetBuilding = nearest;
-                a.stateTimer = 100 + Math.random() * 150;
+              if (nearest >= 0 && nd < 500) {
+                a.state = "visiting"; a.targetBuilding = nearest; a.stateTimer = 100 + Math.random() * 150;
                 const tb = buildings.find(b => b.id === nearest);
-                if (tb) { a.dir = Math.atan2(tb.y + tb.h * TILE / 2 - a.y, tb.x + tb.w * TILE / 2 - a.x); }
-              } else {
-                a.stateTimer = 200 + Math.random() * 400;
-              }
+                if (tb) a.dir = Math.atan2(tb.y + tb.h * TILE / 2 - a.y, tb.x + tb.w * TILE / 2 - a.x);
+              } else { a.stateTimer = 200 + Math.random() * 400; }
             } else { a.stateTimer = 200 + Math.random() * 400; }
           }
         }
@@ -2675,21 +1409,17 @@ const LiveMap = () => {
         // Proximity interactions
         if (a.state === "move") {
           for (const other of agents) {
-            if (other.id === a.id || (other.state !== "move")) continue;
-            const dist = Math.hypot(a.x - other.x, a.y - other.y);
-            if (dist < 25) {
+            if (other.id === a.id || other.state !== "move") continue;
+            if (Math.hypot(a.x - other.x, a.y - other.y) < 25) {
               const r = Math.random();
-              if (a.cls === "Warrior" && other.cls === "Warrior" && r < 0.35) {
-                a.state = "combat"; other.state = "combat";
-                a.meetingPartner = other.id; other.meetingPartner = a.id;
+              if (a.cls === "warrior" && other.cls === "warrior" && r < 0.35) {
+                a.state = "combat"; other.state = "combat"; a.meetingPartner = other.id; other.meetingPartner = a.id;
                 a.stateTimer = other.stateTimer = 80 + Math.random() * 60;
-              } else if ((a.cls === "Trader" || other.cls === "Trader") && r < 0.5) {
-                a.state = "trading"; other.state = "trading";
-                a.meetingPartner = other.id; other.meetingPartner = a.id;
+              } else if ((a.cls === "trader" || other.cls === "trader") && r < 0.5) {
+                a.state = "trading"; other.state = "trading"; a.meetingPartner = other.id; other.meetingPartner = a.id;
                 a.stateTimer = other.stateTimer = 60 + Math.random() * 80;
               } else {
-                a.state = "meeting"; other.state = "meeting";
-                a.meetingPartner = other.id; other.meetingPartner = a.id;
+                a.state = "meeting"; other.state = "meeting"; a.meetingPartner = other.id; other.meetingPartner = a.id;
                 a.stateTimer = other.stateTimer = 50 + Math.random() * 100;
               }
               break;
@@ -2697,7 +1427,7 @@ const LiveMap = () => {
           }
         }
 
-        // Movement
+        // Movement — avoid water
         if (a.state === "move" || a.state === "visiting") {
           if (a.state === "move" && Math.random() < 0.02) a.dir += (Math.random() - 0.5) * 1.5;
           const spd = (a.state === "visiting" ? a.speed * 1.3 : a.speed) * spdMult;
@@ -2708,19 +1438,17 @@ const LiveMap = () => {
           const tileX = Math.floor(nx / TILE), tileY = Math.floor(ny / TILE);
           if (tileX >= 0 && tileX < MAP_W && tileY >= 0 && tileY < MAP_H) {
             const tt = terrain[tileY][tileX];
-            if (tt <= 1) a.dir += Math.PI / 2 + Math.random() * 0.5;
-            else if (tt >= 6) a.dir += Math.PI / 3 + Math.random() * 0.3;
+            if (tt <= 1) a.dir += Math.PI / 2 + Math.random() * 0.5; // avoid water
+            else if (tt >= 7) a.dir += Math.PI / 3 + Math.random() * 0.3; // avoid snow peaks
             else {
-              // Add trail particle
-              if (Math.random() < 0.15) {
+              if (Math.random() < 0.1) {
                 const hex = a.color;
-                const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b2 = parseInt(hex.slice(5,7),16);
-                trails.push({ x: a.x, y: a.y, color: `rgb(${r},${g},${b2})`, life: 40, maxLife: 40 });
+                const rr = parseInt(hex.slice(1,3),16), gg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
+                trails.push({ x: a.x, y: a.y, color: `rgb(${rr},${gg},${bb})`, life: 30, maxLife: 30 });
               }
               a.x = nx; a.y = ny;
             }
           }
-          // Arrived at building
           if (a.state === "visiting" && a.targetBuilding !== null) {
             const tb = buildings.find(b => b.id === a.targetBuilding);
             if (tb && Math.hypot(a.x - (tb.x + tb.w * TILE / 2), a.y - (tb.y + tb.h * TILE / 2)) < 20) {
@@ -2728,33 +1456,38 @@ const LiveMap = () => {
             }
           }
         }
-
         drawAgent(ctx, a, cam, z, t, clampedNight);
       });
 
-      // Night overlay — extremely subtle blue tint, no dark blobs
+      // Night overlay
       if (clampedNight > 0.5) {
-        ctx.fillStyle = `rgba(15,20,50,${(clampedNight - 0.5) * 0.08})`;
+        ctx.fillStyle = `rgba(8,14,30,${(clampedNight - 0.5) * 0.1})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // ─── Valley Fog ───
-      drawValleyFog(ctx, w, h, t, clampedNight);
-
-      // ─── God Rays ───
-      drawGodRays(ctx, w, h, t, clampedNight);
-
-      // ─── Guild Territory Pulse ───
-      drawGuildTerritoryPulse(ctx, buildings, cam, z, t);
-
-      // ─── Fog of War ───
-      drawFogOfWar(ctx, agents, cam, z, w, h, clampedNight);
+      // Vignette — premium cinematic effect
+      const vigGrad = ctx.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.75);
+      vigGrad.addColorStop(0, "transparent");
+      vigGrad.addColorStop(1, `rgba(0,0,0,${0.2 + clampedNight * 0.15})`);
+      ctx.fillStyle = vigGrad;
+      ctx.fillRect(0, 0, w, h);
 
       // Minimap
       drawMinimap(ctx, terrain, buildings, agents, cam, z, w, h, clampedNight);
-
-      // ─── Enhanced Tooltip ───
+      // Tooltip
       drawEnhancedTooltip(ctx, agents, buildings, mouseRef.current.x, mouseRef.current.y, cam, z);
+
+      // Coordinate display
+      if (z > 0.5) {
+        const worldX = cam.x + w / z / 2;
+        const worldY = cam.y + h / z / 2;
+        const tileCoordX = Math.floor(worldX / TILE);
+        const tileCoordY = Math.floor(worldY / TILE);
+        ctx.font = "10px 'Space Grotesk', monospace";
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        ctx.textAlign = "left";
+        ctx.fillText(`${tileCoordX}, ${tileCoordY}`, 12, h - 8);
+      }
 
       raf = requestAnimationFrame(render);
     };
@@ -2767,102 +1500,64 @@ const LiveMap = () => {
       if (dragRef.current.dragging) {
         const dx = e.clientX - dragRef.current.lastX, dy = e.clientY - dragRef.current.lastY;
         if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragRef.current.moved = true;
-        cameraRef.current.x -= dx / zoomRef.current;
-        cameraRef.current.y -= dy / zoomRef.current;
+        cameraRef.current.x -= dx / zoomRef.current; cameraRef.current.y -= dy / zoomRef.current;
         cameraVelRef.current = { x: -dx / zoomRef.current, y: -dy / zoomRef.current };
         dragRef.current.lastX = e.clientX; dragRef.current.lastY = e.clientY;
       } else {
-        // Hover detection
-        const z = zoomRef.current;
-        const worldX = cameraRef.current.x + e.clientX / z;
-        const worldY = cameraRef.current.y + e.clientY / z;
+        const z2 = zoomRef.current;
+        const worldX = cameraRef.current.x + e.clientX / z2;
+        const worldY = cameraRef.current.y + e.clientY / z2;
         let found = false;
         for (const a of agentsRef.current) {
-          if (Math.hypot(a.x - worldX, a.y - worldY) < 20) {
-            hoveredEntityRef.current = a.name; setHoveredEntity(a.name);
-            canvasRef.current!.style.cursor = "pointer";
-            found = true; break;
-          }
+          if (Math.hypot(a.x - worldX, a.y - worldY) < 20) { hoveredEntityRef.current = a.name; canvasRef.current!.style.cursor = "pointer"; found = true; break; }
         }
         if (!found) {
           for (const b of buildingsRef.current) {
-            if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) {
-              hoveredEntityRef.current = b.name; setHoveredEntity(b.name);
-              canvasRef.current!.style.cursor = "pointer";
-              found = true; break;
-            }
+            if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) { hoveredEntityRef.current = b.name; canvasRef.current!.style.cursor = "pointer"; found = true; break; }
           }
         }
-        if (!found) { hoveredEntityRef.current = null; setHoveredEntity(null); canvasRef.current!.style.cursor = "grab"; }
+        if (!found) { hoveredEntityRef.current = null; canvasRef.current!.style.cursor = "grab"; }
       }
     };
     const onUp = () => { dragRef.current.dragging = false; };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.15 : 0.15;
-      const newZoom = Math.max(0.25, Math.min(3.5, zoomRef.current + delta));
+      const newZoom = Math.max(0.2, Math.min(4, zoomRef.current + delta));
       const mx = e.clientX, my = e.clientY;
       const wx = cameraRef.current.x + mx / zoomRef.current;
       const wy = cameraRef.current.y + my / zoomRef.current;
       zoomRef.current = newZoom;
-      cameraRef.current.x = wx - mx / newZoom;
-      cameraRef.current.y = wy - my / newZoom;
+      cameraRef.current.x = wx - mx / newZoom; cameraRef.current.y = wy - my / newZoom;
       setZoom(newZoom);
     };
     const onClick = (e: MouseEvent) => {
       if (dragRef.current.moved) return;
-      const z = zoomRef.current;
-      const worldX = cameraRef.current.x + e.clientX / z;
-      const worldY = cameraRef.current.y + e.clientY / z;
-      for (const a of agentsRef.current) {
-        if (Math.hypot(a.x - worldX, a.y - worldY) < 20) { setSelectedAgent({ ...a }); setSelectedBuilding(null); return; }
-      }
-      for (const b of buildingsRef.current) {
-        if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) { setSelectedBuilding(b); setSelectedAgent(null); return; }
-      }
+      const z2 = zoomRef.current;
+      const worldX = cameraRef.current.x + e.clientX / z2;
+      const worldY = cameraRef.current.y + e.clientY / z2;
+      for (const a of agentsRef.current) { if (Math.hypot(a.x - worldX, a.y - worldY) < 20) { setSelectedAgent({ ...a }); setSelectedBuilding(null); return; } }
+      for (const b of buildingsRef.current) { if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) { setSelectedBuilding(b); setSelectedAgent(null); return; } }
       setSelectedAgent(null); setSelectedBuilding(null);
     };
     const onDblClick = (e: MouseEvent) => {
-      const z = zoomRef.current;
-      const worldX = cameraRef.current.x + e.clientX / z;
-      const worldY = cameraRef.current.y + e.clientY / z;
+      const z2 = zoomRef.current;
+      const worldX = cameraRef.current.x + e.clientX / z2;
+      const worldY = cameraRef.current.y + e.clientY / z2;
       for (const a of agentsRef.current) {
         if (Math.hypot(a.x - worldX, a.y - worldY) < 25) {
-          followRef.current = a.id;
-          setFollowAgent(a.id);
-          setSelectedAgent({ ...a });
-          addEvent(`👁️ Following ${a.name}`, a.color);
-          return;
+          followRef.current = a.id; setFollowAgent(a.id); setSelectedAgent({ ...a });
+          addEvent(`👁️ Following ${a.name}`, a.color); return;
         }
-      }
-      // Minimap click-to-navigate
-      const mmW = 180, mmH = 110;
-      const mmX = canvas.width - mmW - 12, mmY = canvas.height - mmH - 12;
-      if (e.clientX >= mmX && e.clientX <= mmX + mmW && e.clientY >= mmY && e.clientY <= mmY + mmH) {
-        const mmScale = mmW / (MAP_W * TILE);
-        const clickWorldX = (e.clientX - mmX) / mmScale;
-        const clickWorldY = (e.clientY - mmY) / mmScale;
-        cameraTargetRef.current = { x: clickWorldX - canvas.width / z / 2, y: clickWorldY - canvas.height / z / 2 };
       }
     };
-    // Right-click context menu
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      const z = zoomRef.current;
-      const worldX = cameraRef.current.x + e.clientX / z;
-      const worldY = cameraRef.current.y + e.clientY / z;
-      for (const a of agentsRef.current) {
-        if (Math.hypot(a.x - worldX, a.y - worldY) < 20) {
-          setContextMenu({ x: e.clientX, y: e.clientY, agent: { ...a } });
-          return;
-        }
-      }
-      for (const b of buildingsRef.current) {
-        if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) {
-          setContextMenu({ x: e.clientX, y: e.clientY, building: b });
-          return;
-        }
-      }
+      const z2 = zoomRef.current;
+      const worldX = cameraRef.current.x + e.clientX / z2;
+      const worldY = cameraRef.current.y + e.clientY / z2;
+      for (const a of agentsRef.current) { if (Math.hypot(a.x - worldX, a.y - worldY) < 20) { setContextMenu({ x: e.clientX, y: e.clientY, agent: { ...a } }); return; } }
+      for (const b of buildingsRef.current) { if (worldX >= b.x && worldX <= b.x + b.w * TILE && worldY >= b.y && worldY <= b.y + b.h * TILE) { setContextMenu({ x: e.clientX, y: e.clientY, building: b }); return; } }
       setContextMenu(null);
     };
 
@@ -2884,16 +1579,14 @@ const LiveMap = () => {
       if (e.touches.length === 1 && dragRef.current.dragging) {
         cameraRef.current.x -= (e.touches[0].clientX - dragRef.current.lastX) / zoomRef.current;
         cameraRef.current.y -= (e.touches[0].clientY - dragRef.current.lastY) / zoomRef.current;
-        dragRef.current.lastX = e.touches[0].clientX; dragRef.current.lastY = e.touches[0].clientY;
-        dragRef.current.moved = true;
+        dragRef.current.lastX = e.touches[0].clientX; dragRef.current.lastY = e.touches[0].clientY; dragRef.current.moved = true;
       } else if (e.touches.length === 2) {
         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        zoomRef.current = Math.max(0.25, Math.min(3.5, zoomRef.current + (dist - lastTouchDist) * 0.005));
+        zoomRef.current = Math.max(0.2, Math.min(4, zoomRef.current + (dist - lastTouchDist) * 0.005));
         setZoom(zoomRef.current); lastTouchDist = dist;
       }
     };
     const onTouchEnd = () => { dragRef.current.dragging = false; };
-
     canvas.addEventListener("touchstart", onTouchStart, { passive: false });
     canvas.addEventListener("touchmove", onTouchMove, { passive: false });
     canvas.addEventListener("touchend", onTouchEnd);
@@ -2914,14 +1607,11 @@ const LiveMap = () => {
     };
   }, []);
 
-  // WASD + Escape keyboard handler
+  // Keyboard
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) {
-        keysRef.current.add(key);
-        e.preventDefault();
-      }
+      if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) { keysRef.current.add(key); e.preventDefault(); }
       if (key === "escape") {
         if (followRef.current !== null) { followRef.current = null; setFollowAgent(null); }
         else if (selectedBuilding || selectedAgent) { setSelectedBuilding(null); setSelectedAgent(null); }
@@ -2931,18 +1621,15 @@ const LiveMap = () => {
       if (key === "f" && !e.ctrlKey) { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }
     };
     const onKeyUp = (e: KeyboardEvent) => { keysRef.current.delete(e.key.toLowerCase()); };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("keydown", onKeyDown); window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("keyup", onKeyUp); };
   }, [navigate, selectedBuilding, selectedAgent]);
 
-  const handleZoom = (d: number) => { const nz = Math.max(0.25, Math.min(3.5, zoomRef.current + d)); zoomRef.current = nz; setZoom(nz); };
+  const handleZoom = (d: number) => { const nz = Math.max(0.2, Math.min(4, zoomRef.current + d)); zoomRef.current = nz; setZoom(nz); };
   const navigateToAgent = (agentId: number) => {
     const a = agentsRef.current.find(ag => ag.id === agentId);
-    if (!a) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    cameraTargetRef.current = { x: a.x - canvas.width / zoomRef.current / 2, y: a.y - canvas.height / zoomRef.current / 2 };
+    if (!a || !canvasRef.current) return;
+    cameraTargetRef.current = { x: a.x - canvasRef.current.width / zoomRef.current / 2, y: a.y - canvasRef.current.height / zoomRef.current / 2 };
     setSelectedAgent({ ...a });
   };
 
@@ -2950,72 +1637,75 @@ const LiveMap = () => {
     <div className="fixed inset-0 bg-background overflow-hidden cursor-grab active:cursor-grabbing">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
-      {/* HUD top-left */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 flex-wrap max-w-[calc(100%-4rem)] sm:max-w-none">
-        <button onClick={() => navigate("/")} className="glass-card p-1.5 sm:p-2 hover:bg-card/80 transition-colors"><ArrowLeft className="w-4 sm:w-5 h-4 sm:h-5 text-foreground" /></button>
-        <div className="glass-card px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2">
+      {/* HUD — Top Left */}
+      <div className="absolute top-3 sm:top-5 left-3 sm:left-5 z-10 flex items-center gap-2 flex-wrap max-w-[calc(100%-5rem)]">
+        <button onClick={() => navigate("/")} className="glass-card p-2 hover:bg-card/80 transition-all duration-200 hover:scale-105">
+          <ArrowLeft className="w-4 h-4 text-foreground" />
+        </button>
+        <div className="glass-card px-3 py-2 flex items-center gap-2">
+          <Globe className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-display font-bold tracking-wider text-primary">MEEET STATE</span>
+        </div>
+        <div className="glass-card px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse-glow" />
-          <span className="text-xs sm:text-sm font-display font-semibold">{agentCount} AGENTS</span>
+          <span className="text-xs font-display font-semibold">{agentCount} AGENTS</span>
         </div>
-        <div className="glass-card px-2 sm:px-3 py-1.5 sm:py-2 hidden sm:flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-body">{buildingsRef.current.length} buildings</span>
-        </div>
-        <div className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1.5">
+        <div className="glass-card px-2.5 py-1.5 flex items-center gap-1.5">
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300" /> : <Sun className="w-3 h-3 text-amber-400" />}
           <span className="text-[10px] font-body text-muted-foreground">{timeLabel}</span>
         </div>
         {weather !== "clear" && (
-          <div className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1.5">
+          <div className="glass-card px-2.5 py-1.5 flex items-center gap-1.5">
             <Cloud className="w-3 h-3 text-muted-foreground" />
             <span className="text-[10px] font-body text-muted-foreground capitalize">{weather}</span>
           </div>
         )}
       </div>
 
-      {/* HUD top-right */}
-      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10">
-        <div className="glass-card px-2 sm:px-4 py-1.5 sm:py-2 flex items-center gap-2 sm:gap-3">
-          <span className="text-xs sm:text-sm text-muted-foreground font-body">$MEEET</span>
-          <span className="text-xs sm:text-sm font-display font-semibold">$0.0042</span>
-          <span className="text-[10px] sm:text-xs text-secondary font-body hidden sm:inline">+12.4%</span>
+      {/* HUD — Top Right — Token Price */}
+      <div className="absolute top-3 sm:top-5 right-3 sm:right-5 z-10">
+        <div className="glass-card px-4 py-2.5 flex items-center gap-3">
+          <span className="text-xs text-muted-foreground font-body">$MEEET</span>
+          <span className="text-sm font-display font-bold">$0.0042</span>
+          <span className="text-[10px] text-secondary font-body hidden sm:inline">+12.4%</span>
         </div>
       </div>
 
-      {/* Zoom + Speed controls */}
-      <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5 sm:gap-2">
-        <button onClick={() => handleZoom(0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomIn className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
-        <div className="glass-card px-1.5 sm:px-2 py-0.5 sm:py-1 text-center"><span className="text-[9px] sm:text-[10px] font-body text-muted-foreground">{Math.round(zoom * 100)}%</span></div>
-        <button onClick={() => handleZoom(-0.25)} className="glass-card p-1.5 sm:p-2 hover:bg-card/80"><ZoomOut className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /></button>
-        <div className="w-full h-px bg-border/30 my-0.5" />
-        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="glass-card p-1.5 sm:p-2 hover:bg-card/80" title="Space to toggle">
-          {simSpeed === 0 ? <Play className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" /> : <Pause className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />}
+      {/* Zoom + Speed — Left center */}
+      <div className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2">
+        <button onClick={() => handleZoom(0.25)} className="glass-card p-2 hover:bg-card/80 hover:scale-105 transition-all"><ZoomIn className="w-4 h-4 text-foreground" /></button>
+        <div className="glass-card px-2 py-1 text-center"><span className="text-[10px] font-body text-muted-foreground">{Math.round(zoom * 100)}%</span></div>
+        <button onClick={() => handleZoom(-0.25)} className="glass-card p-2 hover:bg-card/80 hover:scale-105 transition-all"><ZoomOut className="w-4 h-4 text-foreground" /></button>
+        <div className="w-full h-px bg-border/30 my-1" />
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="glass-card p-2 hover:bg-card/80 transition-all">
+          {simSpeed === 0 ? <Play className="w-4 h-4 text-foreground" /> : <Pause className="w-4 h-4 text-foreground" />}
         </button>
-        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`glass-card p-1.5 sm:p-2 hover:bg-card/80 ${simSpeed === 2 ? 'ring-1 ring-secondary/50' : ''}`} title="F to fast-forward">
-          <FastForward className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-foreground" />
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`glass-card p-2 hover:bg-card/80 transition-all ${simSpeed === 2 ? 'ring-1 ring-secondary/50' : ''}`}>
+          <FastForward className="w-4 h-4 text-foreground" />
         </button>
       </div>
 
-      {/* Follow mode indicator */}
+      {/* Follow indicator */}
       {followAgent !== null && (
-        <div className="absolute top-12 sm:top-16 left-1/2 -translate-x-1/2 z-20 glass-card px-4 py-2 flex items-center gap-2 animate-fade-in">
+        <div className="absolute top-14 sm:top-[72px] left-1/2 -translate-x-1/2 z-20 glass-card px-5 py-2.5 flex items-center gap-2.5 animate-fade-in">
           <Crosshair className="w-4 h-4 text-secondary animate-pulse" />
           <span className="text-xs font-display font-semibold text-secondary">Following {agentsRef.current.find(a => a.id === followAgent)?.name ?? 'agent'}</span>
           <button onClick={() => { followRef.current = null; setFollowAgent(null); }} className="ml-2 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
-      {/* Events */}
+      {/* Events panel */}
       {showChat && (
-        <div className="absolute top-12 sm:top-16 right-2 sm:right-4 bottom-12 sm:bottom-4 w-56 sm:w-72 z-10 flex flex-col max-h-[calc(100vh-5rem)]">
+        <div className="absolute top-14 sm:top-[72px] right-3 sm:right-5 bottom-14 sm:bottom-5 w-60 sm:w-72 z-10 flex flex-col max-h-[calc(100vh-6rem)]">
           <div className="glass-card flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-              <span className="text-xs font-display uppercase tracking-wider text-muted-foreground">Live Events</span>
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+              <span className="text-[10px] font-display uppercase tracking-[0.15em] text-muted-foreground">Live Events</span>
               <button onClick={() => setShowChat(false)}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
               {events.map(ev => (
-                <div key={ev.id} className="text-xs font-body px-2 py-1.5 rounded bg-muted/30 animate-fade-in">
-                  <span className="text-muted-foreground mr-1.5">{ev.time}</span>
+                <div key={ev.id} className="text-[11px] font-body px-2.5 py-2 rounded-lg bg-muted/20 animate-fade-in border border-white/[0.03]">
+                  <span className="text-muted-foreground/60 mr-1.5 text-[9px]">{ev.time}</span>
                   <span style={{ color: ev.color }}>{ev.text}</span>
                 </div>
               ))}
@@ -3023,14 +1713,14 @@ const LiveMap = () => {
           </div>
         </div>
       )}
-      {!showChat && <button onClick={() => setShowChat(true)} className="absolute top-16 right-4 z-10 glass-card p-2 hover:bg-card/80"><Eye className="w-4 h-4 text-foreground" /></button>}
+      {!showChat && <button onClick={() => setShowChat(true)} className="absolute top-[72px] right-5 z-10 glass-card p-2 hover:bg-card/80"><Eye className="w-4 h-4 text-foreground" /></button>}
 
       {/* Building inspector */}
       {selectedBuilding && (
-        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-3 sm:p-4 w-[calc(100%-2rem)] sm:w-80 max-w-80 animate-fade-in">
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-4 w-[calc(100%-2rem)] sm:w-80 max-w-80 animate-fade-in border border-white/[0.06]">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{selectedBuilding.icon}</span>
+              <div className="text-3xl">{selectedBuilding.icon}</div>
               <div>
                 <h3 className="font-display font-bold text-sm" style={{ color: selectedBuilding.accent }}>{selectedBuilding.name}</h3>
                 <p className="text-[10px] text-muted-foreground font-body">Built by {selectedBuilding.owner}</p>
@@ -3040,29 +1730,20 @@ const LiveMap = () => {
           </div>
           <p className="text-xs text-muted-foreground font-body mb-3">{selectedBuilding.description}</p>
           <div className="grid grid-cols-3 gap-2">
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">Visitors</p>
-              <p className="text-xs font-display font-semibold" style={{ color: selectedBuilding.accent }}>{selectedBuilding.visitors}</p>
-            </div>
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">Income/d</p>
-              <p className="text-xs font-display font-semibold text-amber-400">{selectedBuilding.income} $M</p>
-            </div>
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">Size</p>
-              <p className="text-xs font-display font-semibold text-muted-foreground">{selectedBuilding.w}×{selectedBuilding.h}</p>
-            </div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">Visitors</p><p className="text-xs font-display font-semibold" style={{ color: selectedBuilding.accent }}>{selectedBuilding.visitors}</p></div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">Income/d</p><p className="text-xs font-display font-semibold text-amber-400">{selectedBuilding.income} $M</p></div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">Size</p><p className="text-xs font-display font-semibold text-muted-foreground">{selectedBuilding.w}×{selectedBuilding.h}</p></div>
           </div>
         </div>
       )}
 
       {/* Agent inspector */}
       {selectedAgent && (
-        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-3 sm:p-4 w-[calc(100%-2rem)] sm:w-80 max-w-80 animate-fade-in">
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 glass-card p-4 w-[calc(100%-2rem)] sm:w-80 max-w-80 animate-fade-in border border-white/[0.06]">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-lg flex items-center justify-center" style={{ backgroundColor: selectedAgent.color + "25", border: `1px solid ${selectedAgent.color}40` }}>
-                <div className="w-4 h-5 rounded-sm" style={{ backgroundColor: selectedAgent.color }} />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: selectedAgent.color + "18", border: `2px solid ${selectedAgent.color}30` }}>
+                <span className="text-lg">{CLASS_CONFIG[selectedAgent.cls]?.icon || "⚔️"}</span>
               </div>
               <div>
                 <h3 className="font-display font-bold text-sm" style={{ color: selectedAgent.color }}>{selectedAgent.name}</h3>
@@ -3071,7 +1752,6 @@ const LiveMap = () => {
             </div>
             <button onClick={() => setSelectedAgent(null)}><X className="w-4 h-4 text-muted-foreground hover:text-foreground" /></button>
           </div>
-          {/* HP bar */}
           <div className="mb-3">
             <div className="flex justify-between text-[9px] text-muted-foreground mb-1"><span>HP</span><span>{selectedAgent.hp}/{selectedAgent.maxHp}</span></div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -3079,115 +1759,54 @@ const LiveMap = () => {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">Balance</p>
-              <p className="text-xs font-display font-semibold text-amber-400">{selectedAgent.balance}</p>
-            </div>
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">Reputation</p>
-              <p className="text-xs font-display font-semibold text-secondary">{selectedAgent.reputation}</p>
-            </div>
-            <div className="glass-card px-2 py-1.5 text-center">
-              <p className="text-[9px] text-muted-foreground">State</p>
-              <p className="text-xs font-display font-semibold capitalize" style={{ color: selectedAgent.color }}>{selectedAgent.state}</p>
-            </div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">Balance</p><p className="text-xs font-display font-semibold text-amber-400">{selectedAgent.balance}</p></div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">Reputation</p><p className="text-xs font-display font-semibold text-secondary">{selectedAgent.reputation}</p></div>
+            <div className="glass-card px-2 py-2 text-center"><p className="text-[9px] text-muted-foreground">State</p><p className="text-xs font-display font-semibold capitalize" style={{ color: selectedAgent.color }}>{selectedAgent.state}</p></div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] font-body">
             {selectedAgent.linked && <span className="glass-card px-2 py-0.5 text-amber-400">👑 Linked</span>}
             {selectedAgent.reputation > 700 && <span className="glass-card px-2 py-0.5 text-amber-400">⭐ Elite</span>}
-            {selectedAgent.level >= 20 && <span className="glass-card px-2 py-0.5 text-purple-400">🏆 Veteran</span>}
+            {selectedAgent.level >= 20 && <span className="glass-card px-2 py-0.5 text-primary">🏆 Veteran</span>}
           </div>
         </div>
       )}
 
-      {/* Right-click Context Menu */}
+      {/* Context Menu */}
       {contextMenu && (
-        <div
-          className="absolute z-30 glass-card py-1 w-44 animate-scale-in"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={() => setContextMenu(null)}
-        >
+        <div className="absolute z-30 glass-card py-1.5 w-48 animate-scale-in border border-white/[0.06]" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={() => setContextMenu(null)}>
           {contextMenu.agent && (
             <>
-              <div className="px-3 py-1.5 border-b border-border">
+              <div className="px-3 py-2 border-b border-border">
                 <p className="text-[10px] font-display font-bold" style={{ color: contextMenu.agent.color }}>{contextMenu.agent.name}</p>
                 <p className="text-[9px] text-muted-foreground">{contextMenu.agent.cls} · Lv.{contextMenu.agent.level}</p>
               </div>
-              <button
-                className="w-full text-left px-3 py-1.5 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => { setSelectedAgent({ ...contextMenu.agent! }); setContextMenu(null); }}
-              >
-                <Eye className="w-3 h-3" /> Inspect Agent
-              </button>
-              <button
-                className="w-full text-left px-3 py-1.5 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => {
-                  followRef.current = contextMenu.agent!.id;
-                  setFollowAgent(contextMenu.agent!.id);
-                  setSelectedAgent({ ...contextMenu.agent! });
-                  addEvent(`👁️ Following ${contextMenu.agent!.name}`, contextMenu.agent!.color);
-                  setContextMenu(null);
-                }}
-              >
-                <Crosshair className="w-3 h-3" /> Follow Agent
-              </button>
-              <button
-                className="w-full text-left px-3 py-1.5 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => {
-                  navigateToAgent(contextMenu.agent!.id);
-                  setContextMenu(null);
-                }}
-              >
-                <MapPin className="w-3 h-3" /> Navigate To
-              </button>
+              <button className="w-full text-left px-3 py-2 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2" onClick={() => { setSelectedAgent({ ...contextMenu.agent! }); setContextMenu(null); }}><Eye className="w-3 h-3" /> Inspect</button>
+              <button className="w-full text-left px-3 py-2 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2" onClick={() => { followRef.current = contextMenu.agent!.id; setFollowAgent(contextMenu.agent!.id); setSelectedAgent({ ...contextMenu.agent! }); addEvent(`👁️ Following ${contextMenu.agent!.name}`, contextMenu.agent!.color); setContextMenu(null); }}><Crosshair className="w-3 h-3" /> Follow</button>
+              <button className="w-full text-left px-3 py-2 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2" onClick={() => { navigateToAgent(contextMenu.agent!.id); setContextMenu(null); }}><MapPin className="w-3 h-3" /> Navigate</button>
             </>
           )}
           {contextMenu.building && (
             <>
-              <div className="px-3 py-1.5 border-b border-border">
+              <div className="px-3 py-2 border-b border-border">
                 <p className="text-[10px] font-display font-bold" style={{ color: contextMenu.building.accent }}>{contextMenu.building.icon} {contextMenu.building.name}</p>
               </div>
-              <button
-                className="w-full text-left px-3 py-1.5 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => { setSelectedBuilding(contextMenu.building!); setContextMenu(null); }}
-              >
-                <Eye className="w-3 h-3" /> Inspect Building
-              </button>
-              <button
-                className="w-full text-left px-3 py-1.5 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => {
-                  const b = contextMenu.building!;
-                  cameraTargetRef.current = { x: b.x + b.w * TILE / 2 - window.innerWidth / zoomRef.current / 2, y: b.y + b.h * TILE / 2 - window.innerHeight / zoomRef.current / 2 };
-                  setContextMenu(null);
-                }}
-              >
-                <MapPin className="w-3 h-3" /> Center on Map
-              </button>
+              <button className="w-full text-left px-3 py-2 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2" onClick={() => { setSelectedBuilding(contextMenu.building!); setContextMenu(null); }}><Eye className="w-3 h-3" /> Inspect</button>
+              <button className="w-full text-left px-3 py-2 text-[10px] font-body text-foreground hover:bg-muted/40 transition-colors flex items-center gap-2" onClick={() => { const b = contextMenu.building!; cameraTargetRef.current = { x: b.x + b.w * TILE / 2 - window.innerWidth / zoomRef.current / 2, y: b.y + b.h * TILE / 2 - window.innerHeight / zoomRef.current / 2 }; setContextMenu(null); }}><MapPin className="w-3 h-3" /> Center</button>
             </>
           )}
         </div>
       )}
 
-      {/* Building Directory */}
+      {/* Directory */}
       {showDirectory && (
-        <div className="absolute top-12 sm:top-16 left-2 sm:left-4 bottom-14 sm:bottom-16 w-56 sm:w-64 z-10 glass-card flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-            <span className="text-xs font-display uppercase tracking-wider text-muted-foreground">Directory</span>
+        <div className="absolute top-14 sm:top-[72px] left-3 sm:left-5 bottom-14 sm:bottom-16 w-60 sm:w-64 z-10 glass-card flex flex-col overflow-hidden border border-white/[0.06]">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+            <span className="text-[10px] font-display uppercase tracking-[0.15em] text-muted-foreground">Directory</span>
             <button onClick={() => setShowDirectory(false)}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          <div className="flex-1 overflow-y-auto p-2 space-y-0.5 scrollbar-hide">
             {buildingsRef.current.map(b => (
-              <button
-                key={b.id}
-                className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/40 transition-colors flex items-center gap-2"
-                onClick={() => {
-                  const cx = b.x + (b.w * TILE) / 2;
-                  const cy = b.y + (b.h * TILE) / 2;
-                  cameraTargetRef.current = { x: cx - window.innerWidth / zoomRef.current / 2, y: cy - window.innerHeight / zoomRef.current / 2 };
-                  setSelectedBuilding(b);
-                  setShowDirectory(false);
-                }}
-              >
+              <button key={b.id} className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-muted/30 transition-colors flex items-center gap-2.5" onClick={() => { cameraTargetRef.current = { x: b.x + (b.w * TILE) / 2 - window.innerWidth / zoomRef.current / 2, y: b.y + (b.h * TILE) / 2 - window.innerHeight / zoomRef.current / 2 }; setSelectedBuilding(b); setShowDirectory(false); }}>
                 <span className="text-base">{b.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-display font-semibold truncate" style={{ color: b.accent }}>{b.name}</p>
@@ -3200,102 +1819,61 @@ const LiveMap = () => {
       )}
 
       {/* Bottom bar */}
-      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 flex-wrap">
-        <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
-          <MapPin className="w-3 h-3" /> {buildingsRef.current.length} Buildings
+      <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 z-10 flex items-center gap-2 flex-wrap">
+        <button onClick={() => setShowDirectory(!showDirectory)} className="glass-card px-3 py-1.5 text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1.5">
+          <Compass className="w-3 h-3" /> {buildingsRef.current.length} Structures
         </button>
-        <button onClick={() => setShowSearch(!showSearch)} className="glass-card px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
+        <button onClick={() => setShowSearch(!showSearch)} className="glass-card px-3 py-1.5 text-[10px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1.5">
           <Search className="w-3 h-3" /> Find Agent
         </button>
-        {/* Class filter */}
-        <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none scrollbar-hide">
+        <div className="hidden sm:flex items-center gap-1 overflow-x-auto max-w-[280px] scrollbar-hide">
           {CLASSES.filter(c => c !== "president").map(cls => (
-            <button
-              key={cls}
-              onClick={() => setClassFilter(classFilter === cls ? null : cls)}
-              className={`glass-card px-1.5 py-0.5 text-[9px] font-body transition-colors ${classFilter === cls ? 'ring-1 ring-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}
-              title={`Filter: ${cls}`}
-            >
+            <button key={cls} onClick={() => setClassFilter(classFilter === cls ? null : cls)} className={`glass-card px-2 py-0.5 text-[9px] font-body transition-colors ${classFilter === cls ? 'ring-1 ring-secondary/60 text-foreground' : 'text-muted-foreground hover:text-foreground'}`} style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}>
               {cls.slice(0, 3).toUpperCase()}
             </button>
           ))}
         </div>
-        {/* FPS toggle */}
         <button onClick={() => setShowFps(!showFps)} className="glass-card px-2 py-1 text-[9px] text-muted-foreground font-body hover:text-foreground transition-colors flex items-center gap-1">
-          <Activity className="w-3 h-3" />
-          {showFps && <span>{fps} FPS</span>}
+          <Activity className="w-3 h-3" />{showFps && <span>{fps} FPS</span>}
         </button>
-        <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body glass-card px-2 sm:px-3 py-1 sm:py-1.5 hidden sm:inline-block">
-          WASD — move · Scroll — zoom · Dbl-click — follow · Space — pause · F — fast
-        </span>
+        <span className="text-[9px] text-muted-foreground/50 font-body glass-card px-3 py-1.5 hidden lg:inline-block">WASD — move · Scroll — zoom · Dbl-click — follow</span>
       </div>
 
       {/* FPS overlay */}
       {showFps && (
-        <div className="absolute bottom-12 sm:bottom-14 right-2 sm:right-4 z-10 glass-card px-2 py-1 text-[10px] font-body text-muted-foreground">
+        <div className="absolute bottom-14 right-5 z-10 glass-card px-3 py-1.5 text-[10px] font-body text-muted-foreground">
           <span className={fps < 30 ? 'text-destructive' : fps < 50 ? 'text-amber-400' : 'text-secondary'}>{fps} FPS</span>
-          <span className="mx-1">·</span>
-          <span>{agentsRef.current.length} agents</span>
-          <span className="mx-1">·</span>
-          <span>{particlesRef.current.length} particles</span>
+          <span className="mx-1.5">·</span><span>{agentsRef.current.length} agents</span>
+          <span className="mx-1.5">·</span><span>{particlesRef.current.length} particles</span>
         </div>
       )}
 
-      {/* Agent search */}
+      {/* Search */}
       {showSearch && (
-        <div className="absolute bottom-12 sm:bottom-14 left-2 sm:left-4 z-20 glass-card p-2 w-56 sm:w-64 animate-fade-in">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="absolute bottom-14 left-3 sm:left-5 z-20 glass-card p-3 w-60 sm:w-64 animate-fade-in border border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-2.5">
             <Search className="w-3.5 h-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-xs font-body text-foreground outline-none placeholder:text-muted-foreground/50"
-              autoFocus
-            />
+            <input type="text" placeholder="Search agents..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="flex-1 bg-transparent text-xs font-body text-foreground outline-none placeholder:text-muted-foreground/50" autoFocus />
             <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}><X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" /></button>
           </div>
-          {/* Class filter chips in search */}
           <div className="flex flex-wrap gap-1 mb-2">
             {CLASSES.filter(c => c !== "president").map(cls => (
-              <button
-                key={cls}
-                onClick={() => setClassFilter(classFilter === cls ? null : cls)}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-body transition-colors ${classFilter === cls ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}
-              >
-                {cls}
-              </button>
+              <button key={cls} onClick={() => setClassFilter(classFilter === cls ? null : cls)} className={`px-1.5 py-0.5 rounded text-[9px] font-body transition-colors ${classFilter === cls ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`} style={classFilter === cls ? { color: CLASS_CONFIG[cls]?.color } : undefined}>{cls}</button>
             ))}
           </div>
-          <div className="max-h-40 overflow-y-auto space-y-0.5">
+          <div className="max-h-40 overflow-y-auto space-y-0.5 scrollbar-hide">
             {agentsRef.current
               .filter(a => {
                 const matchesSearch = searchQuery.length === 0 || a.name.toLowerCase().includes(searchQuery.toLowerCase());
                 const matchesClass = !classFilter || a.cls === classFilter;
                 return matchesSearch && matchesClass && (searchQuery.length > 0 || classFilter);
-              })
-              .slice(0, 15)
-              .map(a => (
-                <button
-                  key={a.id}
-                  className="w-full text-left px-2 py-1 rounded hover:bg-muted/40 transition-colors flex items-center gap-2"
-                  onClick={() => { navigateToAgent(a.id); setShowSearch(false); setSearchQuery(""); setClassFilter(null); }}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+              }).slice(0, 15).map(a => (
+                <button key={a.id} className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted/30 transition-colors flex items-center gap-2" onClick={() => { navigateToAgent(a.id); setShowSearch(false); setSearchQuery(""); setClassFilter(null); }}>
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: a.color }} />
                   <span className="text-[11px] font-display font-semibold" style={{ color: a.color }}>{a.name}</span>
                   <span className="text-[9px] text-muted-foreground ml-auto">{a.cls} Lv.{a.level}</span>
                 </button>
               ))}
-            {(searchQuery.length > 0 || classFilter) && agentsRef.current.filter(a => {
-              const matchesSearch = searchQuery.length === 0 || a.name.toLowerCase().includes(searchQuery.toLowerCase());
-              const matchesClass = !classFilter || a.cls === classFilter;
-              return matchesSearch && matchesClass;
-            }).length === 0 && (
-              <p className="text-[10px] text-muted-foreground text-center py-2">No agents found</p>
-            )}
           </div>
         </div>
       )}
