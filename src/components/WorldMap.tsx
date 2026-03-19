@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { supabase } from "@/integrations/supabase/runtime-client";
+import { Filter, Layers, X, Users, Zap, MapPin } from "lucide-react";
 
 const CLASS_COLORS: Record<string, string> = {
   warrior: "#ff3b3b",
@@ -12,6 +13,23 @@ const CLASS_COLORS: Record<string, string> = {
   banker: "#aa44ff",
   president: "#ffd700",
 };
+
+const CLASS_ICONS: Record<string, string> = {
+  warrior: "⚔️",
+  trader: "💰",
+  oracle: "🔮",
+  diplomat: "🤝",
+  miner: "⛏️",
+  banker: "🏦",
+  president: "👑",
+};
+
+const EVENT_TYPES = [
+  { key: "conflict", label: "Conflicts", color: "#ef4444", icon: "⚔️" },
+  { key: "disaster", label: "Disasters", color: "#f97316", icon: "🌋" },
+  { key: "discovery", label: "Discoveries", color: "#3b82f6", icon: "🔬" },
+  { key: "diplomacy", label: "Diplomacy", color: "#22c55e", icon: "🕊️" },
+];
 
 interface Agent {
   id: string;
@@ -44,7 +62,6 @@ interface WorldMapProps {
   onEventClick?: (event: WorldEvent) => void;
 }
 
-// Free dark tile styles
 const DARK_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -60,13 +77,7 @@ const DARK_STYLE: maplibregl.StyleSpecification = {
     },
   },
   layers: [
-    {
-      id: "carto-dark-layer",
-      type: "raster",
-      source: "carto-dark",
-      minzoom: 0,
-      maxzoom: 20,
-    },
+    { id: "carto-dark-layer", type: "raster", source: "carto-dark", minzoom: 0, maxzoom: 20 },
   ],
   glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
 };
@@ -77,6 +88,11 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   const [agents, setAgents] = useState<Agent[]>([]);
   const [events, setEvents] = useState<WorldEvent[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [classFilters, setClassFilters] = useState<Set<string>>(new Set(Object.keys(CLASS_COLORS)));
+  const [eventFilters, setEventFilters] = useState<Set<string>>(new Set(EVENT_TYPES.map(e => e.key)));
+  const [showAgents, setShowAgents] = useState(true);
+  const [showEvents, setShowEvents] = useState(true);
 
   const fetchAgents = useCallback(async () => {
     const { data } = await supabase
@@ -113,7 +129,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     map.on("load", () => {
       setMapLoaded(true);
 
-      // Agent source with clustering
       map.addSource("agents", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -122,7 +137,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         clusterRadius: 50,
       });
 
-      // Cluster circles
       map.addLayer({
         id: "agent-clusters",
         type: "circle",
@@ -142,7 +156,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Cluster count labels
       map.addLayer({
         id: "agent-cluster-count",
         type: "symbol",
@@ -153,12 +166,26 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
           "text-font": ["Open Sans Bold"],
           "text-size": 13,
         },
+        paint: { "text-color": "#ffffff" },
+      });
+
+      map.addLayer({
+        id: "agent-glow",
+        type: "circle",
+        source: "agents",
+        filter: ["!", ["has", "point_count"]],
         paint: {
-          "text-color": "#ffffff",
+          "circle-color": ["get", "color"],
+          "circle-radius": [
+            "interpolate", ["linear"], ["zoom"],
+            2, ["interpolate", ["linear"], ["get", "reputation"], 0, 8, 100, 14, 500, 22],
+            8, ["interpolate", ["linear"], ["get", "reputation"], 0, 14, 100, 22, 500, 34],
+          ],
+          "circle-opacity": 0.12,
+          "circle-blur": 1,
         },
       });
 
-      // Individual agent dots
       map.addLayer({
         id: "agent-dots",
         type: "circle",
@@ -171,15 +198,12 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
             2, ["interpolate", ["linear"], ["get", "reputation"], 0, 3, 100, 6, 500, 10],
             8, ["interpolate", ["linear"], ["get", "reputation"], 0, 6, 100, 10, 500, 16],
           ],
-          "circle-opacity": 0.85,
+          "circle-opacity": 0.9,
           "circle-stroke-width": 1.5,
-          "circle-stroke-color": ["get", "color"],
-          "circle-stroke-opacity": 0.4,
-          "circle-blur": 0.3,
+          "circle-stroke-color": "rgba(255,255,255,0.25)",
         },
       });
 
-      // Agent labels at high zoom
       map.addLayer({
         id: "agent-labels",
         type: "symbol",
@@ -187,7 +211,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         filter: ["!", ["has", "point_count"]],
         minzoom: 6,
         layout: {
-          "text-field": ["concat", ["get", "name"], "\n", ["get", "balance"], " $M"],
+          "text-field": ["concat", ["get", "icon"], " ", ["get", "name"]],
           "text-font": ["Open Sans Regular"],
           "text-size": 11,
           "text-offset": [0, 1.5],
@@ -200,13 +224,32 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // World events source
       map.addSource("world-events", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
       });
 
-      // Event markers
+      map.addLayer({
+        id: "event-pulse",
+        type: "circle",
+        source: "world-events",
+        paint: {
+          "circle-color": "transparent",
+          "circle-radius": 22,
+          "circle-opacity": 0,
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": [
+            "match", ["get", "event_type"],
+            "conflict", "#ef4444",
+            "disaster", "#f97316",
+            "discovery", "#3b82f6",
+            "diplomacy", "#22c55e",
+            "#9945FF",
+          ],
+          "circle-stroke-opacity": 0.25,
+        },
+      });
+
       map.addLayer({
         id: "event-markers",
         type: "circle",
@@ -220,12 +263,8 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
             "diplomacy", "#22c55e",
             "#9945FF",
           ],
-          "circle-radius": [
-            "interpolate", ["linear"], ["zoom"],
-            2, 8,
-            6, 14,
-          ],
-          "circle-opacity": 0.6,
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 6, 6, 12],
+          "circle-opacity": 0.7,
           "circle-stroke-width": 2,
           "circle-stroke-color": [
             "match", ["get", "event_type"],
@@ -239,40 +278,45 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         },
       });
 
-      // Event pulse
       map.addLayer({
-        id: "event-pulse",
-        type: "circle",
+        id: "event-labels",
+        type: "symbol",
         source: "world-events",
-        paint: {
-          "circle-color": "transparent",
-          "circle-radius": 20,
-          "circle-opacity": 0,
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": [
-            "match", ["get", "event_type"],
-            "conflict", "#ef4444",
-            "disaster", "#f97316",
-            "discovery", "#3b82f6",
-            "#9945FF",
-          ],
-          "circle-stroke-opacity": 0.3,
+        minzoom: 4,
+        layout: {
+          "text-field": ["get", "icon"],
+          "text-font": ["Open Sans Regular"],
+          "text-size": 16,
+          "text-allow-overlap": true,
         },
       });
 
       // Click handlers
       map.on("click", "agent-dots", (e) => {
         if (!e.features?.[0]) return;
-        const props = e.features[0].properties!;
+        const p = e.features[0].properties!;
         const coords = (e.features[0].geometry as any).coordinates.slice();
-        new maplibregl.Popup({ className: "meeet-popup", maxWidth: "260px" })
+        new maplibregl.Popup({ className: "meeet-popup", maxWidth: "280px" })
           .setLngLat(coords)
           .setHTML(`
-            <div style="background:#111;padding:12px;border-radius:8px;color:#fff;font-family:monospace;">
-              <div style="font-size:14px;font-weight:bold;margin-bottom:4px;">${props.name}</div>
-              <div style="font-size:11px;color:#999;margin-bottom:6px;">${props.agentClass} · Lv.${props.level}</div>
-              <div style="font-size:12px;color:#14F195;">${Number(props.balance).toLocaleString()} $MEEET</div>
-              <div style="font-size:11px;color:#888;margin-top:2px;">Rep: ${props.reputation}</div>
+            <div style="background:#0a0a0f;padding:14px;border-radius:10px;color:#fff;font-family:monospace;border:1px solid rgba(153,69,255,0.3);">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:18px;">${p.icon || "🤖"}</span>
+                <div>
+                  <div style="font-size:14px;font-weight:bold;">${p.name}</div>
+                  <div style="font-size:10px;color:#888;text-transform:uppercase;">${p.agentClass} · Level ${p.level}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+                <div style="background:rgba(20,241,149,0.1);padding:6px 8px;border-radius:6px;">
+                  <div style="font-size:9px;color:#888;">BALANCE</div>
+                  <div style="font-size:13px;color:#14F195;font-weight:bold;">${Number(p.balance).toLocaleString()}</div>
+                </div>
+                <div style="background:rgba(153,69,255,0.1);padding:6px 8px;border-radius:6px;">
+                  <div style="font-size:9px;color:#888;">REPUTATION</div>
+                  <div style="font-size:13px;color:#9945FF;font-weight:bold;">${p.reputation}</div>
+                </div>
+              </div>
             </div>
           `)
           .addTo(map);
@@ -280,39 +324,33 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
 
       map.on("click", "event-markers", (e) => {
         if (!e.features?.[0]) return;
-        const props = e.features[0].properties!;
+        const p = e.features[0].properties!;
         const coords = (e.features[0].geometry as any).coordinates.slice();
+        const typeColor = { conflict: "#ef4444", disaster: "#f97316", discovery: "#3b82f6", diplomacy: "#22c55e" }[p.event_type] || "#9945FF";
         new maplibregl.Popup({ className: "meeet-popup", maxWidth: "300px" })
           .setLngLat(coords)
           .setHTML(`
-            <div style="background:#111;padding:12px;border-radius:8px;color:#fff;font-family:monospace;">
-              <div style="font-size:10px;text-transform:uppercase;color:${props.event_type === 'conflict' ? '#ef4444' : '#f97316'};margin-bottom:4px;">${props.event_type}</div>
-              <div style="font-size:13px;font-weight:bold;margin-bottom:4px;">${props.title}</div>
-              <div style="font-size:10px;color:#666;">${new Date(props.created_at).toLocaleDateString()}</div>
+            <div style="background:#0a0a0f;padding:14px;border-radius:10px;color:#fff;font-family:monospace;border:1px solid ${typeColor}33;">
+              <div style="font-size:10px;text-transform:uppercase;color:${typeColor};margin-bottom:6px;letter-spacing:1px;">${p.icon || "🌍"} ${p.event_type}</div>
+              <div style="font-size:13px;font-weight:bold;margin-bottom:6px;line-height:1.4;">${p.title}</div>
+              <div style="font-size:10px;color:#666;">${new Date(p.created_at).toLocaleDateString()}</div>
             </div>
           `)
           .addTo(map);
-        if (onEventClick) {
-          onEventClick(JSON.parse(JSON.stringify(props)));
-        }
+        if (onEventClick) onEventClick(JSON.parse(JSON.stringify(p)));
       });
 
-      // Cursors
       map.on("mouseenter", "agent-dots", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "agent-dots", () => { map.getCanvas().style.cursor = ""; });
       map.on("mouseenter", "event-markers", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "event-markers", () => { map.getCanvas().style.cursor = ""; });
 
-      // Cluster zoom
       map.on("click", "agent-clusters", (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ["agent-clusters"] });
         if (!features[0]) return;
         const clusterId = features[0].properties!.cluster_id;
         (map.getSource("agents") as maplibregl.GeoJSONSource).getClusterExpansionZoom(clusterId).then((zoom) => {
-          map.easeTo({
-            center: (features[0].geometry as any).coordinates,
-            zoom,
-          });
+          map.easeTo({ center: (features[0].geometry as any).coordinates, zoom });
         });
       });
     });
@@ -322,42 +360,33 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }
 
     mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   }, [interactive, onEventClick]);
 
   // Fetch data
   useEffect(() => {
     fetchAgents();
     fetchEvents();
-    const interval = setInterval(() => {
-      fetchAgents();
-      fetchEvents();
-    }, 30000);
+    const interval = setInterval(() => { fetchAgents(); fetchEvents(); }, 30000);
     return () => clearInterval(interval);
   }, [fetchAgents, fetchEvents]);
 
-  // Update agents on map
+  // Update agents on map (with class filter)
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded || agents.length === 0) return;
+    if (!mapRef.current || !mapLoaded) return;
     const source = mapRef.current.getSource("agents") as maplibregl.GeoJSONSource;
     if (!source) return;
 
     const features = agents
-      .filter((a) => a.lat != null && a.lng != null)
+      .filter((a) => a.lat != null && a.lng != null && showAgents && classFilters.has(a.class))
       .map((a) => ({
         type: "Feature" as const,
-        geometry: {
-          type: "Point" as const,
-          coordinates: [a.lng!, a.lat!],
-        },
+        geometry: { type: "Point" as const, coordinates: [a.lng!, a.lat!] },
         properties: {
           id: a.id,
           name: a.name,
           agentClass: a.class,
+          icon: CLASS_ICONS[a.class] || "🤖",
           color: CLASS_COLORS[a.class] || "#9945FF",
           reputation: a.reputation ?? 0,
           balance: a.balance_meeet ?? 0,
@@ -367,61 +396,182 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       }));
 
     source.setData({ type: "FeatureCollection", features });
-  }, [agents, mapLoaded]);
+  }, [agents, mapLoaded, classFilters, showAgents]);
 
-  // Update events on map
+  // Update events on map (with event filter)
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded || events.length === 0) return;
+    if (!mapRef.current || !mapLoaded) return;
     const source = mapRef.current.getSource("world-events") as maplibregl.GeoJSONSource;
     if (!source) return;
 
+    const eventIcons: Record<string, string> = { conflict: "⚔️", disaster: "🌋", discovery: "🔬", diplomacy: "🕊️" };
     const features = events
-      .filter((e) => e.lat != null && e.lng != null)
+      .filter((e) => e.lat != null && e.lng != null && showEvents && eventFilters.has(e.event_type))
       .map((e) => ({
         type: "Feature" as const,
-        geometry: {
-          type: "Point" as const,
-          coordinates: [e.lng!, e.lat!],
-        },
+        geometry: { type: "Point" as const, coordinates: [e.lng!, e.lat!] },
         properties: {
           id: e.id,
           event_type: e.event_type,
           title: e.title,
+          icon: eventIcons[e.event_type] || "🌍",
           goldstein_scale: e.goldstein_scale,
           created_at: e.created_at,
         },
       }));
 
     source.setData({ type: "FeatureCollection", features });
-  }, [events, mapLoaded]);
+  }, [events, mapLoaded, eventFilters, showEvents]);
 
   // Realtime
   useEffect(() => {
     const channel = supabase
       .channel("world-map-agents")
-      .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => {
-        fetchAgents();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => fetchAgents())
       .subscribe();
-
     const evChannel = supabase
       .channel("world-map-events")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "world_events" }, () => {
-        fetchEvents();
-      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "world_events" }, () => fetchEvents())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(evChannel);
-    };
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(evChannel); };
   }, [fetchAgents, fetchEvents]);
+
+  const toggleClass = (cls: string) => {
+    setClassFilters(prev => {
+      const next = new Set(prev);
+      next.has(cls) ? next.delete(cls) : next.add(cls);
+      return next;
+    });
+  };
+
+  const toggleEventType = (type: string) => {
+    setEventFilters(prev => {
+      const next = new Set(prev);
+      next.has(type) ? next.delete(type) : next.add(type);
+      return next;
+    });
+  };
+
+  const filteredAgentCount = agents.filter(a => a.lat != null && classFilters.has(a.class)).length;
+  const filteredEventCount = events.filter(e => e.lat != null && eventFilters.has(e.event_type)).length;
 
   return (
     <div className="relative w-full" style={{ height }}>
       <div ref={mapContainer} className="absolute inset-0" />
+
+      {/* Gradient edges */}
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       <div className="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+
+      {/* HUD Stats Bar */}
+      <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-background/80 backdrop-blur-md border border-border text-xs font-mono">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-primary" />
+            <span className="text-foreground font-bold">{filteredAgentCount}</span>
+            <span className="text-muted-foreground">agents</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-foreground font-bold">{filteredEventCount}</span>
+            <span className="text-muted-foreground">events</span>
+          </div>
+        </div>
+
+        {/* Filter toggle */}
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className={`p-2 rounded-lg backdrop-blur-md border transition-colors ${
+            filtersOpen
+              ? "bg-primary/20 border-primary/40 text-primary"
+              : "bg-background/80 border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {filtersOpen ? <X className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Filter Panel */}
+      {filtersOpen && (
+        <div className="absolute top-14 left-3 w-64 rounded-lg bg-background/90 backdrop-blur-md border border-border p-3 pointer-events-auto animate-fade-in space-y-3">
+          {/* Layer toggles */}
+          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+            <Layers className="w-3.5 h-3.5" />
+            <span>Layers</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAgents(!showAgents)}
+              className={`flex-1 px-2 py-1.5 rounded-md text-xs font-mono transition-colors border ${
+                showAgents ? "bg-primary/15 text-primary border-primary/30" : "bg-muted/30 text-muted-foreground border-border"
+              }`}
+            >
+              <Users className="w-3 h-3 inline mr-1" />Agents
+            </button>
+            <button
+              onClick={() => setShowEvents(!showEvents)}
+              className={`flex-1 px-2 py-1.5 rounded-md text-xs font-mono transition-colors border ${
+                showEvents ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : "bg-muted/30 text-muted-foreground border-border"
+              }`}
+            >
+              <MapPin className="w-3 h-3 inline mr-1" />Events
+            </button>
+          </div>
+
+          {/* Agent class filters */}
+          {showAgents && (
+            <div className="space-y-1.5">
+              <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Agent Classes</div>
+              <div className="grid grid-cols-2 gap-1">
+                {Object.entries(CLASS_COLORS).map(([cls, color]) => (
+                  <button
+                    key={cls}
+                    onClick={() => toggleClass(cls)}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-mono transition-all border ${
+                      classFilters.has(cls)
+                        ? "border-white/10 bg-white/5 text-foreground"
+                        : "border-transparent bg-transparent text-muted-foreground/50 line-through"
+                    }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: classFilters.has(cls) ? color : "#444" }}
+                    />
+                    <span className="capitalize">{cls}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Event type filters */}
+          {showEvents && (
+            <div className="space-y-1.5">
+              <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Event Types</div>
+              <div className="space-y-0.5">
+                {EVENT_TYPES.map(({ key, label, color, icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => toggleEventType(key)}
+                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-[11px] font-mono transition-all border ${
+                      eventFilters.has(key)
+                        ? "border-white/10 bg-white/5 text-foreground"
+                        : "border-transparent bg-transparent text-muted-foreground/50 line-through"
+                    }`}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: eventFilters.has(key) ? color : "#444" }}
+                    />
+                    <span>{icon} {label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
