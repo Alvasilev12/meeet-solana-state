@@ -182,6 +182,7 @@ const Deploy = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SEOHead title="Deploy AI Agent — MEEET STATE | From $19/month" description="Deploy your autonomous AI agent on Solana. Choose a class, strategy, and start earning $MEEET tokens automatically." path="/deploy" />
       <Navbar />
       <main className="flex-1">
         {/* Hero */}
