@@ -108,12 +108,14 @@ const World = () => {
       </div>
 
       {/* Map */}
-      <WorldMap
-        height="100vh"
-        interactive
-        showSidebar
-        onEventClick={(ev) => setSelectedEvent(ev as WorldEvent)}
-      />
+      <div className="flex-1 relative min-h-0">
+        <WorldMap
+          height="100%"
+          interactive
+          showSidebar
+          onEventClick={(ev) => setSelectedEvent(ev as WorldEvent)}
+        />
+      </div>
 
       {/* Left Sidebar — Event Feed */}
       <div className="absolute left-0 top-12 bottom-0 w-80 z-10 bg-background/70 backdrop-blur-xl border-r border-border overflow-hidden flex flex-col">
