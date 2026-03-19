@@ -197,7 +197,7 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
 
       // ══════ LAYER 0: Aurora Borealis ══════
       const zoom = map.getZoom();
-      const auroraIntensity = Math.max(0, 1 - (zoom - 2) * 0.3); // fade at higher zoom
+      const auroraIntensity = Math.max(0, 1 - (zoom - 2) * 0.3);
       if (auroraIntensity > 0) {
         for (const wave of auroraWaves.current) {
           const baseY = rh * wave.y;
@@ -224,35 +224,56 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
         }
       }
 
+      // ══════ LAYER 0b: Atmospheric Fog Zones ══════
+      if (zoom < 5) {
+        const fogIntensity = Math.max(0, 1 - (zoom - 2) * 0.4);
+        for (let fi = 0; fi < 6; fi++) {
+          const fogX = ((frame * 0.3 + fi * 200) % (rw + 200)) - 100;
+          const fogY = rh * (0.2 + fi * 0.12 + Math.sin(frame * 0.003 + fi) * 0.05);
+          const fogW = 120 + fi * 40;
+          const fogH = 30 + fi * 10;
+          const fogGrad = ctx.createRadialGradient(fogX, fogY, 0, fogX, fogY, fogW);
+          fogGrad.addColorStop(0, `rgba(80,120,180,${0.02 * fogIntensity})`);
+          fogGrad.addColorStop(0.5, `rgba(60,100,160,${0.01 * fogIntensity})`);
+          fogGrad.addColorStop(1, "transparent");
+          ctx.fillStyle = fogGrad;
+          ctx.fillRect(fogX - fogW, fogY - fogH, fogW * 2, fogH * 2);
+        }
+      }
+
       // ══════ LAYER 1: Hex Grid (subtle) ══════
-      ctx.strokeStyle = "rgba(100,140,255,0.025)";
-      ctx.lineWidth = 1;
-      const hexR = 24;
-      const hexW = hexR * 1.732;
-      const hexH = hexR * 2;
-      for (let gy = -1; gy < rh / (hexH * 0.75) + 1; gy++) {
-        for (let gx = -1; gx < rw / hexW + 1; gx++) {
-          const cx = gx * hexW + (gy % 2 ? hexW / 2 : 0);
-          const cy = gy * hexH * 0.75;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const angle = Math.PI / 180 * (60 * i - 30);
-            const hx = cx + hexR * Math.cos(angle);
-            const hy = cy + hexR * Math.sin(angle);
-            i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+      if (zoom < 6) {
+        const gridAlpha = Math.max(0.008, 0.03 - (zoom - 2) * 0.005);
+        ctx.strokeStyle = `rgba(100,140,255,${gridAlpha})`;
+        ctx.lineWidth = 1;
+        const hexR = 24;
+        const hexW = hexR * 1.732;
+        const hexH = hexR * 2;
+        for (let gy = -1; gy < rh / (hexH * 0.75) + 1; gy++) {
+          for (let gx = -1; gx < rw / hexW + 1; gx++) {
+            const cx = gx * hexW + (gy % 2 ? hexW / 2 : 0);
+            const cy = gy * hexH * 0.75;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const angle = Math.PI / 180 * (60 * i - 30);
+              const hx = cx + hexR * Math.cos(angle);
+              const hy = cy + hexR * Math.sin(angle);
+              i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.stroke();
           }
-          ctx.closePath();
-          ctx.stroke();
         }
       }
 
       // ══════ LAYER 2: Territory Glow Zones ══════
       for (const agent of agents) {
-        const glowRadius = 20 + (agent.rep / 40);
+        const glowRadius = 20 + (agent.rep / 40) + (zoom > 4 ? 10 : 0);
         const rgb = hexToRgb(AGENT_COLORS[agent.cls] || "#9945FF");
         const gradient = ctx.createRadialGradient(agent.x, agent.y, 2, agent.x, agent.y, glowRadius);
-        gradient.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`);
-        gradient.addColorStop(0.4, `rgba(${rgb.r},${rgb.g},${rgb.b},0.05)`);
+        gradient.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`);
+        gradient.addColorStop(0.3, `rgba(${rgb.r},${rgb.g},${rgb.b},0.08)`);
+        gradient.addColorStop(0.7, `rgba(${rgb.r},${rgb.g},${rgb.b},0.02)`);
         gradient.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
         ctx.fillStyle = gradient;
         ctx.fillRect(agent.x - glowRadius, agent.y - glowRadius, glowRadius * 2, glowRadius * 2);
@@ -265,9 +286,10 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
             const a = agents[i], b = agents[j];
             const dx = a.x - b.x, dy = a.y - b.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 90 && dist > 5) {
+            const maxDist = zoom > 5 ? 120 : 90;
+            if (dist < maxDist && dist > 5) {
               const sameClass = a.cls === b.cls;
-              const alpha = (1 - dist / 90) * (sameClass ? 0.25 : 0.1);
+              const alpha = (1 - dist / maxDist) * (sameClass ? 0.3 : 0.12);
               const lineColor = sameClass ? AGENT_COLORS[a.cls] || "#6488ff" : "#6488ff";
               const rgb = hexToRgb(lineColor);
 
