@@ -1442,6 +1442,8 @@ export type Database = {
           amount_meeet: number | null
           created_at: string | null
           id: string
+          is_winner: boolean | null
+          payout_meeet: number | null
           prediction: boolean
           question_id: string
           user_id: string
@@ -1451,6 +1453,8 @@ export type Database = {
           amount_meeet?: number | null
           created_at?: string | null
           id?: string
+          is_winner?: boolean | null
+          payout_meeet?: number | null
           prediction: boolean
           question_id: string
           user_id: string
@@ -1460,6 +1464,8 @@ export type Database = {
           amount_meeet?: number | null
           created_at?: string | null
           id?: string
+          is_winner?: boolean | null
+          payout_meeet?: number | null
           prediction?: boolean
           question_id?: string
           user_id?: string
