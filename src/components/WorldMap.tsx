@@ -148,6 +148,12 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       interactive,
     });
 
+    // Force initial resize passes to avoid blank map when container settles after mount
+    requestAnimationFrame(() => map.resize());
+    const delayedResize = window.setTimeout(() => {
+      if (mapRef.current === map) map.resize();
+    }, 200);
+
     // ResizeObserver to keep map in sync with container
     const resizeObserver = new ResizeObserver(() => {
       if (map && !(map as any)._removed) {
@@ -157,6 +163,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     resizeObserver.observe(container);
 
     map.on("load", () => {
+      map.resize();
       setMapLoaded(true);
 
       map.addSource("agents", {
@@ -390,7 +397,13 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }
 
     mapRef.current = map;
-    return () => { resizeObserver.disconnect(); map.remove(); mapRef.current = null; };
+    return () => {
+      window.clearTimeout(delayedResize);
+      resizeObserver.disconnect();
+      map.remove();
+      mapRef.current = null;
+      setMapLoaded(false);
+    };
   }, [interactive, onEventClick]);
 
   // Fetch data
@@ -504,8 +517,8 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   const filteredEventCount = events.filter(e => e.lat != null && eventFilters.has(e.event_type)).length;
 
   return (
-    <div className="relative w-full" style={{ height }}>
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="relative w-full h-full" style={{ height, minHeight: "320px" }}>
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
       {/* Gradient edges */}
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
