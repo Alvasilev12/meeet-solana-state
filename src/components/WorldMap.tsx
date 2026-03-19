@@ -8,6 +8,7 @@ import WorldMapLeftSidebar from "./world/WorldMapLeftSidebar";
 import WorldMapRightPanel from "./world/WorldMapRightPanel";
 import WorldMapFilterBar from "./world/WorldMapFilterBar";
 import WorldMapNotifications from "./world/WorldMapNotifications";
+import WorldMapEventFeed from "./world/WorldMapEventFeed";
 
 // ── Class colors per spec ──
 const CLASS_COLORS: Record<string, string> = {
@@ -138,39 +139,54 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
 // ── Marker CSS ──
 const MARKER_CSS = `
 @keyframes wm-glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px 3px var(--glow-color), 0 0 20px 6px var(--glow-color-dim); transform: scale(1); }
-  50% { box-shadow: 0 0 14px 5px var(--glow-color), 0 0 30px 10px var(--glow-color-dim); transform: scale(1.08); }
+  0%, 100% { box-shadow: 0 0 12px 4px var(--glow-color), 0 0 28px 8px var(--glow-color-dim); transform: scale(1); }
+  50% { box-shadow: 0 0 18px 6px var(--glow-color), 0 0 40px 14px var(--glow-color-dim); transform: scale(1.06); }
 }
 @keyframes wm-glow-pulse-strong {
-  0%, 100% { box-shadow: 0 0 12px 5px var(--glow-color), 0 0 30px 10px var(--glow-color-dim); transform: scale(1); }
-  50% { box-shadow: 0 0 20px 8px var(--glow-color), 0 0 40px 16px var(--glow-color-dim); transform: scale(1.06); }
+  0%, 100% { box-shadow: 0 0 16px 6px var(--glow-color), 0 0 40px 14px var(--glow-color-dim); transform: scale(1); }
+  50% { box-shadow: 0 0 26px 10px var(--glow-color), 0 0 56px 22px var(--glow-color-dim); transform: scale(1.05); }
+}
+@keyframes wm-outer-ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 .wm-agent-marker {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   cursor: pointer; z-index: 10; position: relative;
 }
 .wm-agent-circle {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 2px solid var(--border-color);
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2.5px solid var(--border-color);
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; background: rgba(8,12,20,0.8);
+  font-size: 22px; background: rgba(8,12,20,0.85);
   animation: wm-glow-pulse 3s ease-in-out infinite;
   transition: transform 0.2s;
+  position: relative;
 }
-.wm-agent-circle:hover { transform: scale(1.2) !important; z-index: 20; }
+.wm-agent-circle:hover { transform: scale(1.15) !important; z-index: 20; }
 .wm-agent-circle.wm-top {
-  width: 44px; height: 44px; font-size: 20px;
-  border-width: 2.5px;
+  width: 64px; height: 64px; font-size: 28px;
+  border-width: 3px;
   animation: wm-glow-pulse-strong 3s ease-in-out infinite;
 }
 .wm-agent-circle.wm-offline {
   animation: none;
+  opacity: 0.45;
+}
+.wm-outer-ring {
+  position: absolute; inset: -6px; border-radius: 50%;
+  border: 1.5px dashed var(--glow-color);
   opacity: 0.5;
+  animation: wm-outer-ring-spin 8s linear infinite;
+  pointer-events: none;
 }
 .wm-agent-name {
   font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
   color: #fff; white-space: nowrap; pointer-events: none;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
+  background: rgba(8,12,20,0.75);
+  padding: 1px 8px; border-radius: 10px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 .wm-warning-pulse {
   width: 16px; height: 16px; border-radius: 50%;
@@ -241,7 +257,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     return agents.filter(a => {
       if (!a.lat || !a.lng) return false;
       if (activeFilter === "all") return true;
-      if (activeFilter === "allies") return false; // TODO: alliance data
+      if (activeFilter === "allies") return false;
       return a.class === activeFilter;
     });
   }, [agents, activeFilter]);
@@ -251,6 +267,22 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     if (activeFilter === "all") return new Set<string>();
     return new Set(agents.filter(a => a.lat && a.lng && a.class !== activeFilter).map(a => a.id));
   }, [agents, activeFilter]);
+
+  // Dominant class per country for territory coloring
+  const countryClassColors = useMemo(() => {
+    const countryAgents: Record<string, Record<string, number>> = {};
+    agents.forEach(a => {
+      if (!a.nation_code) return;
+      if (!countryAgents[a.nation_code]) countryAgents[a.nation_code] = {};
+      countryAgents[a.nation_code][a.class] = (countryAgents[a.nation_code][a.class] || 0) + 1;
+    });
+    const result: Record<string, string> = {};
+    Object.entries(countryAgents).forEach(([code, classes]) => {
+      const dominant = Object.entries(classes).sort((a, b) => b[1] - a[1])[0];
+      if (dominant) result[code] = CLASS_COLORS[dominant[0]] || "#9945FF";
+    });
+    return result;
+  }, [agents]);
 
   const fetchAgents = useCallback(async () => {
     const { data } = await supabase
@@ -285,6 +317,35 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     mapRef.current = map;
     return () => { clearTimeout(delayResize); ro.disconnect(); map.remove(); mapRef.current = null; setMapLoaded(false); };
   }, [interactive]);
+
+  // Apply territory coloring when data changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    // Build a match expression for country fill colors
+    const entries = Object.entries(countryClassColors);
+    if (entries.length > 0) {
+      const matchExpr: any[] = ["match", ["get", "ADMIN"]];
+      entries.forEach(([code, color]) => {
+        matchExpr.push(code, color + "1A"); // 10% opacity hex
+      });
+      matchExpr.push("#0E1525"); // default
+
+      const borderMatch: any[] = ["match", ["get", "ADMIN"]];
+      entries.forEach(([code, color]) => {
+        borderMatch.push(code, color);
+      });
+      borderMatch.push("#1E2D4A"); // default
+
+      try {
+        map.setPaintProperty("country-fill", "fill-color", matchExpr);
+        map.setPaintProperty("country-borders-line", "line-color", borderMatch);
+      } catch {
+        // layers may not be ready
+      }
+    }
+  }, [countryClassColors, mapLoaded]);
 
   // Fetch data
   useEffect(() => {
@@ -328,6 +389,15 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       circle.style.setProperty("--glow-color", color);
       circle.style.setProperty("--glow-color-dim", color + "40");
       circle.textContent = CLASS_ICONS[agent.class] || "🤖";
+
+      // Outer spinning ring for top 10
+      if (isTop) {
+        const ring = document.createElement("div");
+        ring.className = "wm-outer-ring";
+        ring.style.setProperty("--glow-color", color);
+        circle.appendChild(ring);
+      }
+
       el.appendChild(circle);
 
       const name = document.createElement("div");
@@ -384,8 +454,42 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }));
   }, [events]);
 
+  // Activity feed data
+  const [activityFeed, setActivityFeed] = useState<Array<{ id: string; text: string; icon: string; time: string }>>([]);
+  useEffect(() => {
+    const fetchFeed = async () => {
+      const { data } = await supabase
+        .from("activity_feed")
+        .select("id, title, event_type, created_at, meeet_amount")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (data && data.length > 0) {
+        setActivityFeed(data.map(d => {
+          const icons: Record<string, string> = { duel: "⚔️", trade: "💰", quest: "📜", discovery: "💎", alliance: "🤝", deploy: "🚀", reward: "🏆" };
+          const ago = getTimeAgo(d.created_at);
+          return { id: d.id, text: d.title, icon: icons[d.event_type] || "🌍", time: ago };
+        }));
+      } else {
+        // Generate from agents for demo
+        setActivityFeed(agents.slice(0, 5).map((a, i) => {
+          const msgs = [
+            { icon: "⚔️", text: `${a.name} captured territory` },
+            { icon: "🤝", text: `${a.name} formed alliance` },
+            { icon: "💎", text: `+${Math.floor(Math.random() * 500)} $MEEET · ${a.name}` },
+            { icon: "🌍", text: `New agent joined: ${a.name}` },
+            { icon: "🏆", text: `${a.name} completed quest` },
+          ];
+          const m = msgs[i % msgs.length];
+          return { id: a.id + i, text: m.text, icon: m.icon, time: `${(i + 1) * 3}m ago` };
+        }));
+      }
+    };
+    if (agents.length > 0) fetchFeed();
+  }, [agents]);
+
   return (
     <div className="relative w-full h-full" style={{ height, minHeight: "320px" }}>
+      {/* Full-bleed map — no container/border */}
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
       {/* Canvas overlay */}
@@ -395,7 +499,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         mapRef={mapRef}
       />
 
-      {/* Top bar */}
+      {/* Top bar — floating glassmorphism */}
       <WorldMapTopBar
         agentCount={agents.length}
         myAgent={myAgent}
@@ -424,14 +528,23 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         classColors={CLASS_COLORS}
       />
 
+      {/* Live Event Feed — right side */}
+      <WorldMapEventFeed events={activityFeed} />
+
       {/* Floating notifications */}
       <WorldMapNotifications agents={agents} />
-
-      {/* Edge fades */}
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#080C14] to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#080C14]/80 to-transparent pointer-events-none" />
     </div>
   );
 };
+
+function getTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default WorldMap;
