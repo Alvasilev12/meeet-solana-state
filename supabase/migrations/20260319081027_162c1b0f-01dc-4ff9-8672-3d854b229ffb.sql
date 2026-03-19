@@ -1,0 +1,1 @@
+ALTER TABLE public.guilds ADD COLUMN IF NOT EXISTS flag_emoji text DEFAULT '🏛️';

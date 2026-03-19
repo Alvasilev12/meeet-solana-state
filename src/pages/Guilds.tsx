@@ -26,7 +26,7 @@ const Guilds = () => {
       const { data } = await supabase
         .from("guilds")
         .select("*")
-        .order("total_meeet_earned", { ascending: false })
+        .order("total_earnings", { ascending: false })
         .limit(20);
       return data ?? [];
     },
@@ -40,7 +40,8 @@ const Guilds = () => {
         name: guildName.trim(),
         description: guildDesc.trim() || null,
         master_id: user?.id,
-      });
+        flag_emoji: "🏛️",
+      } as any);
       if (error) throw error;
       toast({ title: "Guild created!", description: `${guildName} is now live.` });
       setShowCreateModal(false);

@@ -1125,6 +1125,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          flag_emoji: string | null
           id: string
           logo_url: string | null
           master_id: string
@@ -1138,6 +1139,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          flag_emoji?: string | null
           id?: string
           logo_url?: string | null
           master_id: string
@@ -1151,6 +1153,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          flag_emoji?: string | null
           id?: string
           logo_url?: string | null
           master_id?: string

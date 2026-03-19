@@ -28,6 +28,8 @@ const Navbar = () => {
   ];
 
   const MORE_LINKS = [
+    { href: "/oracle/consensus", label: "🧠 Consensus" },
+    { href: "/guilds", label: "🛡️ Guilds" },
     { href: "/discoveries", label: t("nav.discoveries") },
     { href: "/arena", label: t("nav.arena") },
     { href: "/parliament", label: t("nav.parliament") },
