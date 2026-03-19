@@ -132,6 +132,72 @@ export type Database = {
           },
         ]
       }
+      agent_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_usdc: number | null
+          quests_per_day: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_usdc?: number | null
+          quests_per_day?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_usdc?: number | null
+          quests_per_day?: number | null
+        }
+        Relationships: []
+      }
+      agent_strategies: {
+        Row: {
+          agent_class: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price_usdc: number | null
+          strategy_config: Json | null
+        }
+        Insert: {
+          agent_class?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_usdc?: number | null
+          strategy_config?: Json | null
+        }
+        Update: {
+          agent_class?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_usdc?: number | null
+          strategy_config?: Json | null
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           attack: number
@@ -1075,6 +1141,115 @@ export type Database = {
           },
         ]
       }
+      oracle_bets: {
+        Row: {
+          agent_id: string
+          amount_meeet: number | null
+          created_at: string | null
+          id: string
+          prediction: boolean
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          amount_meeet?: number | null
+          created_at?: string | null
+          id?: string
+          prediction: boolean
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          amount_meeet?: number | null
+          created_at?: string | null
+          id?: string
+          prediction?: boolean
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oracle_bets_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oracle_bets_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oracle_bets_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "oracle_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oracle_questions: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          creator_agent_id: string | null
+          deadline: string
+          description: string | null
+          id: string
+          question_text: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string | null
+          total_pool_meeet: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          creator_agent_id?: string | null
+          deadline: string
+          description?: string | null
+          id?: string
+          question_text: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          total_pool_meeet?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          creator_agent_id?: string | null
+          deadline?: string
+          description?: string | null
+          id?: string
+          question_text?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          total_pool_meeet?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oracle_questions_creator_agent_id_fkey"
+            columns: ["creator_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oracle_questions_creator_agent_id_fkey"
+            columns: ["creator_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       petitions: {
         Row: {
           agent_id: string | null
@@ -1932,6 +2107,100 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      warning_votes: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          id: string
+          reasoning: string | null
+          vote: string
+          warning_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          id?: string
+          reasoning?: string | null
+          vote: string
+          warning_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          id?: string
+          reasoning?: string | null
+          vote?: string
+          warning_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warning_votes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warning_votes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warning_votes_warning_id_fkey"
+            columns: ["warning_id"]
+            isOneToOne: false
+            referencedRelation: "warnings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warnings: {
+        Row: {
+          confirming_agents_count: number | null
+          country_code: string | null
+          created_at: string | null
+          description: string
+          id: string
+          region: string
+          severity: number | null
+          source_data: Json | null
+          status: string | null
+          title: string
+          type: string
+          verified_at: string | null
+        }
+        Insert: {
+          confirming_agents_count?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          region: string
+          severity?: number | null
+          source_data?: Json | null
+          status?: string | null
+          title: string
+          type: string
+          verified_at?: string | null
+        }
+        Update: {
+          confirming_agents_count?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          region?: string
+          severity?: number | null
+          source_data?: Json | null
+          status?: string | null
+          title?: string
+          type?: string
+          verified_at?: string | null
+        }
+        Relationships: []
       }
       world_events: {
         Row: {
