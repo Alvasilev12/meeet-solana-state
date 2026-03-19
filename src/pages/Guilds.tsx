@@ -39,7 +39,7 @@ const Guilds = () => {
       const { error } = await supabase.from("guilds").insert({
         name: guildName.trim(),
         description: guildDesc.trim() || null,
-        leader_user_id: user?.id,
+        master_id: user?.id,
       });
       if (error) throw error;
       toast({ title: "Guild created!", description: `${guildName} is now live.` });
