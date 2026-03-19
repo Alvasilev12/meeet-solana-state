@@ -137,34 +137,29 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    // Ensure container has dimensions before init
     const container = mapContainer.current;
-    if (container.clientWidth === 0 || container.clientHeight === 0) {
-      const raf = requestAnimationFrame(() => {
-        if (mapContainer.current && !mapRef.current) {
-          // Re-trigger effect
-          setMapLoaded(prev => prev);
+
+    const initMap = () => {
+      if (mapRef.current) return;
+
+      const map = new maplibregl.Map({
+        container,
+        style: DARK_STYLE,
+        center: [0, 20],
+        zoom: 2,
+        maxZoom: 16,
+        interactive,
+      });
+
+      // ResizeObserver to keep map in sync with container
+      const resizeObserver = new ResizeObserver(() => {
+        if (map && !(map as any)._removed) {
+          map.resize();
         }
       });
-      return () => cancelAnimationFrame(raf);
-    }
+      resizeObserver.observe(container);
 
-    const map = new maplibregl.Map({
-      container,
-      style: DARK_STYLE,
-      center: [0, 20],
-      zoom: 2,
-      maxZoom: 16,
-      interactive,
-    });
-
-    // ResizeObserver to keep map in sync with container
-    const resizeObserver = new ResizeObserver(() => {
-      if (map && !map._removed) {
-        map.resize();
-      }
-    });
-    resizeObserver.observe(container);
+      (map as any)._resizeObserver = resizeObserver;
 
     map.on("load", () => {
       setMapLoaded(true);
