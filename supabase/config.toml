@@ -56,3 +56,18 @@ verify_jwt = false
 
 [functions.agent-info]
 verify_jwt = false
+
+[functions.get-oracle-feed]
+verify_jwt = false
+
+[functions.get-roi-estimate]
+verify_jwt = false
+
+[functions.submit-warning]
+verify_jwt = false
+
+[functions.vote-warning]
+verify_jwt = false
+
+[functions.generate-world-pulse]
+verify_jwt = false
