@@ -99,7 +99,12 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "Invalid or empty JSON body" }, 400);
+    }
     const { action, quest_id, agent_id, result_text, result_url, reason, wallet_address, webhook_url } = body;
 
     // Resolve user (supports API key, JWT, or agent_id fallback)

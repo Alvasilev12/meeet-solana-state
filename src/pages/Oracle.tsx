@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Flame, Clock, TrendingUp, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
+import AnimatedSection from "@/components/AnimatedSection";
 
 interface OracleQuestion {
   id: string;
@@ -119,52 +120,45 @@ const Oracle = () => {
 
         {!loading && questions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {questions.map((q) => (
-              <Card key={q.id} className="bg-card/60 border-purple-500/20 hover:border-purple-500/40 transition-all">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-foreground leading-relaxed">
-                    {q.question_text}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded">
-                      {q.resolution_source}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-sm">
-                      <Flame className="w-4 h-4 text-orange-400" />
-                      <span className="font-bold text-orange-400">{formatMeeet(q.total_pool_meeet || 0)}</span>
-                      <span className="text-muted-foreground text-xs">MEEET pool</span>
+            {questions.map((q, idx) => (
+              <AnimatedSection key={q.id} delay={idx * 100} animation="fade-up">
+                <Card className="bg-card/60 border-purple-500/20 hover:border-purple-500/40 transition-all">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-foreground leading-relaxed">
+                      {q.question_text}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded">
+                        {q.resolution_source}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>{deadlineCountdown(q.deadline)}</span>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-sm">
+                        <Flame className="w-4 h-4 text-orange-400" />
+                        <span className="font-bold text-orange-400">{formatMeeet(q.total_pool_meeet || 0)}</span>
+                        <span className="text-muted-foreground text-xs">MEEET pool</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>{deadlineCountdown(q.deadline)}</span>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      size="sm"
-                      disabled={!user}
-                    >
-                      ✅ YES
-                    </Button>
-                    <Button
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                      size="sm"
-                      disabled={!user}
-                    >
-                      ❌ NO
-                    </Button>
-                  </div>
-                  {!user && (
-                    <p className="text-[10px] text-muted-foreground text-center">Sign in to place bets</p>
-                  )}
-                </CardContent>
-              </Card>
+                    <div className="flex gap-2">
+                      <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" size="sm" disabled={!user}>
+                        ✅ YES
+                      </Button>
+                      <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" size="sm" disabled={!user}>
+                        ❌ NO
+                      </Button>
+                    </div>
+                    {!user && (
+                      <p className="text-[10px] text-muted-foreground text-center">Sign in to place bets</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </AnimatedSection>
             ))}
           </div>
         )}

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Lock, ArrowRight } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import AnimatedSection from "@/components/AnimatedSection";
 
 const TokenSection = () => {
   const { t } = useLanguage();
@@ -18,6 +19,7 @@ const TokenSection = () => {
   return (
     <section className="py-24 relative">
       <div className="container max-w-5xl px-4">
+        <AnimatedSection animation="fade-up">
         <div className="glass-card p-8 sm:p-12 relative overflow-hidden">
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -82,6 +84,7 @@ const TokenSection = () => {
             </div>
           </div>
         </div>
+        </AnimatedSection>
       </div>
     </section>
   );

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
+import AnimatedSection from "@/components/AnimatedSection";
 
 interface Warning {
   id: string;
@@ -137,38 +138,37 @@ const Warnings = () => {
         {/* Grid */}
         {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filtered.map((w) => (
-              <Card
-                key={w.id}
-                className="bg-card/60 border-red-500/20 hover:border-red-500/40 transition-all"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="text-2xl">{TYPE_ICONS[w.type] || "⚠️"}</span>
-                      <div>
-                        <CardTitle className="text-sm font-semibold leading-tight">{w.title}</CardTitle>
-                        <p className="text-xs text-muted-foreground mt-0.5">📍 {w.region}</p>
+            {filtered.map((w, idx) => (
+              <AnimatedSection key={w.id} delay={idx * 80} animation="fade-up">
+                <Card className="bg-card/60 border-red-500/20 hover:border-red-500/40 transition-all">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-2xl">{TYPE_ICONS[w.type] || "⚠️"}</span>
+                        <div>
+                          <CardTitle className="text-sm font-semibold leading-tight">{w.title}</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">📍 {w.region}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 items-end shrink-0">
+                        <Badge className={`text-xs border ${severityColor(w.severity)}`}>
+                          Severity {w.severity}/5
+                        </Badge>
+                        <Badge className={`text-xs border ${statusStyle(w.status)}`}>
+                          {w.status}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1 items-end shrink-0">
-                      <Badge className={`text-xs border ${severityColor(w.severity)}`}>
-                        Severity {w.severity}/5
-                      </Badge>
-                      <Badge className={`text-xs border ${statusStyle(w.status)}`}>
-                        {w.status}
-                      </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{w.description}</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>🤖 {w.confirming_agents_count} agents confirming</span>
+                      <span>{timeAgo(w.created_at)}</span>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{w.description}</p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>🤖 {w.confirming_agents_count} agents confirming</span>
-                    <span>{timeAgo(w.created_at)}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </AnimatedSection>
             ))}
           </div>
         )}
