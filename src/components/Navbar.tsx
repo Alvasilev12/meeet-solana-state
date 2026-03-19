@@ -37,6 +37,21 @@ const Navbar = () => {
 
   const ALL_LINKS = [...NAV_LINKS, ...MORE_LINKS];
 
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) setOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications", user?.id],
     queryFn: async () => {
@@ -84,7 +99,8 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-6">
+      <div className="container max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <span className="text-xl font-display font-bold tracking-tight">
             <span className="text-gradient-primary">MEEET</span>
@@ -92,7 +108,8 @@ const Navbar = () => {
           <span className="text-xs text-muted-foreground font-body hidden sm:inline whitespace-nowrap">Solana State</span>
         </Link>
 
-        <div className="hidden lg:flex items-center gap-5 font-body text-sm text-muted-foreground whitespace-nowrap">
+        {/* Desktop nav — hidden below md */}
+        <div className="hidden md:flex items-center gap-4 font-body text-sm text-muted-foreground whitespace-nowrap overflow-x-auto">
           {NAV_LINKS.map((l) => (
             <Link key={l.href} to={l.href} className="hover:text-foreground transition-colors duration-150">
               {l.label}
@@ -119,9 +136,11 @@ const Navbar = () => {
           </Popover>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right side: always visible */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <LanguageSwitcher />
 
+          {/* Notifications bell */}
           {user && (
             <Popover>
               <PopoverTrigger asChild>
@@ -176,17 +195,18 @@ const Navbar = () => {
             </Popover>
           )}
 
+          {/* Desktop auth buttons */}
           {user ? (
             <>
               <Link
                 to="/dashboard"
-                className="hidden lg:block px-4 py-2 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
+                className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
               >
                 {t("nav.dashboard")}
               </Link>
               <button
                 onClick={signOut}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-sm font-display text-muted-foreground hover:text-foreground transition-colors duration-150"
+                className="hidden md:flex items-center gap-1.5 p-2 text-muted-foreground hover:text-foreground transition-colors duration-150"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -194,13 +214,15 @@ const Navbar = () => {
           ) : (
             <Link
               to="/auth"
-              className="hidden lg:block px-4 py-2 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
+              className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
             >
               {t("nav.signIn")}
             </Link>
           )}
+
+          {/* Hamburger — visible below md */}
           <button
-            className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
@@ -209,44 +231,48 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Mobile fullscreen menu */}
       {open && (
-        <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl animate-fade-up">
-          <div className="container max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3">
+        <div className="md:hidden fixed inset-x-0 top-14 bottom-0 bg-background/95 backdrop-blur-xl z-40 overflow-y-auto animate-fade-up">
+          <div className="container max-w-lg mx-auto px-4 py-4 flex flex-col gap-1">
             {ALL_LINKS.map((l) => (
               <Link
                 key={l.href}
                 to={l.href}
                 onClick={() => setOpen(false)}
-                className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-border last:border-0"
+                className="font-body text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors py-3 px-3 rounded-lg"
               >
                 {l.label}
               </Link>
             ))}
-            {user ? (
-              <>
+
+            <div className="border-t border-border mt-3 pt-3 flex flex-col gap-2">
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className="w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
+                  >
+                    {t("nav.dashboard")}
+                  </Link>
+                  <button
+                    onClick={() => { signOut(); setOpen(false); }}
+                    className="w-full px-4 py-2.5 text-sm font-display font-semibold border border-border text-muted-foreground rounded-lg hover:text-foreground transition-colors duration-150"
+                  >
+                    {t("nav.signOut")}
+                  </button>
+                </>
+              ) : (
                 <Link
-                  to="/dashboard"
+                  to="/auth"
                   onClick={() => setOpen(false)}
-                  className="mt-2 w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
+                  className="w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
                 >
-                  {t("nav.dashboard")}
+                  {t("nav.signIn")}
                 </Link>
-                <button
-                  onClick={() => { signOut(); setOpen(false); }}
-                  className="w-full px-4 py-2.5 text-sm font-display font-semibold border border-border text-muted-foreground rounded-lg hover:text-foreground transition-colors duration-150"
-                >
-                  {t("nav.signOut")}
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/auth"
-                onClick={() => setOpen(false)}
-                className="mt-2 w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
-              >
-                {t("nav.signIn")}
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
