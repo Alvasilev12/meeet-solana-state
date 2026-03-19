@@ -314,8 +314,9 @@ Deno.serve(async (req) => {
         }
       }
     }
+    } // end else (articles.length > 0)
 
-    // Backfill: update existing events with null coords
+    // Backfill: update existing events with null coords (always runs)
     let backfilled = 0;
     const { data: nullEvents } = await supabase
       .from("world_events")
