@@ -27,10 +27,10 @@ const TREASURY_SOL = "4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e";
 const TOKEN_MEEET = "EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump";
 
 const SOL_PRICES: Record<string, number> = {
-  Scout: 0.19,
-  Warrior: 0.49,
-  Commander: 1.49,
-  Nation: 4.99,
+  Scout: 0.19, Warrior: 0.49, Commander: 1.49, Nation: 4.99,
+};
+const MEEET_PRICES: Record<string, number> = {
+  Scout: 3800, Warrior: 8800, Commander: 25600, Nation: 80000,
 };
 
 const PLAN_COLORS: Record<string, string> = {
