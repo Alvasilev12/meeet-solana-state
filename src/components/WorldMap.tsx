@@ -397,7 +397,13 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }
 
     mapRef.current = map;
-    return () => { resizeObserver.disconnect(); map.remove(); mapRef.current = null; };
+    return () => {
+      window.clearTimeout(delayedResize);
+      resizeObserver.disconnect();
+      map.remove();
+      mapRef.current = null;
+      setMapLoaded(false);
+    };
   }, [interactive, onEventClick]);
 
   // Fetch data
