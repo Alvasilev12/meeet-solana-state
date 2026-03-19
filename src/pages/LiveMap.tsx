@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Moon, Sun, Search, Crosshair, FastForward, Play, Pause, Activity, Globe } from "lucide-react";
+import { ArrowLeft, X, ZoomIn, ZoomOut, Eye, Moon, Sun, Search, Crosshair, FastForward, Play, Pause, Activity, Globe, Cloud, CloudRain, CloudLightning } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import LiveStatsBanner from "@/components/LiveStatsBanner";
 
@@ -23,6 +23,8 @@ interface Ripple { x: number; y: number; radius: number; maxRadius: number; colo
 interface DataStream { x1: number; y1: number; x2: number; y2: number; color: string; progress: number; speed: number; }
 interface Road { x1: number; y1: number; x2: number; y2: number; }
 interface GameEvent { id: number; text: string; time: string; color: string; }
+interface Star { x: number; y: number; size: number; twinkleSpeed: number; phase: number; brightness: number; }
+interface AgentTrail { x: number; y: number; age: number; color: string; }
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
@@ -208,6 +210,9 @@ const LiveMap = () => {
   const [showFps, setShowFps] = useState(false);
   const [followAgent, setFollowAgent] = useState<number | null>(null);
   const [tickerEvents, setTickerEvents] = useState<string[]>([]);
+  const [weather, setWeather] = useState<'clear' | 'rain' | 'storm'>('clear');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const agentsRef = useRef<Agent[]>([]);
   const terrainRef = useRef<number[][]>(generateTerrain());
@@ -228,6 +233,26 @@ const LiveMap = () => {
   const simSpeedRef = useRef<number>(1);
   const terrainCacheRef = useRef<{ canvas: HTMLCanvasElement; camX: number; camY: number; zoom: number; nf: number; w: number; h: number } | null>(null);
   const fogPatchesRef = useRef<{ x: number; y: number; r: number; vx: number; vy: number; alpha: number }[]>([]);
+  const starsRef = useRef<Star[]>([]);
+  const trailsRef = useRef<AgentTrail[]>([]);
+  const weatherRef = useRef<'clear' | 'rain' | 'storm'>('clear');
+  const weatherTimerRef = useRef(0);
+
+  // Init stars
+  useEffect(() => {
+    const stars: Star[] = [];
+    for (let i = 0; i < 200; i++) {
+      stars.push({
+        x: Math.random() * MAP_W * TILE,
+        y: Math.random() * MAP_H * TILE,
+        size: 0.5 + Math.random() * 1.5,
+        twinkleSpeed: 0.002 + Math.random() * 0.004,
+        phase: Math.random() * Math.PI * 2,
+        brightness: 0.3 + Math.random() * 0.7,
+      });
+    }
+    starsRef.current = stars;
+  }, []);
 
   // Init fog patches
   useEffect(() => {
@@ -466,6 +491,29 @@ const LiveMap = () => {
 
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
+      // ─── STARS (night only) ────────────────────────────────
+      if (nf > 0.3) {
+        const stars = starsRef.current;
+        stars.forEach(s => {
+          const sx = (s.x - cam.x) * z, sy = (s.y - cam.y) * z;
+          if (sx < -5 || sx > w + 5 || sy < -5 || sy > h + 5) return;
+          const twinkle = 0.3 + Math.sin(t * s.twinkleSpeed + s.phase) * 0.4;
+          const alpha = (nf - 0.3) * 1.4 * twinkle * s.brightness;
+          if (alpha < 0.05) return;
+          const sr = s.size * z * 0.6;
+          ctx.fillStyle = `rgba(200,220,255,${Math.min(alpha, 0.7)})`;
+          ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+          // Cross sparkle for bright stars
+          if (s.brightness > 0.7 && sr > 0.5) {
+            ctx.strokeStyle = `rgba(200,220,255,${alpha * 0.3})`;
+            ctx.lineWidth = 0.5;
+            const len = sr * 3;
+            ctx.beginPath(); ctx.moveTo(sx - len, sy); ctx.lineTo(sx + len, sy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx, sy - len); ctx.lineTo(sx, sy + len); ctx.stroke();
+          }
+        });
+      }
+
       // ─── FOG PATCHES ──────────────────────────────────────
       const fogs = fogPatchesRef.current;
       fogs.forEach(f => {
@@ -483,6 +531,23 @@ const LiveMap = () => {
           ctx.beginPath(); ctx.arc(sx, sy, fr, 0, Math.PI * 2); ctx.fill();
         }
       });
+
+      // ─── WEATHER CYCLING ──────────────────────────────────
+      weatherTimerRef.current -= 1;
+      if (weatherTimerRef.current <= 0) {
+        const r = Math.random();
+        if (r < 0.6) weatherRef.current = 'clear';
+        else if (r < 0.85) weatherRef.current = 'rain';
+        else weatherRef.current = 'storm';
+        weatherTimerRef.current = 600 + Math.random() * 1200;
+        setWeather(weatherRef.current);
+      }
+
+      // Storm lightning flash
+      if (weatherRef.current === 'storm' && Math.random() < 0.003) {
+        ctx.fillStyle = 'rgba(200,220,255,0.06)';
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // ─── ROADS — data stream style ────────────────────────
       roads.forEach(r => {
@@ -632,15 +697,29 @@ const LiveMap = () => {
       // ─── PARTICLES ────────────────────────────────────────
       const particles = particlesRef.current;
 
-      // Rain particles
-      if (Math.random() < 0.15) {
-        for (let i = 0; i < 3; i++) {
+      // Rain particles — weather-aware
+      const isRaining = weatherRef.current === 'rain' || weatherRef.current === 'storm';
+      const rainIntensity = weatherRef.current === 'storm' ? 0.6 : weatherRef.current === 'rain' ? 0.3 : 0;
+      if (isRaining && Math.random() < rainIntensity) {
+        const count = weatherRef.current === 'storm' ? 8 : 3;
+        for (let i = 0; i < count; i++) {
           particles.push({
             x: cam.x + Math.random() * w / z, y: cam.y - 10,
-            vx: -0.2, vy: 3 + Math.random() * 2, life: 60, maxLife: 60,
-            color: "#4488aa", size: 1, type: "rain",
+            vx: weatherRef.current === 'storm' ? -0.8 : -0.2,
+            vy: weatherRef.current === 'storm' ? 5 + Math.random() * 3 : 3 + Math.random() * 2,
+            life: 60, maxLife: 60, color: "#4488aa", size: 1, type: "rain",
           });
         }
+      }
+
+      // Fireflies at night
+      if (nf > 0.4 && Math.random() < 0.05) {
+        particles.push({
+          x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z,
+          vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+          life: 120 + Math.random() * 100, maxLife: 220,
+          color: "#88ff44", size: 1.5, type: "firefly",
+        });
       }
 
       // Mining particles from miner agents
@@ -664,9 +743,24 @@ const LiveMap = () => {
         if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) continue;
         const alpha = p.life / p.maxLife;
         if (p.type === "rain") {
-          ctx.strokeStyle = `rgba(100,160,200,${alpha * 0.2})`;
-          ctx.lineWidth = 0.5;
-          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - z, sy + 5 * z); ctx.stroke();
+          ctx.strokeStyle = `rgba(100,160,200,${alpha * (weatherRef.current === 'storm' ? 0.35 : 0.2)})`;
+          ctx.lineWidth = weatherRef.current === 'storm' ? 0.8 : 0.5;
+          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - z * 0.5, sy + 6 * z); ctx.stroke();
+        } else if (p.type === "firefly") {
+          // Fireflies with soft pulsing glow
+          p.vx += (Math.random() - 0.5) * 0.05;
+          p.vy += (Math.random() - 0.5) * 0.05;
+          p.vx *= 0.98; p.vy *= 0.98;
+          const pulse = 0.4 + Math.sin(t * 0.008 + p.x * 0.01) * 0.4;
+          const gr = 8 * z;
+          const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, gr);
+          glow.addColorStop(0, `rgba(136,255,68,${alpha * pulse * 0.6})`);
+          glow.addColorStop(0.5, `rgba(136,255,68,${alpha * pulse * 0.1})`);
+          glow.addColorStop(1, "transparent");
+          ctx.fillStyle = glow;
+          ctx.beginPath(); ctx.arc(sx, sy, gr, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(200,255,150,${alpha * pulse})`;
+          ctx.beginPath(); ctx.arc(sx, sy, 1 * z, 0, Math.PI * 2); ctx.fill();
         } else if (p.type === "mine") {
           ctx.fillStyle = p.color + Math.floor(alpha * 150).toString(16).padStart(2, "0");
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
@@ -675,7 +769,32 @@ const LiveMap = () => {
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
         }
       }
-      if (particles.length > 600) particles.splice(0, particles.length - 600);
+      if (particles.length > 800) particles.splice(0, particles.length - 800);
+
+      // ─── AGENT TRAILS ─────────────────────────────────────
+      const trails = trailsRef.current;
+      // Age and cull old trails
+      for (let i = trails.length - 1; i >= 0; i--) {
+        trails[i].age++;
+        if (trails[i].age > 60) trails.splice(i, 1);
+      }
+      // Add new trail points for moving agents
+      if (z > 0.4) {
+        agents.forEach(a => {
+          if ((a.state === "move" || a.state === "visiting") && Math.random() < 0.3) {
+            trails.push({ x: a.x, y: a.y, age: 0, color: a.color });
+          }
+        });
+      }
+      // Draw trails
+      trails.forEach(tr => {
+        const sx = (tr.x - cam.x) * z, sy = (tr.y - cam.y) * z;
+        if (sx < -5 || sx > w + 5 || sy < -5 || sy > h + 5) return;
+        const alpha = (1 - tr.age / 60) * 0.15;
+        ctx.fillStyle = tr.color + Math.floor(alpha * 255).toString(16).padStart(2, "0");
+        ctx.beginPath(); ctx.arc(sx, sy, 1.5 * z, 0, Math.PI * 2); ctx.fill();
+      });
+      if (trails.length > 500) trails.splice(0, trails.length - 500);
 
       // ─── AGENTS — glowing orbs ────────────────────────────
       agents.forEach(a => {
@@ -1008,7 +1127,40 @@ const LiveMap = () => {
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300/70" /> : <Sun className="w-3 h-3 text-amber-400/70" />}
           <span className="text-[9px] font-mono text-white/40">{timeLabel}</span>
         </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          {weather === 'storm' ? <CloudLightning className="w-3 h-3 text-yellow-400/70" /> : weather === 'rain' ? <CloudRain className="w-3 h-3 text-blue-300/70" /> : <Cloud className="w-3 h-3 text-white/30" />}
+          <span className="text-[9px] font-mono text-white/40 capitalize">{weather}</span>
+        </div>
+        <button onClick={() => setShowSearch(!showSearch)} className="bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5">
+          <Search className="w-3.5 h-3.5 text-white/50" />
+        </button>
       </div>
+
+      {/* ═══ Search Panel ═══ */}
+      {showSearch && (
+        <div className="absolute top-[4.5rem] left-3 z-20 w-64 bg-black/70 backdrop-blur border border-white/[0.06] rounded-lg p-2 animate-fade-in">
+          <input
+            type="text" autoFocus placeholder="Search agent..."
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            className="w-full bg-white/5 border border-white/[0.08] rounded px-3 py-1.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 outline-none focus:border-primary/40"
+          />
+          {searchQuery.length >= 2 && (
+            <div className="mt-1 max-h-32 overflow-y-auto space-y-0.5 scrollbar-hide">
+              {agentsRef.current.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8).map(a => (
+                <button key={a.id} onClick={() => {
+                  followRef.current = a.id; setFollowAgent(a.id); setSelectedAgent({ ...a });
+                  setShowSearch(false); setSearchQuery("");
+                  addEvent(`Tracking ${a.name}`, a.color);
+                }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 text-left">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                  <span className="text-[10px] font-mono text-white/70">{a.name}</span>
+                  <span className="text-[8px] font-mono text-white/25 ml-auto capitalize">{a.cls}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ═══ Zoom + Speed — Left ═══ */}
       <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5">
