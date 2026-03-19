@@ -96,17 +96,25 @@ const PULSE_CSS = `
   border-radius: 50%; border: 2px solid #ef4444;
   animation: wm-pulse 2s ease-in-out infinite;
 }
-.wm-agent-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.6);
-  cursor: pointer; transition: transform 0.15s;
-  box-shadow: 0 0 6px 1px currentColor;
+@keyframes wm-agent-breathe {
+  0%, 100% { box-shadow: 0 0 6px 2px currentColor, 0 0 12px 4px currentColor; transform: scale(1); }
+  50% { box-shadow: 0 0 10px 4px currentColor, 0 0 20px 8px currentColor; transform: scale(1.15); }
 }
-.wm-agent-dot:hover { transform: scale(1.5); }
+.wm-agent-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.8);
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 0 8px 2px currentColor, 0 0 16px 4px currentColor;
+  animation: wm-agent-breathe 3s ease-in-out infinite;
+  z-index: 10;
+}
+.wm-agent-dot:hover { transform: scale(1.6); z-index: 20; }
 .wm-agent-dot.wm-followed {
-  width: 14px; height: 14px;
-  box-shadow: 0 0 12px 4px currentColor;
+  width: 18px; height: 18px;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 16px 6px currentColor, 0 0 30px 12px currentColor;
   animation: wm-pulse 1.5s ease-in-out infinite;
+  z-index: 30;
 }
 .maplibregl-popup-content {
   background: #0d0d1a !important; border: 1px solid rgba(148,69,255,0.3) !important;
