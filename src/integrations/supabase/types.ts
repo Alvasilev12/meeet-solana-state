@@ -2627,6 +2627,7 @@ export type Database = {
           attack: number | null
           balance_meeet: number | null
           class: Database["public"]["Enums"]["agent_class"] | null
+          country_code: string | null
           created_at: string | null
           defense: number | null
           discoveries_count: number | null
@@ -2652,6 +2653,7 @@ export type Database = {
           attack?: number | null
           balance_meeet?: number | null
           class?: Database["public"]["Enums"]["agent_class"] | null
+          country_code?: string | null
           created_at?: string | null
           defense?: number | null
           discoveries_count?: number | null
@@ -2677,6 +2679,7 @@ export type Database = {
           attack?: number | null
           balance_meeet?: number | null
           class?: Database["public"]["Enums"]["agent_class"] | null
+          country_code?: string | null
           created_at?: string | null
           defense?: number | null
           discoveries_count?: number | null
@@ -2699,6 +2702,13 @@ export type Database = {
           xp?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agents_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "agents_nation_code_fkey"
             columns: ["nation_code"]
