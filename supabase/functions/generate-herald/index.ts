@@ -15,10 +15,11 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("Neither OPENAI_API_KEY nor LOVABLE_API_KEY is configured");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -85,8 +86,12 @@ serve(async (req) => {
 
     const presidentName = presidentProfile?.display_name || presidentProfile?.username || "The President";
 
-    // ─── Fetch real-world events ─────────────────────────────────
-    const [{ data: worldEvents }, { count: oracleCount }, { count: warningsCount }] = await Promise.all([
+    // ─── Fetch last 5 world_events, oracle markets, warnings ─────
+    const [
+      { data: worldEvents },
+      { count: oracleCount, data: oracleData },
+      { count: warningsCount },
+    ] = await Promise.all([
       supabase
         .from("world_events")
         .select("title, description, event_type, country_code, severity, created_at")
@@ -94,8 +99,10 @@ serve(async (req) => {
         .limit(5),
       supabase
         .from("oracle_questions")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "open"),
+        .select("question_text", { count: "exact" })
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(1),
       supabase
         .from("warnings")
         .select("*", { count: "exact", head: true })
@@ -103,13 +110,17 @@ serve(async (req) => {
     ]);
 
     const activeMarkets = oracleCount ?? 0;
+    const latestQuestion = oracleData?.[0]?.question_text ?? null;
     const earlyWarnings = warningsCount ?? 0;
 
-    const worldEventsContext = (worldEvents || []).map((e: any, i: number) => 
-      `${i + 1}. [${e.event_type?.toUpperCase()}] "${e.title}" — ${e.description || 'No details'} (region: ${e.country_code || 'global'}, severity: ${e.severity || '?'}/5)`
-    ).join("\n");
+    const worldEventsContext = (worldEvents || []).length > 0
+      ? (worldEvents || []).map((e: any, i: number) =>
+          `${i + 1}. [${e.event_type?.toUpperCase()}] "${e.title}" — ${e.description || "No details"} (region: ${e.country_code || "global"}, severity: ${e.severity || "?"}/5)`
+        ).join("\n")
+      : "No major world events reported.";
 
     // ─── Build AI prompt ─────────────────────────────────────────
+    const dateStr = today.toISOString().split("T")[0];
     const dailyStats = {
       quests_completed: questsCompleted ?? 0,
       quests_created: questsCreated ?? 0,
@@ -119,9 +130,11 @@ serve(async (req) => {
       meeet_burned: meeetBurned,
     };
 
-    const prompt = `You are the AI editor of "THE MEEET HERALD", the official daily newspaper of MEEET State — a fictional AI-powered nation-state on Solana blockchain. Write today's edition.
+    const prompt = `Generate MEEET STATE Herald for ${dateStr}.
 
-CONTEXT (real game data from last 24h):
+You are the AI editor of "THE MEEET HERALD", the official daily newspaper of MEEET State — a fictional AI-powered nation-state on Solana blockchain.
+
+MEEET STATE ACTIVITY (last 24h):
 - Quests completed: ${dailyStats.quests_completed}
 - New quests posted: ${dailyStats.quests_created}
 - Duels fought: ${dailyStats.duels}
@@ -132,19 +145,15 @@ CONTEXT (real game data from last 24h):
 - Recent laws proposed: ${JSON.stringify(recentLaws || [])}
 - Current President: ${presidentName}
 
-RECENT WORLD EVENTS (from MEEET State intelligence network — reference these prominently!):
-${worldEventsContext || "No major world events reported. Focus on internal state affairs."}
+Real world events happening now (from MEEET State intelligence network):
+${worldEventsContext}
 
-MEEET STATE INTELLIGENCE OVERVIEW:
-- ${activeMarkets} active prediction markets on the Oracle
-- ${earlyWarnings} early warnings flagged by agents
+Active prediction markets: ${activeMarkets}${latestQuestion ? ` including "${latestQuestion}"` : ""}
+Active early warnings: ${earlyWarnings}
 
-INSTRUCTIONS:
-1. Write an engaging, dramatic headline (max 80 chars) — MUST reference a real world event above if available
-2. Write a "main_event" one-liner (max 100 chars) — the breaking news summary tied to actual events
-3. Write a body article (150-250 words) — dramatic, immersive. Weave real world events into the MEEET State narrative. Show how these global events impact MEEET citizens, agents, and the economy. If no world events, write about internal developments.
-4. Write a presidential quote (1-2 sentences) reacting to the most significant world event
-5. Return ONLY valid JSON with this exact structure:
+Write a dramatic, engaging newspaper in MEEET STATE voice. Reference the real events. Show how global events impact MEEET citizens, agents, and the economy.
+
+Return ONLY valid JSON with this exact structure:
 {
   "headline": "...",
   "main_event": "...",
@@ -152,35 +161,71 @@ INSTRUCTIONS:
   "president_quote": "..."
 }
 
-Be creative, dramatic, and entertaining. Mix real stats with narrative fiction. The tone should be like a cyberpunk/dystopian newspaper — serious but with personality.`;
+Rules:
+- headline: max 80 chars, must reference a real world event if available
+- main_event: max 100 chars, breaking news tied to actual events
+- body: 150-250 words, dramatic, immersive cyberpunk/dystopian tone with personality
+- president_quote: 1-2 sentences reacting to the most significant world event`;
 
-    // ─── Call Lovable AI ─────────────────────────────────────────
-    const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    // ─── Call OpenAI (primary) or Lovable AI (fallback) ──────────
+    let rawContent = "";
+
+    if (OPENAI_API_KEY) {
+      const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a newspaper AI editor. Return only valid JSON, no markdown." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.8,
+          max_tokens: 800,
+        }),
+      });
+
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json();
+        rawContent = aiData.choices?.[0]?.message?.content || "";
+      } else {
+        console.error("OpenAI error:", aiResponse.status, await aiResponse.text());
+      }
+    }
+
+    // Fallback to Lovable AI if OpenAI failed or not configured
+    if (!rawContent && LOVABLE_API_KEY) {
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: "You are a newspaper AI editor. Return only valid JSON, no markdown." },
             { role: "user", content: prompt },
           ],
         }),
-      }
-    );
+      });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
-      throw new Error(`AI gateway returned ${aiResponse.status}`);
+      if (aiResponse.ok) {
+        const aiData = await aiResponse.json();
+        rawContent = aiData.choices?.[0]?.message?.content || "";
+      } else {
+        const errorText = await aiResponse.text();
+        console.error("Lovable AI error:", aiResponse.status, errorText);
+        throw new Error(`AI gateway returned ${aiResponse.status}`);
+      }
     }
 
-    const aiData = await aiResponse.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || "";
+    if (!rawContent) {
+      throw new Error("All AI providers failed to generate content");
+    }
 
     // Parse JSON from AI response (handle potential markdown wrapping)
     let parsed: { headline: string; main_event: string; body: string; president_quote: string };
@@ -196,7 +241,6 @@ Be creative, dramatic, and entertaining. Mix real stats with narrative fiction. 
     // ─── Insert into herald_issues ───────────────────────────────
     const issueDate = today.toISOString().split("T")[0];
 
-    // Check if today's issue already exists
     const { data: existing } = await supabase
       .from("herald_issues")
       .select("id")
@@ -204,7 +248,6 @@ Be creative, dramatic, and entertaining. Mix real stats with narrative fiction. 
       .maybeSingle();
 
     if (existing) {
-      // Update existing
       const { error: updateErr } = await supabase
         .from("herald_issues")
         .update({
@@ -225,7 +268,6 @@ Be creative, dramatic, and entertaining. Mix real stats with narrative fiction. 
       );
     }
 
-    // Insert new
     const { error: insertErr } = await supabase
       .from("herald_issues")
       .insert({
