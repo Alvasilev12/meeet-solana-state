@@ -326,9 +326,13 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          is_premium: boolean | null
           name: string
           price_usdc: number | null
+          prompt_template: string | null
+          purchases: number | null
           strategy_config: Json | null
+          target_class: string[] | null
         }
         Insert: {
           agent_class?: string | null
@@ -336,9 +340,13 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_premium?: boolean | null
           name: string
           price_usdc?: number | null
+          prompt_template?: string | null
+          purchases?: number | null
           strategy_config?: Json | null
+          target_class?: string[] | null
         }
         Update: {
           agent_class?: string | null
@@ -346,9 +354,13 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_premium?: boolean | null
           name?: string
           price_usdc?: number | null
+          prompt_template?: string | null
+          purchases?: number | null
           strategy_config?: Json | null
+          target_class?: string[] | null
         }
         Relationships: []
       }

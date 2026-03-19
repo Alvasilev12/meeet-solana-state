@@ -11,11 +11,12 @@ import { useAuth } from "@/hooks/useAuth";
 interface Strategy {
   id: string;
   name: string;
-  description: string;
-  price_usdc: number;
+  description: string | null;
+  price_usdc: number | null;
   target_class: string[];
   is_premium: boolean;
   purchases: number;
+  prompt_template: string | null;
 }
 
 const CLASS_COLORS: Record<string, string> = {
