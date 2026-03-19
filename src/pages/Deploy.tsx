@@ -268,23 +268,14 @@ const Deploy = () => {
                           Contact Us
                         </Button>
                       ) : (
-                        <div className="space-y-2">
-                          <Button
-                            className="w-full"
-                            variant="default"
-                            size="sm"
-                            onClick={() => { setPayModal({ plan, method: "sol" }); setTxSignature(""); }}
-                          >
-                            ◎ Pay with SOL
-                          </Button>
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white"
-                            size="sm"
-                            onClick={() => { setPayModal({ plan, method: "meeet" }); setTxSignature(""); }}
-                          >
-                            🪙 Pay with MEEET (20% off)
-                          </Button>
-                        </div>
+                        <Button
+                          className="w-full"
+                          variant="default"
+                          size="sm"
+                          onClick={() => { setPayModal({ plan }); setPayMethod(null); setTxSignature(""); }}
+                        >
+                          Get Started
+                        </Button>
                       )}
                     </CardContent>
                   </Card>
