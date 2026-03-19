@@ -698,12 +698,24 @@ const LiveMap = () => {
       const rainIntensity = weatherRef.current === 'storm' ? 0.6 : weatherRef.current === 'rain' ? 0.3 : 0;
       if (isRaining && Math.random() < rainIntensity) {
         const count = weatherRef.current === 'storm' ? 8 : 3;
+        for (let i = 0; i < count; i++) {
           particles.push({
             x: cam.x + Math.random() * w / z, y: cam.y - 10,
-            vx: -0.2, vy: 3 + Math.random() * 2, life: 60, maxLife: 60,
-            color: "#4488aa", size: 1, type: "rain",
+            vx: weatherRef.current === 'storm' ? -0.8 : -0.2,
+            vy: weatherRef.current === 'storm' ? 5 + Math.random() * 3 : 3 + Math.random() * 2,
+            life: 60, maxLife: 60, color: "#4488aa", size: 1, type: "rain",
           });
         }
+      }
+
+      // Fireflies at night
+      if (nf > 0.4 && Math.random() < 0.05) {
+        particles.push({
+          x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z,
+          vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+          life: 120 + Math.random() * 100, maxLife: 220,
+          color: "#88ff44", size: 1.5, type: "firefly",
+        });
       }
 
       // Mining particles from miner agents
