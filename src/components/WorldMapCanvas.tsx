@@ -197,7 +197,7 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
 
       // ══════ LAYER 0: Aurora Borealis ══════
       const zoom = map.getZoom();
-      const auroraIntensity = Math.max(0, 1 - (zoom - 2) * 0.3); // fade at higher zoom
+      const auroraIntensity = Math.max(0, 1 - (zoom - 2) * 0.3);
       if (auroraIntensity > 0) {
         for (const wave of auroraWaves.current) {
           const baseY = rh * wave.y;
@@ -224,35 +224,56 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
         }
       }
 
+      // ══════ LAYER 0b: Atmospheric Fog Zones ══════
+      if (zoom < 5) {
+        const fogIntensity = Math.max(0, 1 - (zoom - 2) * 0.4);
+        for (let fi = 0; fi < 6; fi++) {
+          const fogX = ((frame * 0.3 + fi * 200) % (rw + 200)) - 100;
+          const fogY = rh * (0.2 + fi * 0.12 + Math.sin(frame * 0.003 + fi) * 0.05);
+          const fogW = 120 + fi * 40;
+          const fogH = 30 + fi * 10;
+          const fogGrad = ctx.createRadialGradient(fogX, fogY, 0, fogX, fogY, fogW);
+          fogGrad.addColorStop(0, `rgba(80,120,180,${0.02 * fogIntensity})`);
+          fogGrad.addColorStop(0.5, `rgba(60,100,160,${0.01 * fogIntensity})`);
+          fogGrad.addColorStop(1, "transparent");
+          ctx.fillStyle = fogGrad;
+          ctx.fillRect(fogX - fogW, fogY - fogH, fogW * 2, fogH * 2);
+        }
+      }
+
       // ══════ LAYER 1: Hex Grid (subtle) ══════
-      ctx.strokeStyle = "rgba(100,140,255,0.025)";
-      ctx.lineWidth = 1;
-      const hexR = 24;
-      const hexW = hexR * 1.732;
-      const hexH = hexR * 2;
-      for (let gy = -1; gy < rh / (hexH * 0.75) + 1; gy++) {
-        for (let gx = -1; gx < rw / hexW + 1; gx++) {
-          const cx = gx * hexW + (gy % 2 ? hexW / 2 : 0);
-          const cy = gy * hexH * 0.75;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const angle = Math.PI / 180 * (60 * i - 30);
-            const hx = cx + hexR * Math.cos(angle);
-            const hy = cy + hexR * Math.sin(angle);
-            i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+      if (zoom < 6) {
+        const gridAlpha = Math.max(0.008, 0.03 - (zoom - 2) * 0.005);
+        ctx.strokeStyle = `rgba(100,140,255,${gridAlpha})`;
+        ctx.lineWidth = 1;
+        const hexR = 24;
+        const hexW = hexR * 1.732;
+        const hexH = hexR * 2;
+        for (let gy = -1; gy < rh / (hexH * 0.75) + 1; gy++) {
+          for (let gx = -1; gx < rw / hexW + 1; gx++) {
+            const cx = gx * hexW + (gy % 2 ? hexW / 2 : 0);
+            const cy = gy * hexH * 0.75;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const angle = Math.PI / 180 * (60 * i - 30);
+              const hx = cx + hexR * Math.cos(angle);
+              const hy = cy + hexR * Math.sin(angle);
+              i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.stroke();
           }
-          ctx.closePath();
-          ctx.stroke();
         }
       }
 
       // ══════ LAYER 2: Territory Glow Zones ══════
       for (const agent of agents) {
-        const glowRadius = 20 + (agent.rep / 40);
+        const glowRadius = 20 + (agent.rep / 40) + (zoom > 4 ? 10 : 0);
         const rgb = hexToRgb(AGENT_COLORS[agent.cls] || "#9945FF");
         const gradient = ctx.createRadialGradient(agent.x, agent.y, 2, agent.x, agent.y, glowRadius);
-        gradient.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`);
-        gradient.addColorStop(0.4, `rgba(${rgb.r},${rgb.g},${rgb.b},0.05)`);
+        gradient.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`);
+        gradient.addColorStop(0.3, `rgba(${rgb.r},${rgb.g},${rgb.b},0.08)`);
+        gradient.addColorStop(0.7, `rgba(${rgb.r},${rgb.g},${rgb.b},0.02)`);
         gradient.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
         ctx.fillStyle = gradient;
         ctx.fillRect(agent.x - glowRadius, agent.y - glowRadius, glowRadius * 2, glowRadius * 2);
@@ -265,9 +286,10 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
             const a = agents[i], b = agents[j];
             const dx = a.x - b.x, dy = a.y - b.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 90 && dist > 5) {
+            const maxDist = zoom > 5 ? 120 : 90;
+            if (dist < maxDist && dist > 5) {
               const sameClass = a.cls === b.cls;
-              const alpha = (1 - dist / 90) * (sameClass ? 0.25 : 0.1);
+              const alpha = (1 - dist / maxDist) * (sameClass ? 0.3 : 0.12);
               const lineColor = sameClass ? AGENT_COLORS[a.cls] || "#6488ff" : "#6488ff";
               const rgb = hexToRgb(lineColor);
 
@@ -374,10 +396,12 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
       }
 
       // ══════ LAYER 5: Agent Sprites ══════
+      const showLabels = agents.length < (zoom > 4 ? 120 : 60);
+      const showLevelBadge = agents.length < 100;
       for (const agent of agents) {
         const sprite = SPRITE_DATA[agent.cls] || SPRITE_DATA.warrior;
         const color = AGENT_COLORS[agent.cls] || "#ff44ff";
-        const spritePixel = Math.max(pixelSize, Math.min(3, 2 + Math.floor(agent.rep / 200)));
+        const spritePixel = Math.max(pixelSize, Math.min(4, 2 + Math.floor(agent.rep / 150)));
         const isFollowed = followAgentName && agent.name === followAgentName;
 
         // Drop shadow
@@ -391,12 +415,16 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
         if (isFollowed) {
           const followPulse = 0.5 + 0.5 * Math.sin(frame * 0.08);
           const rgb2 = hexToRgb(color);
-          ctx.strokeStyle = `rgba(${rgb2.r},${rgb2.g},${rgb2.b},${followPulse * 0.6})`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(agent.x, drawY, 14, 0, Math.PI * 2);
-          ctx.stroke();
-          // Selection arrows
+          // Double ring
+          for (let ring = 0; ring < 2; ring++) {
+            const ringR = 14 + ring * 6;
+            ctx.strokeStyle = `rgba(${rgb2.r},${rgb2.g},${rgb2.b},${followPulse * (0.6 - ring * 0.25)})`;
+            ctx.lineWidth = 2 - ring;
+            ctx.beginPath();
+            ctx.arc(agent.x, drawY, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          // Selection arrows (animated)
           const arrowY = drawY - 18 - Math.sin(frame * 0.1) * 3;
           ctx.fillStyle = color;
           ctx.globalAlpha = 0.8;
@@ -410,11 +438,18 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
           const auraPhase = (frame * 0.04 + agent.x * 0.05) % (Math.PI * 2);
           const auraR = 8 + Math.sin(auraPhase) * 2;
           const rgb = hexToRgb(color);
-          ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`;
+          ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.25)`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(agent.x, drawY, auraR, 0, Math.PI * 2);
           ctx.stroke();
+          // Second aura ring for very high rep
+          if (agent.rep > 300) {
+            ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.1)`;
+            ctx.beginPath();
+            ctx.arc(agent.x, drawY, auraR + 4, 0, Math.PI * 2);
+            ctx.stroke();
+          }
         }
 
         // Main sprite
@@ -422,40 +457,42 @@ const WorldMapCanvas = ({ agentGeoData, eventGeoData, mapRef, followAgentName }:
 
         // Breathing glow
         const breathe = 0.3 + 0.15 * Math.sin(frame * 0.04 + agent.y * 0.02);
-        drawSprite(ctx, sprite, agent.x, drawY, spritePixel, "#ffffff", breathe * 0.1);
+        drawSprite(ctx, sprite, agent.x, drawY, spritePixel, "#ffffff", breathe * 0.12);
 
-        // HP bar
-        const barW = 12;
+        // HP bar (improved with gradient)
+        const barW = 14;
         const barH = 2;
         const hpFrac = Math.min(1, agent.rep / 500);
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(Math.floor(agent.x - barW / 2), Math.floor(drawY - 12), barW, barH);
-        ctx.fillStyle = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(Math.floor(agent.x - barW / 2) - 1, Math.floor(drawY - 13), barW + 2, barH + 2);
+        const hpColor = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
+        ctx.fillStyle = hpColor;
         ctx.fillRect(Math.floor(agent.x - barW / 2), Math.floor(drawY - 12), Math.floor(barW * hpFrac), barH);
 
         // Level badge
-        if (agents.length < 100) {
-          ctx.fillStyle = "rgba(0,0,0,0.5)";
-          ctx.fillRect(Math.floor(agent.x + 5), Math.floor(drawY - 10), 8, 7);
+        if (showLevelBadge) {
+          const lvl = Math.min(99, Math.ceil(agent.rep / 50));
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(Math.floor(agent.x + 6), Math.floor(drawY - 11), 10, 8);
           ctx.fillStyle = color;
-          ctx.font = "5px monospace";
+          ctx.font = "bold 5px monospace";
           ctx.textAlign = "center";
-          ctx.fillText(`${Math.min(99, Math.ceil(agent.rep / 50))}`, agent.x + 9, drawY - 4);
+          ctx.fillText(`${lvl}`, agent.x + 11, drawY - 4);
         }
 
-        // Name label
-        if (agents.length < 80) {
+        // Name label (zoom-dependent)
+        if (showLabels) {
           ctx.fillStyle = isFollowed ? color : "#ffffff";
-          ctx.globalAlpha = isFollowed ? 0.9 : 0.6;
+          ctx.globalAlpha = isFollowed ? 0.95 : 0.65;
           ctx.font = isFollowed ? "bold 7px monospace" : "6px monospace";
           ctx.textAlign = "center";
-          ctx.fillText(agent.name.slice(0, 10), agent.x, agent.y + 14);
+          ctx.fillText(agent.name.slice(0, 12), agent.x, agent.y + 15);
           ctx.globalAlpha = 1;
         }
 
         // Trail
-        if (frame % 6 === 0 && trails.current.length < 500) {
-          trails.current.push({ x: agent.x, y: agent.y, alpha: 0.3, color });
+        if (frame % 5 === 0 && trails.current.length < 600) {
+          trails.current.push({ x: agent.x, y: agent.y, alpha: 0.35, color });
         }
       }
 

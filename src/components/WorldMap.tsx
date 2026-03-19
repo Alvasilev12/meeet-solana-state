@@ -57,24 +57,77 @@ const PIXEL_STYLE: maplibregl.StyleSpecification = {
     "carto-dark": {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",
+        "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
+        "https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png",
       ],
       tileSize: 256,
       attribution: '&copy; CARTO',
     },
-  },
-  layers: [{
-    id: "base", type: "raster", source: "carto-dark",
-    minzoom: 0, maxzoom: 20,
-    paint: {
-      "raster-brightness-max": 0.35,
-      "raster-brightness-min": 0.02,
-      "raster-contrast": 0.3,
-      "raster-saturation": -0.7,
+    "carto-labels": {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+        "https://c.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png",
+      ],
+      tileSize: 256,
     },
-  }],
+    "country-borders": {
+      type: "geojson",
+      data: "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson",
+    },
+  },
+  layers: [
+    {
+      id: "base", type: "raster", source: "carto-dark",
+      minzoom: 0, maxzoom: 20,
+      paint: {
+        "raster-brightness-max": 0.35,
+        "raster-brightness-min": 0.02,
+        "raster-contrast": 0.3,
+        "raster-saturation": -0.7,
+      },
+    },
+    {
+      id: "country-borders-line",
+      type: "line",
+      source: "country-borders",
+      paint: {
+        "line-color": "rgba(100, 140, 255, 0.12)",
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          1, 0.3,
+          3, 0.8,
+          6, 1.5,
+        ],
+        "line-dasharray": [3, 2],
+      },
+    },
+    {
+      id: "country-fill",
+      type: "fill",
+      source: "country-borders",
+      paint: {
+        "fill-color": "rgba(100, 140, 255, 0.015)",
+        "fill-outline-color": "transparent",
+      },
+    },
+    {
+      id: "labels", type: "raster", source: "carto-labels",
+      minzoom: 3, maxzoom: 20,
+      paint: {
+        "raster-opacity": [
+          "interpolate", ["linear"], ["zoom"],
+          3, 0,
+          4, 0.5,
+          6, 0.75,
+        ],
+        "raster-brightness-max": 0.5,
+        "raster-saturation": -0.5,
+      },
+    },
+  ],
   glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
 };
 

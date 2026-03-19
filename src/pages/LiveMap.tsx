@@ -477,11 +477,44 @@ const LiveMap = () => {
             oc.fillStyle = lerpColor(dayC, nightC, nf);
             oc.fillRect(sx, sy, ts + 1, ts + 1);
 
-            // Subtle water shimmer
+            // Water shimmer with wave pattern
             if (tile <= 1 && z > 0.3) {
               const shimmer = Math.sin(t * 0.001 + col * 0.3 + row * 0.2) * 0.03 + 0.02;
               oc.fillStyle = `rgba(20,60,120,${shimmer})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
+              // Wave highlight lines
+              if (z > 0.5 && tile === 1) {
+                const waveOff = Math.sin(t * 0.0008 + col * 0.5) * ts * 0.3;
+                oc.fillStyle = `rgba(40,100,180,${shimmer * 0.5})`;
+                oc.fillRect(sx + waveOff, sy + ts * 0.4, ts * 0.4, 1);
+              }
+            }
+
+            // Shore foam
+            if (tile === 2 && z > 0.4) {
+              const foamAlpha = 0.03 + Math.sin(t * 0.002 + col + row * 0.7) * 0.015;
+              oc.fillStyle = `rgba(80,140,80,${foamAlpha})`;
+              oc.fillRect(sx, sy, ts + 1, ts + 1);
+            }
+
+            // Forest detail — tiny tree dots
+            if (tile === 5 && z > 0.6 && (col + row) % 3 === 0) {
+              oc.fillStyle = `rgba(20,60,20,${0.15 + nf * 0.1})`;
+              oc.beginPath();
+              oc.arc(sx + ts * 0.5, sy + ts * 0.4, ts * 0.2, 0, Math.PI * 2);
+              oc.fill();
+            }
+
+            // Mountain peaks
+            if (tile >= 6 && z > 0.5) {
+              const peakAlpha = 0.08 + (tile === 7 ? 0.06 : 0);
+              oc.fillStyle = `rgba(80,80,100,${peakAlpha})`;
+              oc.beginPath();
+              oc.moveTo(sx + ts * 0.2, sy + ts);
+              oc.lineTo(sx + ts * 0.5, sy + ts * 0.2);
+              oc.lineTo(sx + ts * 0.8, sy + ts);
+              oc.closePath();
+              oc.fill();
             }
           }
         }
@@ -570,7 +603,7 @@ const LiveMap = () => {
         }
       });
 
-      // ─── BUILDINGS — glowing nodes ────────────────────────
+      // ─── BUILDINGS — detailed structures ────────────────────
       buildings.forEach(b => {
         const cx2 = (b.x + b.w * TILE / 2 - cam.x) * z;
         const cy2 = (b.y + b.h * TILE / 2 - cam.y) * z;
@@ -579,29 +612,90 @@ const LiveMap = () => {
         const pulse = 0.6 + Math.sin(t * 0.002 + b.id) * 0.2;
 
         // Large ambient glow
-        const glowR = size * 5;
+        const glowR = size * 6;
         const glow = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, glowR);
-        glow.addColorStop(0, b.color + Math.floor(pulse * 25).toString(16).padStart(2, "0"));
-        glow.addColorStop(0.3, b.color + "08");
+        glow.addColorStop(0, b.color + Math.floor(pulse * 30).toString(16).padStart(2, "0"));
+        glow.addColorStop(0.2, b.color + "10");
+        glow.addColorStop(0.5, b.color + "05");
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(cx2, cy2, glowR, 0, Math.PI * 2); ctx.fill();
 
-        // Core diamond
-        const ds = size * 0.6;
-        ctx.save();
-        ctx.translate(cx2, cy2);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = b.color + Math.floor(pulse * 180).toString(16).padStart(2, "0");
-        ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
-        ctx.restore();
+        // Building base platform
+        const bw = b.w * TILE * z * 0.7;
+        const bh = b.h * TILE * z * 0.5;
+        ctx.fillStyle = `rgba(10,15,25,${0.6 + pulse * 0.2})`;
+        ctx.fillRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+        ctx.strokeStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+
+        // Building type-specific rendering
+        if (z > 0.3) {
+          if (b.type === "parliament" || b.type === "embassy") {
+            // Columns
+            const cols = 4;
+            for (let c = 0; c < cols; c++) {
+              const colX = cx2 - bw / 2 + bw * (c + 0.5) / cols;
+              ctx.fillStyle = b.color + Math.floor(pulse * 120).toString(16).padStart(2, "0");
+              ctx.fillRect(colX - z, cy2 - bh / 2 + 2 * z, z * 2, bh - 4 * z);
+            }
+            // Roof triangle
+            ctx.beginPath();
+            ctx.moveTo(cx2 - bw / 2 - 2 * z, cy2 - bh / 2);
+            ctx.lineTo(cx2, cy2 - bh / 2 - bh * 0.4);
+            ctx.lineTo(cx2 + bw / 2 + 2 * z, cy2 - bh / 2);
+            ctx.closePath();
+            ctx.fillStyle = b.color + Math.floor(pulse * 60).toString(16).padStart(2, "0");
+            ctx.fill();
+          } else if (b.type === "oracle") {
+            // Tower — tall narrow shape
+            const tw = bw * 0.3;
+            ctx.fillStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
+            ctx.fillRect(cx2 - tw / 2, cy2 - bh, tw, bh * 1.5);
+            // Eye at top
+            const eyeR = 3 * z;
+            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - eyeR, eyeR, 0, Math.PI * 2);
+            ctx.fillStyle = b.color + Math.floor(pulse * 200).toString(16).padStart(2, "0"); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - eyeR, eyeR * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = "#000"; ctx.fill();
+          } else if (b.type === "arena") {
+            // Circular colosseum
+            ctx.strokeStyle = b.color + Math.floor(pulse * 100).toString(16).padStart(2, "0");
+            ctx.lineWidth = 2 * z;
+            ctx.beginPath(); ctx.ellipse(cx2, cy2, bw / 2, bh / 2, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(cx2, cy2, bw / 2 - 3 * z, bh / 2 - 2 * z, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = b.color + "30"; ctx.stroke();
+          } else {
+            // Default — core diamond
+            const ds = size * 0.7;
+            ctx.save();
+            ctx.translate(cx2, cy2);
+            ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = b.color + Math.floor(pulse * 180).toString(16).padStart(2, "0");
+            ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
+            ctx.restore();
+          }
+        } else {
+          // Zoomed out — just diamond
+          const ds = size * 0.6;
+          ctx.save();
+          ctx.translate(cx2, cy2);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillStyle = b.color + Math.floor(pulse * 180).toString(16).padStart(2, "0");
+          ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
+          ctx.restore();
+        }
 
         // Label
         if (z > 0.35) {
           const fs = Math.max(7, 9 * z);
-          ctx.font = `500 ${fs}px 'Space Grotesk', monospace`;
+          ctx.font = `600 ${fs}px 'Space Grotesk', monospace`;
           ctx.textAlign = "center";
-          ctx.fillStyle = b.color + "90";
+          // Shadow
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.fillText(b.name.toUpperCase(), cx2 + 0.5, cy2 + size + fs + 2.5);
+          ctx.fillStyle = b.color + "b0";
           ctx.fillText(b.name.toUpperCase(), cx2, cy2 + size + fs + 2);
         }
       });
@@ -1283,38 +1377,117 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   const orbR = Math.max(2, 4 * z);
 
   // Outer glow — ambient aura
-  const glowR = orbR * 6;
+  const glowR = orbR * 7;
   const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
-  glow.addColorStop(0, `rgba(${cfg.glow},${0.15 * pulse})`);
-  glow.addColorStop(0.3, `rgba(${cfg.glow},${0.05 * pulse})`);
+  glow.addColorStop(0, `rgba(${cfg.glow},${0.18 * pulse})`);
+  glow.addColorStop(0.2, `rgba(${cfg.glow},${0.08 * pulse})`);
+  glow.addColorStop(0.5, `rgba(${cfg.glow},${0.02 * pulse})`);
   glow.addColorStop(1, "transparent");
   ctx.fillStyle = glow;
   ctx.beginPath(); ctx.arc(sx, sy, glowR, 0, Math.PI * 2); ctx.fill();
 
+  // Shadow beneath agent
+  ctx.fillStyle = `rgba(0,0,0,${0.3 * pulse})`;
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + orbR * 1.5, orbR * 1.2, orbR * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Idle breathing float
+  const floatY = sy - Math.sin(t * 0.003 + a.phase) * 2 * z;
+
   // Core orb
-  const coreGrad = ctx.createRadialGradient(sx, sy - orbR * 0.3, orbR * 0.2, sx, sy, orbR);
-  coreGrad.addColorStop(0, `rgba(255,255,255,${0.8 * pulse})`);
-  coreGrad.addColorStop(0.4, a.color);
-  coreGrad.addColorStop(1, a.color + "60");
+  const coreGrad = ctx.createRadialGradient(sx, floatY - orbR * 0.3, orbR * 0.2, sx, floatY, orbR);
+  coreGrad.addColorStop(0, `rgba(255,255,255,${0.85 * pulse})`);
+  coreGrad.addColorStop(0.3, a.color);
+  coreGrad.addColorStop(0.8, a.color + "80");
+  coreGrad.addColorStop(1, a.color + "30");
   ctx.fillStyle = coreGrad;
-  ctx.beginPath(); ctx.arc(sx, sy, orbR, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(sx, floatY, orbR, 0, Math.PI * 2); ctx.fill();
+
+  // Inner bright dot
+  ctx.fillStyle = `rgba(255,255,255,${0.5 * pulse})`;
+  ctx.beginPath(); ctx.arc(sx - orbR * 0.15, floatY - orbR * 0.2, orbR * 0.25, 0, Math.PI * 2); ctx.fill();
+
+  // Class-specific decorations at higher zoom
+  if (z > 0.6) {
+    if (a.cls === "warrior") {
+      // Sword icon — two crossing lines
+      const sw = orbR * 1.8;
+      ctx.strokeStyle = `rgba(${cfg.glow},${0.4 * pulse})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx - sw, floatY - sw); ctx.lineTo(sx + sw, floatY + sw); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx + sw, floatY - sw); ctx.lineTo(sx - sw, floatY + sw); ctx.stroke();
+    } else if (a.cls === "oracle") {
+      // Orbiting particles
+      for (let oi = 0; oi < 3; oi++) {
+        const oa = t * 0.005 + oi * (Math.PI * 2 / 3);
+        const or2 = orbR * 2.5;
+        const ox = sx + Math.cos(oa) * or2;
+        const oy = floatY + Math.sin(oa) * or2 * 0.6;
+        ctx.fillStyle = `rgba(255,204,0,${0.5 * pulse})`;
+        ctx.beginPath(); ctx.arc(ox, oy, 1.2 * z, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (a.cls === "trader") {
+      // $ symbol particles floating up
+      const dp = (t * 0.002 + a.phase) % 1;
+      ctx.fillStyle = `rgba(0,255,136,${(1 - dp) * 0.4})`;
+      ctx.font = `${Math.max(5, 7 * z)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillText("$", sx + orbR * 2, floatY - dp * orbR * 6);
+    } else if (a.cls === "miner") {
+      // Sparkles around
+      for (let mi = 0; mi < 2; mi++) {
+        const ma = t * 0.008 + mi * Math.PI + a.phase;
+        const mr = orbR * (2 + Math.sin(t * 0.004 + mi) * 0.5);
+        ctx.fillStyle = `rgba(0,170,255,${0.4 + Math.sin(t * 0.01 + mi) * 0.2})`;
+        ctx.fillRect(Math.floor(sx + Math.cos(ma) * mr), Math.floor(floatY + Math.sin(ma) * mr * 0.7), z * 1.5, z * 1.5);
+      }
+    }
+  }
 
   // Pulse ring on combat/trading/meeting
   if (a.state === "combat" || a.state === "trading" || a.state === "meeting") {
     const ringR = orbR * (2 + Math.sin(t * 0.008) * 0.5);
     const ringColor = a.state === "combat" ? "255,50,50" : a.state === "trading" ? "0,255,136" : "255,215,0";
-    ctx.strokeStyle = `rgba(${ringColor},${0.3 + Math.sin(t * 0.01) * 0.15})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(sx, sy, ringR, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(${ringColor},${0.35 + Math.sin(t * 0.01) * 0.15})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(sx, floatY, ringR, 0, Math.PI * 2); ctx.stroke();
+    // Second pulse ring
+    const ringR2 = orbR * (3 + Math.sin(t * 0.006 + 1) * 0.5);
+    ctx.strokeStyle = `rgba(${ringColor},${0.12})`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.arc(sx, floatY, ringR2, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // HP bar when zoomed in
+  if (z > 0.6) {
+    const barW = 16 * z;
+    const barH = 2 * z;
+    const barX = sx - barW / 2;
+    const barY = floatY + orbR + 4;
+    const hpFrac = Math.min(1, a.hp / a.maxHp);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(barX - 0.5, barY - 0.5, barW + 1, barH + 1);
+    ctx.fillStyle = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
+    ctx.fillRect(barX, barY, barW * hpFrac, barH);
   }
 
   // Name label — only when zoomed in
-  if (z > 0.5) {
-    const fs = Math.max(7, 8 * z);
-    ctx.font = `500 ${fs}px 'Space Grotesk', monospace`;
+  if (z > 0.45) {
+    const fs = Math.max(7, 9 * z);
+    ctx.font = `600 ${fs}px 'Space Grotesk', monospace`;
     ctx.textAlign = "center";
-    ctx.fillStyle = `rgba(${cfg.glow},${0.5 + nf * 0.2})`;
-    ctx.fillText(a.name, sx, sy + orbR + fs + 4);
+    // Text shadow
+    ctx.fillStyle = `rgba(0,0,0,0.6)`;
+    ctx.fillText(a.name, sx + 0.5, floatY + orbR + (z > 0.6 ? 12 : 8) + fs + 0.5);
+    ctx.fillStyle = `rgba(${cfg.glow},${0.6 + nf * 0.2})`;
+    ctx.fillText(a.name, sx, floatY + orbR + (z > 0.6 ? 12 : 8) + fs);
+    // Level indicator
+    if (z > 0.7) {
+      ctx.font = `500 ${Math.max(5, 6 * z)}px monospace`;
+      ctx.fillStyle = `rgba(${cfg.glow},0.35)`;
+      ctx.fillText(`Lv.${a.level}`, sx, floatY + orbR + (z > 0.6 ? 12 : 8) + fs * 2 + 2);
+    }
     ctx.textAlign = "left";
   }
 }
