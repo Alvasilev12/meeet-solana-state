@@ -230,6 +230,26 @@ const LiveMap = () => {
   const simSpeedRef = useRef<number>(1);
   const terrainCacheRef = useRef<{ canvas: HTMLCanvasElement; camX: number; camY: number; zoom: number; nf: number; w: number; h: number } | null>(null);
   const fogPatchesRef = useRef<{ x: number; y: number; r: number; vx: number; vy: number; alpha: number }[]>([]);
+  const starsRef = useRef<Star[]>([]);
+  const trailsRef = useRef<AgentTrail[]>([]);
+  const weatherRef = useRef<'clear' | 'rain' | 'storm'>('clear');
+  const weatherTimerRef = useRef(0);
+
+  // Init stars
+  useEffect(() => {
+    const stars: Star[] = [];
+    for (let i = 0; i < 200; i++) {
+      stars.push({
+        x: Math.random() * MAP_W * TILE,
+        y: Math.random() * MAP_H * TILE,
+        size: 0.5 + Math.random() * 1.5,
+        twinkleSpeed: 0.002 + Math.random() * 0.004,
+        phase: Math.random() * Math.PI * 2,
+        brightness: 0.3 + Math.random() * 0.7,
+      });
+    }
+    starsRef.current = stars;
+  }, []);
 
   // Init fog patches
   useEffect(() => {
