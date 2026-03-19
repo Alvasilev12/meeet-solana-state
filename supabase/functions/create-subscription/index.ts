@@ -19,28 +19,13 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Resolve user from JWT
-    const authHeader = req.headers.get("Authorization") ?? "";
-    let userId: string | null = null;
-    if (authHeader.startsWith("Bearer ")) {
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await userClient.auth.getUser();
-      userId = user?.id ?? null;
-    }
-
     const body = await req.json();
-    const { plan_id, agent_id } = body;
+    const { plan_id, payment_method, wallet_address, tx_signature } = body;
 
-    if (!plan_id) {
-      return json({ error: "Missing required field: plan_id" }, 400);
-    }
-    if (!userId) {
-      return json({ error: "Authentication required" }, 401);
+    if (!plan_id || !payment_method || !wallet_address || !tx_signature) {
+      return json({ error: "Missing required fields: plan_id, payment_method, wallet_address, tx_signature" }, 400);
     }
 
     // Validate plan exists
@@ -62,8 +47,9 @@ Deno.serve(async (req: Request) => {
       .from("agent_subscriptions")
       .insert({
         plan_id,
-        user_id: userId,
-        agent_id: agent_id || null,
+        payment_method,
+        wallet_address,
+        tx_signature,
         status: "active",
         expires_at: expiresAt,
       })

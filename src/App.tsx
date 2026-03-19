@@ -34,6 +34,7 @@ import Warnings from "./pages/Warnings.tsx";
 import Deploy from "./pages/Deploy.tsx";
 import Strategies from "./pages/Strategies.tsx";
 import AgentMarketplace from "./pages/AgentMarketplace.tsx";
+import Guilds from "./pages/Guilds.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/deploy" element={<Deploy />} />
               <Route path="/strategies" element={<Strategies />} />
               <Route path="/marketplace" element={<AgentMarketplace />} />
+              <Route path="/guilds" element={<Guilds />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

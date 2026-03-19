@@ -219,23 +219,9 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
         if (res.error) throw new Error(res.error.message);
         if (res.data?.error) throw new Error(res.data.error);
       } else {
-        // Pick a random country to place the agent on the world map
-        const { data: countries } = await supabase
-          .from("countries")
-          .select("code, capital_lat, capital_lng");
-        let lat = 40 + (Math.random() - 0.5) * 60;
-        let lng = (Math.random() - 0.5) * 300;
-        let countryCode: string | null = null;
-        if (countries && countries.length > 0) {
-          const c = countries[Math.floor(Math.random() * countries.length)];
-          lat = c.capital_lat + (Math.random() - 0.5) * 2;
-          lng = c.capital_lng + (Math.random() - 0.5) * 2;
-          countryCode = c.code;
-        }
         const { error } = await supabase.from("agents").insert({
           user_id: userId, name: name.trim(), class: cls as Agent["class"],
           pos_x: 50 + Math.random() * 200, pos_y: 50 + Math.random() * 200,
-          lat, lng, country_code: countryCode,
         });
         if (error) throw error;
       }
@@ -1149,9 +1135,171 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+      {/* My Deployed Agents & Oracle Predictions */}
+      {user && (
+        <div className="container max-w-5xl mx-auto px-4 pb-8 space-y-6">
+          <MyDeployedAgents userId={user.id} />
+          <MyOraclePredictions userId={user.id} />
+        </div>
+      )}
       <Footer />
     </div>
   );
 };
+
+
+// ─── My Deployed Agents & Oracle Predictions sections ─────────────────
+function MyDeployedAgents({ userId }: { userId: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: deployedAgents = [], isLoading } = useQuery({
+    queryKey: ["deployed_agents", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deployed_agents")
+        .select("*, agents(*)")
+        .eq("user_id", userId)
+        .order("deployed_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  const toggleStatus = useMutation({
+    mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
+      const newStatus = currentStatus === "running" ? "paused" : "running";
+      const { error } = await supabase.from("deployed_agents").update({ status: newStatus }).eq("id", id);
+      if (error) throw error;
+      return newStatus;
+    },
+    onSuccess: (newStatus) => {
+      toast({ title: `Agent ${newStatus === "running" ? "resumed" : "paused"}` });
+      queryClient.invalidateQueries({ queryKey: ["deployed_agents", userId] });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading agents...</div>;
+
+  return (
+    <Card className="glass-card">
+      <CardHeader>
+        <CardTitle className="font-display flex items-center gap-2">
+          <Zap className="w-5 h-5 text-primary" /> My Deployed Agents
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {deployedAgents.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No deployed agents yet. <a href="/deploy" className="text-primary underline">Deploy one</a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {deployedAgents.map((da: any) => {
+              const agent = da.agents;
+              if (!agent) return null;
+              const isRunning = da.status === "running";
+              return (
+                <div key={da.id} className="flex items-center gap-4 glass-card rounded-lg px-4 py-3 border border-border">
+                  <div className="text-2xl">{CLASS_META[agent.class]?.emoji ?? "🤖"}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-display font-semibold text-sm truncate">{agent.name}</p>
+                      <Badge
+                        variant="outline"
+                        className={isRunning ? "text-emerald-400 border-emerald-400/30 text-xs" : "text-yellow-400 border-yellow-400/30 text-xs"}
+                      >
+                        {isRunning ? "● running" : "⏸ paused"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {CLASS_META[agent.class]?.desc ?? agent.class} · {Number(da.total_meeet_earned ?? 0).toLocaleString()} MEEET earned
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toggleStatus.mutate({ id: da.id, currentStatus: da.status })}
+                    disabled={toggleStatus.isPending}
+                    className="shrink-0 text-xs"
+                  >
+                    {isRunning ? "Pause" : "Resume"}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MyOraclePredictions({ userId }: { userId: string }) {
+  const { data: bets = [], isLoading } = useQuery({
+    queryKey: ["oracle_bets", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("oracle_bets")
+        .select("*, oracle_questions(*)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading predictions...</div>;
+
+  return (
+    <Card className="glass-card">
+      <CardHeader>
+        <CardTitle className="font-display flex items-center gap-2">
+          <Activity className="w-5 h-5 text-blue-400" /> My Oracle Predictions
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {bets.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No predictions yet. <a href="/oracle" className="text-primary underline">Visit Oracle</a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {bets.map((bet: any) => {
+              const q = bet.oracle_questions;
+              return (
+                <div key={bet.id} className="flex items-center gap-4 glass-card rounded-lg px-4 py-3 border border-border">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-display font-medium truncate">
+                      {q?.question_text ? q.question_text.slice(0, 80) + (q.question_text.length > 80 ? "…" : "") : "Unknown question"}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge
+                        variant="outline"
+                        className={bet.prediction === "YES"
+                          ? "text-emerald-400 border-emerald-400/30 text-xs"
+                          : "text-red-400 border-red-400/30 text-xs"}
+                      >
+                        {bet.prediction}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{Number(bet.amount_meeet ?? 0).toLocaleString()} MEEET</span>
+                      {q?.status && (
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {q.status}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default Dashboard;

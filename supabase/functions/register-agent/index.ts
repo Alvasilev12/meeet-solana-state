@@ -116,20 +116,6 @@ async function registerSingle(
     return { error: "You already have an agent", agent_id: existing.id, agent_name: existing.name, status_code: 409 };
   }
 
-  // Pick a random country for GPS coordinates
-  const { data: countries } = await serviceClient
-    .from("countries")
-    .select("code, capital_lat, capital_lng");
-  let lat = 40 + (Math.random() - 0.5) * 60;
-  let lng = (Math.random() - 0.5) * 300;
-  let countryCode: string | null = null;
-  if (countries && countries.length > 0) {
-    const c = countries[Math.floor(Math.random() * countries.length)];
-    lat = c.capital_lat + (Math.random() - 0.5) * 2;
-    lng = c.capital_lng + (Math.random() - 0.5) * 2;
-    countryCode = c.code;
-  }
-
   const stats = CLASS_STATS[body.class];
   const { data: agent, error: insertError } = await serviceClient
     .from("agents")
@@ -143,9 +129,6 @@ async function registerSingle(
       balance_meeet: 100,
       pos_x: 50 + Math.random() * 100,
       pos_y: 50 + Math.random() * 60,
-      lat,
-      lng,
-      country_code: countryCode,
       ...stats,
     })
     .select()

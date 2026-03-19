@@ -85,6 +85,17 @@ serve(async (req) => {
 
     const presidentName = presidentProfile?.display_name || presidentProfile?.username || "The President";
 
+    // ─── Fetch real-world events ─────────────────────────────────
+    const { data: worldEvents } = await supabase
+      .from("world_events")
+      .select("title, event_type, country_code, severity, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const worldEventsContext = (worldEvents || []).map((e: any) => 
+      `[${e.event_type}] ${e.title} (country: ${e.country_code || 'global'}, severity: ${e.severity || 'unknown'})`
+    ).join("\n");
+
     // ─── Build AI prompt ─────────────────────────────────────────
     const dailyStats = {
       quests_completed: questsCompleted ?? 0,
@@ -107,6 +118,9 @@ CONTEXT (real game data from last 24h):
 - Top agents: ${JSON.stringify(topAgents)}
 - Recent laws proposed: ${JSON.stringify(recentLaws || [])}
 - Current President: ${presidentName}
+- Recent world events from MEEET State intelligence:
+${worldEventsContext || "No major world events reported."}
+
 
 INSTRUCTIONS:
 1. Write an engaging, dramatic headline (max 80 chars) — make it feel like a real newspaper

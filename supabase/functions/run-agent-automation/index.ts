@@ -1,71 +1,74 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
-};
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
+Deno.serve(async (_req) => {
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    // Get all running deployed agents
-    const { data: running, error: runErr } = await supabase
+    // Fetch all running deployed agents with their agent info
+    const { data: deployedAgents, error: daError } = await supabase
       .from("deployed_agents")
-      .select("id, agent_id, plan_id, strategy_id, quests_completed, total_earned_meeet")
+      .select("*, agents(*)")
       .eq("status", "running");
 
-    if (runErr) return json({ error: runErr.message }, 500);
-    if (!running || running.length === 0) return json({ message: "No running agents", processed: 0 });
+    if (daError) throw daError;
+    if (!deployedAgents || deployedAgents.length === 0) {
+      return Response.json({ processed: 0, total_earned: 0, message: "No running agents" });
+    }
+
+    // Fetch open quests
+    const { data: quests, error: qError } = await supabase
+      .from("quests")
+      .select("*")
+      .eq("status", "open")
+      .limit(50);
+
+    if (qError) throw qError;
 
     let processed = 0;
+    let totalEarned = 0;
 
-    for (const da of running) {
-      // Increment quests_completed and total_earned by a simulated amount
-      const questReward = Math.floor(Math.random() * 300) + 100;
-      await supabase
-        .from("deployed_agents")
-        .update({
-          quests_completed: (da.quests_completed || 0) + 1,
-          total_earned_meeet: (da.total_earned_meeet || 0) + questReward,
-        })
-        .eq("id", da.id);
+    for (const da of deployedAgents) {
+      const agent = da.agents;
+      if (!agent) continue;
 
-      // Also update the agent's balance
-      if (da.agent_id) {
-        const { data: agent } = await supabase
-          .from("agents")
-          .select("balance_meeet, quests_completed")
-          .eq("id", da.agent_id)
-          .single();
+      // Pick a quest for this agent (cycle through available quests)
+      const quest = quests && quests.length > 0
+        ? quests[processed % quests.length]
+        : null;
 
-        if (agent) {
-          await supabase
-            .from("agents")
-            .update({
-              balance_meeet: (agent.balance_meeet || 0) + questReward,
-              quests_completed: (agent.quests_completed || 0) + 1,
-            })
-            .eq("id", da.agent_id);
-        }
+      const earnings = quest?.reward_meeet ?? 45;
+
+      // Record in agent_earnings (user_id is required by schema)
+      const { error: earningError } = await supabase.from("agent_earnings").insert({
+        agent_id: agent.id,
+        user_id: agent.user_id,
+        quest_id: quest?.id ?? null,
+        amount_meeet: earnings,
+        source: quest ? "quest" : "passive",
+      });
+
+      if (earningError) {
+        console.error(`Earning insert failed for agent ${agent.id}:`, earningError.message);
+        continue;
       }
 
+      // Update agent balance
+      const newBalance = Number(agent.balance_meeet ?? 0) + Number(earnings);
+      await supabase
+        .from("agents")
+        .update({ balance_meeet: newBalance })
+        .eq("id", agent.id);
+
+      totalEarned += Number(earnings);
       processed++;
     }
 
-    return json({ message: "Automation cycle complete", processed });
-  } catch (err) {
-    return json({ error: String(err) }, 500);
+    return Response.json({ processed, total_earned: totalEarned });
+  } catch (err: any) {
+    console.error("run-agent-automation error:", err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 });
