@@ -33,6 +33,7 @@ import Oracle from "./pages/Oracle.tsx";
 import Warnings from "./pages/Warnings.tsx";
 import Deploy from "./pages/Deploy.tsx";
 import Strategies from "./pages/Strategies.tsx";
+import AgentMarketplace from "./pages/AgentMarketplace.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();

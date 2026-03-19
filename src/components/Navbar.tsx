@@ -21,10 +21,13 @@ const Navbar = () => {
     { href: "/discoveries", label: t("nav.discoveries") },
     { href: "/quests", label: t("nav.quests") },
     { href: "/arena", label: t("nav.arena") },
-    { href: "/social", label: t("nav.social") },
+    { href: "/oracle", label: "🔮 Oracle" },
+    { href: "/warnings", label: "⚠️ Warnings" },
+    { href: "/deploy", label: "🚀 Deploy" },
+    { href: "/strategies", label: "⚡ Strategies" },
+    { href: "/marketplace", label: "🏪 Marketplace" },
     { href: "/world/rankings", label: t("nav.rankings") },
     { href: "/parliament", label: t("nav.parliament") },
-    { href: "/herald", label: t("nav.herald") },
     { href: "/tokenomics", label: t("nav.meeet") },
   ];
 

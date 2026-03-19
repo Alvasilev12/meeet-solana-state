@@ -13,18 +13,23 @@ interface OracleQuestion {
   question_text: string;
   total_pool_meeet: number;
   deadline: string;
-  yes_percentage: number;
-  no_percentage: number;
-  yes_count: number;
-  no_count: number;
-  time_remaining_hours: number;
   resolution_source: string;
+  status: string;
 }
 
 function formatMeeet(amount: number): string {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `${(amount / 1_000).toFixed(0)}k`;
   return amount.toLocaleString();
+}
+
+function deadlineCountdown(deadline: string): string {
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return "Expired";
+  const hours = Math.floor(ms / 3600000);
+  if (hours < 24) return `${hours}h left`;
+  const days = Math.floor(hours / 24);
+  return `${days}d left`;
 }
 
 const Oracle = () => {
@@ -36,9 +41,13 @@ const Oracle = () => {
   useEffect(() => {
     const fetchOracle = async () => {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("get-oracle-feed");
-        if (fnError) throw fnError;
-        setQuestions(data?.questions || []);
+        const { data, error: dbError } = await supabase
+          .from("oracle_questions")
+          .select("id, question_text, total_pool_meeet, deadline, resolution_source, status")
+          .eq("status", "open")
+          .order("total_pool_meeet", { ascending: false });
+        if (dbError) throw dbError;
+        setQuestions((data as OracleQuestion[]) || []);
       } catch (e: any) {
         setError(e?.message || "Failed to load oracle markets");
       } finally {
@@ -52,7 +61,6 @@ const Oracle = () => {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-8 h-8 text-purple-400" />
@@ -65,7 +73,6 @@ const Oracle = () => {
           </p>
         </div>
 
-        {/* Stats bar */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card className="bg-card/50 border-purple-500/20">
             <CardContent className="pt-4 pb-4">
@@ -83,22 +90,18 @@ const Oracle = () => {
           </Card>
           <Card className="bg-card/50 border-green-500/20">
             <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold text-green-400">
-                {questions.reduce((s, q) => s + q.yes_count + q.no_count, 0)}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Bets</div>
+              <div className="text-2xl font-bold text-green-400">MEEET</div>
+              <div className="text-sm text-muted-foreground">Token</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-10 h-10 text-purple-400 animate-spin" />
           </div>
         )}
 
-        {/* Error */}
         {error && !loading && (
           <div className="text-center py-20">
             <p className="text-red-400 mb-2">{error}</p>
@@ -106,7 +109,6 @@ const Oracle = () => {
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && questions.length === 0 && (
           <div className="text-center py-20">
             <TrendingUp className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-40" />
@@ -115,7 +117,6 @@ const Oracle = () => {
           </div>
         )}
 
-        {/* Markets grid */}
         {!loading && questions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {questions.map((q) => (
@@ -131,46 +132,18 @@ const Oracle = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* YES/NO bars */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-green-400 font-medium">YES {q.yes_percentage}%</span>
-                      <span className="text-red-400 font-medium">NO {q.no_percentage}%</span>
-                    </div>
-                    <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                      <div
-                        className="bg-green-500 transition-all duration-500"
-                        style={{ width: `${q.yes_percentage}%` }}
-                      />
-                      <div
-                        className="bg-red-500 transition-all duration-500"
-                        style={{ width: `${q.no_percentage}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{q.yes_count} bets</span>
-                      <span>{q.no_count} bets</span>
-                    </div>
-                  </div>
-
-                  {/* Pool + deadline */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-sm">
                       <Flame className="w-4 h-4 text-orange-400" />
-                      <span className="font-bold text-orange-400">{formatMeeet(q.total_pool_meeet)}</span>
-                      <span className="text-muted-foreground text-xs">MEEET</span>
+                      <span className="font-bold text-orange-400">{formatMeeet(q.total_pool_meeet || 0)}</span>
+                      <span className="text-muted-foreground text-xs">MEEET pool</span>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3" />
-                      <span>
-                        {q.time_remaining_hours > 24
-                          ? `${Math.floor(q.time_remaining_hours / 24)}d left`
-                          : `${q.time_remaining_hours}h left`}
-                      </span>
+                      <span>{deadlineCountdown(q.deadline)}</span>
                     </div>
                   </div>
 
-                  {/* Bet button */}
                   <Button
                     className="w-full"
                     variant={user ? "default" : "outline"}

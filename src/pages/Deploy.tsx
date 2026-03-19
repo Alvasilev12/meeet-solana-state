@@ -28,8 +28,8 @@ const PLAN_COLORS: Record<string, string> = {
 
 const PLAN_BADGES: Record<string, string | null> = {
   Scout: null,
-  Warrior: "Most Popular",
-  Commander: "Best Value",
+  Warrior: null,
+  Commander: "Most Popular",
   Nation: "Power User",
   Enterprise: "Contact Us",
 };
