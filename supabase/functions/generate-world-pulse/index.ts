@@ -12,8 +12,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const TELEGRAM_BOT_TOKEN = "8765053225:AAHfNtVbKJoFp8u1Ht4bkoeS5yD0vW-WNoQ";
-const TELEGRAM_CHANNEL = "@meeetworld";
+const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
+const TELEGRAM_CHANNEL = Deno.env.get("TELEGRAM_CHAT_ID") ?? "@meeetworld";
 
 async function sendTelegram(text: string): Promise<boolean> {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;

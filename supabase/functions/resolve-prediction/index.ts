@@ -153,11 +153,10 @@ Deno.serve(async (req: Request) => {
 
       // 7. Post to Telegram (if configured)
       try {
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
+        const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
         const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
-        if (LOVABLE_API_KEY && TELEGRAM_API_KEY && TELEGRAM_CHAT_ID) {
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
           const answerText = correctAnswer ? "YES ✅" : "NO ❌";
           const payoutPool = distributablePool;
           const message = `🔮 *Oracle resolved:* ${q.question_text}\n\n` +
@@ -165,13 +164,9 @@ Deno.serve(async (req: Request) => {
             `${winners.length} winner${winners.length !== 1 ? "s" : ""} split *${payoutPool.toLocaleString()} $MEEET*\n` +
             `Total pool: ${totalPool.toLocaleString()} | Fee: ${platformFee.toLocaleString()}`;
 
-          await fetch("https://connector-gateway.lovable.dev/telegram/sendMessage", {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
-            headers: {
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-              "X-Connection-Api-Key": TELEGRAM_API_KEY,
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: TELEGRAM_CHAT_ID,
               text: message,
