@@ -148,6 +148,12 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       interactive,
     });
 
+    // Force initial resize passes to avoid blank map when container settles after mount
+    requestAnimationFrame(() => map.resize());
+    const delayedResize = window.setTimeout(() => {
+      if (mapRef.current === map) map.resize();
+    }, 200);
+
     // ResizeObserver to keep map in sync with container
     const resizeObserver = new ResizeObserver(() => {
       if (map && !(map as any)._removed) {
@@ -157,6 +163,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     resizeObserver.observe(container);
 
     map.on("load", () => {
+      map.resize();
       setMapLoaded(true);
 
       map.addSource("agents", {
