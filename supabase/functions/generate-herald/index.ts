@@ -86,11 +86,24 @@ serve(async (req) => {
     const presidentName = presidentProfile?.display_name || presidentProfile?.username || "The President";
 
     // ─── Fetch real-world events ─────────────────────────────────
-    const { data: worldEvents } = await supabase
-      .from("world_events")
-      .select("title, description, event_type, country_code, severity, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const [{ data: worldEvents }, { count: oracleCount }, { count: warningsCount }] = await Promise.all([
+      supabase
+        .from("world_events")
+        .select("title, description, event_type, country_code, severity, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("oracle_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "open"),
+      supabase
+        .from("warnings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "active"),
+    ]);
+
+    const activeMarkets = oracleCount ?? 0;
+    const earlyWarnings = warningsCount ?? 0;
 
     const worldEventsContext = (worldEvents || []).map((e: any, i: number) => 
       `${i + 1}. [${e.event_type?.toUpperCase()}] "${e.title}" — ${e.description || 'No details'} (region: ${e.country_code || 'global'}, severity: ${e.severity || '?'}/5)`
