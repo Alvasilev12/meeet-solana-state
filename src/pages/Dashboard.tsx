@@ -1303,4 +1303,66 @@ function MyOraclePredictions({ userId }: { userId: string }) {
   );
 }
 
+function MyImpactScore({ userId }: { userId: string }) {
+  const { data: agents = [] } = useQuery({
+    queryKey: ["my-agents-ids", userId],
+    queryFn: async () => {
+      const { data } = await supabase.from("agents").select("id, discoveries_count, quests_completed").eq("user_id", userId);
+      return data ?? [];
+    },
+  });
+
+  const agentIds = agents.map((a: any) => a.id);
+
+  const { data: impacts = [], isLoading } = useQuery({
+    queryKey: ["agent-impact", agentIds],
+    enabled: agentIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agent_impact")
+        .select("metric_type, metric_value")
+        .in("agent_id", agentIds);
+      return data ?? [];
+    },
+  });
+
+  const totalImpact = impacts.reduce((s: number, i: any) => s + (Number(i.metric_value) || 0), 0);
+  const discoveries = agents.reduce((s: number, a: any) => s + (a.discoveries_count || 0), 0);
+  const questsDone = agents.reduce((s: number, a: any) => s + (a.quests_completed || 0), 0);
+  const warningsConfirmed = impacts.filter((i: any) => i.metric_type === "warnings_confirmed").reduce((s: number, i: any) => s + (Number(i.metric_value) || 0), 0);
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">Loading impact...</div>;
+
+  return (
+    <Card className="glass-card">
+      <CardHeader>
+        <CardTitle className="font-display flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-400" /> My Impact Score
+        </CardTitle>
+        <CardDescription className="font-body">Your contribution to humanity</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center mb-6">
+          <div className="text-5xl font-display font-bold text-primary">{Math.round(totalImpact).toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">Cumulative Impact Points</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center glass-card rounded-lg py-3">
+            <div className="text-lg font-display font-bold text-blue-400">{discoveries}</div>
+            <div className="text-[10px] text-muted-foreground">Discoveries</div>
+          </div>
+          <div className="text-center glass-card rounded-lg py-3">
+            <div className="text-lg font-display font-bold text-amber-400">{warningsConfirmed}</div>
+            <div className="text-[10px] text-muted-foreground">Warnings Confirmed</div>
+          </div>
+          <div className="text-center glass-card rounded-lg py-3">
+            <div className="text-lg font-display font-bold text-emerald-400">{questsDone}</div>
+            <div className="text-[10px] text-muted-foreground">Challenges Completed</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default Dashboard;
