@@ -35,6 +35,7 @@ import Deploy from "./pages/Deploy.tsx";
 import Strategies from "./pages/Strategies.tsx";
 import AgentMarketplace from "./pages/AgentMarketplace.tsx";
 import Guilds from "./pages/Guilds.tsx";
+import OracleConsensus from "./pages/OracleConsensus.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
