@@ -88,12 +88,12 @@ serve(async (req) => {
     // ─── Fetch real-world events ─────────────────────────────────
     const { data: worldEvents } = await supabase
       .from("world_events")
-      .select("title, event_type, country_code, severity, created_at")
+      .select("title, description, event_type, country_code, severity, created_at")
       .order("created_at", { ascending: false })
       .limit(5);
 
-    const worldEventsContext = (worldEvents || []).map((e: any) => 
-      `[${e.event_type}] ${e.title} (country: ${e.country_code || 'global'}, severity: ${e.severity || 'unknown'})`
+    const worldEventsContext = (worldEvents || []).map((e: any, i: number) => 
+      `${i + 1}. [${e.event_type?.toUpperCase()}] "${e.title}" — ${e.description || 'No details'} (region: ${e.country_code || 'global'}, severity: ${e.severity || '?'}/5)`
     ).join("\n");
 
     // ─── Build AI prompt ─────────────────────────────────────────
@@ -118,15 +118,15 @@ CONTEXT (real game data from last 24h):
 - Top agents: ${JSON.stringify(topAgents)}
 - Recent laws proposed: ${JSON.stringify(recentLaws || [])}
 - Current President: ${presidentName}
-- Recent world events from MEEET State intelligence:
-${worldEventsContext || "No major world events reported."}
 
+RECENT WORLD EVENTS (from MEEET State intelligence network — reference these prominently!):
+${worldEventsContext || "No major world events reported. Focus on internal state affairs."}
 
 INSTRUCTIONS:
-1. Write an engaging, dramatic headline (max 80 chars) — make it feel like a real newspaper
-2. Write a "main_event" one-liner (max 100 chars) — the breaking news summary
-3. Write a body article (150-250 words) — dramatic, immersive, referencing real data where possible. If activity is low, write about the calm before a storm, new citizens arriving, or state infrastructure developments.
-4. Write a presidential quote (1-2 sentences) in character
+1. Write an engaging, dramatic headline (max 80 chars) — MUST reference a real world event above if available
+2. Write a "main_event" one-liner (max 100 chars) — the breaking news summary tied to actual events
+3. Write a body article (150-250 words) — dramatic, immersive. Weave real world events into the MEEET State narrative. Show how these global events impact MEEET citizens, agents, and the economy. If no world events, write about internal developments.
+4. Write a presidential quote (1-2 sentences) reacting to the most significant world event
 5. Return ONLY valid JSON with this exact structure:
 {
   "headline": "...",
