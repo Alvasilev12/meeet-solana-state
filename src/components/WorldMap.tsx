@@ -96,17 +96,25 @@ const PULSE_CSS = `
   border-radius: 50%; border: 2px solid #ef4444;
   animation: wm-pulse 2s ease-in-out infinite;
 }
-.wm-agent-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.6);
-  cursor: pointer; transition: transform 0.15s;
-  box-shadow: 0 0 6px 1px currentColor;
+@keyframes wm-agent-breathe {
+  0%, 100% { box-shadow: 0 0 6px 2px currentColor, 0 0 12px 4px currentColor; transform: scale(1); }
+  50% { box-shadow: 0 0 10px 4px currentColor, 0 0 20px 8px currentColor; transform: scale(1.15); }
 }
-.wm-agent-dot:hover { transform: scale(1.5); }
+.wm-agent-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.8);
+  cursor: pointer; transition: transform 0.15s;
+  box-shadow: 0 0 8px 2px currentColor, 0 0 16px 4px currentColor;
+  animation: wm-agent-breathe 3s ease-in-out infinite;
+  z-index: 10;
+}
+.wm-agent-dot:hover { transform: scale(1.6); z-index: 20; }
 .wm-agent-dot.wm-followed {
-  width: 14px; height: 14px;
-  box-shadow: 0 0 12px 4px currentColor;
+  width: 18px; height: 18px;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 16px 6px currentColor, 0 0 30px 12px currentColor;
   animation: wm-pulse 1.5s ease-in-out infinite;
+  z-index: 30;
 }
 .maplibregl-popup-content {
   background: #0d0d1a !important; border: 1px solid rgba(148,69,255,0.3) !important;
@@ -277,37 +285,50 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
 
     visibleAgents.forEach(agent => {
       const color = CLASS_COLORS[agent.class] || "#9945FF";
-      const el = document.createElement("div");
-      el.className = `wm-agent-dot${followAgent === agent.name ? " wm-followed" : ""}`;
-      el.style.backgroundColor = color;
-      el.style.color = color;
+      const isFollowed = followAgent === agent.name;
 
-      const popup = new maplibregl.Popup({ offset: 12, closeButton: true, maxWidth: "240px" })
+      // Container with dot + label
+      const el = document.createElement("div");
+      el.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:2px;z-index:10;position:relative;";
+
+      const dot = document.createElement("div");
+      dot.className = `wm-agent-dot${isFollowed ? " wm-followed" : ""}`;
+      dot.style.backgroundColor = color;
+      dot.style.color = color;
+      el.appendChild(dot);
+
+      // Name label
+      const label = document.createElement("div");
+      label.textContent = agent.name;
+      label.style.cssText = `font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:${color};text-shadow:0 0 6px ${color},0 0 2px #000,0 1px 3px #000;white-space:nowrap;pointer-events:none;opacity:0.9;letter-spacing:0.5px;`;
+      el.appendChild(label);
+
+      const popup = new maplibregl.Popup({ offset: 18, closeButton: true, maxWidth: "260px" })
         .setHTML(`
           <div style="font-family: 'JetBrains Mono', monospace;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-              <span style="font-size:20px">${CLASS_ICONS[agent.class] || "🤖"}</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span style="font-size:24px">${CLASS_ICONS[agent.class] || "🤖"}</span>
               <div>
-                <div style="font-weight:700;font-size:13px;color:#e2e8f0">${agent.name}</div>
-                <div style="font-size:10px;color:${color};text-transform:capitalize">${agent.class} · Lv.${agent.level}</div>
+                <div style="font-weight:700;font-size:14px;color:#e2e8f0">${agent.name}</div>
+                <div style="font-size:11px;color:${color};text-transform:capitalize">${agent.class} · Lv.${agent.level}</div>
               </div>
+              <div style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:${agent.status === 'active' ? '#10b981' : '#f59e0b'};box-shadow:0 0 6px ${agent.status === 'active' ? '#10b981' : '#f59e0b'}"></div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px;color:#94a3b8">
-              <div style="background:rgba(255,255,255,0.03);padding:4px 6px;border-radius:4px">⭐ Rep: <span style="color:#e2e8f0;font-weight:700">${agent.reputation}</span></div>
-              <div style="background:rgba(255,255,255,0.03);padding:4px 6px;border-radius:4px">💰 <span style="color:#14F195;font-weight:700">${Number(agent.balance_meeet).toLocaleString()}</span></div>
-              <div style="background:rgba(255,255,255,0.03);padding:4px 6px;border-radius:4px">📍 ${agent.nation_code || "—"}</div>
-              <div style="background:rgba(255,255,255,0.03);padding:4px 6px;border-radius:4px;color:${agent.status === 'idle' ? '#10b981' : '#f59e0b'}">${agent.status}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:#94a3b8">
+              <div style="background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05)">⭐ Rep: <span style="color:#e2e8f0;font-weight:700">${agent.reputation}</span></div>
+              <div style="background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05)">💰 <span style="color:#14F195;font-weight:700">${Number(agent.balance_meeet).toLocaleString()}</span></div>
+              <div style="background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05)">📍 ${agent.nation_code || "—"}</div>
+              <div style="background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);color:${agent.status === 'active' ? '#10b981' : '#f59e0b'}">${agent.status}</div>
             </div>
           </div>
         `);
 
-      const marker = new maplibregl.Marker({ element: el })
+      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([agent.lng!, agent.lat!])
         .setPopup(popup)
         .addTo(map);
 
-      // Click to follow
-      el.addEventListener("click", () => {
+      dot.addEventListener("click", () => {
         setFollowAgent(prev => prev === agent.name ? null : agent.name);
       });
 
