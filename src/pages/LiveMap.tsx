@@ -488,6 +488,29 @@ const LiveMap = () => {
 
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
+      // ─── STARS (night only) ────────────────────────────────
+      if (nf > 0.3) {
+        const stars = starsRef.current;
+        stars.forEach(s => {
+          const sx = (s.x - cam.x) * z, sy = (s.y - cam.y) * z;
+          if (sx < -5 || sx > w + 5 || sy < -5 || sy > h + 5) return;
+          const twinkle = 0.3 + Math.sin(t * s.twinkleSpeed + s.phase) * 0.4;
+          const alpha = (nf - 0.3) * 1.4 * twinkle * s.brightness;
+          if (alpha < 0.05) return;
+          const sr = s.size * z * 0.6;
+          ctx.fillStyle = `rgba(200,220,255,${Math.min(alpha, 0.7)})`;
+          ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+          // Cross sparkle for bright stars
+          if (s.brightness > 0.7 && sr > 0.5) {
+            ctx.strokeStyle = `rgba(200,220,255,${alpha * 0.3})`;
+            ctx.lineWidth = 0.5;
+            const len = sr * 3;
+            ctx.beginPath(); ctx.moveTo(sx - len, sy); ctx.lineTo(sx + len, sy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx, sy - len); ctx.lineTo(sx, sy + len); ctx.stroke();
+          }
+        });
+      }
+
       // ─── FOG PATCHES ──────────────────────────────────────
       const fogs = fogPatchesRef.current;
       fogs.forEach(f => {
@@ -505,6 +528,22 @@ const LiveMap = () => {
           ctx.beginPath(); ctx.arc(sx, sy, fr, 0, Math.PI * 2); ctx.fill();
         }
       });
+
+      // ─── WEATHER CYCLING ──────────────────────────────────
+      weatherTimerRef.current -= 1;
+      if (weatherTimerRef.current <= 0) {
+        const r = Math.random();
+        if (r < 0.6) weatherRef.current = 'clear';
+        else if (r < 0.85) weatherRef.current = 'rain';
+        else weatherRef.current = 'storm';
+        weatherTimerRef.current = 600 + Math.random() * 1200;
+      }
+
+      // Storm lightning flash
+      if (weatherRef.current === 'storm' && Math.random() < 0.003) {
+        ctx.fillStyle = 'rgba(200,220,255,0.06)';
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // ─── ROADS — data stream style ────────────────────────
       roads.forEach(r => {
