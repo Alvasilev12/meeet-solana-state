@@ -76,6 +76,100 @@ export type Database = {
           },
         ]
       }
+      agent_earnings: {
+        Row: {
+          agent_id: string
+          amount_meeet: number | null
+          created_at: string | null
+          id: string
+          quest_id: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          amount_meeet?: number | null
+          created_at?: string | null
+          id?: string
+          quest_id?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          amount_meeet?: number | null
+          created_at?: string | null
+          id?: string
+          quest_id?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_earnings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_earnings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_earnings_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_impact: {
+        Row: {
+          agent_id: string
+          id: string
+          metric_type: string
+          metric_value: number | null
+          period: string | null
+          recorded_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          id?: string
+          metric_type: string
+          metric_value?: number | null
+          period?: string | null
+          recorded_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          id?: string
+          metric_type?: string
+          metric_value?: number | null
+          period?: string | null
+          recorded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_impact_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_impact_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_messages: {
         Row: {
           channel: string
@@ -197,6 +291,61 @@ export type Database = {
           strategy_config?: Json | null
         }
         Relationships: []
+      }
+      agent_subscriptions: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          plan_id: string | null
+          started_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_subscriptions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_subscriptions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "agent_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agents: {
         Row: {
@@ -545,6 +694,77 @@ export type Database = {
           population?: number | null
         }
         Relationships: []
+      }
+      deployed_agents: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          deployed_at: string | null
+          id: string
+          plan_id: string | null
+          quests_completed: number | null
+          status: string | null
+          stopped_at: string | null
+          strategy_id: string | null
+          total_earned_meeet: number | null
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          plan_id?: string | null
+          quests_completed?: number | null
+          status?: string | null
+          stopped_at?: string | null
+          strategy_id?: string | null
+          total_earned_meeet?: number | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          plan_id?: string | null
+          quests_completed?: number | null
+          status?: string | null
+          stopped_at?: string | null
+          strategy_id?: string | null
+          total_earned_meeet?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deployed_agents_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployed_agents_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployed_agents_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "agent_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deployed_agents_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "agent_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discoveries: {
         Row: {
@@ -1300,6 +1520,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments: {
+        Row: {
+          amount_meeet: number | null
+          amount_sol: number | null
+          amount_usdc: number | null
+          created_at: string | null
+          id: string
+          payment_method: string | null
+          reference_id: string | null
+          reference_type: string | null
+          status: string | null
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_meeet?: number | null
+          amount_sol?: number | null
+          amount_usdc?: number | null
+          created_at?: string | null
+          id?: string
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_meeet?: number | null
+          amount_sol?: number | null
+          amount_usdc?: number | null
+          created_at?: string | null
+          id?: string
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       petitions: {
         Row: {
