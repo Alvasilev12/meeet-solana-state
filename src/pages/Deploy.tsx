@@ -27,10 +27,10 @@ const TREASURY_SOL = "4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e";
 const TOKEN_MEEET = "EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump";
 
 const SOL_PRICES: Record<string, number> = {
-  Scout: 0.19,
-  Warrior: 0.49,
-  Commander: 1.49,
-  Nation: 4.99,
+  Scout: 0.19, Warrior: 0.49, Commander: 1.49, Nation: 4.99,
+};
+const MEEET_PRICES: Record<string, number> = {
+  Scout: 3800, Warrior: 8800, Commander: 25600, Nation: 80000,
 };
 
 const PLAN_COLORS: Record<string, string> = {
@@ -90,7 +90,8 @@ const Deploy = () => {
   const [plans, setPlans] = useState<AgentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [payModal, setPayModal] = useState<{ plan: AgentPlan; method: "sol" | "meeet" } | null>(null);
+  const [payModal, setPayModal] = useState<{ plan: AgentPlan } | null>(null);
+  const [payMethod, setPayMethod] = useState<"sol" | "meeet" | null>(null);
   const [txSignature, setTxSignature] = useState("");
   const [activating, setActivating] = useState(false);
   // Agent config form state (shown after payment)
@@ -122,7 +123,7 @@ const Deploy = () => {
     `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(addr)}`;
 
   const handleActivate = async () => {
-    if (!payModal) return;
+    if (!payModal || !payMethod) return;
     if (!txSignature.trim()) {
       toast.error("Please paste your transaction signature");
       return;
@@ -132,15 +133,16 @@ const Deploy = () => {
       const { data, error } = await supabase.functions.invoke("create-subscription", {
         body: {
           plan_id: payModal.plan.id,
-          payment_method: payModal.method,
+          payment_method: payMethod,
           tx_signature: txSignature.trim(),
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Subscription activated! 🎉 Now configure your agent.");
+      toast.success("Subscription activated! Your agent is being deployed. 🎉");
       setSubscriptionId(data?.subscription_id || null);
       setPayModal(null);
+      setPayMethod(null);
       setTxSignature("");
       setShowAgentForm(true);
     } catch (e: any) {
@@ -266,23 +268,14 @@ const Deploy = () => {
                           Contact Us
                         </Button>
                       ) : (
-                        <div className="space-y-2">
-                          <Button
-                            className="w-full"
-                            variant="default"
-                            size="sm"
-                            onClick={() => { setPayModal({ plan, method: "sol" }); setTxSignature(""); }}
-                          >
-                            ◎ Pay with SOL
-                          </Button>
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white"
-                            size="sm"
-                            onClick={() => { setPayModal({ plan, method: "meeet" }); setTxSignature(""); }}
-                          >
-                            🪙 Pay with MEEET (20% off)
-                          </Button>
-                        </div>
+                        <Button
+                          className="w-full"
+                          variant="default"
+                          size="sm"
+                          onClick={() => { setPayModal({ plan }); setPayMethod(null); setTxSignature(""); }}
+                        >
+                          Get Started
+                        </Button>
                       )}
                     </CardContent>
                   </Card>
@@ -355,94 +348,76 @@ const Deploy = () => {
       <Footer />
 
       {/* Payment Modal */}
-      <Dialog open={!!payModal} onOpenChange={() => setPayModal(null)}>
+      <Dialog open={!!payModal} onOpenChange={() => { setPayModal(null); setPayMethod(null); }}>
         <DialogContent className="sm:max-w-md">
           {payModal && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-center">
-                  {payModal.method === "sol" ? "◎ Pay with SOL" : "🪙 Pay with MEEET (20% off)"}
-                </DialogTitle>
+                <DialogTitle className="text-center">{payModal.plan.name} Plan</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="text-center">
-                  <Badge className="mb-2 bg-purple-600 text-white">{payModal.plan.name} Plan</Badge>
-                  <div className="text-3xl font-bold mt-2">
-                    {payModal.method === "sol" ? (
-                      <span>◎ {SOL_PRICES[payModal.plan.name] || 0} SOL</span>
-                    ) : (
-                      <span>🪙 {Math.round(payModal.plan.price_meeet * 0.8).toLocaleString()} MEEET</span>
-                    )}
+                  <Badge className="mb-2 bg-primary/20 text-primary border-primary/30">{payModal.plan.name}</Badge>
+                  <div className="text-2xl font-bold mt-1">${payModal.plan.price_usdc}<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+                </div>
+
+                {!payMethod ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-center text-muted-foreground mb-2">Choose payment method</p>
+                    <Button className="w-full h-14 text-base" variant="outline" onClick={() => setPayMethod("sol")}>
+                      <span className="flex items-center gap-2">
+                        ◎ Pay with SOL
+                        <Badge variant="secondary" className="ml-1 text-xs">{SOL_PRICES[payModal.plan.name]} SOL</Badge>
+                      </span>
+                    </Button>
+                    <Button className="w-full h-14 text-base bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setPayMethod("meeet")}>
+                      <span className="flex items-center gap-2">
+                        🪙 Pay with $MEEET
+                        <Badge className="ml-1 text-xs bg-emerald-800 text-emerald-200">20% off</Badge>
+                      </span>
+                    </Button>
                   </div>
-                  {payModal.method === "meeet" && (
-                    <p className="text-xs text-green-400 mt-1">
-                      20% discount applied! Was {payModal.plan.price_meeet.toLocaleString()} MEEET
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex justify-center">
-                  <img
-                    src={getQrUrl(payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET)}
-                    alt="QR Code"
-                    className="w-48 h-48 rounded-lg border border-border"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground text-center font-medium">
-                    {payModal.method === "sol" ? "Send SOL to this address:" : "Send MEEET tokens to this address:"}
-                  </p>
-                  <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
-                    <code className="text-xs flex-1 break-all text-foreground">
-                      {payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET}
-                    </code>
-                    <button
-                      onClick={() => copyAddress(payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET)}
-                      className="shrink-0 p-1.5 hover:bg-muted rounded transition-colors"
-                    >
-                      <Copy className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <div className="space-y-4">
+                    <button onClick={() => setPayMethod(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      ← Back to payment options
                     </button>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold">
+                        {payMethod === "sol"
+                          ? <span>◎ {SOL_PRICES[payModal.plan.name]} SOL</span>
+                          : <span>🪙 {(MEEET_PRICES[payModal.plan.name] ?? 0).toLocaleString()} MEEET</span>}
+                      </div>
+                      {payMethod === "meeet" && <p className="text-xs text-emerald-400 mt-1">20% discount applied!</p>}
+                    </div>
+                    <div className="flex justify-center">
+                      <img src={getQrUrl(TREASURY_SOL)} alt="QR Code" className="w-40 h-40 rounded-lg border border-border" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground text-center font-medium">
+                        Send {payMethod === "sol" ? "SOL" : "$MEEET"} to this address:
+                      </p>
+                      <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                        <code className="text-xs flex-1 break-all text-foreground">{TREASURY_SOL}</code>
+                        <button onClick={() => copyAddress(TREASURY_SOL)} className="shrink-0 p-1.5 hover:bg-muted rounded transition-colors">
+                          <Copy className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                      <p className="text-xs text-yellow-400 text-center font-medium">⚠️ Send the exact amount to activate your subscription</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Input placeholder="Paste transaction signature here..." value={txSignature} onChange={(e) => setTxSignature(e.target.value)} className="text-xs" />
+                      <Button className="w-full" disabled={!txSignature.trim() || activating} onClick={handleActivate}>
+                        {activating ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Activating...</> : "🚀 Activate Subscription"}
+                      </Button>
+                    </div>
+                    <a href={`https://solscan.io/account/${TREASURY_SOL}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 text-xs text-primary hover:underline">
+                      View on Solscan <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
-                </div>
-
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                  <p className="text-xs text-yellow-400 text-center font-medium">
-                    ⚠️ Send the exact amount to activate your subscription
-                  </p>
-                  <p className="text-[10px] text-muted-foreground text-center mt-1">
-                    After sending, paste your transaction hash below
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Paste transaction signature here..."
-                    value={txSignature}
-                    onChange={(e) => setTxSignature(e.target.value)}
-                    className="text-xs"
-                  />
-                  <Button
-                    className="w-full"
-                    disabled={!txSignature.trim() || activating}
-                    onClick={handleActivate}
-                  >
-                    {activating ? (
-                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Activating...</>
-                    ) : (
-                      "🚀 Activate Subscription"
-                    )}
-                  </Button>
-                </div>
-
-                <a
-                  href={`https://solscan.io/account/${payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1 text-xs text-primary hover:underline"
-                >
-                  View on Solscan <ExternalLink className="w-3 h-3" />
-                </a>
+                )}
               </div>
             </>
           )}

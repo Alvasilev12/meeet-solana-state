@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function json(body: unknown, status = 200) {
@@ -21,11 +21,25 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const body = await req.json();
-    const { plan_id, payment_method, wallet_address, tx_signature } = body;
+    // Authenticate user
+    const authHeader = req.headers.get("authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return json({ error: "Unauthorized" }, 401);
 
-    if (!plan_id || !payment_method || !wallet_address || !tx_signature) {
-      return json({ error: "Missing required fields: plan_id, payment_method, wallet_address, tx_signature" }, 400);
+    const body = await req.json();
+    const { plan_id, payment_method, tx_signature } = body;
+
+    if (!plan_id || !payment_method || !tx_signature) {
+      return json({ error: "Missing required fields: plan_id, payment_method, tx_signature" }, 400);
+    }
+
+    if (!["sol", "meeet"].includes(payment_method)) {
+      return json({ error: "Invalid payment method" }, 400);
+    }
+
+    if (typeof tx_signature !== "string" || tx_signature.length < 10 || tx_signature.length > 200) {
+      return json({ error: "Invalid transaction signature" }, 400);
     }
 
     // Validate plan exists
@@ -47,16 +61,25 @@ Deno.serve(async (req: Request) => {
       .from("agent_subscriptions")
       .insert({
         plan_id,
-        payment_method,
-        wallet_address,
-        tx_signature,
+        user_id: user.id,
         status: "active",
+        started_at: new Date().toISOString(),
         expires_at: expiresAt,
       })
       .select("id, expires_at")
       .single();
 
     if (subError) return json({ error: subError.message }, 500);
+
+    // Record payment
+    await supabase.from("payments").insert({
+      user_id: user.id,
+      payment_method,
+      tx_hash: tx_signature,
+      reference_type: "subscription",
+      reference_id: subscription.id,
+      status: "completed",
+    });
 
     return json({
       subscription_id: subscription.id,
