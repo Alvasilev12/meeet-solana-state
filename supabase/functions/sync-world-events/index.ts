@@ -323,7 +323,7 @@ Deno.serve(async (req) => {
       .select("id, title, source_url, nation_codes")
       .is("lat", null)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (nullEvents) {
       for (const ev of nullEvents) {
