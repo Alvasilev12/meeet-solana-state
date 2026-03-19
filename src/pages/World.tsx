@@ -6,7 +6,7 @@ import WorldMap from "@/components/WorldMap";
 import LiveStatsBanner from "@/components/LiveStatsBanner";
 import {
   Globe, Users, Flame, Zap, ChevronRight, AlertTriangle,
-  Sparkles, Shield, Swords, Eye, X, TrendingUp, Scroll
+  Sparkles, Shield, Swords, X, TrendingUp, Scroll, Crown, Heart
 } from "lucide-react";
 
 interface WorldEvent {
@@ -32,6 +32,12 @@ const CLASS_SPRITES: Record<string, string> = {
   warrior: "⚔️", trader: "💰", scout: "🔭", diplomat: "🤝",
   builder: "🏗️", hacker: "💻", president: "👑", oracle: "🔮",
   miner: "⛏️", banker: "🏦",
+};
+
+const CLASS_BAR_COLORS: Record<string, string> = {
+  warrior: "#ff4444", trader: "#ffbb33", scout: "#44ff88",
+  diplomat: "#4488ff", builder: "#bb66ff", hacker: "#ff66bb",
+  president: "#ffdd00", oracle: "#ffcc44", miner: "#44ddff", banker: "#aa66ff",
 };
 
 type SidebarTab = "party" | "quests";
@@ -81,11 +87,13 @@ const World = () => {
     setDetailOpen(true);
   };
 
+  const maxRep = topAgents.length > 0 ? Math.max(...topAgents.map(a => a.reputation)) : 1;
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#0a0a12] relative flex flex-col">
       <LiveStatsBanner />
 
-      {/* Top Bar — RPG style */}
+      {/* Top Bar */}
       <div className="absolute top-[var(--banner-h,2rem)] inset-x-0 z-20">
         <div className="flex items-center justify-between px-4 py-2">
           <Link to="/" className="flex items-center gap-2 group">
@@ -93,7 +101,7 @@ const World = () => {
               <Globe className="w-4 h-4 text-amber-400" />
               <div>
                 <span className="font-mono font-bold text-xs tracking-widest text-amber-100 block leading-none">MEEET WORLD</span>
-                <span className="text-[7px] text-amber-100/30 font-mono tracking-[0.3em]">PIXEL REALM</span>
+                <span className="text-[7px] text-amber-100/30 font-mono tracking-[0.3em]">PIXEL REALM v5</span>
               </div>
             </div>
           </Link>
@@ -132,13 +140,10 @@ const World = () => {
         />
       </div>
 
-      {/* Left Sidebar — RPG party/quest panel */}
-      <div className={`absolute left-0 top-16 bottom-0 z-10 transition-all duration-300 ${sidebarCollapsed ? "w-10" : "w-64"}`}>
+      {/* Left Sidebar */}
+      <div className={`absolute left-0 top-16 bottom-0 z-10 transition-all duration-300 ${sidebarCollapsed ? "w-10" : "w-72"}`}>
         {sidebarCollapsed ? (
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="rpg-box-btn mt-4 ml-1"
-          >
+          <button onClick={() => setSidebarCollapsed(false)} className="rpg-box-btn mt-4 ml-1">
             <ChevronRight className="w-4 h-4" />
           </button>
         ) : (
@@ -153,8 +158,7 @@ const World = () => {
                     : "text-amber-100/30 hover:text-amber-100/60"
                 }`}
               >
-                <Swords className="w-3 h-3" />
-                PARTY
+                <Swords className="w-3 h-3" />PARTY
               </button>
               <button
                 onClick={() => setSidebarTab("quests")}
@@ -164,8 +168,7 @@ const World = () => {
                     : "text-amber-100/30 hover:text-amber-100/60"
                 }`}
               >
-                <Scroll className="w-3 h-3" />
-                QUESTS
+                <Scroll className="w-3 h-3" />QUESTS
               </button>
               <button
                 onClick={() => setSidebarCollapsed(true)}
@@ -183,42 +186,61 @@ const World = () => {
                     No heroes have joined yet...
                   </div>
                 ) : (
-                  topAgents.map((agent, i) => (
-                    <div key={agent.id}
-                      className="w-full px-3 py-2 border-b border-amber-900/10 hover:bg-amber-400/5 transition-colors flex items-center gap-2 group"
-                    >
-                      <span className="text-[8px] font-mono text-amber-100/20 w-4 text-right tabular-nums">
-                        {i + 1}.
-                      </span>
-                      <span className="text-sm">{CLASS_SPRITES[agent.class] || "🤖"}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-mono font-bold text-amber-100/90 truncate group-hover:text-amber-400 transition-colors">
-                            {agent.name}
+                  topAgents.map((agent, i) => {
+                    const repFrac = agent.reputation / (maxRep || 1);
+                    const barColor = CLASS_BAR_COLORS[agent.class] || "#9945FF";
+                    return (
+                      <div key={agent.id}
+                        className="w-full px-3 py-2 border-b border-amber-900/10 hover:bg-amber-400/5 transition-colors group"
+                      >
+                        <div className="flex items-center gap-2">
+                          {/* Rank */}
+                          <span className="text-[8px] font-mono text-amber-100/20 w-4 text-right tabular-nums">
+                            {i < 3 ? <Crown className="w-3 h-3 inline" style={{ color: i === 0 ? "#ffdd00" : i === 1 ? "#c0c0c0" : "#cd7f32" }} /> : `${i + 1}.`}
                           </span>
-                          <span className="text-[7px] font-mono text-amber-400/50">
-                            LV{agent.level}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[8px] text-amber-100/25 capitalize font-mono">{agent.class}</span>
-                          {agent.nation_code && (
-                            <span className="text-[8px] text-amber-100/15 font-mono">· {agent.nation_code}</span>
-                          )}
+                          {/* Class icon */}
+                          <span className="text-sm">{CLASS_SPRITES[agent.class] || "🤖"}</span>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-mono font-bold text-amber-100/90 truncate group-hover:text-amber-400 transition-colors">
+                                {agent.name}
+                              </span>
+                              <span className="text-[7px] font-mono px-1 py-0 rounded-sm" style={{ backgroundColor: `${barColor}20`, color: barColor }}>
+                                LV{agent.level}
+                              </span>
+                            </div>
+                            {/* REP bar */}
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <div className="flex-1 h-1 bg-amber-900/20 rounded-full overflow-hidden" style={{ imageRendering: "pixelated" }}>
+                                <div
+                                  className="h-full transition-all duration-700"
+                                  style={{ width: `${repFrac * 100}%`, backgroundColor: barColor }}
+                                />
+                              </div>
+                              <span className="text-[7px] font-mono text-amber-100/30 tabular-nums w-8 text-right">{agent.reputation}</span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-[8px] text-amber-100/25 capitalize font-mono">{agent.class}</span>
+                              {agent.nation_code && (
+                                <span className="text-[8px] text-amber-100/15 font-mono">· {agent.nation_code}</span>
+                              )}
+                              {agent.status === "active" && (
+                                <span className="rpg-dot bg-emerald-400 w-1 h-1 ml-auto" />
+                              )}
+                            </div>
+                          </div>
+                          {/* Balance */}
+                          <div className="text-right shrink-0">
+                            <div className="text-[9px] font-mono text-emerald-400/80 font-bold tabular-nums">
+                              {Number(agent.balance_meeet ?? 0).toLocaleString()}
+                              <span className="text-[7px] text-emerald-400/40 ml-0.5">G</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[9px] font-mono text-emerald-400/80 font-bold tabular-nums">
-                          {Number(agent.balance_meeet ?? 0).toLocaleString()}
-                          <span className="text-[7px] text-emerald-400/40 ml-0.5">G</span>
-                        </div>
-                        <div className="text-[7px] text-amber-400/40 font-mono flex items-center gap-0.5 justify-end">
-                          <TrendingUp className="w-2 h-2" />
-                          {agent.reputation} REP
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )
               ) : (
                 recentEvents.length === 0 ? (
@@ -226,73 +248,114 @@ const World = () => {
                     No world events discovered...
                   </div>
                 ) : (
-                  recentEvents.map((ev) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => handleEventClick(ev)}
-                      className={`w-full text-left px-3 py-2 border-b border-amber-900/10 hover:bg-amber-400/5 transition-colors ${
-                        selectedEvent?.id === ev.id ? "bg-amber-400/10 border-l-2 border-l-amber-400" : ""
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="mt-0.5">
-                          {EVENT_ICONS[ev.event_type] || <Zap className="w-3 h-3 text-amber-100/40" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-mono text-amber-100/80 leading-snug line-clamp-2">{ev.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[8px] text-amber-100/25 uppercase font-mono">{ev.event_type}</span>
-                            {ev.goldstein_scale != null && (
-                              <span className={`text-[8px] font-mono ${ev.goldstein_scale < -4 ? "text-red-400/80" : "text-amber-100/25"}`}>
-                                G:{ev.goldstein_scale}
+                  recentEvents.map((ev) => {
+                    const impactColor = ev.goldstein_scale != null
+                      ? ev.goldstein_scale < -4 ? "text-red-400" : ev.goldstein_scale > 4 ? "text-emerald-400" : "text-amber-100/40"
+                      : "text-amber-100/20";
+                    const impactBg = ev.goldstein_scale != null
+                      ? ev.goldstein_scale < -4 ? "bg-red-400/10" : ev.goldstein_scale > 4 ? "bg-emerald-400/10" : ""
+                      : "";
+                    return (
+                      <button
+                        key={ev.id}
+                        onClick={() => handleEventClick(ev)}
+                        className={`w-full text-left px-3 py-2.5 border-b border-amber-900/10 hover:bg-amber-400/5 transition-colors ${
+                          selectedEvent?.id === ev.id ? "bg-amber-400/10 border-l-2 border-l-amber-400" : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="mt-0.5 rpg-box p-1">
+                            {EVENT_ICONS[ev.event_type] || <Zap className="w-3 h-3 text-amber-100/40" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-mono text-amber-100/80 leading-snug line-clamp-2">{ev.title}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-[8px] text-amber-100/25 uppercase font-mono px-1 py-0.5 bg-amber-400/5 rounded-sm">{ev.event_type}</span>
+                              {ev.goldstein_scale != null && (
+                                <span className={`text-[8px] font-mono font-bold ${impactColor} px-1 py-0.5 rounded-sm ${impactBg}`}>
+                                  G:{ev.goldstein_scale}
+                                </span>
+                              )}
+                              <span className="text-[7px] text-amber-100/15 font-mono ml-auto">
+                                {new Date(ev.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                               </span>
-                            )}
-                            <span className="text-[7px] text-amber-100/15 font-mono">
-                              {new Date(ev.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    );
+                  })
                 )
               )}
+            </div>
+
+            {/* Sidebar footer stats */}
+            <div className="border-t-2 border-amber-900/30 px-3 py-2 flex items-center justify-between">
+              <span className="text-[7px] font-mono text-amber-100/20 tracking-widest">
+                {sidebarTab === "party" ? `${topAgents.length} HEROES` : `${recentEvents.length} EVENTS`}
+              </span>
+              <span className="rpg-dot bg-emerald-400 w-1.5 h-1.5" />
             </div>
           </div>
         )}
       </div>
 
-      {/* Event Detail — RPG info card */}
+      {/* Event Detail */}
       {detailOpen && selectedEvent && (
-        <div className="absolute right-0 top-16 bottom-0 w-72 z-10 rpg-sidebar overflow-y-auto animate-slide-in-right">
+        <div className="absolute right-0 top-16 bottom-0 w-80 z-10 rpg-sidebar overflow-y-auto animate-slide-in-right">
           <div className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="rpg-box p-2">
+            <div className="flex items-start justify-between mb-4">
+              <div className="rpg-box p-2.5">
                 {EVENT_ICONS[selectedEvent.event_type] || <Zap className="w-5 h-5 text-amber-100/40" />}
               </div>
               <button onClick={() => setDetailOpen(false)} className="rpg-box-btn">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
+
             <div className="text-[8px] text-amber-400/60 uppercase tracking-[0.3em] font-mono mb-1">{selectedEvent.event_type}</div>
-            <h3 className="text-xs font-mono font-bold text-amber-100/90 leading-snug mb-4">{selectedEvent.title}</h3>
+            <h3 className="text-xs font-mono font-bold text-amber-100/90 leading-snug mb-5">{selectedEvent.title}</h3>
+
+            {/* Impact gauge */}
+            {selectedEvent.goldstein_scale != null && (
+              <div className="mb-4">
+                <div className="rpg-section-label mb-1">IMPACT SCALE</div>
+                <div className="h-2 bg-amber-900/20 rounded-full overflow-hidden relative" style={{ imageRendering: "pixelated" }}>
+                  <div
+                    className="absolute inset-y-0 left-1/2 transition-all duration-500"
+                    style={{
+                      width: `${Math.abs(selectedEvent.goldstein_scale) * 5}%`,
+                      backgroundColor: selectedEvent.goldstein_scale < 0 ? "#ff4444" : "#44ff88",
+                      transform: selectedEvent.goldstein_scale < 0 ? "translateX(-100%)" : "translateX(0)",
+                    }}
+                  />
+                  <div className="absolute inset-y-0 left-1/2 w-0.5 bg-amber-400/30" />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-[7px] font-mono text-red-400/50">HOSTILE</span>
+                  <span className={`text-[9px] font-mono font-bold ${selectedEvent.goldstein_scale < -4 ? "text-red-400" : selectedEvent.goldstein_scale > 4 ? "text-emerald-400" : "text-amber-100/60"}`}>
+                    {selectedEvent.goldstein_scale}
+                  </span>
+                  <span className="text-[7px] font-mono text-emerald-400/50">PEACEFUL</span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="rpg-info-row">
                 <span>TIME</span>
                 <span className="text-amber-100/70">{new Date(selectedEvent.created_at).toLocaleString()}</span>
               </div>
-              {selectedEvent.goldstein_scale != null && (
-                <div className="rpg-info-row">
-                  <span>IMPACT</span>
-                  <span className={selectedEvent.goldstein_scale < -4 ? "text-red-400" : selectedEvent.goldstein_scale > 4 ? "text-emerald-400" : "text-amber-100/70"}>
-                    {selectedEvent.goldstein_scale}
-                  </span>
-                </div>
-              )}
               {selectedEvent.lat != null && selectedEvent.lng != null && (
                 <div className="rpg-info-row">
                   <span>COORDS</span>
-                  <span className="text-amber-100/70">{selectedEvent.lat.toFixed(1)}, {selectedEvent.lng.toFixed(1)}</span>
+                  <span className="text-amber-100/70">{selectedEvent.lat.toFixed(2)}, {selectedEvent.lng.toFixed(2)}</span>
+                </div>
+              )}
+              {selectedEvent.nation_codes && (
+                <div className="rpg-info-row">
+                  <span>NATIONS</span>
+                  <span className="text-amber-100/70">{JSON.stringify(selectedEvent.nation_codes)}</span>
                 </div>
               )}
             </div>
