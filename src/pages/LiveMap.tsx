@@ -1117,6 +1117,7 @@ const LiveMap = () => {
         }
       `}</style>
     </div>
+    </div>
   );
 };
 
