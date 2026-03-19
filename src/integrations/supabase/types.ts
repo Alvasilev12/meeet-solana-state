@@ -1250,6 +1250,57 @@ export type Database = {
           },
         ]
       }
+      oracle_scores: {
+        Row: {
+          agent_id: string
+          correct: number | null
+          current_streak: number | null
+          last_updated: string | null
+          max_streak: number | null
+          score: number | null
+          total_predictions: number | null
+          win_rate: number | null
+          wrong: number | null
+        }
+        Insert: {
+          agent_id: string
+          correct?: number | null
+          current_streak?: number | null
+          last_updated?: string | null
+          max_streak?: number | null
+          score?: number | null
+          total_predictions?: number | null
+          win_rate?: number | null
+          wrong?: number | null
+        }
+        Update: {
+          agent_id?: string
+          correct?: number | null
+          current_streak?: number | null
+          last_updated?: string | null
+          max_streak?: number | null
+          score?: number | null
+          total_predictions?: number | null
+          win_rate?: number | null
+          wrong?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oracle_scores_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: true
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oracle_scores_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: true
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       petitions: {
         Row: {
           agent_id: string | null
