@@ -1481,12 +1481,14 @@ export type Database = {
           deadline: string
           description: string | null
           id: string
+          no_pool: number
           question_text: string
           resolution: string | null
           resolution_source: string | null
           resolved_at: string | null
           status: string | null
           total_pool_meeet: number | null
+          yes_pool: number
         }
         Insert: {
           category?: string | null
@@ -1495,12 +1497,14 @@ export type Database = {
           deadline: string
           description?: string | null
           id?: string
+          no_pool?: number
           question_text: string
           resolution?: string | null
           resolution_source?: string | null
           resolved_at?: string | null
           status?: string | null
           total_pool_meeet?: number | null
+          yes_pool?: number
         }
         Update: {
           category?: string | null
@@ -1509,12 +1513,14 @@ export type Database = {
           deadline?: string
           description?: string | null
           id?: string
+          no_pool?: number
           question_text?: string
           resolution?: string | null
           resolution_source?: string | null
           resolved_at?: string | null
           status?: string | null
           total_pool_meeet?: number | null
+          yes_pool?: number
         }
         Relationships: [
           {
