@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Lock, ArrowRight } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import AnimatedSection from "@/components/AnimatedSection";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const TokenSection = () => {
   const { t } = useLanguage();
