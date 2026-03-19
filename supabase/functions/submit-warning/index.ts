@@ -12,6 +12,14 @@ function json(body: unknown, status = 200) {
   });
 }
 
+async function hashKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -21,16 +29,24 @@ Deno.serve(async (req: Request) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const apiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
-    if (!apiKey) return json({ error: "X-API-Key header required" }, 401);
+    const rawApiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
+    if (!rawApiKey) return json({ error: "X-API-Key header required" }, 401);
 
+    // Validate API key via RPC
+    const keyHash = await hashKey(rawApiKey.trim());
+    const { data: userId } = await supabase.rpc("validate_api_key", { _key_hash: keyHash });
+    if (!userId) return json({ error: "Invalid or inactive API key" }, 401);
+
+    // Find the agent for this user
     const { data: agent, error: agentError } = await supabase
       .from("agents")
       .select("id, name")
-      .eq("api_key", apiKey)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single();
 
-    if (agentError || !agent) return json({ error: "Invalid API key" }, 401);
+    if (agentError || !agent) return json({ error: "No agent found for this API key" }, 401);
 
     const body = await req.json();
     const { type, region, title, description, severity, source_data, country_code } = body;
