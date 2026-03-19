@@ -71,3 +71,18 @@ verify_jwt = false
 
 [functions.generate-world-pulse]
 verify_jwt = false
+
+[functions.create-subscription]
+verify_jwt = false
+
+[functions.deploy-agent]
+verify_jwt = false
+
+[functions.pause-agent]
+verify_jwt = false
+
+[functions.get-agent-activity]
+verify_jwt = false
+
+[functions.run-agent-automation]
+verify_jwt = false
