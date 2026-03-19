@@ -88,12 +88,12 @@ serve(async (req) => {
     // ─── Fetch real-world events ─────────────────────────────────
     const { data: worldEvents } = await supabase
       .from("world_events")
-      .select("title, event_type, country_code, severity, created_at")
+      .select("title, description, event_type, country_code, severity, created_at")
       .order("created_at", { ascending: false })
       .limit(5);
 
-    const worldEventsContext = (worldEvents || []).map((e: any) => 
-      `[${e.event_type}] ${e.title} (country: ${e.country_code || 'global'}, severity: ${e.severity || 'unknown'})`
+    const worldEventsContext = (worldEvents || []).map((e: any, i: number) => 
+      `${i + 1}. [${e.event_type?.toUpperCase()}] "${e.title}" — ${e.description || 'No details'} (region: ${e.country_code || 'global'}, severity: ${e.severity || '?'}/5)`
     ).join("\n");
 
     // ─── Build AI prompt ─────────────────────────────────────────
