@@ -136,3 +136,23 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* MapLibre popup override */
+.meeet-popup .maplibregl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 10px;
+}
+.meeet-popup .maplibregl-popup-tip {
+  border-top-color: hsl(0 0% 4%) !important;
+}
+.meeet-popup .maplibregl-popup-close-button {
+  color: hsl(210 10% 55%);
+  font-size: 16px;
+  padding: 4px 8px;
+}
+.meeet-popup .maplibregl-popup-close-button:hover {
+  color: #fff;
+  background: transparent;
+}
