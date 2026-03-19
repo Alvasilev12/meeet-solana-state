@@ -144,14 +144,25 @@ const Oracle = () => {
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full"
-                    variant={user ? "default" : "outline"}
-                    disabled={!user}
-                    size="sm"
-                  >
-                    {user ? "Place Bet" : "Coming Soon"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                      disabled={!user}
+                    >
+                      ✅ YES
+                    </Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                      disabled={!user}
+                    >
+                      ❌ NO
+                    </Button>
+                  </div>
+                  {!user && (
+                    <p className="text-[10px] text-muted-foreground text-center">Sign in to place bets</p>
+                  )}
                 </CardContent>
               </Card>
             ))}

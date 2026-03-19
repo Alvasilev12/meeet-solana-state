@@ -4,8 +4,10 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Zap, Users, TrendingUp, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, Zap, Users, TrendingUp, Loader2, ChevronDown, ChevronUp, Copy, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
+import { toast } from "sonner";
 
 interface AgentPlan {
   id: string;
@@ -17,6 +19,16 @@ interface AgentPlan {
   quests_per_day: number;
   features: Record<string, boolean>;
 }
+
+const TREASURY_SOL = "4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e";
+const TOKEN_MEEET = "EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump";
+
+const SOL_PRICES: Record<string, number> = {
+  Scout: 0.19,
+  Warrior: 0.49,
+  Commander: 1.49,
+  Nation: 4.99,
+};
 
 const PLAN_COLORS: Record<string, string> = {
   Scout: "border-green-500/30 hover:border-green-500/50",
@@ -75,6 +87,7 @@ const Deploy = () => {
   const [plans, setPlans] = useState<AgentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [payModal, setPayModal] = useState<{ plan: AgentPlan; method: "sol" | "meeet" } | null>(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -87,6 +100,14 @@ const Deploy = () => {
     };
     fetchPlans();
   }, []);
+
+  const copyAddress = (addr: string) => {
+    navigator.clipboard.writeText(addr);
+    toast.success("Address copied!");
+  };
+
+  const getQrUrl = (addr: string) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(addr)}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -111,7 +132,6 @@ const Deploy = () => {
         </div>
 
         <div className="container mx-auto px-4 pb-16">
-          {/* Pricing */}
           <h2 className="text-2xl font-bold text-center mb-8">Choose Your Plan</h2>
 
           {loading ? (
@@ -126,6 +146,7 @@ const Deploy = () => {
                 const features = Object.entries(plan.features || {})
                   .filter(([_, v]) => v)
                   .map(([k]) => FEATURE_LABELS[k] || k);
+                const isEnterprise = plan.price_usdc === 0;
 
                 return (
                   <Card key={plan.id} className={`bg-card/60 relative transition-all ${borderClass}`}>
@@ -137,7 +158,7 @@ const Deploy = () => {
                     <CardHeader className="pb-2 pt-6">
                       <CardTitle className="text-lg">{plan.name}</CardTitle>
                       <div className="mt-2">
-                        {plan.price_usdc === 0 ? (
+                        {isEnterprise ? (
                           <span className="text-2xl font-bold">Custom</span>
                         ) : (
                           <>
@@ -146,14 +167,6 @@ const Deploy = () => {
                           </>
                         )}
                       </div>
-                      {plan.price_meeet > 0 && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-sm text-green-400 line-through opacity-60">
-                            {plan.price_meeet.toLocaleString()} MEEET
-                          </span>
-                          <Badge className="text-xs bg-green-500/15 text-green-400 border-green-500/30">-20%</Badge>
-                        </div>
-                      )}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-1 text-sm text-muted-foreground">
@@ -167,7 +180,7 @@ const Deploy = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <TrendingUp className="w-3 h-3" />
-                          <span className="capitalize">{plan.compute_tier.replace("_", " ")} compute</span>
+                          <span className="capitalize">{plan.compute_tier?.replace("_", " ") || "standard"} compute</span>
                         </div>
                       </div>
 
@@ -180,14 +193,29 @@ const Deploy = () => {
                         ))}
                       </ul>
 
-                      <Button
-                        className="w-full"
-                        variant={plan.name === "Warrior" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => window.location.href = "/auth"}
-                      >
-                        {plan.price_usdc === 0 ? "Contact Us" : "Get Started"}
-                      </Button>
+                      {isEnterprise ? (
+                        <Button className="w-full" variant="outline" size="sm" onClick={() => window.location.href = "mailto:hello@meeet.world"}>
+                          Contact Us
+                        </Button>
+                      ) : (
+                        <div className="space-y-2">
+                          <Button
+                            className="w-full"
+                            variant="default"
+                            size="sm"
+                            onClick={() => setPayModal({ plan, method: "sol" })}
+                          >
+                            ◎ Pay with SOL
+                          </Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            size="sm"
+                            onClick={() => setPayModal({ plan, method: "meeet" })}
+                          >
+                            🪙 Pay with MEEET (20% off)
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -257,6 +285,81 @@ const Deploy = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Payment Modal */}
+      <Dialog open={!!payModal} onOpenChange={() => setPayModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          {payModal && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-center">
+                  {payModal.method === "sol" ? "◎ Pay with SOL" : "🪙 Pay with MEEET (20% off)"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <Badge className="mb-2 bg-purple-600 text-white">{payModal.plan.name} Plan</Badge>
+                  <div className="text-3xl font-bold mt-2">
+                    {payModal.method === "sol" ? (
+                      <span>◎ {SOL_PRICES[payModal.plan.name] || 0} SOL</span>
+                    ) : (
+                      <span>🪙 {Math.round(payModal.plan.price_meeet * 0.8).toLocaleString()} MEEET</span>
+                    )}
+                  </div>
+                  {payModal.method === "meeet" && (
+                    <p className="text-xs text-green-400 mt-1">
+                      20% discount applied! Was {payModal.plan.price_meeet.toLocaleString()} MEEET
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-center">
+                  <img
+                    src={getQrUrl(payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET)}
+                    alt="QR Code"
+                    className="w-48 h-48 rounded-lg border border-border"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground text-center font-medium">
+                    {payModal.method === "sol" ? "Send SOL to this address:" : "Send MEEET tokens to this address:"}
+                  </p>
+                  <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-3">
+                    <code className="text-xs flex-1 break-all text-foreground">
+                      {payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET}
+                    </code>
+                    <button
+                      onClick={() => copyAddress(payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET)}
+                      className="shrink-0 p-1.5 hover:bg-muted rounded transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                  <p className="text-xs text-yellow-400 text-center font-medium">
+                    ⚠️ Send the exact amount to activate your subscription
+                  </p>
+                  <p className="text-[10px] text-muted-foreground text-center mt-1">
+                    Your subscription will be activated within 5 minutes after confirmation
+                  </p>
+                </div>
+
+                <a
+                  href={`https://solscan.io/account/${payModal.method === "sol" ? TREASURY_SOL : TOKEN_MEEET}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View on Solscan <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
