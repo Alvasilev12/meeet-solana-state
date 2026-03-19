@@ -166,6 +166,35 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       map.resize();
       setMapLoaded(true);
 
+      // --- Agent heatmap layer ---
+      map.addSource("agent-heat", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+
+      map.addLayer({
+        id: "agent-heatmap",
+        type: "heatmap",
+        source: "agent-heat",
+        maxzoom: 9,
+        paint: {
+          "heatmap-weight": ["interpolate", ["linear"], ["get", "reputation"], 0, 0.1, 100, 0.5, 500, 1],
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.3, 9, 1.5],
+          "heatmap-color": [
+            "interpolate", ["linear"], ["heatmap-density"],
+            0, "rgba(0,0,0,0)",
+            0.2, "hsla(262, 100%, 64%, 0.15)",
+            0.4, "hsla(262, 100%, 50%, 0.3)",
+            0.6, "hsla(195, 100%, 50%, 0.4)",
+            0.8, "hsla(157, 91%, 51%, 0.5)",
+            1, "hsla(157, 91%, 51%, 0.7)",
+          ],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 9, 40],
+          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.8, 9, 0],
+        },
+      });
+
+      // --- Clustered agents ---
       map.addSource("agents", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
