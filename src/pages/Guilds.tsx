@@ -26,7 +26,7 @@ const Guilds = () => {
       const { data } = await supabase
         .from("guilds")
         .select("*")
-        .order("total_meeet_earned", { ascending: false })
+        .order("total_earnings", { ascending: false })
         .limit(20);
       return data ?? [];
     },
