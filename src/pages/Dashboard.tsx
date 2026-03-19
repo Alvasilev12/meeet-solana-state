@@ -195,7 +195,38 @@ function Sparkline({ data, color = "#14F195" }: { data: number[]; color?: string
 function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?: boolean }) {
   const [name, setName] = useState(isPresident ? "Mr President" : "");
   const [cls, setCls] = useState(isPresident ? "president" : "warrior");
+  const [countryCode, setCountryCode] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [showCountryList, setShowCountryList] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: countries = [] } = useQuery({
+    queryKey: ["countries-list"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("countries")
+        .select("code, name_en, flag_emoji, capital_lat, capital_lng")
+        .order("name_en");
+      return data ?? [];
+    },
+    staleTime: Infinity,
+  });
+
+  const selectedCountry = countries.find((c: any) => c.code === countryCode);
+
+  const filteredCountries = countrySearch.trim()
+    ? countries.filter((c: any) =>
+        c.name_en.toLowerCase().includes(countrySearch.toLowerCase()) ||
+        c.code.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countries;
+
+  function generateCoords(country: any): { lat: number; lng: number } {
+    return {
+      lat: country.capital_lat + (Math.random() - 0.5) * 4,
+      lng: country.capital_lng + (Math.random() - 0.5) * 4,
+    };
+  }
 
   useEffect(() => {
     if (isPresident) {
@@ -206,24 +237,31 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
   const { toast } = useToast();
   const mutation = useMutation({
     mutationFn: async () => {
+      const coords = selectedCountry ? generateCoords(selectedCountry) : null;
+
       if (isPresident) {
-        // President class requires service_role — use edge function
         const authClient = supabase.auth as any;
-        const {
-          data: { session },
-        } = await authClient.getSession();
+        const { data: { session } } = await authClient.getSession();
         if (!session) throw new Error("Not authenticated");
         const res = await supabase.functions.invoke("register-agent", {
-          body: { name: name.trim(), class: "president" },
+          body: {
+            name: name.trim(),
+            class: "president",
+            ...(countryCode && coords ? { country_code: countryCode, lat: coords.lat, lng: coords.lng } : {}),
+          },
         });
         if (res.error) throw new Error(res.error.message);
         if (res.data?.error) throw new Error(res.data.error);
       } else {
-        const { error } = await supabase.from("agents").insert({
-          user_id: userId, name: name.trim(), class: cls as Agent["class"],
-          pos_x: 50 + Math.random() * 200, pos_y: 50 + Math.random() * 200,
+        const res = await supabase.functions.invoke("register-agent", {
+          body: {
+            name: name.trim(),
+            class: cls,
+            ...(countryCode && coords ? { country_code: countryCode, lat: coords.lat, lng: coords.lng } : {}),
+          },
         });
-        if (error) throw error;
+        if (res.error) throw new Error(res.error.message);
+        if (res.data?.error) throw new Error(res.data.error);
       }
     },
     onSuccess: () => {
@@ -270,6 +308,44 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
             </Select>
           </div>
         )}
+
+        {/* Country Selector */}
+        <div className="space-y-2">
+          <Label className="font-body text-xs">Home Country</Label>
+          <div className="relative">
+            <Input
+              placeholder="Search country..."
+              value={showCountryList ? countrySearch : (selectedCountry ? `${selectedCountry.flag_emoji} ${selectedCountry.name_en}` : "")}
+              onChange={(e) => { setCountrySearch(e.target.value); setShowCountryList(true); }}
+              onFocus={() => setShowCountryList(true)}
+              className="bg-background"
+            />
+            {showCountryList && (
+              <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                {filteredCountries.slice(0, 50).map((c: any) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                    onClick={() => {
+                      setCountryCode(c.code);
+                      setCountrySearch("");
+                      setShowCountryList(false);
+                    }}
+                  >
+                    <span>{c.flag_emoji}</span>
+                    <span className="text-foreground">{c.name_en}</span>
+                    <span className="text-muted-foreground text-xs ml-auto">{c.code}</span>
+                  </button>
+                ))}
+                {filteredCountries.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No countries found</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="glass-card rounded-lg p-3 flex items-center gap-3">
           <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl">
             {CLASS_META[cls]?.emoji}
@@ -287,7 +363,6 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
     </Card>
   );
 }
-
 // ─── Stat Card ──────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, trend }: {
   icon: React.ReactNode; label: string; value: string | number; sub?: string; trend?: "up" | "down";

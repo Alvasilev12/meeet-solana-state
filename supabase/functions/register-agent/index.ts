@@ -84,7 +84,7 @@ async function resolveUserId(
 }
 
 async function registerSingle(
-  body: { name?: string; class?: string },
+  body: { name?: string; class?: string; country_code?: string; lat?: number; lng?: number },
   serviceClient: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<Record<string, unknown>> {
@@ -116,6 +116,21 @@ async function registerSingle(
     return { error: "You already have an agent", agent_id: existing.id, agent_name: existing.name, status_code: 409 };
   }
 
+  // Resolve geospatial data
+  let geoFields: Record<string, unknown> = {};
+  if (body.country_code) {
+    const { data: country } = await serviceClient
+      .from("countries")
+      .select("code, capital_lat, capital_lng")
+      .eq("code", body.country_code)
+      .maybeSingle();
+    if (country) {
+      const lat = typeof body.lat === "number" ? body.lat : country.capital_lat + (Math.random() - 0.5) * 4;
+      const lng = typeof body.lng === "number" ? body.lng : country.capital_lng + (Math.random() - 0.5) * 4;
+      geoFields = { country_code: country.code, lat, lng };
+    }
+  }
+
   const stats = CLASS_STATS[body.class];
   const { data: agent, error: insertError } = await serviceClient
     .from("agents")
@@ -130,6 +145,7 @@ async function registerSingle(
       pos_x: 50 + Math.random() * 100,
       pos_y: 50 + Math.random() * 60,
       ...stats,
+      ...geoFields,
     })
     .select()
     .single();
