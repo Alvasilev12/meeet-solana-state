@@ -24,17 +24,19 @@ Deno.serve(async (req) => {
 
     // Auth via JWT
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return json({ error: "Authorization required" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Authorization required" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) return json({ error: "Invalid token" }, 401);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) return json({ error: "Invalid token" }, 401);
+    const userId = claimsData.claims.sub as string;
 
+    // Parse & validate body
     const body = await req.json();
     const { question_id, prediction, amount_meeet } = body;
 
     if (!question_id || prediction === undefined || prediction === null) {
-      return json({ error: "Missing: question_id, prediction" }, 400);
+      return json({ error: "Missing: question_id, prediction, amount_meeet" }, 400);
     }
     const amount = Number(amount_meeet) || 0;
     if (amount < 50) return json({ error: "Minimum bet is 50 MEEET" }, 400);
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
     const { data: agent } = await supabase
       .from("agents")
       .select("id, balance_meeet")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -51,18 +53,18 @@ Deno.serve(async (req) => {
     if (!agent) return json({ error: "No agent found. Create an agent first." }, 400);
     if (Number(agent.balance_meeet) < amount) return json({ error: "Insufficient MEEET balance" }, 400);
 
-    // Check question is open
+    // Validate question exists, is open, and deadline not passed
     const { data: question } = await supabase
       .from("oracle_questions")
-      .select("id, status, deadline")
+      .select("id, status, deadline, total_pool_meeet, yes_pool, no_pool")
       .eq("id", question_id)
       .maybeSingle();
 
     if (!question) return json({ error: "Question not found" }, 404);
     if (question.status !== "open") return json({ error: "Market is closed" }, 400);
-    if (new Date(question.deadline) < new Date()) return json({ error: "Market deadline passed" }, 400);
+    if (new Date(question.deadline) < new Date()) return json({ error: "Market deadline has passed" }, 400);
 
-    // Check for duplicate bet
+    // Check for duplicate bet from this agent
     const { data: existing } = await supabase
       .from("oracle_bets")
       .select("id")
@@ -72,34 +74,63 @@ Deno.serve(async (req) => {
 
     if (existing) return json({ error: "You already placed a bet on this market" }, 400);
 
-    // Deduct balance
+    // Deduct balance from agent
+    const newBalance = Number(agent.balance_meeet) - amount;
     await supabase
       .from("agents")
-      .update({ balance_meeet: Number(agent.balance_meeet) - amount })
+      .update({ balance_meeet: newBalance })
       .eq("id", agent.id);
 
-    // Place bet
-    const { error: betError } = await supabase.from("oracle_bets").insert({
-      question_id,
-      agent_id: agent.id,
-      user_id: user.id,
-      prediction: !!prediction,
-      amount_meeet: amount,
-    });
+    // Insert bet
+    const { data: bet, error: betError } = await supabase
+      .from("oracle_bets")
+      .insert({
+        question_id,
+        agent_id: agent.id,
+        user_id: userId,
+        prediction: !!prediction,
+        amount_meeet: amount,
+      })
+      .select("id")
+      .single();
 
-    if (betError) return json({ error: betError.message }, 500);
+    if (betError) {
+      // Rollback balance deduction
+      await supabase
+        .from("agents")
+        .update({ balance_meeet: Number(agent.balance_meeet) })
+        .eq("id", agent.id);
+      return json({ error: betError.message }, 500);
+    }
 
-    // Update total pool
+    // Update oracle_questions pools
+    const currentYes = Number(question.yes_pool) || 0;
+    const currentNo = Number(question.no_pool) || 0;
+    const currentTotal = Number(question.total_pool_meeet) || 0;
+
+    const newYesPool = prediction ? currentYes + amount : currentYes;
+    const newNoPool = prediction ? currentNo : currentNo + amount;
+    const newTotalPool = currentTotal + amount;
+
     await supabase
       .from("oracle_questions")
-      .update({ total_pool_meeet: (question as any).total_pool_meeet + amount })
+      .update({
+        yes_pool: newYesPool,
+        no_pool: newNoPool,
+        total_pool_meeet: newTotalPool,
+      })
       .eq("id", question_id);
 
+    // Calculate consensus percentage (% of pool on YES side)
+    const consensusPercentage = newTotalPool > 0
+      ? Math.round((newYesPool / newTotalPool) * 100)
+      : 50;
+
     return json({
-      status: "ok",
-      prediction: !!prediction,
-      amount_meeet: amount,
-      new_balance: Number(agent.balance_meeet) - amount,
+      bet_id: bet.id,
+      new_yes_pool: newYesPool,
+      new_no_pool: newNoPool,
+      consensus_percentage: consensusPercentage,
     });
   } catch (err) {
     console.error("place-bet error:", err);
