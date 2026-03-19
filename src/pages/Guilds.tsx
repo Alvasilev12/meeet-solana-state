@@ -40,7 +40,8 @@ const Guilds = () => {
         name: guildName.trim(),
         description: guildDesc.trim() || null,
         master_id: user?.id,
-      });
+        flag_emoji: "🏛️",
+      } as any);
       if (error) throw error;
       toast({ title: "Guild created!", description: `${guildName} is now live.` });
       setShowCreateModal(false);
