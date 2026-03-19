@@ -210,7 +210,7 @@ const Navbar = () => {
       {open && (
         <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-xl animate-fade-up">
           <div className="container max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3">
-            {NAV_LINKS.map((l) => (
+            {ALL_LINKS.map((l) => (
               <Link
                 key={l.href}
                 to={l.href}
