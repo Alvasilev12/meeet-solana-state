@@ -1127,7 +1127,40 @@ const LiveMap = () => {
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300/70" /> : <Sun className="w-3 h-3 text-amber-400/70" />}
           <span className="text-[9px] font-mono text-white/40">{timeLabel}</span>
         </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          {weather === 'storm' ? <CloudLightning className="w-3 h-3 text-yellow-400/70" /> : weather === 'rain' ? <CloudRain className="w-3 h-3 text-blue-300/70" /> : <Cloud className="w-3 h-3 text-white/30" />}
+          <span className="text-[9px] font-mono text-white/40 capitalize">{weather}</span>
+        </div>
+        <button onClick={() => setShowSearch(!showSearch)} className="bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5">
+          <Search className="w-3.5 h-3.5 text-white/50" />
+        </button>
       </div>
+
+      {/* ═══ Search Panel ═══ */}
+      {showSearch && (
+        <div className="absolute top-[4.5rem] left-3 z-20 w-64 bg-black/70 backdrop-blur border border-white/[0.06] rounded-lg p-2 animate-fade-in">
+          <input
+            type="text" autoFocus placeholder="Search agent..."
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            className="w-full bg-white/5 border border-white/[0.08] rounded px-3 py-1.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 outline-none focus:border-primary/40"
+          />
+          {searchQuery.length >= 2 && (
+            <div className="mt-1 max-h-32 overflow-y-auto space-y-0.5 scrollbar-hide">
+              {agentsRef.current.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8).map(a => (
+                <button key={a.id} onClick={() => {
+                  followRef.current = a.id; setFollowAgent(a.id); setSelectedAgent({ ...a });
+                  setShowSearch(false); setSearchQuery("");
+                  addEvent(`Tracking ${a.name}`, a.color);
+                }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 text-left">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                  <span className="text-[10px] font-mono text-white/70">{a.name}</span>
+                  <span className="text-[8px] font-mono text-white/25 ml-auto capitalize">{a.cls}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )
 
       {/* ═══ Zoom + Speed — Left ═══ */}
       <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5">
