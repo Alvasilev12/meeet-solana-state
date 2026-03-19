@@ -137,8 +137,10 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
+    const container = mapContainer.current;
+
     const map = new maplibregl.Map({
-      container: mapContainer.current,
+      container,
       style: DARK_STYLE,
       center: [0, 20],
       zoom: 2,
@@ -146,10 +148,15 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       interactive,
     });
 
-    requestAnimationFrame(() => map.resize());
+    // ResizeObserver to keep map in sync with container
+    const resizeObserver = new ResizeObserver(() => {
+      if (map && !(map as any)._removed) {
+        map.resize();
+      }
+    });
+    resizeObserver.observe(container);
 
     map.on("load", () => {
-      map.resize();
       setMapLoaded(true);
 
       map.addSource("agents", {
@@ -383,7 +390,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }
 
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { resizeObserver.disconnect(); map.remove(); mapRef.current = null; };
   }, [interactive, onEventClick]);
 
   // Fetch data
