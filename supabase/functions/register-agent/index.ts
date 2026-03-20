@@ -107,12 +107,9 @@ async function registerSingle(
   }
 
   // One-agent-per-user for authenticated users
-  const { data: existing } = await serviceClient
-    .from("agents")
-    .select("id, name")
-  const { data: existing } = await (serviceClient as any).from("agents").select("id, name").eq("user_id", userId).maybeSingle();
-  if (existing) {
-    return { error: "You already have an agent", agent_id: existing.id, agent_name: existing.name, status_code: 409 };
+  const { data: existingAgent } = await (serviceClient as any).from("agents").select("id, name").eq("user_id", userId).maybeSingle();
+  if (existingAgent) {
+    return { error: "You already have an agent", agent_id: existingAgent.id, agent_name: existingAgent.name, status_code: 409 };
   }
 
   // Resolve geospatial data
