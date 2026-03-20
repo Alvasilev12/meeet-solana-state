@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Bot, Rocket, BarChart3, Wallet, ShoppingCart, Zap, Trophy,
   ChevronRight, Loader2, Star, Globe, Swords, Shield, Eye,
-  TrendingUp, Check, Users, Link2, Copy, ExternalLink
+  TrendingUp, Check, Users, Link2, Copy, ExternalLink, Gavel, Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { toast } from "sonner";
@@ -52,10 +52,13 @@ type Tab = "home" | "agents" | "deploy" | "quests" | "leaderboard" | "referrals"
 
 const CLASS_ICONS: Record<string, typeof Bot> = {
   warrior: Swords, spy: Eye, diplomat: Globe, scientist: Star, trader: TrendingUp,
+  oracle: Eye, miner: Zap, banker: BarChart3, president: Trophy,
 };
 const CLASS_COLORS: Record<string, string> = {
   warrior: "text-red-400", spy: "text-purple-400", diplomat: "text-blue-400",
   scientist: "text-emerald-400", trader: "text-amber-400",
+  oracle: "text-violet-400", miner: "text-teal-400", banker: "text-green-400",
+  president: "text-yellow-400",
 };
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-500", running: "bg-emerald-500", paused: "bg-amber-500",
@@ -69,6 +72,13 @@ const PLANS = [
   { name: "Commander", sol: 1.49, meeet: 37250, agents: 10, quests: 50, tier: "pro" },
   { name: "Nation", sol: 4.99, meeet: 124750, agents: 50, quests: 200, tier: "enterprise" },
 ];
+
+function fmtNum(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
 
 interface Agent {
   id: string; name: string; class: string; level: number;
@@ -85,13 +95,12 @@ const TelegramApp = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [leaderboard, setLeaderboard] = useState<Agent[]>([]);
-  const [stats, setStats] = useState({ agents: 0, quests: 0, treasury: 0, burned: 0 });
+  const [stats, setStats] = useState({ agents: 0, quests: 0, treasury: 0, treasury_fmt: "0", burned: 0, burned_fmt: "0", duels_today: 0, active_laws: 0 });
   const [loading, setLoading] = useState(true);
   const [buyPlan, setBuyPlan] = useState<typeof PLANS[0] | null>(null);
   const [agentName, setAgentName] = useState("");
   const [agentClass, setAgentClass] = useState("warrior");
   const [deploying, setDeploying] = useState(false);
-  const [totalAgentCount, setTotalAgentCount] = useState(0);
   const [marketListings, setMarketListings] = useState<any[]>([]);
   const [arenaMatches, setArenaMatches] = useState<any[]>([]);
 
@@ -99,8 +108,17 @@ const TelegramApp = () => {
   const tgUser = tg?.initDataUnsafe?.user;
 
   const FREE_AGENT_LIMIT = 200;
-  const freeSlots = Math.max(0, FREE_AGENT_LIMIT - totalAgentCount);
+  const freeSlots = Math.max(0, FREE_AGENT_LIMIT - stats.agents);
   const promoActive = freeSlots > 0;
+
+  const haptic = useCallback((style: string) => {
+    try { tg?.HapticFeedback?.impactOccurred(style); } catch {}
+  }, [tg]);
+
+  const switchTab = useCallback((t: Tab) => {
+    setTab(t);
+    haptic("light");
+  }, [haptic]);
 
   useEffect(() => {
     tg?.ready();
@@ -108,9 +126,8 @@ const TelegramApp = () => {
     tg?.setHeaderColor("#0a0a0a");
     tg?.setBackgroundColor("#0a0a0a");
 
-    // Handle hash-based deep links
     const hash = window.location.hash.replace("#", "");
-    const validTabs: Tab[] = ["home", "agents", "deploy", "quests", "leaderboard", "referrals", "wallet"];
+    const validTabs: Tab[] = ["home", "agents", "deploy", "quests", "leaderboard", "referrals", "wallet", "arena", "market"];
     if (hash && validTabs.includes(hash as Tab)) setTab(hash as Tab);
   }, []);
 
@@ -125,28 +142,26 @@ const TelegramApp = () => {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [agentsRes, treasuryRes, questsRes, countRes, leaderRes, openQuestsRes, marketRes, arenaRes] = await Promise.all([
-        supabase.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").limit(20),
-        supabase.from("state_treasury").select("balance_meeet,total_burned").single(),
-        supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
-        supabase.from("agents").select("id", { count: "exact", head: true }),
-        supabase.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").order("xp", { ascending: false }).limit(20),
-        supabase.from("quests").select("id,title,reward_meeet,category,status").eq("status", "open").order("created_at", { ascending: false }).limit(20),
-        supabase.from("agent_marketplace_listings").select("*").eq("status", "active").order("created_at", { ascending: false }).limit(20),
-        supabase.from("duels").select("*").order("created_at", { ascending: false }).limit(20),
-      ]);
-      if (agentsRes.data) setAgents(agentsRes.data as Agent[]);
-      if (leaderRes.data) setLeaderboard(leaderRes.data as Agent[]);
-      if (openQuestsRes.data) setQuests(openQuestsRes.data as Quest[]);
-      if (marketRes.data) setMarketListings(marketRes.data);
-      if (arenaRes.data) setArenaMatches(arenaRes.data);
-      setTotalAgentCount(countRes.count ?? 0);
-      setStats({
-        agents: countRes.count ?? 0,
-        quests: questsRes.count ?? 0,
-        treasury: (treasuryRes.data as any)?.balance_meeet ?? 0,
-        burned: (treasuryRes.data as any)?.total_burned ?? 0,
-      });
+      try {
+        // Fetch all data from the edge function (bypasses RLS)
+        const { data, error } = await supabase.functions.invoke("tg-app-data");
+        if (error) throw error;
+
+        setStats(data.stats);
+        setLeaderboard(data.leaderboard || []);
+        setQuests(data.open_quests || []);
+        setMarketListings(data.marketplace || []);
+        setArenaMatches(data.duels || []);
+
+        // For user's own agents, we still need auth context
+        const { data: userAgents } = await supabase.from("agents")
+          .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation")
+          .limit(20);
+        if (userAgents) setAgents(userAgents as Agent[]);
+      } catch (e) {
+        console.error("TG data load error:", e);
+        // Fallback: set empty data
+      }
       setLoading(false);
     })();
   }, []);
@@ -168,7 +183,7 @@ const TelegramApp = () => {
       return;
     }
     setDeploying(true);
-    tg?.HapticFeedback?.impactOccurred("medium");
+    haptic("medium");
     try {
       const { error } = await supabase.functions.invoke("deploy-agent", {
         body: { plan_name: buyPlan.name, agent_name: agentName.trim(), agent_class: agentClass },
@@ -178,7 +193,8 @@ const TelegramApp = () => {
       toast.success(`🚀 Agent "${agentName}" deployed!`);
       setBuyPlan(null);
       setAgentName("");
-      const { data: refreshed } = await supabase.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").limit(20);
+      const { data: refreshed } = await supabase.from("agents")
+        .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").limit(20);
       if (refreshed) setAgents(refreshed as Agent[]);
     } catch (e: any) {
       tg?.HapticFeedback?.notificationOccurred("error");
@@ -213,17 +229,32 @@ const TelegramApp = () => {
         </Badge>
       </header>
 
+      {/* Live Stats Ticker */}
+      <div className="px-3 pb-1">
+        <div className="bg-card/60 rounded-lg border border-border/50 px-3 py-1.5 overflow-hidden">
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground animate-pulse whitespace-nowrap">
+            <span>🤖 {stats.agents} agents</span>
+            <span className="text-border">·</span>
+            <span>⚔️ {stats.duels_today} duels today</span>
+            <span className="text-border">·</span>
+            <span>🔥 {stats.burned_fmt} MEEET burned</span>
+            <span className="text-border">·</span>
+            <span>📋 {stats.quests} quests</span>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       <main className="flex-1 overflow-y-auto px-3 pb-20 space-y-3">
-        {tab === "home" && <HomeTab stats={stats} agents={agents} onTab={setTab} promoActive={promoActive} freeSlots={freeSlots} />}
+        {tab === "home" && <HomeTab stats={stats} agents={agents} leaderboard={leaderboard} matches={arenaMatches} onTab={switchTab} promoActive={promoActive} freeSlots={freeSlots} haptic={haptic} />}
         {tab === "agents" && <AgentsTab agents={agents} />}
-        {tab === "deploy" && <DeployTab onBuy={setBuyPlan} promoActive={promoActive} freeSlots={freeSlots} />}
+        {tab === "deploy" && <DeployTab onBuy={setBuyPlan} promoActive={promoActive} freeSlots={freeSlots} haptic={haptic} />}
         {tab === "quests" && <QuestsTab quests={quests} />}
         {tab === "leaderboard" && <LeaderboardTab agents={leaderboard} />}
         {tab === "referrals" && <ReferralsTab tgUserId={tgUser?.id} />}
-        {tab === "wallet" && <WalletTab agents={agents} totalMeeet={totalMeeet} />}
-        {tab === "arena" && <ArenaTab matches={arenaMatches} agents={agents} tg={tg} />}
-        {tab === "market" && <MarketTab listings={marketListings} tg={tg} />}
+        {tab === "wallet" && <WalletTab agents={agents} totalMeeet={totalMeeet} tg={tg} haptic={haptic} />}
+        {tab === "arena" && <ArenaTab matches={arenaMatches} agents={agents} tg={tg} haptic={haptic} />}
+        {tab === "market" && <MarketTab listings={marketListings} tg={tg} haptic={haptic} />}
       </main>
 
       {/* Deploy Dialog */}
@@ -258,6 +289,9 @@ const TelegramApp = () => {
                   <SelectItem value="diplomat">🌐 Diplomat</SelectItem>
                   <SelectItem value="scientist">🔬 Scientist</SelectItem>
                   <SelectItem value="trader">📈 Trader</SelectItem>
+                  <SelectItem value="oracle">🔮 Oracle</SelectItem>
+                  <SelectItem value="miner">⛏️ Miner</SelectItem>
+                  <SelectItem value="banker">🏦 Banker</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -281,23 +315,26 @@ const TelegramApp = () => {
       </Dialog>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border px-1 pb-[env(safe-area-inset-bottom)] z-50">
-        <div className="flex justify-around py-1.5">
-          {([
-            { id: "home", icon: Globe, label: "Home" },
-            { id: "deploy", icon: Rocket, label: "Buy" },
-            { id: "arena", icon: Swords, label: "Arena" },
-            { id: "market", icon: ShoppingCart, label: "Market" },
-            { id: "referrals", icon: Users, label: "Refer" },
-          ] as const).map((t) => (
-            <button key={t.id}
-              onClick={() => { setTab(t.id); tg?.HapticFeedback?.impactOccurred("light"); }}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
-                tab === t.id ? "text-primary" : "text-muted-foreground"}`}>
-              <t.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{t.label}</span>
-            </button>
-          ))}
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="bg-card/95 backdrop-blur-md px-1 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex justify-around py-1.5">
+            {([
+              { id: "home" as Tab, icon: Globe, label: "Home" },
+              { id: "deploy" as Tab, icon: Rocket, label: "Buy" },
+              { id: "arena" as Tab, icon: Swords, label: "Arena" },
+              { id: "market" as Tab, icon: ShoppingCart, label: "Market" },
+              { id: "referrals" as Tab, icon: Users, label: "Refer" },
+            ]).map((t) => (
+              <button key={t.id}
+                onClick={() => switchTab(t.id)}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors active:scale-95 ${
+                  tab === t.id ? "text-primary" : "text-muted-foreground"}`}>
+                <t.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{t.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </nav>
     </div>
@@ -305,7 +342,7 @@ const TelegramApp = () => {
 };
 
 /* ── Home Tab ── */
-const HomeTab = ({ stats, agents, onTab, promoActive, freeSlots }: any) => (
+const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, freeSlots, haptic }: any) => (
   <div className="space-y-3">
     {promoActive && (
       <Card className="border-emerald-500/40 bg-emerald-500/5 overflow-hidden">
@@ -313,61 +350,72 @@ const HomeTab = ({ stats, agents, onTab, promoActive, freeSlots }: any) => (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🎁</div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-emerald-400">First 100 agents — FREE!</p>
+              <p className="text-sm font-bold text-emerald-400">First 200 agents — FREE!</p>
               <p className="text-[10px] text-muted-foreground">{freeSlots} spots remaining</p>
             </div>
-            <Button size="sm" onClick={() => onTab("deploy")} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-3">
+            <Button size="sm" onClick={() => { onTab("deploy"); haptic("medium"); }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-3 animate-pulse">
               Deploy
             </Button>
           </div>
         </CardContent>
       </Card>
     )}
-    <Card className="bg-gradient-to-br from-primary/20 to-card border-primary/20 overflow-hidden">
-      <CardContent className="p-4">
+
+    {/* Hero Card with animated gradient */}
+    <Card className="overflow-hidden border-primary/20 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 animate-[gradient_8s_ease_infinite] bg-[length:200%_200%]" />
+      <CardContent className="p-4 relative">
         <h2 className="text-lg font-bold mb-1">🌐 MEEET World</h2>
         <p className="text-xs text-muted-foreground mb-3">Deploy AI agents, complete quests, earn $MEEET</p>
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
-            { v: stats.agents, l: "Agents", c: "text-primary" },
-            { v: stats.quests, l: "Quests", c: "text-secondary" },
-            { v: `${(stats.treasury / 1000).toFixed(0)}K`, l: "Treasury", c: "text-amber-400" },
+            { v: fmtNum(stats.agents), l: "Agents", c: "text-primary" },
+            { v: String(stats.quests), l: "Quests", c: "text-secondary" },
+            { v: stats.treasury_fmt || fmtNum(stats.treasury), l: "Treasury", c: "text-amber-400" },
           ].map((s) => (
             <div key={s.l} className="bg-background/40 rounded-lg p-2">
-              <p className={`text-lg font-bold ${s.c}`}>{typeof s.v === "number" ? s.v.toLocaleString() : s.v}</p>
+              <p className={`text-lg font-bold ${s.c}`}>{s.v}</p>
               <p className="text-[10px] text-muted-foreground">{s.l}</p>
             </div>
           ))}
         </div>
       </CardContent>
     </Card>
+
+    {/* Quick Actions */}
     <div className="grid grid-cols-4 gap-2">
       {[
-        { id: "deploy" as const, icon: Rocket, label: "Buy", c: "text-primary border-primary/30 bg-primary/10" },
-        { id: "arena" as const, icon: Swords, label: "Arena", c: "text-red-400 border-red-400/30 bg-red-400/10" },
-        { id: "market" as const, icon: ShoppingCart, label: "Market", c: "text-secondary border-secondary/30 bg-secondary/10" },
-        { id: "referrals" as const, icon: Users, label: "Refer", c: "text-amber-400 border-amber-400/30 bg-amber-400/10" },
+        { id: "deploy" as Tab, icon: Rocket, label: "Buy", c: "text-primary border-primary/30 bg-primary/10" },
+        { id: "arena" as Tab, icon: Swords, label: "Arena", c: "text-red-400 border-red-400/30 bg-red-400/10" },
+        { id: "market" as Tab, icon: ShoppingCart, label: "Market", c: "text-secondary border-secondary/30 bg-secondary/10" },
+        { id: "referrals" as Tab, icon: Users, label: "Refer", c: "text-amber-400 border-amber-400/30 bg-amber-400/10" },
       ].map((a) => (
         <Button key={a.id} onClick={() => onTab(a.id)} variant="ghost"
-          className={`h-auto py-3 border flex-col gap-1 ${a.c}`}>
+          className={`h-auto py-3 border flex-col gap-1 active:scale-95 ${a.c}`}>
           <a.icon className="h-5 w-5" />
           <span className="text-[10px] font-medium">{a.label}</span>
         </Button>
       ))}
     </div>
-    {agents.length > 0 && (
+
+    {/* Top Agents */}
+    {leaderboard.length > 0 && (
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">Top Agents</h3>
+          <h3 className="text-sm font-semibold">🏆 Top Agents</h3>
           <button onClick={() => onTab("leaderboard")} className="text-xs text-primary flex items-center gap-0.5">
             Leaderboard <ChevronRight className="h-3 w-3" />
           </button>
         </div>
         <div className="space-y-1.5">
-          {agents.slice(0, 3).map((a: Agent) => {
+          {leaderboard.slice(0, 3).map((a: Agent, i: number) => {
             const Icon = CLASS_ICONS[a.class] || Bot;
+            const medals = ["🥇", "🥈", "🥉"];
+            const borderColors = ["border-yellow-500/40", "border-gray-400/40", "border-amber-600/40"];
             return (
-              <div key={a.id} className="flex items-center gap-3 bg-card rounded-lg p-2.5 border border-border">
+              <div key={a.id} className={`flex items-center gap-3 bg-card rounded-lg p-2.5 border ${borderColors[i] || "border-border"}`}>
+                <span className="text-base w-6 text-center">{medals[i]}</span>
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                   <Icon className={`h-4 w-4 ${CLASS_COLORS[a.class] || "text-foreground"}`} />
                 </div>
@@ -376,7 +424,7 @@ const HomeTab = ({ stats, agents, onTab, promoActive, freeSlots }: any) => (
                   <p className="text-[10px] text-muted-foreground">Lv.{a.level} · {a.quests_completed} quests</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-medium">{a.balance_meeet.toLocaleString()}</p>
+                  <p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p>
                   <p className="text-[10px] text-muted-foreground">MEEET</p>
                 </div>
               </div>
@@ -385,6 +433,48 @@ const HomeTab = ({ stats, agents, onTab, promoActive, freeSlots }: any) => (
         </div>
       </div>
     )}
+
+    {/* Latest Battles */}
+    {matches.length > 0 && (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold">⚔️ Latest Battles</h3>
+          <button onClick={() => onTab("arena")} className="text-xs text-primary flex items-center gap-0.5">
+            Arena <ChevronRight className="h-3 w-3" />
+          </button>
+        </div>
+        <div className="space-y-1.5">
+          {matches.slice(0, 3).map((m: any) => (
+            <div key={m.id} className="flex items-center justify-between bg-card rounded-lg p-2.5 border border-border">
+              <span className="text-xs font-medium truncate max-w-[80px]">{m.challenger_name}</span>
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-red-400 border-red-400/30">VS</Badge>
+              <span className="text-xs font-medium truncate max-w-[80px]">{m.defender_name}</span>
+              <span className="text-[10px] text-muted-foreground">💰{fmtNum(m.bet_meeet || m.stake_meeet || 0)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Oracle + Parliament cards */}
+    <div className="grid grid-cols-2 gap-2">
+      <Card className="border-violet-500/20 bg-violet-500/5 cursor-pointer active:scale-95 transition-transform"
+        onClick={() => { onTab("quests"); haptic("light"); }}>
+        <CardContent className="p-3 text-center">
+          <p className="text-xl mb-1">🔮</p>
+          <p className="text-xs font-semibold">Oracle</p>
+          <p className="text-[10px] text-muted-foreground">Predict & earn</p>
+        </CardContent>
+      </Card>
+      <Card className="border-amber-500/20 bg-amber-500/5 cursor-pointer active:scale-95 transition-transform"
+        onClick={() => haptic("light")}>
+        <CardContent className="p-3 text-center">
+          <p className="text-xl mb-1">🏛️</p>
+          <p className="text-xs font-semibold">Parliament</p>
+          <p className="text-[10px] text-muted-foreground">{stats.active_laws} active laws</p>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 );
 
@@ -425,7 +515,7 @@ const AgentsTab = ({ agents }: { agents: Agent[] }) => (
                 <span className="text-[10px] text-muted-foreground">{a.hp}/{a.max_hp}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div><p className="text-xs font-medium">{a.balance_meeet.toLocaleString()}</p><p className="text-[10px] text-muted-foreground">MEEET</p></div>
+                <div><p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p><p className="text-[10px] text-muted-foreground">MEEET</p></div>
                 <div><p className="text-xs font-medium">{a.quests_completed}</p><p className="text-[10px] text-muted-foreground">Quests</p></div>
                 <div><p className="text-xs font-medium">{a.reputation}</p><p className="text-[10px] text-muted-foreground">Rep</p></div>
               </div>
@@ -438,13 +528,13 @@ const AgentsTab = ({ agents }: { agents: Agent[] }) => (
 );
 
 /* ── Deploy / Buy Tab ── */
-const DeployTab = ({ onBuy, promoActive, freeSlots }: { onBuy: (p: typeof PLANS[0]) => void; promoActive: boolean; freeSlots: number }) => (
+const DeployTab = ({ onBuy, promoActive, freeSlots, haptic }: { onBuy: (p: typeof PLANS[0]) => void; promoActive: boolean; freeSlots: number; haptic: (s: string) => void }) => (
   <div className="space-y-3">
     <h2 className="text-base font-semibold">💎 Buy Agent</h2>
     {promoActive && (
       <Card className="border-emerald-500/40 bg-emerald-500/5">
         <CardContent className="p-3 text-center">
-          <p className="text-sm font-bold text-emerald-400">🎁 First 100 agents deploy FREE!</p>
+          <p className="text-sm font-bold text-emerald-400">🎁 First 200 agents deploy FREE!</p>
           <p className="text-[10px] text-muted-foreground">{freeSlots} free spots left · Scout plan</p>
         </CardContent>
       </Card>
@@ -478,8 +568,8 @@ const DeployTab = ({ onBuy, promoActive, freeSlots }: { onBuy: (p: typeof PLANS[
                 )}
               </div>
             </div>
-            <Button onClick={() => onBuy(p)} size="sm"
-              className={`w-full h-8 text-xs ${isFreeScout ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
+            <Button onClick={() => { onBuy(p); haptic("medium"); }} size="sm"
+              className={`w-full h-8 text-xs active:scale-95 ${isFreeScout ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
               <ShoppingCart className="h-3.5 w-3.5 mr-1" />
               {isFreeScout ? "Deploy FREE" : "Buy Now"}
             </Button>
@@ -509,7 +599,7 @@ const QuestsTab = ({ quests }: { quests: Quest[] }) => (
               <p className="text-sm font-semibold truncate">{q.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="text-[9px] px-1.5 py-0">{q.category}</Badge>
-                <span className="text-[10px] text-muted-foreground">💰 {q.reward_meeet?.toLocaleString() ?? 0} MEEET</span>
+                <span className="text-[10px] text-muted-foreground">💰 {fmtNum(q.reward_meeet ?? 0)} MEEET</span>
               </div>
             </div>
             <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
@@ -525,13 +615,14 @@ const QuestsTab = ({ quests }: { quests: Quest[] }) => (
 /* ── Leaderboard Tab ── */
 const LeaderboardTab = ({ agents }: { agents: Agent[] }) => {
   const medals = ["🥇", "🥈", "🥉"];
+  const borderColors = ["border-yellow-500/40", "border-gray-400/40", "border-amber-600/40"];
   return (
     <div className="space-y-3">
       <h2 className="text-base font-semibold">🏆 Global Leaderboard</h2>
       {agents.map((a, i) => {
         const Icon = CLASS_ICONS[a.class] || Bot;
         return (
-          <Card key={a.id} className={`border-border ${i < 3 ? "border-primary/30" : ""}`}>
+          <Card key={a.id} className={`${i < 3 ? borderColors[i] : "border-border"}`}>
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-8 text-center text-lg font-bold">
                 {i < 3 ? medals[i] : <span className="text-sm text-muted-foreground">{i + 1}</span>}
@@ -545,7 +636,7 @@ const LeaderboardTab = ({ agents }: { agents: Agent[] }) => {
               </div>
               <div className="text-right">
                 <p className="text-xs font-bold">⚡ {a.xp.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">{a.balance_meeet.toLocaleString()} MEEET</p>
+                <p className="text-[10px] text-muted-foreground">{fmtNum(a.balance_meeet)} MEEET</p>
               </div>
             </CardContent>
           </Card>
@@ -581,15 +672,15 @@ const ReferralsTab = ({ tgUserId }: { tgUserId?: number }) => {
           <label className="text-xs text-muted-foreground">Your referral link</label>
           <div className="flex gap-2">
             <Input value={refLink} readOnly className="bg-background border-border text-xs flex-1" />
-            <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0">
+            <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0 active:scale-95">
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button size="sm" onClick={copyLink} variant="outline" className="text-xs gap-1">
+            <Button size="sm" onClick={copyLink} variant="outline" className="text-xs gap-1 active:scale-95">
               <Copy className="h-3 w-3" /> Copy
             </Button>
-            <Button size="sm" asChild className="text-xs gap-1 bg-[#0088cc] hover:bg-[#0077b5] text-white">
+            <Button size="sm" asChild className="text-xs gap-1 bg-[#0088cc] hover:bg-[#0077b5] text-white active:scale-95">
               <a href={shareUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3 w-3" /> Share in TG
               </a>
@@ -619,34 +710,96 @@ const ReferralsTab = ({ tgUserId }: { tgUserId?: number }) => {
 };
 
 /* ── Wallet Tab ── */
-const WalletTab = ({ agents, totalMeeet }: { agents: Agent[]; totalMeeet: number }) => (
-  <div className="space-y-3">
-    <h2 className="text-base font-semibold">💰 Wallet</h2>
-    <Card className="bg-gradient-to-br from-primary/15 to-card border-primary/20">
-      <CardContent className="p-4 text-center">
-        <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
-        <p className="text-2xl font-bold text-primary">{totalMeeet.toLocaleString()}</p>
-        <p className="text-xs text-muted-foreground">$MEEET across {agents.length} agents</p>
-      </CardContent>
-    </Card>
-    <h3 className="text-sm font-medium text-muted-foreground">By Agent</h3>
-    {agents.filter(a => a.balance_meeet > 0).map((a) => (
-      <div key={a.id} className="flex items-center justify-between bg-card rounded-lg p-2.5 border border-border">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[a.status] || STATUS_COLORS.idle}`} />
-          <span className="text-sm truncate max-w-[150px]">{a.name}</span>
+const WalletTab = ({ agents, totalMeeet, tg, haptic }: { agents: Agent[]; totalMeeet: number; tg: any; haptic: (s: string) => void }) => {
+  const [claimAgent, setClaimAgent] = useState("");
+  const [claimAmount, setClaimAmount] = useState("");
+  const [walletAddr, setWalletAddr] = useState("");
+  const [claiming, setClaiming] = useState(false);
+
+  const handleClaim = async () => {
+    if (!claimAgent || !claimAmount || !walletAddr) {
+      toast.error("Fill all fields");
+      return;
+    }
+    setClaiming(true);
+    haptic("medium");
+    try {
+      const { data, error } = await supabase.functions.invoke("claim-tokens", {
+        body: { agent_id: claimAgent, amount: parseInt(claimAmount) },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      tg?.HapticFeedback?.notificationOccurred("success");
+      toast.success(`✅ Claimed ${data.net_amount} MEEET (${data.tax} tax, ${data.burned} burned)`);
+      setClaimAmount("");
+    } catch (e: any) {
+      tg?.HapticFeedback?.notificationOccurred("error");
+      toast.error(e.message || "Claim failed");
+    } finally { setClaiming(false); }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-base font-semibold">💰 Wallet</h2>
+      <Card className="bg-gradient-to-br from-primary/15 to-card border-primary/20">
+        <CardContent className="p-4 text-center">
+          <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
+          <p className="text-2xl font-bold text-primary">{totalMeeet.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">$MEEET across {agents.length} agents</p>
+        </CardContent>
+      </Card>
+
+      {/* Claim Section */}
+      <Card className="border-amber-500/20 bg-amber-500/5">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Flame className="h-4 w-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-amber-400">Claim to Wallet</h3>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Daily limit: 10,000 MEEET · Tax: 5% · Burn: 20%</p>
+          <Select value={claimAgent} onValueChange={setClaimAgent}>
+            <SelectTrigger className="bg-background border-border text-xs">
+              <SelectValue placeholder="Select agent..." />
+            </SelectTrigger>
+            <SelectContent>
+              {agents.filter(a => a.balance_meeet > 0).map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name} ({fmtNum(a.balance_meeet)} MEEET)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input placeholder="Amount (min 100)" value={claimAmount} onChange={(e) => setClaimAmount(e.target.value)}
+            type="number" className="bg-background border-border text-xs" />
+          <Input placeholder="Solana wallet address" value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)}
+            className="bg-background border-border text-xs" />
+          <Button size="sm" onClick={handleClaim} disabled={claiming || !claimAgent || !claimAmount}
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs active:scale-95">
+            {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wallet className="h-3.5 w-3.5" />}
+            Claim MEEET
+          </Button>
+        </CardContent>
+      </Card>
+
+      <h3 className="text-sm font-medium text-muted-foreground">By Agent</h3>
+      {agents.filter(a => a.balance_meeet > 0).map((a) => (
+        <div key={a.id} className="flex items-center justify-between bg-card rounded-lg p-2.5 border border-border">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[a.status] || STATUS_COLORS.idle}`} />
+            <span className="text-sm truncate max-w-[150px]">{a.name}</span>
+          </div>
+          <span className="text-sm font-medium">{a.balance_meeet.toLocaleString()} MEEET</span>
         </div>
-        <span className="text-sm font-medium">{a.balance_meeet.toLocaleString()} MEEET</span>
-      </div>
-    ))}
-    {agents.every(a => a.balance_meeet === 0) && (
-      <p className="text-xs text-muted-foreground text-center py-4">No earnings yet</p>
-    )}
-  </div>
-);
+      ))}
+      {agents.every(a => a.balance_meeet === 0) && (
+        <p className="text-xs text-muted-foreground text-center py-4">No earnings yet</p>
+      )}
+    </div>
+  );
+};
 
 /* ── Arena Tab ── */
-const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg: any }) => {
+const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Agent[]; tg: any; haptic: (s: string) => void }) => {
   const [challenging, setChallenging] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [betAmount, setBetAmount] = useState("100");
@@ -654,7 +807,7 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
   const handleChallenge = async () => {
     if (!selectedAgent || !betAmount) return;
     setChallenging(true);
-    tg?.HapticFeedback?.impactOccurred("heavy");
+    haptic("heavy");
     try {
       const { error } = await supabase.functions.invoke("duel", {
         body: { agent_id: selectedAgent, bet_meeet: parseInt(betAmount) },
@@ -686,7 +839,7 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
             <SelectContent>
               {agents.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
-                  {a.name} (Lv.{a.level} · {a.balance_meeet} MEEET)
+                  {a.name} (Lv.{a.level} · {fmtNum(a.balance_meeet)} MEEET)
                 </SelectItem>
               ))}
             </SelectContent>
@@ -695,7 +848,7 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
             <Input placeholder="Bet MEEET" value={betAmount} onChange={(e) => setBetAmount(e.target.value)}
               type="number" className="bg-background border-border text-xs flex-1" />
             <Button size="sm" onClick={handleChallenge} disabled={challenging || !selectedAgent}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs shrink-0">
+              className="bg-red-600 hover:bg-red-700 text-white text-xs shrink-0 active:scale-95">
               {challenging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Swords className="h-3.5 w-3.5" />}
               Fight!
             </Button>
@@ -718,7 +871,9 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-blue-400" />
-                <span className="text-xs font-medium truncate max-w-[80px]">{m.challenger_name || "Agent"}</span>
+                <span className={`text-xs font-medium truncate max-w-[80px] ${m.winner_agent_id === m.challenger_agent_id ? "text-emerald-400" : ""}`}>
+                  {m.challenger_name || "Agent"}
+                </span>
               </div>
               <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${
                 m.status === "completed" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
@@ -726,12 +881,15 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
                 {m.status === "completed" ? "Done" : "Pending"}
               </Badge>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium truncate max-w-[80px]">{m.defender_name || "Agent"}</span>
+                <span className={`text-xs font-medium truncate max-w-[80px] ${m.winner_agent_id === m.defender_agent_id ? "text-emerald-400" : ""}`}>
+                  {m.defender_name || "Agent"}
+                </span>
                 <Shield className="h-4 w-4 text-red-400" />
               </div>
             </div>
             <div className="text-center mt-1">
-              <span className="text-[10px] text-muted-foreground">💰 {m.bet_meeet?.toLocaleString() ?? 0} MEEET</span>
+              <span className="text-[10px] text-muted-foreground">💰 {fmtNum(m.bet_meeet || m.stake_meeet || 0)} MEEET</span>
+              {m.winner_name && <span className="text-[10px] text-emerald-400 ml-2">👑 {m.winner_name}</span>}
             </div>
           </CardContent>
         </Card>
@@ -741,9 +899,9 @@ const ArenaTab = ({ matches, agents, tg }: { matches: any[]; agents: Agent[]; tg
 };
 
 /* ── Marketplace Tab ── */
-const MarketTab = ({ listings, tg }: { listings: any[]; tg: any }) => {
-  const handleBuy = async (listingId: string, price: number) => {
-    tg?.HapticFeedback?.impactOccurred("medium");
+const MarketTab = ({ listings, tg, haptic }: { listings: any[]; tg: any; haptic: (s: string) => void }) => {
+  const handleBuy = async (listingId: string) => {
+    haptic("medium");
     try {
       const { error } = await supabase.functions.invoke("buy-agent-marketplace", {
         body: { listing_id: listingId },
@@ -785,13 +943,12 @@ const MarketTab = ({ listings, tg }: { listings: any[]; tg: any }) => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-primary">{l.price_sol?.toFixed(2) || "0.00"} SOL</p>
-                <p className="text-[10px] text-muted-foreground">{(l.price_meeet || 0).toLocaleString()} MEEET</p>
+                <p className="text-sm font-bold text-primary">{fmtNum(l.price_meeet || 0)} MEEET</p>
               </div>
             </div>
             {l.description && <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2">{l.description}</p>}
-            <Button size="sm" onClick={() => handleBuy(l.id, l.price_sol)}
-              className="w-full h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="sm" onClick={() => handleBuy(l.id)}
+              className="w-full h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95">
               <ShoppingCart className="h-3 w-3 mr-1" /> Buy Agent
             </Button>
           </CardContent>

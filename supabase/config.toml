@@ -125,3 +125,12 @@ verify_jwt = false
 
 [functions.process-lp-contribution]
 verify_jwt = false
+
+[functions.tg-app-data]
+verify_jwt = false
+
+[functions.run-auto-duels]
+verify_jwt = false
+
+[functions.get-rankings]
+verify_jwt = false

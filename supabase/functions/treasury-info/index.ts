@@ -1,5 +1,5 @@
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "npm:@solana/web3.js@1.95.8";
-import bs58 from "npm:bs58@5.0.0";
+import { Connection, Keypair, LAMPORTS_PER_SOL } from "https://esm.sh/@solana/web3.js@1.95.8";
+import bs58 from "https://esm.sh/bs58@5.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
