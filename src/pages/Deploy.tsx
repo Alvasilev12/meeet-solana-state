@@ -316,6 +316,10 @@ const Deploy = () => {
                       </ul>
                       {isEnterprise ? (
                         <Button className="w-full" variant="outline" size="sm" onClick={() => window.location.href = "mailto:hello@meeet.world"}>Contact Us</Button>
+                      ) : promoActive && plan.name === "Scout" ? (
+                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => handleSelectPlan(plan)}>
+                          🎁 Deploy FREE
+                        </Button>
                       ) : (
                         <Button className="w-full" variant="default" size="sm" onClick={() => handleSelectPlan(plan)}>Get Started</Button>
                       )}
