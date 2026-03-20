@@ -942,18 +942,21 @@ const Dashboard = () => {
               {/* Impact Score + Oracle Predictions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {impactScore && (
-                  <Card className="glass-card border-border overflow-hidden relative">
+                  <Card className="glass-card border-border overflow-hidden relative group">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-secondary via-primary to-secondary" />
-                    <CardHeader className="pb-2">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CardHeader className="pb-2 relative">
                       <CardTitle className="font-display text-sm flex items-center gap-2">
                         <Zap className="w-4 h-4 text-secondary" />
                         My Impact Score
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="text-center py-2">
-                        <p className="text-4xl font-display font-bold text-primary">{impactScore.total.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground font-body mt-1">Cumulative Impact Points</p>
+                    <CardContent className="space-y-3 relative">
+                      <div className="text-center py-3">
+                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full border-2 border-primary/30 bg-primary/5 shadow-[0_0_30px_rgba(var(--primary),0.15)]">
+                          <p className="text-3xl font-display font-bold text-primary">{impactScore.total.toLocaleString()}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-body mt-2">Cumulative Impact Points</p>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="glass-card rounded-lg py-2">
