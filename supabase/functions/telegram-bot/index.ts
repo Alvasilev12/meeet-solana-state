@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
-const WEBAPP_URL = "https://meeet-solana-state.lovable.app/tg";
+const WEBAPP_URL = "https://meeet.world/tg";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
