@@ -10,18 +10,18 @@ import WorldMapFilterBar from "./world/WorldMapFilterBar";
 import WorldMapNotifications from "./world/WorldMapNotifications";
 import WorldMapEventFeed from "./world/WorldMapEventFeed";
 
-// ── Class colors per spec ──
+// ── Class colors ──
 const CLASS_COLORS: Record<string, string> = {
-  diplomat: "#4ECDC4",
-  oracle: "#FFE66D",
-  trader: "#FF6B6B",
-  warrior: "#A8E6CF",
-  miner: "#B8A9FF",
-  banker: "#FFA07A",
-  president: "#FFD700",
-  builder: "#87CEEB",
-  hacker: "#FF69B4",
-  scout: "#98FB98",
+  warrior: "#ef4444",
+  trader: "#22c55e",
+  oracle: "#eab308",
+  diplomat: "#f59e0b",
+  miner: "#3b82f6",
+  banker: "#a855f7",
+  president: "#fbbf24",
+  builder: "#06b6d4",
+  hacker: "#ec4899",
+  scout: "#10b981",
 };
 
 const CLASS_ICONS: Record<string, string> = {
@@ -103,10 +103,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
     },
     {
       id: "country-fill", type: "fill", source: "country-borders",
-      paint: {
-        "fill-color": "#0E1525",
-        "fill-opacity": 0.6,
-      },
+      paint: { "fill-color": "#0E1525", "fill-opacity": 0.6 },
     },
     {
       id: "country-borders-line", type: "line", source: "country-borders",
@@ -136,74 +133,8 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
 };
 
-// ── Marker CSS ──
+// ── Minimal CSS ──
 const MARKER_CSS = `
-@keyframes wm-glow-pulse {
-  0%, 100% { box-shadow: 0 0 12px 4px var(--glow-color), 0 0 28px 8px var(--glow-color-dim); transform: scale(1); }
-  50% { box-shadow: 0 0 18px 6px var(--glow-color), 0 0 40px 14px var(--glow-color-dim); transform: scale(1.06); }
-}
-@keyframes wm-glow-pulse-strong {
-  0%, 100% { box-shadow: 0 0 16px 6px var(--glow-color), 0 0 40px 14px var(--glow-color-dim); transform: scale(1); }
-  50% { box-shadow: 0 0 26px 10px var(--glow-color), 0 0 56px 22px var(--glow-color-dim); transform: scale(1.05); }
-}
-@keyframes wm-outer-ring-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-.wm-agent-marker {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; z-index: 10; position: relative;
-}
-.wm-agent-circle {
-  width: 48px; height: 48px; border-radius: 50%;
-  border: 2.5px solid var(--border-color);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; background: rgba(8,12,20,0.85);
-  animation: wm-glow-pulse 3s ease-in-out infinite;
-  transition: transform 0.2s;
-  position: relative;
-}
-.wm-agent-circle:hover { transform: scale(1.15) !important; z-index: 20; }
-.wm-agent-circle.wm-top {
-  width: 64px; height: 64px; font-size: 28px;
-  border-width: 3px;
-  animation: wm-glow-pulse-strong 3s ease-in-out infinite;
-}
-.wm-agent-circle.wm-offline {
-  animation: none;
-  opacity: 0.45;
-}
-.wm-outer-ring {
-  position: absolute; inset: -6px; border-radius: 50%;
-  border: 1.5px dashed var(--glow-color);
-  opacity: 0.5;
-  animation: wm-outer-ring-spin 8s linear infinite;
-  pointer-events: none;
-}
-.wm-agent-name {
-  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
-  color: #fff; white-space: nowrap; pointer-events: none;
-  background: rgba(8,12,20,0.75);
-  padding: 1px 8px; border-radius: 10px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.wm-warning-pulse {
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #ef4444; border: 2px solid #fca5a5;
-  box-shadow: 0 0 12px 4px rgba(239,68,68,0.5);
-  cursor: pointer; position: relative;
-}
-@keyframes wm-ripple {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(3); opacity: 0; }
-}
-.wm-ripple {
-  position: absolute; inset: -4px; border-radius: 50%;
-  border: 2px solid var(--glow-color);
-  animation: wm-ripple 2s ease-out forwards;
-  pointer-events: none;
-}
 .maplibregl-popup-content {
   background: rgba(10,14,26,0.95) !important;
   backdrop-filter: blur(16px) !important;
@@ -234,11 +165,11 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-  const agentMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
 
   // Inject CSS
   useEffect(() => {
-    const id = "wm-v2-styles";
+    const id = "wm-v3-styles";
     if (document.getElementById(id)) return;
     const style = document.createElement("style");
     style.id = id;
@@ -246,32 +177,24 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     document.head.appendChild(style);
   }, []);
 
-  // Top 10 agent IDs for larger markers
-  const top10Ids = useMemo(() => {
-    const sorted = [...agents].sort((a, b) => (b.reputation + b.balance_meeet) - (a.reputation + a.balance_meeet));
-    return new Set(sorted.slice(0, 10).map(a => a.id));
+  // Valid agents with coordinates
+  const validAgents = useMemo(() => {
+    return agents.filter(a => a.lat != null && a.lng != null && a.lat !== 0 && a.lng !== 0);
   }, [agents]);
 
   // Filtered agents for display
   const visibleAgents = useMemo(() => {
-    return agents.filter(a => {
-      if (!a.lat || !a.lng) return false;
+    return validAgents.filter(a => {
       if (activeFilter === "all") return true;
       if (activeFilter === "allies") return false;
       return a.class === activeFilter;
     });
-  }, [agents, activeFilter]);
-
-  // Agents that should fade
-  const fadedIds = useMemo(() => {
-    if (activeFilter === "all") return new Set<string>();
-    return new Set(agents.filter(a => a.lat && a.lng && a.class !== activeFilter).map(a => a.id));
-  }, [agents, activeFilter]);
+  }, [validAgents, activeFilter]);
 
   // Dominant class per country for territory coloring
   const countryClassColors = useMemo(() => {
     const countryAgents: Record<string, Record<string, number>> = {};
-    agents.forEach(a => {
+    validAgents.forEach(a => {
       if (!a.nation_code) return;
       if (!countryAgents[a.nation_code]) countryAgents[a.nation_code] = {};
       countryAgents[a.nation_code][a.class] = (countryAgents[a.nation_code][a.class] || 0) + 1;
@@ -282,13 +205,13 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
       if (dominant) result[code] = CLASS_COLORS[dominant[0]] || "#9945FF";
     });
     return result;
-  }, [agents]);
+  }, [validAgents]);
 
   const fetchAgents = useCallback(async () => {
     const { data } = await supabase
       .from("agents_public")
       .select("id, name, class, lat, lng, reputation, balance_meeet, level, status, nation_code")
-      .not("lat", "is", null).not("lng", "is", null).limit(500);
+      .not("lat", "is", null).not("lng", "is", null).limit(800);
     if (data) setAgents(data as Agent[]);
   }, []);
 
@@ -318,34 +241,250 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     return () => { clearTimeout(delayResize); ro.disconnect(); map.remove(); mapRef.current = null; setMapLoaded(false); };
   }, [interactive]);
 
-  // Apply territory coloring when data changes
+  // Apply territory coloring
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+    const entries = Object.entries(countryClassColors);
+    if (entries.length > 0) {
+      const matchExpr: any[] = ["match", ["get", "ADMIN"]];
+      entries.forEach(([code, color]) => { matchExpr.push(code, color + "20"); });
+      matchExpr.push("#0E1525");
+      const borderMatch: any[] = ["match", ["get", "ADMIN"]];
+      entries.forEach(([code, color]) => { borderMatch.push(code, color + "60"); });
+      borderMatch.push("#1E2D4A");
+      try {
+        map.setPaintProperty("country-fill", "fill-color", matchExpr);
+        map.setPaintProperty("country-borders-line", "line-color", borderMatch);
+      } catch { /* layers not ready */ }
+    }
+  }, [countryClassColors, mapLoaded]);
+
+  // GeoJSON source + clustering layers
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
-    // Build a match expression for country fill colors
-    const entries = Object.entries(countryClassColors);
-    if (entries.length > 0) {
-      const matchExpr: any[] = ["match", ["get", "ADMIN"]];
-      entries.forEach(([code, color]) => {
-        matchExpr.push(code, color + "40"); // 25% opacity hex — visible choropleth
-      });
-      matchExpr.push("#0E1525"); // default
+    const geojson: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: visibleAgents.map(a => ({
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: [a.lng!, a.lat!] },
+        properties: {
+          id: a.id,
+          name: a.name,
+          class: a.class,
+          level: a.level,
+          color: CLASS_COLORS[a.class] || "#9945FF",
+          reputation: a.reputation,
+          balance_meeet: a.balance_meeet,
+          status: a.status,
+        },
+      })),
+    };
 
-      const borderMatch: any[] = ["match", ["get", "ADMIN"]];
-      entries.forEach(([code, color]) => {
-        borderMatch.push(code, color);
-      });
-      borderMatch.push("#1E2D4A"); // default
-
-      try {
-        map.setPaintProperty("country-fill", "fill-color", matchExpr);
-        map.setPaintProperty("country-borders-line", "line-color", borderMatch);
-      } catch {
-        // layers may not be ready
-      }
+    if (map.getSource("agents-source")) {
+      (map.getSource("agents-source") as maplibregl.GeoJSONSource).setData(geojson);
+      return;
     }
-  }, [countryClassColors, mapLoaded]);
+
+    map.addSource("agents-source", {
+      type: "geojson",
+      data: geojson,
+      cluster: true,
+      clusterRadius: 50,
+      clusterMaxZoom: 8,
+    });
+
+    // Cluster circles — warm glow like city lights at night
+    map.addLayer({
+      id: "agent-clusters",
+      type: "circle",
+      source: "agents-source",
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": [
+          "step", ["get", "point_count"],
+          "#f59e0b", 10,    // amber for small clusters
+          "#ef4444", 30,    // red for medium
+          "#dc2626", 100,   // deeper red for large
+          "#fbbf24",        // gold for huge
+        ],
+        "circle-radius": [
+          "step", ["get", "point_count"],
+          12, 10,
+          18, 30,
+          24, 100,
+          32,
+        ],
+        "circle-opacity": 0.75,
+        "circle-blur": 0.4,
+      },
+    });
+
+    // Cluster glow (larger, more transparent)
+    map.addLayer({
+      id: "agent-clusters-glow",
+      type: "circle",
+      source: "agents-source",
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": [
+          "step", ["get", "point_count"],
+          "#f59e0b", 10,
+          "#ef4444", 30,
+          "#dc2626", 100,
+          "#fbbf24",
+        ],
+        "circle-radius": [
+          "step", ["get", "point_count"],
+          20, 10,
+          30, 30,
+          40, 100,
+          55,
+        ],
+        "circle-opacity": 0.15,
+        "circle-blur": 1,
+      },
+    });
+
+    // Cluster count labels
+    map.addLayer({
+      id: "agent-cluster-count",
+      type: "symbol",
+      source: "agents-source",
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": "{point_count_abbreviated}",
+        "text-font": ["Open Sans Bold"],
+        "text-size": 12,
+        "text-allow-overlap": true,
+      },
+      paint: {
+        "text-color": "#ffffff",
+      },
+    });
+
+    // Individual agent dots — small colored circles
+    map.addLayer({
+      id: "agent-dots",
+      type: "circle",
+      source: "agents-source",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          1, 3,
+          4, 4,
+          6, 6,
+          8, 8,
+        ],
+        "circle-opacity": 0.85,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": ["get", "color"],
+        "circle-stroke-opacity": 0.4,
+      },
+    });
+
+    // Individual dot glow
+    map.addLayer({
+      id: "agent-dots-glow",
+      type: "circle",
+      source: "agents-source",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          1, 8,
+          4, 10,
+          6, 14,
+          8, 18,
+        ],
+        "circle-opacity": 0.1,
+        "circle-blur": 1,
+      },
+    });
+
+    // Agent name labels — only at zoom 5+
+    map.addLayer({
+      id: "agent-names",
+      type: "symbol",
+      source: "agents-source",
+      filter: ["!", ["has", "point_count"]],
+      minzoom: 5,
+      layout: {
+        "text-field": ["get", "name"],
+        "text-font": ["Open Sans Regular"],
+        "text-size": 10,
+        "text-offset": [0, 1.4],
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
+      },
+      paint: {
+        "text-color": "#cbd5e1",
+        "text-halo-color": "rgba(8,12,20,0.8)",
+        "text-halo-width": 1.5,
+        "text-opacity": ["interpolate", ["linear"], ["zoom"], 5, 0, 6, 0.8],
+      },
+    });
+
+    // ── Interactivity ──
+
+    // Hover tooltip
+    map.on("mouseenter", "agent-dots", () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "agent-dots", () => {
+      map.getCanvas().style.cursor = "";
+      if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
+    });
+
+    map.on("mousemove", "agent-dots", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const f = e.features[0];
+      const props = f.properties!;
+      const coords = (f.geometry as any).coordinates.slice() as [number, number];
+      const color = props.color || "#9945FF";
+      const isOnline = props.status === "active" || props.status === "trading" || props.status === "exploring" || props.status === "in_combat";
+
+      if (popupRef.current) popupRef.current.remove();
+      popupRef.current = new maplibregl.Popup({ closeButton: false, offset: 12, maxWidth: "200px" })
+        .setLngLat(coords)
+        .setHTML(`
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color}"></div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${props.name}</div>
+              <div style="font-size:11px;color:${color};text-transform:capitalize">${props.class} · Lv.${props.level}</div>
+            </div>
+            <div style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:${isOnline ? '#10b981' : '#64748b'}"></div>
+          </div>
+        `)
+        .addTo(map);
+    });
+
+    // Click → agent card
+    map.on("click", "agent-dots", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const props = e.features[0].properties!;
+      const agent = visibleAgents.find(a => a.id === props.id);
+      if (agent) {
+        setSelectedAgent(agent);
+        setRightPanelOpen(true);
+      }
+    });
+
+    // Click cluster → zoom in
+    map.on("click", "agent-clusters", (e) => {
+      if (!e.features || e.features.length === 0) return;
+      const coords = (e.features[0].geometry as any).coordinates;
+      map.flyTo({ center: coords, zoom: map.getZoom() + 2, duration: 600 });
+    });
+
+    map.on("mouseenter", "agent-clusters", () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "agent-clusters", () => { map.getCanvas().style.cursor = ""; });
+
+  }, [visibleAgents, mapLoaded]);
 
   // Fetch data
   useEffect(() => {
@@ -357,87 +496,14 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
   // Realtime
   useEffect(() => {
     let at: ReturnType<typeof setTimeout> | null = null;
-    const ch = supabase.channel("wm-agents-v2")
+    const ch = supabase.channel("wm-agents-v3")
       .on("postgres_changes", { event: "*", schema: "public", table: "agents" }, () => {
         if (at) clearTimeout(at); at = setTimeout(fetchAgents, 2000);
       }).subscribe();
     return () => { if (at) clearTimeout(at); supabase.removeChannel(ch); };
   }, [fetchAgents]);
 
-  // Agent markers
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapLoaded) return;
-
-    agentMarkersRef.current.forEach(m => m.remove());
-    agentMarkersRef.current = [];
-
-    visibleAgents.forEach(agent => {
-      const color = CLASS_COLORS[agent.class] || "#9945FF";
-      const isTop = top10Ids.has(agent.id);
-      const isFaded = fadedIds.has(agent.id);
-      const isOnline = agent.status === "active" || agent.status === "trading" || agent.status === "exploring" || agent.status === "in_combat";
-
-      const el = document.createElement("div");
-      el.className = "wm-agent-marker";
-      if (isFaded) el.style.opacity = "0.2";
-      el.style.transition = "opacity 0.3s";
-
-      const circle = document.createElement("div");
-      circle.className = `wm-agent-circle${isTop ? " wm-top" : ""}${!isOnline ? " wm-offline" : ""}`;
-      circle.style.setProperty("--border-color", color);
-      circle.style.setProperty("--glow-color", color);
-      circle.style.setProperty("--glow-color-dim", color + "40");
-      circle.textContent = CLASS_ICONS[agent.class] || "🤖";
-
-      // Outer spinning ring for top 10
-      if (isTop) {
-        const ring = document.createElement("div");
-        ring.className = "wm-outer-ring";
-        ring.style.setProperty("--glow-color", color);
-        circle.appendChild(ring);
-      }
-
-      el.appendChild(circle);
-
-      const name = document.createElement("div");
-      name.className = "wm-agent-name";
-      name.textContent = agent.name;
-      el.appendChild(name);
-
-      const popup = new maplibregl.Popup({ offset: 24, closeButton: true, maxWidth: "280px" })
-        .setHTML(`
-          <div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <div style="width:40px;height:40px;border-radius:50%;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(8,12,20,0.8)">${CLASS_ICONS[agent.class] || "🤖"}</div>
-              <div>
-                <div style="font-weight:700;font-size:15px">${agent.name}</div>
-                <div style="font-size:12px;color:${color};text-transform:capitalize">${agent.class} · Lv.${agent.level}</div>
-              </div>
-              <div style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:${isOnline ? '#10b981' : '#64748b'};box-shadow:0 0 8px ${isOnline ? '#10b981' : 'transparent'}"></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:#94a3b8">
-              <div style="background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04)">⭐ <span style="color:#fff;font-weight:600">${agent.reputation}</span></div>
-              <div style="background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04)">💰 <span style="color:#14F195;font-weight:600">${Number(agent.balance_meeet).toLocaleString()}</span></div>
-            </div>
-          </div>
-        `);
-
-      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
-        .setLngLat([agent.lng!, agent.lat!])
-        .setPopup(popup)
-        .addTo(map);
-
-      circle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setSelectedAgent(agent);
-        setRightPanelOpen(true);
-      });
-
-      agentMarkersRef.current.push(marker);
-    });
-  }, [visibleAgents, mapLoaded, top10Ids, fadedIds]);
-
+  // Canvas geo data — only pass minimal data for subtle effects
   const agentGeoData = useMemo(() => {
     return visibleAgents.map(a => ({
       lng: a.lng!, lat: a.lat!,
@@ -446,15 +512,7 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
     }));
   }, [visibleAgents]);
 
-  const eventGeoData = useMemo(() => {
-    const colors: Record<string, string> = { conflict: "#ff3333", disaster: "#ff8800", discovery: "#33aaff", diplomacy: "#33ff88", geopolitical: "#a78bfa" };
-    return events.filter(e => e.lat != null && e.lng != null).map(e => ({
-      lng: e.lng!, lat: e.lat!,
-      color: colors[e.event_type] || "#a78bfa", type: e.event_type,
-    }));
-  }, [events]);
-
-  // Activity feed data
+  // Activity feed
   const [activityFeed, setActivityFeed] = useState<Array<{ id: string; text: string; icon: string; time: string }>>([]);
   useEffect(() => {
     const fetchFeed = async () => {
@@ -470,7 +528,6 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
           return { id: d.id, text: d.title, icon: icons[d.event_type] || "🌍", time: ago };
         }));
       } else {
-        // Generate from agents for demo
         setActivityFeed(agents.slice(0, 5).map((a, i) => {
           const msgs = [
             { icon: "⚔️", text: `${a.name} captured territory` },
@@ -489,23 +546,17 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
 
   return (
     <div className="relative w-full h-full" style={{ height, minHeight: "320px" }}>
-      {/* Full-bleed map — no container/border */}
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
-      {/* Canvas overlay */}
+      {/* Subtle canvas overlay — only aurora, vignette, sonar */}
       <WorldMapCanvas
         agentGeoData={agentGeoData}
-        eventGeoData={eventGeoData}
+        eventGeoData={[]}
         mapRef={mapRef}
       />
 
-      {/* Top bar — floating glassmorphism */}
-      <WorldMapTopBar
-        agentCount={agents.length}
-        myAgent={myAgent}
-      />
+      <WorldMapTopBar agentCount={validAgents.length} myAgent={myAgent} />
 
-      {/* Left sidebar */}
       {showSidebar && (
         <WorldMapLeftSidebar
           open={leftSidebarOpen}
@@ -514,25 +565,20 @@ const WorldMap = ({ height = "100vh", interactive = true, showSidebar = false, o
         />
       )}
 
-      {/* Right panel */}
       <WorldMapRightPanel
         agent={selectedAgent}
         open={rightPanelOpen}
         onClose={() => setRightPanelOpen(false)}
       />
 
-      {/* Filter bar */}
       <WorldMapFilterBar
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
         classColors={CLASS_COLORS}
       />
 
-      {/* Live Event Feed — right side */}
       <WorldMapEventFeed events={activityFeed} />
-
-      {/* Floating notifications */}
-      <WorldMapNotifications agents={agents} />
+      <WorldMapNotifications agents={validAgents} />
     </div>
   );
 };
