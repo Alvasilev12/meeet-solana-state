@@ -1258,7 +1258,15 @@ const LiveMap = () => {
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-3 py-1.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-white/70">{agentCount} AGENTS</span>
+          <span className="text-[10px] font-mono text-white/70">{agentCount} AGENTS ONLINE</span>
+        </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">QUESTS</span>
+          <span className="text-[10px] font-mono text-cyan-400">{agentsRef.current.filter(a => a.state === "visiting").length}</span>
+        </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">$MEEET</span>
+          <span className="text-[10px] font-mono text-emerald-400">{agentsRef.current.reduce((s, a) => s + a.balance, 0).toLocaleString()}</span>
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300/70" /> : <Sun className="w-3 h-3 text-amber-400/70" />}
