@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.admin-broadcast]
 verify_jwt = false
+
+[functions.buy-agent]
+verify_jwt = false

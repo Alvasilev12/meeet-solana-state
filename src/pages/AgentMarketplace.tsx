@@ -6,11 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Store, ArrowUpDown, Swords, Shield, Zap, Star, TrendingUp, CheckCircle2, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Store, ArrowUpDown, Swords, Shield, Zap, Star, TrendingUp, CheckCircle2, AlertCircle, Wallet, ExternalLink, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+interface AgentData {
+  id: string;
+  name: string;
+  class: string;
+  level: number;
+  xp: number;
+  quests_completed: number;
+  reputation: number;
+  attack: number;
+  defense: number;
+  hp: number;
+  max_hp: number;
+  kills: number;
+  territories_held: number;
+}
 
 interface Listing {
   id: string;
@@ -18,21 +36,7 @@ interface Listing {
   price_usdc: number;
   description: string | null;
   created_at: string;
-  agents: {
-    id: string;
-    name: string;
-    class: string;
-    level: number;
-    xp: number;
-    quests_completed: number;
-    reputation: number;
-    attack: number;
-    defense: number;
-    hp: number;
-    max_hp: number;
-    kills: number;
-    territories_held: number;
-  } | null;
+  agents: AgentData | null;
 }
 
 const CLASS_COLORS: Record<string, string> = {
@@ -46,17 +50,21 @@ const CLASS_COLORS: Record<string, string> = {
 };
 
 const CLASS_ICONS: Record<string, string> = {
-  warrior: "⚔️",
-  oracle: "🔮",
-  trader: "💹",
-  diplomat: "🤝",
-  banker: "🏦",
-  miner: "⛏️",
-  scout: "🔭",
+  warrior: "⚔️", oracle: "🔮", trader: "💹", diplomat: "🤝",
+  banker: "🏦", miner: "⛏️", scout: "🔭",
 };
+
+const TREASURY_WALLET = "4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e";
 
 type SortKey = "price" | "level";
 type ClassFilter = "all" | string;
+type PayMethod = "internal" | "external";
+
+interface UserAgent {
+  id: string;
+  name: string;
+  balance_meeet: number;
+}
 
 const AgentMarketplace = () => {
   const { user } = useAuth();
@@ -65,9 +73,17 @@ const AgentMarketplace = () => {
   const [loading, setLoading] = useState(true);
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("price");
+
+  // Purchase dialog state
   const [selected, setSelected] = useState<Listing | null>(null);
+  const [payMethod, setPayMethod] = useState<PayMethod>("internal");
+  const [txSignature, setTxSignature] = useState("");
   const [buying, setBuying] = useState(false);
   const [buySuccess, setBuySuccess] = useState(false);
+
+  // User's agents for internal payment
+  const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
+  const [selectedBuyerAgent, setSelectedBuyerAgent] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -83,6 +99,22 @@ const AgentMarketplace = () => {
     load();
   }, []);
 
+  // Load user agents when dialog opens
+  useEffect(() => {
+    if (!selected || !user) return;
+    const loadAgents = async () => {
+      const { data } = await supabase
+        .from("agents")
+        .select("id, name, balance_meeet")
+        .eq("user_id", user.id);
+      if (data) {
+        setUserAgents(data);
+        if (data.length > 0) setSelectedBuyerAgent(data[0].id);
+      }
+    };
+    loadAgents();
+  }, [selected, user]);
+
   const filtered = classFilter === "all"
     ? listings
     : listings.filter((l) => l.agents?.class === classFilter);
@@ -94,56 +126,45 @@ const AgentMarketplace = () => {
 
   const classes = [...new Set(listings.map((l) => l.agents?.class).filter(Boolean))] as string[];
 
-  const handleBuy = async (listing: Listing) => {
-    if (!user) {
-      navigate("/auth");
+  const selectedAgent = userAgents.find((a) => a.id === selectedBuyerAgent);
+  const hasEnough = selectedAgent ? selectedAgent.balance_meeet >= (selected?.price_meeet || 0) : false;
+
+  const handleBuy = async () => {
+    if (!user || !selected || !selectedBuyerAgent) return;
+
+    if (payMethod === "internal" && !hasEnough) {
+      toast.error("Недостаточно MEEET на балансе агента");
       return;
     }
+    if (payMethod === "external" && !txSignature.trim()) {
+      toast.error("Введите хеш транзакции");
+      return;
+    }
+
     setBuying(true);
     try {
-      // Check user balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("wallet_address")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("buy-agent", {
+        body: {
+          listing_id: selected.id,
+          payment_method: payMethod,
+          buyer_agent_id: selectedBuyerAgent,
+          tx_signature: payMethod === "external" ? txSignature.trim() : undefined,
+        },
+      });
 
-      if (!profile?.wallet_address) {
-        toast.error("Добавьте кошелек в профиле перед покупкой", {
-          action: { label: "Профиль", onClick: () => navigate("/profile") },
-        });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
         setBuying(false);
         return;
       }
 
-      // Record purchase intent as a payment
-      const { error: payErr } = await supabase
-        .from("payments")
-        .insert({
-          user_id: user.id,
-          amount_meeet: listing.price_meeet,
-          amount_usdc: listing.price_usdc || null,
-          payment_method: "meeet",
-          reference_type: "marketplace_purchase",
-          reference_id: listing.id,
-          status: "pending",
-        });
-
-      if (payErr) throw payErr;
-
-      // Create notification for buyer
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        title: `Покупка агента ${listing.agents?.name}`,
-        body: `Ваш запрос на покупку за ${listing.price_meeet.toLocaleString()} MEEET обрабатывается.`,
-        type: "marketplace",
-        reference_id: listing.id,
-      });
-
       setBuySuccess(true);
-      toast.success("Запрос на покупку отправлен!");
-    } catch (err) {
-      toast.error("Ошибка при покупке. Попробуйте позже.");
+      // Remove from local list
+      setListings((prev) => prev.filter((l) => l.id !== selected.id));
+      toast.success("Агент куплен!");
+    } catch (err: any) {
+      toast.error(err?.message || "Ошибка при покупке");
     } finally {
       setBuying(false);
     }
@@ -152,6 +173,13 @@ const AgentMarketplace = () => {
   const closeDialog = () => {
     setSelected(null);
     setBuySuccess(false);
+    setTxSignature("");
+    setPayMethod("internal");
+  };
+
+  const copyTreasury = () => {
+    navigator.clipboard.writeText(TREASURY_WALLET);
+    toast.success("Адрес казначейства скопирован");
   };
 
   const a = selected?.agents;
@@ -173,42 +201,27 @@ const AgentMarketplace = () => {
           </p>
         </div>
 
-        {/* Filters — compact row */}
+        {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
-          <Button variant={classFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setClassFilter("all")}>
-            Все
-          </Button>
+          <Button variant={classFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setClassFilter("all")}>Все</Button>
           {classes.map((c) => (
-            <Button
-              key={c}
-              variant={classFilter === c ? "default" : "outline"}
-              size="sm"
-              onClick={() => setClassFilter(c)}
-              className="capitalize gap-1"
-            >
-              <span>{CLASS_ICONS[c] || "🤖"}</span>
-              {c}
+            <Button key={c} variant={classFilter === c ? "default" : "outline"} size="sm" onClick={() => setClassFilter(c)} className="capitalize gap-1">
+              <span>{CLASS_ICONS[c] || "🤖"}</span>{c}
             </Button>
           ))}
           <div className="ml-auto flex items-center gap-2">
             <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-            <Button variant={sortBy === "price" ? "default" : "outline"} size="sm" onClick={() => setSortBy("price")}>
-              Цена
-            </Button>
-            <Button variant={sortBy === "level" ? "default" : "outline"} size="sm" onClick={() => setSortBy("level")}>
-              Уровень
-            </Button>
+            <Button variant={sortBy === "price" ? "default" : "outline"} size="sm" onClick={() => setSortBy("price")}>Цена</Button>
+            <Button variant={sortBy === "level" ? "default" : "outline"} size="sm" onClick={() => setSortBy("level")}>Уровень</Button>
           </div>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
           </div>
         )}
 
-        {/* Empty */}
         {!loading && sorted.length === 0 && (
           <div className="text-center py-20">
             <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-40" />
@@ -218,17 +231,15 @@ const AgentMarketplace = () => {
           </div>
         )}
 
-        {/* Grid — clickable cards open detail dialog */}
         {!loading && sorted.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sorted.map((l) => (
               <Card
                 key={l.id}
                 className="bg-card/60 border-border/50 hover:border-emerald-500/40 transition-all cursor-pointer group active:scale-[0.98]"
-                onClick={() => setSelected(l)}
+                onClick={() => { if (!user) { navigate("/auth"); return; } setSelected(l); }}
               >
                 <CardContent className="p-5 space-y-3">
-                  {/* Top row: name + class */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{CLASS_ICONS[l.agents?.class || ""] || "🤖"}</span>
@@ -242,7 +253,6 @@ const AgentMarketplace = () => {
                     </Badge>
                   </div>
 
-                  {/* Stats mini-bar */}
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="bg-muted/30 rounded-md py-1.5">
                       <div className="font-bold text-foreground">{l.agents?.quests_completed}</div>
@@ -258,25 +268,14 @@ const AgentMarketplace = () => {
                     </div>
                   </div>
 
-                  {/* Price + CTA */}
                   <div className="flex items-center justify-between pt-1">
                     <div>
                       <span className="font-bold text-lg text-emerald-400">{l.price_meeet.toLocaleString()}</span>
                       <span className="text-xs text-emerald-400/70 ml-1">MEEET</span>
-                      {l.price_usdc > 0 && (
-                        <span className="text-xs text-muted-foreground ml-2">≈ ${l.price_usdc}</span>
-                      )}
+                      {l.price_usdc > 0 && <span className="text-xs text-muted-foreground ml-2">≈ ${l.price_usdc}</span>}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="group-hover:shadow-lg transition-shadow"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!user) { navigate("/auth"); return; }
-                        setSelected(l);
-                      }}
-                    >
+                    <Button size="sm" variant="default" className="group-hover:shadow-lg transition-shadow"
+                      onClick={(e) => { e.stopPropagation(); if (!user) { navigate("/auth"); return; } setSelected(l); }}>
                       Купить
                     </Button>
                   </div>
@@ -286,16 +285,15 @@ const AgentMarketplace = () => {
           </div>
         )}
 
-        {/* ──────── Detail / Purchase Dialog ──────── */}
+        {/* ──────── Purchase Dialog ──────── */}
         <Dialog open={!!selected} onOpenChange={(open) => { if (!open) closeDialog(); }}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             {buySuccess ? (
-              /* ── Success State ── */
               <div className="text-center py-6 space-y-4">
                 <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto" />
-                <DialogTitle className="text-2xl">Покупка оформлена!</DialogTitle>
+                <DialogTitle className="text-2xl">Агент куплен!</DialogTitle>
                 <DialogDescription>
-                  Агент <strong>{a?.name}</strong> скоро появится в вашем аккаунте. Мы уведомим вас, когда передача будет завершена.
+                  <strong>{a?.name}</strong> теперь ваш. Вы найдёте его в дашборде.
                 </DialogDescription>
                 <div className="flex gap-2 justify-center pt-2">
                   <Button variant="outline" onClick={closeDialog}>Закрыть</Button>
@@ -303,16 +301,13 @@ const AgentMarketplace = () => {
                 </div>
               </div>
             ) : selected && (
-              /* ── Agent Detail ── */
               <>
                 <DialogHeader>
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{CLASS_ICONS[a?.class || ""] || "🤖"}</span>
                     <div>
                       <DialogTitle className="text-xl">{a?.name}</DialogTitle>
-                      <DialogDescription className="capitalize">
-                        {a?.class} · Уровень {a?.level}
-                      </DialogDescription>
+                      <DialogDescription className="capitalize">{a?.class} · Уровень {a?.level}</DialogDescription>
                     </div>
                   </div>
                 </DialogHeader>
@@ -321,7 +316,7 @@ const AgentMarketplace = () => {
                   <p className="text-sm text-muted-foreground">{selected.description}</p>
                 )}
 
-                {/* Stats grid */}
+                {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <StatRow icon={<Swords className="w-4 h-4 text-red-400" />} label="Атака" value={a?.attack} />
                   <StatRow icon={<Shield className="w-4 h-4 text-blue-400" />} label="Защита" value={a?.defense} />
@@ -331,55 +326,147 @@ const AgentMarketplace = () => {
                   <StatRow icon={<Store className="w-4 h-4 text-purple-400" />} label="Территории" value={a?.territories_held} />
                 </div>
 
-                {/* HP bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>HP</span>
-                    <span>{a?.hp}/{a?.max_hp}</span>
+                {/* HP + XP bars */}
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground"><span>HP</span><span>{a?.hp}/{a?.max_hp}</span></div>
+                    <Progress value={a?.max_hp ? (a.hp / a.max_hp) * 100 : 100} className="h-2" />
                   </div>
-                  <Progress value={a?.max_hp ? (a.hp / a.max_hp) * 100 : 100} className="h-2" />
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground"><span>XP</span><span>{a?.xp?.toLocaleString()}</span></div>
+                    <Progress value={Math.min((a?.xp || 0) / ((a?.level || 1) * 100) * 100, 100)} className="h-2" />
+                  </div>
                 </div>
 
-                {/* XP bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>XP</span>
-                    <span>{a?.xp?.toLocaleString()}</span>
+                {/* Price */}
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <div className="text-xs text-muted-foreground mb-0.5">Цена</div>
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {selected.price_meeet.toLocaleString()} <span className="text-base">MEEET</span>
                   </div>
-                  <Progress value={Math.min((a?.xp || 0) / ((a?.level || 1) * 100) * 100, 100)} className="h-2" />
+                  {selected.price_usdc > 0 && (
+                    <div className="text-xs text-muted-foreground">≈ ${selected.price_usdc} USDC</div>
+                  )}
                 </div>
 
-                {/* Price section */}
-                <div className="bg-muted/30 rounded-lg p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Цена</div>
-                    <div className="text-2xl font-bold text-emerald-400">
-                      {selected.price_meeet.toLocaleString()} <span className="text-base">MEEET</span>
+                {/* ── Payment Method ── */}
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-foreground">Метод оплаты</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      className={`rounded-lg border p-3 text-left transition-all text-sm ${payMethod === "internal" ? "border-emerald-500 bg-emerald-500/10" : "border-border hover:border-muted-foreground/40"}`}
+                      onClick={() => setPayMethod("internal")}
+                    >
+                      <Wallet className="w-4 h-4 mb-1 text-emerald-400" />
+                      <div className="font-medium text-foreground">Баланс агента</div>
+                      <div className="text-xs text-muted-foreground">Мгновенно</div>
+                    </button>
+                    <button
+                      className={`rounded-lg border p-3 text-left transition-all text-sm ${payMethod === "external" ? "border-emerald-500 bg-emerald-500/10" : "border-border hover:border-muted-foreground/40"}`}
+                      onClick={() => setPayMethod("external")}
+                    >
+                      <ExternalLink className="w-4 h-4 mb-1 text-emerald-400" />
+                      <div className="font-medium text-foreground">Внешний перевод</div>
+                      <div className="text-xs text-muted-foreground">$MEEET on-chain</div>
+                    </button>
+                  </div>
+
+                  {/* Internal: select agent */}
+                  {payMethod === "internal" && (
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground">Списать с агента:</label>
+                      {userAgents.length === 0 ? (
+                        <p className="text-sm text-destructive">У вас нет агентов. <button className="underline" onClick={() => navigate("/deploy")}>Развернуть</button></p>
+                      ) : (
+                        <Select value={selectedBuyerAgent} onValueChange={setSelectedBuyerAgent}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите агента" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userAgents.map((ua) => (
+                              <SelectItem key={ua.id} value={ua.id}>
+                                {ua.name} — {ua.balance_meeet.toLocaleString()} MEEET
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {selectedAgent && !hasEnough && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Недостаточно MEEET (нужно {selected.price_meeet.toLocaleString()}, есть {selectedAgent.balance_meeet.toLocaleString()})
+                        </p>
+                      )}
                     </div>
-                    {selected.price_usdc > 0 && (
-                      <div className="text-xs text-muted-foreground">≈ ${selected.price_usdc} USDC</div>
-                    )}
-                  </div>
-                  {!user && (
-                    <div className="flex items-center gap-1 text-xs text-amber-400">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      Войдите для покупки
+                  )}
+
+                  {/* External: treasury + QR + tx input */}
+                  {payMethod === "external" && (
+                    <div className="space-y-3">
+                      <div className="bg-muted/20 rounded-lg p-3 space-y-2">
+                        <div className="text-xs text-muted-foreground">Отправьте {selected.price_meeet.toLocaleString()} $MEEET на казначейство:</div>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs text-foreground bg-muted/40 px-2 py-1 rounded flex-1 truncate">{TREASURY_WALLET}</code>
+                          <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={copyTreasury}>
+                            <Copy className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex justify-center">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${TREASURY_WALLET}`}
+                            alt="Treasury QR"
+                            className="w-28 h-28 rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Хеш транзакции (tx_signature):</label>
+                        <Input
+                          placeholder="Вставьте хеш Solana-транзакции..."
+                          value={txSignature}
+                          onChange={(e) => setTxSignature(e.target.value)}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+
+                      {/* Still need to select buyer agent for ownership */}
+                      {userAgents.length > 0 && (
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Привязать купленного агента к:</label>
+                          <Select value={selectedBuyerAgent} onValueChange={setSelectedBuyerAgent}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Выберите вашего агента" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userAgents.map((ua) => (
+                                <SelectItem key={ua.id} value={ua.id}>{ua.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Action */}
+                {/* Buy button */}
                 <Button
                   className="w-full text-base py-5"
-                  disabled={buying || !user}
-                  onClick={() => handleBuy(selected)}
+                  disabled={
+                    buying ||
+                    !selectedBuyerAgent ||
+                    (payMethod === "internal" && !hasEnough) ||
+                    (payMethod === "external" && !txSignature.trim())
+                  }
+                  onClick={handleBuy}
                 >
                   {buying ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Оформление...</>
-                  ) : !user ? (
-                    "Войдите для покупки"
-                  ) : (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Обработка...</>
+                  ) : payMethod === "internal" ? (
                     `Купить за ${selected.price_meeet.toLocaleString()} MEEET`
+                  ) : (
+                    "Подтвердить покупку"
                   )}
                 </Button>
               </>
@@ -392,7 +479,6 @@ const AgentMarketplace = () => {
   );
 };
 
-/* Small helper for stat rows in the dialog */
 const StatRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value?: number }) => (
   <div className="flex items-center gap-2 bg-muted/20 rounded-md px-3 py-2">
     {icon}
