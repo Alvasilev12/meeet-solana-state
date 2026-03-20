@@ -536,6 +536,9 @@ const ProfilePage = () => {
 
             <TabsContent value="stats">
               <AgentStats agent={agent} />
+              <div className="mt-4">
+                <AchievementGrid userId={user!.id} />
+              </div>
             </TabsContent>
 
             <TabsContent value="balance">

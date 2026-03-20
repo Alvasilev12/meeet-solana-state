@@ -26,10 +26,10 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
     queryKey: ["achievements"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("achievements")
+        .from("achievements" as any)
         .select("*")
         .order("requirement_value", { ascending: true });
-      return (data || []) as Achievement[];
+      return (data || []) as unknown as Achievement[];
     },
   });
 

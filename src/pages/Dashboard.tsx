@@ -19,6 +19,7 @@ import RaidClaimsAdmin from "@/components/RaidClaimsAdmin";
 import FeedbackWidget from "@/components/FeedbackWidget";
 import DailyLoginStreak from "@/components/DailyLoginStreak";
 import PromoWidget from "@/components/PromoWidget";
+import AchievementGrid from "@/components/AchievementGrid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
