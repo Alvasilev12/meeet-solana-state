@@ -131,6 +131,10 @@ verify_jwt = false
 
 [functions.run-auto-duels]
 verify_jwt = false
+schedule = "0 */6 * * *"
+
+[functions.admin-mass-seed]
+verify_jwt = false
 
 [functions.get-rankings]
 verify_jwt = false

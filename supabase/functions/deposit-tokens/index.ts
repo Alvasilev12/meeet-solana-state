@@ -123,6 +123,6 @@ Deno.serve(async (req) => {
       note: "Genesis Phase: deposits are internal transfers. On-chain deposits will be available after SPL token launch.",
     });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    return json({ error: (e as Error).message }, 500);
   }
 });

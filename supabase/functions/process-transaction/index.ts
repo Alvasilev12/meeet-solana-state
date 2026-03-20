@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       tax_rate: `${(taxRate * 100).toFixed(0)}%`,
     });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    return json({ error: (e as Error).message }, 500);
   }
 });
 

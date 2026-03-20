@@ -84,6 +84,6 @@ Deno.serve(async (req) => {
 
     return json({ prompt_template: strategy.prompt_template, strategy_config: strategy.strategy_config, price: priceMeeet });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    return json({ error: (e as Error).message }, 500);
   }
 });

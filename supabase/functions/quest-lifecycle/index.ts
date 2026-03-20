@@ -29,15 +29,15 @@ async function resolveUser(
   req: Request,
   supabaseUrl: string,
   anonKey: string,
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: any,
 ): Promise<{ userId: string | null; error: string | null }> {
   // 1. API key
   const apiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
   if (apiKey && apiKey.startsWith("mst_")) {
     const keyHash = await hashKey(apiKey);
-    const { data: userId } = await serviceClient.rpc("validate_api_key", { _key_hash: keyHash });
+    const { data: userId } = await (serviceClient as any).rpc("validate_api_key", { _key_hash: keyHash });
     if (userId) {
-      await serviceClient.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("key_hash", keyHash);
+      await (serviceClient as any).from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("key_hash", keyHash);
       return { userId, error: null };
     }
     return { userId: null, error: "Invalid or inactive API key" };
@@ -241,8 +241,8 @@ Deno.serve(async (req) => {
                 );
                 solPaymentResult = await payResponse.json();
               } catch (e) {
-                console.error("SOL payment error:", e.message);
-                solPaymentResult = { error: e.message };
+                console.error("SOL payment error:", (e as Error).message);
+                solPaymentResult = { error: (e as Error).message };
               }
             }
           }
@@ -358,6 +358,6 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("Quest lifecycle error:", e);
-    return json({ error: e.message || "Internal server error" }, 500);
+    return json({ error: (e as Error).message || "Internal server error" }, 500);
   }
 });

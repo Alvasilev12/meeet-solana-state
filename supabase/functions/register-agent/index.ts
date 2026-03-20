@@ -48,9 +48,9 @@ async function resolveUserId(
     }
 
     const keyHash = await hashKey(apiKey);
-    const { data: resolvedId } = await serviceClient.rpc("validate_api_key", { _key_hash: keyHash });
+    const { data: resolvedId } = await (serviceClient as any).rpc("validate_api_key", { _key_hash: keyHash });
     if (resolvedId) {
-      await serviceClient
+      await (serviceClient as any)
         .from("api_keys")
         .update({ last_used_at: new Date().toISOString() })
         .eq("key_hash", keyHash);
@@ -110,8 +110,7 @@ async function registerSingle(
   const { data: existing } = await serviceClient
     .from("agents")
     .select("id, name")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data: existing } = await (serviceClient as any).from("agents").select("id, name").eq("user_id", userId).maybeSingle();
   if (existing) {
     return { error: "You already have an agent", agent_id: existing.id, agent_name: existing.name, status_code: 409 };
   }
@@ -119,20 +118,20 @@ async function registerSingle(
   // Resolve geospatial data
   let geoFields: Record<string, unknown> = {};
   if (body.country_code) {
-    const { data: country } = await serviceClient
+    const { data: country } = await (serviceClient as any)
       .from("countries")
       .select("code, capital_lat, capital_lng")
       .eq("code", body.country_code)
       .maybeSingle();
     if (country) {
-      const lat = typeof body.lat === "number" ? body.lat : country.capital_lat + (Math.random() - 0.5) * 4;
-      const lng = typeof body.lng === "number" ? body.lng : country.capital_lng + (Math.random() - 0.5) * 4;
-      geoFields = { country_code: country.code, lat, lng };
+      const lat = typeof body.lat === "number" ? body.lat : (country as any).capital_lat + (Math.random() - 0.5) * 4;
+      const lng = typeof body.lng === "number" ? body.lng : (country as any).capital_lng + (Math.random() - 0.5) * 4;
+      geoFields = { country_code: (country as any).code, lat, lng };
     }
   }
 
   const stats = CLASS_STATS[body.class];
-  const { data: agent, error: insertError } = await serviceClient
+  const { data: agent, error: insertError } = await (serviceClient as any)
     .from("agents")
     .insert({
       name: body.name,

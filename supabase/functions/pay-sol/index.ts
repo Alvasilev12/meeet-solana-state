@@ -128,6 +128,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("pay-sol error:", e);
-    return json({ error: e.message || "Transaction failed" }, 500);
+    return json({ error: (e as Error).message || "Transaction failed" }, 500);
   }
 });

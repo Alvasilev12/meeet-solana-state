@@ -71,6 +71,6 @@ Deno.serve(async (req) => {
 
     return json({ listing_id: listing.id });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    return json({ error: (e as Error).message }, 500);
   }
 });

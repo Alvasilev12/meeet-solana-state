@@ -10,7 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * @returns { allowed: boolean, retryAfter?: number }
  */
 export async function checkRateLimit(
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: any,
   key: string,
   maxRequests: number,
   windowSeconds: number,

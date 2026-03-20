@@ -174,6 +174,6 @@ Deno.serve(async (req) => {
       status: "queued", // Will become "completed" when SPL token launches
     });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    return json({ error: (e as Error).message }, 500);
   }
 });
