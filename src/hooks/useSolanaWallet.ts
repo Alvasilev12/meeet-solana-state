@@ -207,5 +207,12 @@ export function useSolanaWallet() {
     };
   }, [walletId]);
 
-  return { address, walletName: walletId, connecting, error, availableWallets, connect, disconnect };
+  /** Get the raw provider for transaction signing */
+  const getProvider = useCallback((): SolanaProvider | null => {
+    if (!walletId) return null;
+    const meta = WALLETS.find((wm) => wm.id === walletId);
+    return meta?.getProvider() ?? null;
+  }, [walletId]);
+
+  return { address, walletName: walletId, connecting, error, availableWallets, connect, disconnect, getProvider };
 }
