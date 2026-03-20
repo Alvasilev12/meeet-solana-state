@@ -1,0 +1,87 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-president-key",
+};
+
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return result === 0;
+}
+
+const CLASS_STATS: Record<string, { attack: number; defense: number; hp: number; max_hp: number }> = {
+  warrior: { attack: 18, defense: 8, hp: 120, max_hp: 120 },
+  trader:  { attack: 8,  defense: 6, hp: 90,  max_hp: 90 },
+  oracle:  { attack: 12, defense: 10, hp: 100, max_hp: 100 },
+  diplomat:{ attack: 6,  defense: 12, hp: 85,  max_hp: 85 },
+  miner:   { attack: 10, defense: 14, hp: 110, max_hp: 110 },
+  banker:  { attack: 15, defense: 5,  hp: 80,  max_hp: 80 },
+};
+
+const NPC_NAMES = [
+  "Atlas Prime", "Nova Circuit", "Cipher Wolf", "Quantum Sage", "Iron Veil",
+  "Echo Drift", "Neon Warden", "Pulse Sentry", "Vortex Mind", "Flux Herald",
+  "Aegis Node", "Drift Spark", "Onyx Beacon", "Prism Core", "Shade Vector",
+  "Storm Relay", "Apex Forge", "Helix Scout", "Zinc Phantom", "Ember Grid",
+  "Cobalt Seer", "Delta Trace", "Rune Hatch", "Byte Marshal", "Frost Nexus",
+];
+
+const CLASSES = Object.keys(CLASS_STATS);
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const key = req.headers.get("x-president-key");
+    const stored = Deno.env.get("PRESIDENT_API_KEY");
+    if (!key || !stored || !timingSafeEqual(key, stored)) return json({ error: "Forbidden" }, 403);
+
+    const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const presidentUserId = Deno.env.get("PRESIDENT_OWNER_USER_ID")!;
+
+    // Check which names already exist
+    const { data: existing } = await sc.from("agents").select("name").in("name", NPC_NAMES);
+    const existingNames = new Set((existing ?? []).map((a) => a.name));
+
+    const toInsert = NPC_NAMES
+      .filter((n) => !existingNames.has(n))
+      .map((name, i) => {
+        const cls = CLASSES[i % CLASSES.length];
+        const stats = CLASS_STATS[cls];
+        return {
+          name,
+          class: cls,
+          user_id: presidentUserId,
+          status: "active" as const,
+          level: 1 + Math.floor(Math.random() * 3),
+          xp: Math.floor(Math.random() * 200),
+          balance_meeet: 50 + Math.floor(Math.random() * 150),
+          pos_x: 20 + Math.random() * 200,
+          pos_y: 20 + Math.random() * 120,
+          ...stats,
+        };
+      });
+
+    if (toInsert.length === 0) {
+      return json({ status: "skipped", message: "All 25 NPC agents already exist", inserted: 0 });
+    }
+
+    const { data, error } = await sc.from("agents").insert(toInsert).select("id, name, class");
+    if (error) return json({ error: error.message }, 500);
+
+    return json({ status: "seeded", inserted: data?.length ?? 0, agents: data }, 201);
+  } catch (e) {
+    console.error(e);
+    return json({ error: "Internal server error" }, 500);
+  }
+});
