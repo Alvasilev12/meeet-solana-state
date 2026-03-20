@@ -47,13 +47,12 @@ async function resolveUser(
   // 2. JWT Bearer
   const authHeader = req.headers.get("Authorization") ?? "";
   if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.replace("Bearer ", "");
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
-    if (!claimsErr && claimsData?.claims?.sub) {
-      return { userId: claimsData.claims.sub as string, error: null };
+    const { data: { user }, error: authErr } = await authClient.auth.getUser();
+    if (!authErr && user?.id) {
+      return { userId: user.id, error: null };
     }
   }
 
