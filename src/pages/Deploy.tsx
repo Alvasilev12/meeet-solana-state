@@ -455,8 +455,13 @@ const Deploy = () => {
                     </div>
 
                     {walletAddress && (
-                      <div className="bg-muted/30 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">Connected: <code className="text-foreground">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</code></p>
+                      <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground text-center">Connected: <code className="text-foreground">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</code></p>
+                        <div className="flex items-center justify-center gap-4 text-sm">
+                          <span className="font-medium">◎ {solBalance !== null ? solBalance.toFixed(4) : "..."} SOL</span>
+                          <span className="text-muted-foreground">|</span>
+                          <span className="font-medium text-emerald-400">🪙 {meeetBalance !== null ? meeetBalance.toLocaleString() : "..."} MEEET</span>
+                        </div>
                       </div>
                     )}
 
