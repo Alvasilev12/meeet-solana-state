@@ -41,14 +41,13 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
 
     if (authHeader.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
       const authClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
-      userId = typeof claimsData?.claims?.sub === "string" ? claimsData.claims.sub : null;
+      const { data: { user }, error: authErr } = await authClient.auth.getUser();
+      userId = user?.id ?? null;
 
-      if ((claimsErr || !userId) && action !== "my_status") {
+      if ((authErr || !userId) && action !== "my_status") {
         return json({ error: "Invalid token" }, 401);
       }
     } else if (action !== "my_status") {
