@@ -130,7 +130,7 @@ const TelegramApp = () => {
   }, [tab]);
 
   // Data loading
-  const FREE_AGENT_LIMIT = 100;
+  const FREE_AGENT_LIMIT = 200;
   const [totalAgentCount, setTotalAgentCount] = useState(0);
   const freeSlots = Math.max(0, FREE_AGENT_LIMIT - totalAgentCount);
   const promoActive = freeSlots > 0;
