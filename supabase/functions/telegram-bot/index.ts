@@ -32,6 +32,17 @@ async function sendMessage(chatId: string | number, text: string, lovableKey: st
   return tgRequest("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", ...extra }, lovableKey, telegramKey);
 }
 
+// Inline keyboard helpers
+const appButton = (label: string, path = "") => ({
+  reply_markup: {
+    inline_keyboard: [[{ text: `🌐 ${label}`, web_app: { url: `${WEBAPP_URL}${path}` } }]],
+  },
+});
+
+const multiButtons = (buttons: { text: string; url?: string; web_app?: { url: string } }[][]) => ({
+  reply_markup: { inline_keyboard: buttons },
+});
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -47,33 +58,37 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json();
+
+    // Handle internal notification calls (from other edge functions)
+    if (body._internal === "notify") {
+      const { chat_id, text, buttons } = body;
+      const extra = buttons ? multiButtons(buttons) : undefined;
+      await sendMessage(chat_id, text, LOVABLE_API_KEY, TELEGRAM_API_KEY, extra);
+      return json({ ok: true });
+    }
+
     const update = body.message ? body : body.update;
     if (!update?.message?.text) return json({ ok: true, skipped: "no text message" });
 
     const chatId = update.message.chat.id;
     const text = update.message.text.trim();
     const username = update.message.from?.username || "";
-    const [command, ...args] = text.split(/\s+/);
-
-    // Inline keyboard helper
-    const appButton = (label: string, path = "") => ({
-      reply_markup: {
-        inline_keyboard: [[{ text: `🌐 ${label}`, web_app: { url: `${WEBAPP_URL}${path}` } }]],
-      },
-    });
+    const userId = update.message.from?.id;
+    const [command] = text.split(/\s+/);
 
     switch (command.toLowerCase()) {
       case "/start": {
         await sendMessage(chatId,
           `🌐 <b>MEEET World</b> — AI Agent Platform\n\n` +
-          `Deploy autonomous AI agents that earn $MEEET tokens by completing quests, trading, and exploring the global map.\n\n` +
+          `Deploy autonomous AI agents that earn $MEEET tokens.\n\n` +
           `<b>Commands:</b>\n` +
           `/app — Open Mini App 📱\n` +
-          `/agents — Your agents\n` +
-          `/stats — Global statistics\n` +
-          `/balance — MEEET balance\n` +
-          `/quests — Active quests\n` +
-          `/deploy — Deploy new agent\n` +
+          `/buy — Available plans 💎\n` +
+          `/agents — Your agents 🤖\n` +
+          `/balance — MEEET balance 💰\n` +
+          `/quests — Active quests 📋\n` +
+          `/leaderboard — Top agents 🏆\n` +
+          `/ref — Referral link 🤝\n` +
           `/help — Help`,
           LOVABLE_API_KEY, TELEGRAM_API_KEY,
           appButton("Open MEEET World")
@@ -90,16 +105,40 @@ Deno.serve(async (req: Request) => {
         break;
       }
 
+      case "/buy": {
+        const plans = [
+          { name: "Scout", sol: 0.19, meeet: 4750, agents: 1, quests: 5 },
+          { name: "Warrior", sol: 0.49, meeet: 12250, agents: 3, quests: 15 },
+          { name: "Commander", sol: 1.49, meeet: 37250, agents: 10, quests: 50 },
+          { name: "Nation", sol: 4.99, meeet: 124750, agents: 50, quests: 200 },
+        ];
+        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
+        const freeSlots = Math.max(0, 200 - (totalAgents ?? 0));
+        const promoLine = freeSlots > 0 ? `\n🎁 <b>First 100 agents FREE!</b> (${freeSlots} spots left)\n` : "";
+
+        const list = plans.map((p, i) =>
+          `${i + 1}. <b>${p.name}</b>\n   💎 ${p.sol} SOL / ${p.meeet.toLocaleString()} MEEET\n   🤖 ${p.agents} agent${p.agents > 1 ? "s" : ""} · 📋 ${p.quests} quests/day`
+        ).join("\n\n");
+
+        await sendMessage(chatId,
+          `💎 <b>Agent Plans</b>\n${promoLine}\n${list}\n\n👇 Open Mini App to purchase:`,
+          LOVABLE_API_KEY, TELEGRAM_API_KEY,
+          appButton("Buy Agent", "#deploy")
+        );
+        break;
+      }
+
       case "/help": {
         await sendMessage(chatId,
           `📖 <b>MEEET World Help</b>\n\n` +
           `/app — Full Mini App interface\n` +
-          `/agents — Your agents list with stats\n` +
-          `/stats — Platform-wide statistics\n` +
-          `/balance — Total MEEET across agents\n` +
+          `/buy — View plans & purchase\n` +
+          `/agents — Your agents list\n` +
+          `/balance — Total MEEET balance\n` +
           `/quests — Latest open quests\n` +
-          `/oracle — Prediction markets\n` +
-          `/deploy — Link to deploy an agent\n\n` +
+          `/leaderboard — Top 5 agents by XP\n` +
+          `/ref — Your referral link\n` +
+          `/oracle — Prediction markets\n\n` +
           `🔗 Web: meeet-solana-state.lovable.app`,
           LOVABLE_API_KEY, TELEGRAM_API_KEY,
           appButton("Open App")
@@ -133,20 +172,20 @@ Deno.serve(async (req: Request) => {
         const { data: profile } = await supabase.from("profiles").select("user_id").eq("twitter_handle", username).maybeSingle();
         if (!profile) {
           await sendMessage(chatId,
-            `❌ Profile not linked.\n\nSet your Telegram username (<b>@${username}</b>) in Twitter Handle field on the platform to link your account.`,
+            `❌ Profile not linked.\n\nSet your Telegram username (<b>@${username}</b>) in Twitter Handle field on the platform.`,
             LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Open App"));
           break;
         }
-        const { data: agents } = await supabase.from("agents").select("name, class, level, balance_meeet, status, quests_completed")
+        const { data: agents } = await supabase.from("agents").select("name, class, level, balance_meeet, status, quests_completed, xp")
           .eq("user_id", profile.user_id).limit(10);
         if (!agents || agents.length === 0) {
-          await sendMessage(chatId, "No agents yet. Deploy your first one!", LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Deploy Agent"));
+          await sendMessage(chatId, "No agents yet. Deploy your first one!", LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Deploy Agent", "#deploy"));
           break;
         }
         const list = agents.map((a: any, i: number) =>
-          `${i + 1}. <b>${a.name}</b> (${a.class}) Lv.${a.level}\n   💰 ${a.balance_meeet} MEEET | 📋 ${a.quests_completed} quests | ${a.status === "active" ? "🟢" : "⚪"}`
+          `${i + 1}. <b>${a.name}</b> (${a.class}) Lv.${a.level}\n   💰 ${a.balance_meeet} MEEET | ⚡ ${a.xp} XP | ${a.status === "active" ? "🟢" : "⚪"}`
         ).join("\n\n");
-        await sendMessage(chatId, `🤖 <b>Your Agents:</b>\n\n${list}`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Manage Agents"));
+        await sendMessage(chatId, `🤖 <b>Your Agents:</b>\n\n${list}`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Manage Agents", "#agents"));
         break;
       }
 
@@ -156,11 +195,13 @@ Deno.serve(async (req: Request) => {
           await sendMessage(chatId, `❌ Profile not linked. Set @${username} in settings.`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Open App"));
           break;
         }
-        const { data: agents } = await supabase.from("agents").select("balance_meeet").eq("user_id", profile.user_id);
+        const { data: agents } = await supabase.from("agents").select("balance_meeet, name").eq("user_id", profile.user_id);
         const total = (agents || []).reduce((s: number, a: any) => s + (a.balance_meeet || 0), 0);
+        const breakdown = (agents || []).filter((a: any) => a.balance_meeet > 0)
+          .map((a: any) => `  • ${a.name}: ${a.balance_meeet.toLocaleString()}`).join("\n");
         await sendMessage(chatId,
-          `💰 <b>Balance</b>\n\nTotal: <b>${total.toLocaleString()} MEEET</b>\nAgents: <b>${agents?.length ?? 0}</b>`,
-          LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("View Wallet"));
+          `💰 <b>Balance</b>\n\nTotal: <b>${total.toLocaleString()} MEEET</b>\nAgents: <b>${agents?.length ?? 0}</b>${breakdown ? `\n\n${breakdown}` : ""}`,
+          LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("View Wallet", "#wallet"));
         break;
       }
 
@@ -168,13 +209,45 @@ Deno.serve(async (req: Request) => {
         const { data: quests } = await supabase.from("quests").select("title, reward_meeet, status, category")
           .eq("status", "open").order("created_at", { ascending: false }).limit(5);
         if (!quests || quests.length === 0) {
-          await sendMessage(chatId, "📋 No active quests.", LOVABLE_API_KEY, TELEGRAM_API_KEY);
+          await sendMessage(chatId, "📋 No active quests right now.", LOVABLE_API_KEY, TELEGRAM_API_KEY);
           break;
         }
         const list = quests.map((q: any, i: number) =>
           `${i + 1}. <b>${q.title}</b>\n   🏷 ${q.category} | 💰 ${q.reward_meeet ?? 0} MEEET`
         ).join("\n\n");
-        await sendMessage(chatId, `📋 <b>Active Quests:</b>\n\n${list}`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("View All Quests"));
+        await sendMessage(chatId, `📋 <b>Active Quests:</b>\n\n${list}`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("View Quests", "#quests"));
+        break;
+      }
+
+      case "/leaderboard": {
+        const { data: topAgents } = await supabase.from("agents")
+          .select("name, class, level, xp, balance_meeet, quests_completed")
+          .order("xp", { ascending: false }).limit(5);
+        if (!topAgents || topAgents.length === 0) {
+          await sendMessage(chatId, "🏆 No agents on the leaderboard yet.", LOVABLE_API_KEY, TELEGRAM_API_KEY);
+          break;
+        }
+        const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+        const list = topAgents.map((a: any, i: number) =>
+          `${medals[i]} <b>${a.name}</b> (${a.class})\n   Lv.${a.level} · ⚡ ${a.xp} XP · 💰 ${a.balance_meeet.toLocaleString()} MEEET`
+        ).join("\n\n");
+        await sendMessage(chatId, `🏆 <b>Top 5 Agents by XP:</b>\n\n${list}`, LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Full Leaderboard", "#leaderboard"));
+        break;
+      }
+
+      case "/ref": {
+        const refLink = `https://meeet-solana-state.lovable.app/join?ref=tg_${userId}`;
+        await sendMessage(chatId,
+          `🤝 <b>Your Referral Link</b>\n\n` +
+          `Share this link and earn <b>3% commission</b> on all referred agents' earnings!\n\n` +
+          `🔗 <code>${refLink}</code>\n\n` +
+          `Tap the link above to copy it.`,
+          LOVABLE_API_KEY, TELEGRAM_API_KEY,
+          multiButtons([
+            [{ text: "📤 Share Link", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("🌐 Join MEEET World — Deploy AI agents & earn $MEEET tokens!")}` }],
+            [{ text: "🌐 View Referrals", web_app: { url: `${WEBAPP_URL}#referrals` } }],
+          ])
+        );
         break;
       }
 
@@ -195,7 +268,7 @@ Deno.serve(async (req: Request) => {
       case "/deploy": {
         await sendMessage(chatId,
           `🚀 <b>Deploy Agent</b>\n\nChoose a plan, configure your agent, and start earning $MEEET!`,
-          LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Deploy Now"));
+          LOVABLE_API_KEY, TELEGRAM_API_KEY, appButton("Deploy Now", "#deploy"));
         break;
       }
 
