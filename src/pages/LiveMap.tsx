@@ -1332,12 +1332,12 @@ const LiveMap = () => {
 
       {/* ═══ EVENTS PANEL — Right ═══ */}
       {showEvents && (
-        <div className="absolute top-10 right-3 bottom-14 w-64 z-10 flex flex-col max-h-[calc(100vh-5rem)]">
+        <div className="absolute top-10 right-2 bottom-14 w-52 md:w-64 z-10 flex flex-col max-h-[calc(100vh-5rem)]">
           <div className="bg-black/60 backdrop-blur border border-white/[0.06] rounded flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white/40">INTELLIGENCE FEED</span>
+                <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-white/40">FEED</span>
               </div>
               <button onClick={() => setShowEvents(false)}><X className="w-3 h-3 text-white/30 hover:text-white/60" /></button>
             </div>
