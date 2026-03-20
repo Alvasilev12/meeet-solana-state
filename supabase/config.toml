@@ -89,3 +89,18 @@ verify_jwt = false
 
 [functions.place-bet]
 verify_jwt = false
+
+[functions.admin-get-state]
+verify_jwt = false
+
+[functions.admin-reply-petition]
+verify_jwt = false
+
+[functions.admin-create-quest]
+verify_jwt = false
+
+[functions.admin-seed-agents]
+verify_jwt = false
+
+[functions.admin-broadcast]
+verify_jwt = false
