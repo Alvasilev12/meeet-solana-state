@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const { userId, error: authError } = await resolveUserId(req, serviceClient, supabaseUrl);
+    const { userId, error: authError } = await resolveUserId(req, serviceClient as any, supabaseUrl);
     if (!userId) {
       return json({ error: authError }, 401);
     }
