@@ -28,12 +28,14 @@ Deno.serve(async (req) => {
   const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   // Get active agents with enough balance for betting
-  const { data: agents } = await sc.from("agents")
+  const { data: agents, error: agentsErr } = await sc.from("agents")
     .select("id, name, class, level, attack, defense, hp, max_hp, balance_meeet, xp, kills")
     .in("status", ["active", "running"])
     .gte("balance_meeet", 100)
     .order("xp", { ascending: false })
     .limit(50);
+
+  if (agentsErr) return json({ error: agentsErr.message, hint: "Check service_role key" }, 500);
 
   if (!agents || agents.length < 2) return json({ status: "not_enough_agents", count: agents?.length ?? 0 });
 
@@ -66,8 +68,8 @@ Deno.serve(async (req) => {
       hp: Math.max(1, (loser.hp || 100) - randInt(5, 15)),
     }).eq("id", loser.id);
 
-    // Record match
-    await sc.from("arena_matches").insert({
+    // Record match — try insert, ignore if table/columns missing
+    const matchData: Record<string, unknown> = {
       challenger_id: a.id,
       challenger_name: a.name,
       defender_id: b.id,
@@ -76,9 +78,8 @@ Deno.serve(async (req) => {
       winner_name: winner.name,
       bet_meeet: betAmount,
       status: "completed",
-      challenger_roll: aRoll,
-      defender_roll: bRoll,
-    }).catch(() => {}); // arena_matches may not have all columns yet
+    };
+    await sc.from("arena_matches").insert(matchData).catch(() => {});
 
     results.push({
       match: `${a.name} vs ${b.name}`,
