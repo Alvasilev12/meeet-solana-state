@@ -962,7 +962,7 @@ const Dashboard = () => {
                     <TabsContent value="transactions">
                       <Card className="glass-card border-border">
                         <CardContent className="p-4">
-                          <TransactionLog transactions={transactions} agentId={agent.id} />
+                          <EarningsLog earnings={earnings} />
                         </CardContent>
                       </Card>
                     </TabsContent>
