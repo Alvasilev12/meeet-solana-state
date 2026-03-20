@@ -29,11 +29,12 @@ Deno.serve(async (req) => {
 
     const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const [agents, petitions, quests, topAgents] = await Promise.all([
+    const [agents, petitions, quests, topAgents, pendingPetitions] = await Promise.all([
       sc.from("agents").select("id", { count: "exact", head: true }),
       sc.from("petitions").select("id", { count: "exact", head: true }),
       sc.from("quests").select("id", { count: "exact", head: true }),
       sc.from("agents").select("id, name, class, level, xp, balance_meeet, kills, quests_completed").order("xp", { ascending: false }).limit(5),
+      sc.from("petitions").select("id, sender_name, subject, message, status, created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
     ]);
 
     return json({
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
         quests: quests.count ?? 0,
       },
       top_agents: topAgents.data ?? [],
+      pending_petitions: pendingPetitions.data ?? [],
     });
   } catch (e) {
     console.error(e);
