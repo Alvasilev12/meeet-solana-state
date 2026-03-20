@@ -804,7 +804,7 @@ const Dashboard = () => {
                             <TrendingUp className="w-3 h-3 text-emerald-400" />
                           </div>
                           <p className="text-lg font-display font-bold text-emerald-400">
-                            {transactions.filter(t => t.to_agent_id === agent.id && t.amount_meeet).reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
+                            {earnings.reduce((s: number, e: any) => s + Number(e.amount_meeet || 0), 0).toLocaleString()}
                           </p>
                           <p className="text-[10px] text-muted-foreground font-body">Total Earned</p>
                         </div>
@@ -812,18 +812,14 @@ const Dashboard = () => {
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <ArrowDownRight className="w-3 h-3 text-red-400" />
                           </div>
-                          <p className="text-lg font-display font-bold text-red-400">
-                            {transactions.filter(t => t.from_agent_id === agent.id && t.amount_meeet).reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
-                          </p>
+                          <p className="text-lg font-display font-bold text-red-400">0</p>
                           <p className="text-[10px] text-muted-foreground font-body">Total Spent</p>
                         </div>
                         <div className="glass-card rounded-lg p-3 text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <Flame className="w-3 h-3 text-orange-400" />
                           </div>
-                          <p className="text-lg font-display font-bold text-orange-400">
-                            {transactions.filter(t => t.type === "burn" || t.type === "tax").reduce((s, t) => s + Number(t.amount_meeet || 0), 0).toLocaleString()}
-                          </p>
+                          <p className="text-lg font-display font-bold text-orange-400">0</p>
                           <p className="text-[10px] text-muted-foreground font-body">Tax & Burn</p>
                         </div>
                       </div>
