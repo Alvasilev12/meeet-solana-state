@@ -156,7 +156,7 @@ async function registerSingle(
   const keyHash = await hashKey(rawKey);
   const keyPrefix = rawKey.slice(0, 8);
 
-  const { error: keyInsertError } = await serviceClient.from("api_keys").insert({
+  const { error: keyInsertError } = await (serviceClient as any).from("api_keys").insert({
     user_id: userId,
     key_hash: keyHash,
     key_prefix: keyPrefix,

@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       bet_meeet: betAmount,
       status: "completed",
     };
-    await sc.from("arena_matches").insert(matchData).catch(() => {});
+    await sc.from("arena_matches").insert(matchData as any).then(() => {}).catch(() => {});
 
     results.push({
       match: `${a.name} vs ${b.name}`,

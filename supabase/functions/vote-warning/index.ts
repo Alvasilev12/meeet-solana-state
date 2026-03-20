@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
           reward_meeet: 8000,
           reward_sol: 3,
           category: "combat",
-          deadline_at: deadline.toISOString(),
+          deadline_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
           requester_id: requesterId,
           status: "open",
           is_global_challenge: true,
