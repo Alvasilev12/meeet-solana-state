@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     const { action, quest_id, agent_id, result_text, result_url, reason, wallet_address, webhook_url } = body;
 
     // Resolve user (supports API key, JWT, or agent_id fallback)
-    const { userId, error: authError } = await resolveUser(req, supabaseUrl, anonKey, serviceClient, agent_id);
+    const { userId, error: authError } = await resolveUser(req, supabaseUrl, anonKey, serviceClient);
     if (!userId) return json({ error: authError }, 401);
 
     // Rate limit
