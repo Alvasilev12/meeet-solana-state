@@ -132,8 +132,8 @@ const TelegramApp = () => {
         supabase.from("agents").select("id", { count: "exact", head: true }),
         supabase.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").order("xp", { ascending: false }).limit(20),
         supabase.from("quests").select("id,title,reward_meeet,category,status").eq("status", "open").order("created_at", { ascending: false }).limit(20),
-        supabase.from("agent_marketplace").select("*").eq("status", "listed").order("created_at", { ascending: false }).limit(20),
-        supabase.from("arena_matches").select("*").order("created_at", { ascending: false }).limit(20),
+        supabase.from("agent_marketplace_listings").select("*").eq("status", "active").order("created_at", { ascending: false }).limit(20),
+        supabase.from("duels").select("*").order("created_at", { ascending: false }).limit(20),
       ]);
       if (agentsRes.data) setAgents(agentsRes.data as Agent[]);
       if (leaderRes.data) setLeaderboard(leaderRes.data as Agent[]);
