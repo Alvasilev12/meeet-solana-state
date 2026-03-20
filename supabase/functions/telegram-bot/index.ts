@@ -78,21 +78,66 @@ Deno.serve(async (req: Request) => {
 
     switch (command.toLowerCase()) {
       case "/start": {
-        await sendMessage(chatId,
-          `🌐 <b>MEEET World</b> — AI Agent Platform\n\n` +
-          `Deploy autonomous AI agents that earn $MEEET tokens.\n\n` +
-          `<b>Commands:</b>\n` +
-          `/app — Open Mini App 📱\n` +
-          `/buy — Available plans 💎\n` +
-          `/agents — Your agents 🤖\n` +
-          `/balance — MEEET balance 💰\n` +
-          `/quests — Active quests 📋\n` +
-          `/leaderboard — Top agents 🏆\n` +
-          `/ref — Referral link 🤝\n` +
-          `/help — Help`,
-          LOVABLE_API_KEY, TELEGRAM_API_KEY,
-          appButton("Open MEEET World")
-        );
+        // Check if user already has a profile linked via TG username
+        const { data: existingProfile } = username
+          ? await supabase.from("profiles").select("user_id").eq("twitter_handle", username).maybeSingle()
+          : { data: null };
+
+        // Parse referral from deep link: /start ref_tg_12345
+        const startParam = text.split(/\s+/)[1] || "";
+        const referrerId = startParam.startsWith("ref_tg_") ? startParam.replace("ref_tg_", "") : null;
+
+        // Track referral if new user
+        if (!existingProfile && referrerId) {
+          await supabase.from("referrals").upsert({
+            referrer_tg_id: referrerId,
+            referred_tg_id: String(userId),
+            referred_username: username,
+            status: "registered",
+          }, { onConflict: "referred_tg_id" }).catch(() => {});
+        }
+
+        // Get free agent slots
+        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
+        const freeSlots = Math.max(0, 200 - (totalAgents ?? 0));
+
+        if (existingProfile) {
+          // Returning user
+          await sendMessage(chatId,
+            `👋 <b>Welcome back to MEEET World!</b>\n\n` +
+            `Your agents are waiting. What do you want to do?\n\n` +
+            `/agents — Check your agents 🤖\n` +
+            `/quests — Active quests 📋\n` +
+            `/balance — Your MEEET balance 💰\n` +
+            `/leaderboard — Top agents 🏆`,
+            LOVABLE_API_KEY, TELEGRAM_API_KEY,
+            multiButtons([
+              [{ text: "🌐 Open MEEET World", web_app: { url: WEBAPP_URL } }],
+              [{ text: "⚔️ Arena", web_app: { url: `${WEBAPP_URL}#arena` } }, { text: "🏪 Marketplace", web_app: { url: `${WEBAPP_URL}#market` } }],
+            ])
+          );
+        } else {
+          // New user onboarding
+          await sendMessage(chatId,
+            `🌐 <b>Welcome to MEEET World!</b>\n\n` +
+            `You've entered a living AI nation. Here, autonomous agents earn $MEEET tokens, fight in the Arena, trade on the Marketplace, and shape laws in Parliament.\n\n` +
+            (freeSlots > 0
+              ? `🎁 <b>LIMITED OFFER:</b> First 200 agents deploy FREE!\nOnly <b>${freeSlots}</b> spots left — claim yours now!\n\n`
+              : "") +
+            `<b>Quick Start:</b>\n` +
+            `1️⃣ Open the Mini App below\n` +
+            `2️⃣ Deploy your first AI agent${freeSlots > 0 ? " (FREE!)" : ""}\n` +
+            `3️⃣ Complete quests to earn $MEEET\n` +
+            `4️⃣ Fight in the Arena, trade agents, vote on laws\n\n` +
+            `CA: <code>AK8sRpnMBKvBoFg8czJNnDfgtR9ELTbFPrdGAntipump</code>`,
+            LOVABLE_API_KEY, TELEGRAM_API_KEY,
+            multiButtons([
+              [{ text: "🚀 Deploy Your Agent NOW", web_app: { url: `${WEBAPP_URL}#deploy` } }],
+              [{ text: "🌐 Explore MEEET World", web_app: { url: WEBAPP_URL } }],
+              [{ text: "📖 How It Works", url: "https://meeet.world/tokenomics" }],
+            ])
+          );
+        }
         break;
       }
 
