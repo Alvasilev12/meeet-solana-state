@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 import ConnectWallet from "@/components/ConnectWallet";
+import AchievementGrid from "@/components/AchievementGrid";
 
 type Profile = Tables<"profiles">;
 

@@ -750,6 +750,11 @@ const Dashboard = () => {
             <PromoWidget />
           </div>
 
+          {/* Achievements */}
+          <div className="mb-6">
+            <AchievementGrid userId={user!.id} />
+          </div>
+
           {!agent ? (
              <div className="max-w-md mx-auto space-y-4">
                <CreateAgentForm userId={user!.id} isPresident={!!profile?.is_president} />
