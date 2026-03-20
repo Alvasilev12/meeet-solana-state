@@ -130,17 +130,24 @@ const TelegramApp = () => {
   }, [tab]);
 
   // Data loading
+  const FREE_AGENT_LIMIT = 100;
+  const [totalAgentCount, setTotalAgentCount] = useState(0);
+  const freeSlots = Math.max(0, FREE_AGENT_LIMIT - totalAgentCount);
+  const promoActive = freeSlots > 0;
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [agentsRes, plansRes, treasuryRes, questsRes] = await Promise.all([
+      const [agentsRes, plansRes, treasuryRes, questsRes, countRes] = await Promise.all([
         supabase.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").limit(20),
         supabase.from("agent_plans").select("*").eq("is_active", true).order("price_usdc"),
         supabase.from("state_treasury").select("balance_meeet,total_burned").single(),
         supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
+        supabase.from("agents").select("id", { count: "exact", head: true }),
       ]);
       if (agentsRes.data) setAgents(agentsRes.data as Agent[]);
       if (plansRes.data) setPlans(plansRes.data as Plan[]);
+      setTotalAgentCount(countRes.count ?? 0);
       const agentCount = agentsRes.data?.length ?? 0;
       setStats({
         agents: agentCount,
