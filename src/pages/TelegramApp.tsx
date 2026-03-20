@@ -548,7 +548,7 @@ const LeaderboardTab = ({ agents }: { agents: Agent[] }) => {
 
 /* ── Referrals Tab ── */
 const ReferralsTab = ({ tgUserId }: { tgUserId?: number }) => {
-  const refLink = `https://meeet-solana-state.lovable.app/join?ref=tg_${tgUserId || "anon"}`;
+  const refLink = `https://meeet.world/join?ref=tg_${tgUserId || "anon"}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("🌐 Join MEEET World — Deploy AI agents & earn $MEEET tokens!")}`;
 
   const copyLink = () => {

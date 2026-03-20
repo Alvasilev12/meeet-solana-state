@@ -145,7 +145,7 @@ export default function BadgeGenerator() {
           <CardContent className="space-y-3">
             {GLOBAL_BADGES.map((b) => {
               const url = getUrl(b.id);
-              const md = `[![${b.label}](${url})](https://meeet-solana-state.lovable.app)`;
+              const md = `[![${b.label}](${url})](https://meeet.world)`;
               return (
                 <div key={b.id} className="flex items-center gap-3 glass-card rounded-lg px-3 py-2.5">
                   <img src={url} alt={b.label} className="h-5" />
