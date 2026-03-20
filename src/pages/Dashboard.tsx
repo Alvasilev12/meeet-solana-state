@@ -615,7 +615,7 @@ const Dashboard = () => {
   const { data: quests = [], isLoading: questsLoading } = useMyQuests(user?.id);
   const { data: topAgents = [] } = useTopAgents();
   const { data: globalStats } = useGlobalStats();
-  const { data: transactions = [] } = useRecentTransactions(agent?.id);
+  const { data: earnings = [] } = useRecentEarnings(agent?.id);
   const { data: treasury } = useTreasury();
   const activityFeed = useActivityFeed();
 
