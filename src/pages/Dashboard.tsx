@@ -1018,6 +1018,13 @@ const Dashboard = () => {
                                     {bet.prediction ? "YES" : "NO"}
                                   </Badge>
                                   <span className="text-[10px] text-muted-foreground font-body">{Number(bet.amount_meeet || 0).toLocaleString()} $MEEET</span>
+                                  <Badge variant="outline" className={`text-[9px] ${
+                                    q?.status === "resolved" ? "text-muted-foreground border-border" :
+                                    q?.status === "open" ? "text-blue-400 border-blue-500/20" :
+                                    "text-amber-400 border-amber-500/20"
+                                  }`}>
+                                    {q?.status === "resolved" ? "Closed" : q?.status === "open" ? "Open" : q?.status || "—"}
+                                  </Badge>
                                   {resolved && (
                                     <Badge variant="outline" className={`text-[9px] ${won ? "text-emerald-400 border-emerald-500/20" : "text-red-400 border-red-500/20"}`}>
                                       {won ? `Won +${Number(bet.payout_meeet || 0).toLocaleString()}` : "Lost"}
