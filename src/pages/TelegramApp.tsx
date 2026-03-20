@@ -214,9 +214,9 @@ const TelegramApp = () => {
 
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto px-3 pb-20 space-y-3">
-        {tab === "home" && <HomeTab stats={stats} agents={agents} onTab={setTab} />}
+        {tab === "home" && <HomeTab stats={stats} agents={agents} onTab={setTab} promoActive={promoActive} freeSlots={freeSlots} />}
         {tab === "agents" && <AgentsTab agents={agents} />}
-        {tab === "deploy" && <DeployTab plans={plans} onBuy={setBuyPlan} />}
+        {tab === "deploy" && <DeployTab plans={plans} onBuy={setBuyPlan} promoActive={promoActive} freeSlots={freeSlots} />}
         {tab === "stats" && <StatsTab stats={stats} />}
         {tab === "wallet" && <WalletTab agents={agents} totalMeeet={totalMeeet} />}
       </main>
