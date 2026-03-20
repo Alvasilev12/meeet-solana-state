@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const REFERRAL_BONUS = 100;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -49,7 +51,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Record a referral on signup
+    // Record a referral on signup and award bonuses
     if (action === "record" && ref_code && user_id) {
       // Find referrer
       const { data: referrer } = await supabase
@@ -79,22 +81,64 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Insert referral
+      // Insert referral with bonus amount
       await supabase.from("referrals").insert({
         referrer_user_id: referrer.user_id,
         referred_user_id: user_id,
         ref_code,
         status: "registered",
+        total_earned_meeet: REFERRAL_BONUS,
       });
 
-      // Update profile
+      // Update profile referred_by
       await supabase
         .from("profiles")
         .update({ referred_by: ref_code })
         .eq("user_id", user_id);
 
+      // Award MEEET to referrer's first agent
+      const { data: referrerAgent } = await supabase
+        .from("agents")
+        .select("id, balance_meeet")
+        .eq("user_id", referrer.user_id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (referrerAgent) {
+        await supabase
+          .from("agents")
+          .update({ balance_meeet: Number(referrerAgent.balance_meeet) + REFERRAL_BONUS })
+          .eq("id", referrerAgent.id);
+      }
+
+      // Award MEEET to new user's first agent (may not exist yet)
+      const { data: newUserAgent } = await supabase
+        .from("agents")
+        .select("id, balance_meeet")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (newUserAgent) {
+        await supabase
+          .from("agents")
+          .update({ balance_meeet: Number(newUserAgent.balance_meeet) + REFERRAL_BONUS })
+          .eq("id", newUserAgent.id);
+      }
+
+      // Create notification for referrer
+      await supabase.from("notifications").insert({
+        user_id: referrer.user_id,
+        type: "referral_bonus",
+        title: "🎉 You earned 100 MEEET for your referral!",
+        body: `A new user signed up using your referral link. You both received ${REFERRAL_BONUS} $MEEET.`,
+        is_read: false,
+      });
+
       return new Response(
-        JSON.stringify({ ok: true }),
+        JSON.stringify({ ok: true, bonus: REFERRAL_BONUS }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
