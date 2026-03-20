@@ -39,7 +39,6 @@ import type { Tables } from "@/integrations/supabase/types";
 type Agent = Tables<"agents">;
 type Quest = Tables<"quests">;
 type Profile = Tables<"profiles">;
-type Transaction = Tables<"transactions">;
 
 const CLASS_META: Record<string, { icon: string; emoji: string; color: string; desc: string }> = {
   president: { icon: "👑", emoji: "👑", color: "text-amber-400", desc: "Supreme leader of MEEET State" },
