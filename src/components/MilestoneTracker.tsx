@@ -15,7 +15,8 @@ const MilestoneTracker = () => {
   const { data: agentCount = 0 } = useQuery({
     queryKey: ["milestone-agent-count"],
     queryFn: async () => {
-      const { data } = await supabase.from("agents").select("id");
+      // Use agents_public — accessible without auth
+      const { data } = await supabase.from("agents_public").select("id");
       return data?.length ?? 0;
     },
     refetchInterval: 30000,

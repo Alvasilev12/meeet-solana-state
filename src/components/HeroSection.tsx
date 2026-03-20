@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import WorldMap from "@/components/WorldMap";
-import { Terminal, Globe, TrendingUp, Swords, ScrollText, MapPin } from "lucide-react";
+import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -13,7 +13,6 @@ interface HeroStats {
   quests: number;
   nations: number;
   totalMeeet: number;
-  duels: number;
 }
 
 const HeroSection = () => {
@@ -22,11 +21,11 @@ const HeroSection = () => {
   const { data: stats } = useQuery<HeroStats>({
     queryKey: ["hero-stats"],
     queryFn: async () => {
-      const [agentsRes, questsRes, nationsRes, duelsRes] = await Promise.all([
-        supabase.from("agents").select("balance_meeet"),
+      // Use agents_public view — accessible without auth (no RLS restriction)
+      const [agentsRes, questsRes, nationsRes] = await Promise.all([
+        supabase.from("agents_public").select("balance_meeet"),
         supabase.from("quests").select("id", { count: "exact", head: true }),
         supabase.from("nations").select("id", { count: "exact", head: true }),
-        supabase.from("duels").select("id", { count: "exact", head: true }),
       ]);
 
       const agentRows = agentsRes.data || [];
@@ -37,7 +36,6 @@ const HeroSection = () => {
         quests: questsRes.count ?? 0,
         nations: nationsRes.count ?? 0,
         totalMeeet,
-        duels: duelsRes.count ?? 0,
       };
     },
     refetchInterval: 30000,
@@ -50,15 +48,12 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-grid" />
       <ParticleCanvas />
 
-      {/* Ambient glow */}
       <div className="absolute top-1/4 left-1/4 w-48 sm:w-96 h-48 sm:h-96 bg-primary/20 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-36 sm:w-72 h-36 sm:h-72 bg-secondary/15 rounded-full blur-[60px] sm:blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 container max-w-5xl text-center px-4">
         {/* Live badge */}
-        <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 glass-card text-sm text-muted-foreground mb-6 animate-fade-up"
-        >
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 glass-card text-sm text-muted-foreground mb-6 animate-fade-up">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -66,7 +61,6 @@ const HeroSection = () => {
           <span className="font-body">{t("hero.badge")}</span>
         </div>
 
-        {/* Headline */}
         <h1
           className="text-4xl sm:text-6xl lg:text-8xl font-bold tracking-tight mb-5 sm:mb-6 animate-fade-up"
           style={{ animationDelay: "0.1s", animationFillMode: "both", lineHeight: 1.05 }}
@@ -84,19 +78,11 @@ const HeroSection = () => {
           {t("hero.subtitle")}
         </p>
 
-        {/* Contract address */}
-        <div
-          className="flex justify-center mb-7 sm:mb-9 animate-fade-up"
-          style={{ animationDelay: "0.25s", animationFillMode: "both" }}
-        >
+        <div className="flex justify-center mb-7 sm:mb-9 animate-fade-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
           <ContractAddress variant="compact" />
         </div>
 
-        {/* CTA Buttons */}
-        <div
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-14 animate-fade-up"
-          style={{ animationDelay: "0.3s", animationFillMode: "both" }}
-        >
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-14 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
           <Button variant="hero" size="lg" className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6" asChild>
             <Link to="/auth">
               <Terminal className="w-5 h-5" />
@@ -110,11 +96,8 @@ const HeroSection = () => {
           </Button>
         </div>
 
-        {/* Live Stats Grid — real data */}
-        <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto animate-fade-up"
-          style={{ animationDelay: "0.4s", animationFillMode: "both" }}
-        >
+        {/* Live Stats — using agents_public for public access */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "both" }}>
           <LiveStatCard
             icon={<span className="relative flex h-2 w-2 mr-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>}
             label={t("hero.statCitizens")}
@@ -135,7 +118,7 @@ const HeroSection = () => {
           />
           <LiveStatCard
             icon={<TrendingUp className="w-3.5 h-3.5 text-purple-400" />}
-            label="$MEEET в обороте"
+            label="$MEEET"
             value={formatCompact(stats?.totalMeeet ?? 0)}
             accent="text-purple-400"
           />
@@ -167,15 +150,9 @@ function formatCompact(n: number): string {
 }
 
 const LiveStatCard = ({
-  icon,
-  label,
-  value,
-  accent,
+  icon, label, value, accent,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accent: string;
+  icon: React.ReactNode; label: string; value: string; accent: string;
 }) => (
   <div className="glass-card px-4 py-3.5 text-center group hover:border-primary/20 transition-colors">
     <div className="flex items-center justify-center gap-1.5 mb-1.5">
