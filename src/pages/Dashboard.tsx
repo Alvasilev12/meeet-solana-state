@@ -178,7 +178,7 @@ function useOracleBets(userId: string | undefined) {
         .select("*, oracle_questions(question_text, status, resolution)")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
       if (error) throw error;
       return (data ?? []) as any[];
     },
