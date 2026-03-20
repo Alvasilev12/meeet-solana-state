@@ -42,8 +42,10 @@ Deno.serve(async (req) => {
 
     const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Use president's user ID as requester
-    const presidentUserId = Deno.env.get("PRESIDENT_OWNER_USER_ID")!;
+    // Use president's user ID as requester — fallback to system UUID if not a valid UUID
+    const ownerEnv = Deno.env.get("PRESIDENT_OWNER_USER_ID") ?? "";
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const presidentUserId = UUID_RE.test(ownerEnv) ? ownerEnv : "00000000-0000-0000-0000-000000000001";
 
     const { data, error } = await sc
       .from("quests")
