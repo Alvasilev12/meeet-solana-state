@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
       let registered = 0;
 
       for (const agentDef of agents) {
-        const result = await registerSingle(agentDef, serviceClient, userId);
+        const result = await registerSingle(agentDef, serviceClient as any, userId);
         results.push(result);
         if (result.status === "registered") registered++;
       }
