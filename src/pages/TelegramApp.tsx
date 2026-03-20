@@ -107,7 +107,7 @@ const TelegramApp = () => {
   const tg = window.Telegram?.WebApp;
   const tgUser = tg?.initDataUnsafe?.user;
 
-  const FREE_AGENT_LIMIT = 1000000;
+  const FREE_AGENT_LIMIT = 1000;
   const freeSlots = Math.max(0, FREE_AGENT_LIMIT - stats.agents);
   const promoActive = freeSlots > 0;
 

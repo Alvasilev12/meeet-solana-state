@@ -62,7 +62,7 @@ const FAQ = [
 
 type PayStep = "choose" | "paying" | "configuring";
 
-const FREE_AGENT_LIMIT = 1000000;
+const FREE_AGENT_LIMIT = 1000;
 
 const Deploy = () => {
   const [plans, setPlans] = useState<AgentPlan[]>([]);
@@ -414,7 +414,7 @@ const Deploy = () => {
                   <>
                     <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 text-center">
                       <p className="text-lg font-bold text-emerald-400">🎁 FREE Deploy!</p>
-                      <p className="text-sm text-muted-foreground mt-1">You're one of the first {FREE_AGENT_LIMIT} agents — no payment needed.</p>
+                      <p className="text-sm text-muted-foreground mt-1">You're one of the first 1,000 agents — no payment needed.</p>
                       <p className="text-xs text-muted-foreground mt-2">{freeSlots} free spots remaining</p>
                     </div>
                     <Button

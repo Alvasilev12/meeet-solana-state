@@ -39,6 +39,18 @@ Deno.serve(async (req: Request) => {
       return json({ error: `Invalid class. Must be one of: ${validClasses.join(", ")}` }, 400);
     }
 
+    // Free deploy for first 1000 agents
+    const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
+    const FREE_LIMIT = 1000;
+    const isFreeEligible = (totalAgents ?? 0) < FREE_LIMIT;
+
+    // If no subscription and free promo active, allow free deploy
+    if (!subscription_id && isFreeEligible) {
+      // Free deploy — skip payment validation
+    } else if (!subscription_id && !isFreeEligible) {
+      return json({ error: "Free deployment ended. Purchase a plan to deploy agents." }, 403);
+    }
+
     // If subscription_id provided, validate it
     if (subscription_id) {
       const { data: subscription, error: subError } = await supabase
