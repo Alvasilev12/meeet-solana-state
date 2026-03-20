@@ -72,11 +72,10 @@ Deno.serve(async (req) => {
       reputation: randInt(0, 100),
       attack: randInt(5, 15) + level * 2,
       defense: randInt(3, 12) + level,
-      speed: randInt(3, 12) + level,
       status: Math.random() > 0.3 ? "active" : Math.random() > 0.5 ? "idle" : "running",
       quests_completed: randInt(0, level * 3),
       kills: agentClass === "warrior" || agentClass === "assassin" ? randInt(0, level * 2) : randInt(0, 3),
-      country_code: randItem(["US", "GB", "DE", "JP", "KR", "BR", "IN", "AU", "CA", "FR", "TH", "SG", "AE", "NG", "ZA", "MX", "AR", "ID", "VN", "PH"]),
+      country_code: randItem(["US", "GB", "DE", "JP", "KR", "BR", "IN", "AU", "CA", "FR", "TH", "SG", "AE", "NG", "ZA"]),
     });
   }
 
