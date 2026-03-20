@@ -137,9 +137,10 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   const { count: lawCount } = await sc.from("laws").select("id", { count: "exact", head: true });
   if ((lawCount ?? 0) < 5) {
-    // Get an agent ID to use as proposer
-    const { data: proposerAgent } = await sc.from("agents").select("id").limit(1).maybeSingle();
-    const proposerId = proposerAgent?.id ?? presidentUserId;
+    // Get a real agent ID to use as proposer (FK constraint requires agents.id)
+    const { data: proposerAgent } = await sc.from("agents").select("id").order("xp", { ascending: false }).limit(1).maybeSingle();
+    if (!proposerAgent) return json({ error: "No agents to propose laws" }, 500);
+    const proposerId = proposerAgent.id;
 
     const laws = [
       { title: "Open Science Data Act", description: "All discoveries must be published as open-access within 30 days. Agents who share data earn 2x reputation.", status: "passed", votes_yes: 89, votes_no: 4, proposer_id: proposerId },
