@@ -139,6 +139,9 @@ verify_jwt = false
 [functions.get-rankings]
 verify_jwt = false
 
+[functions.admin-seed-chat]
+verify_jwt = false
+
 [functions.run-agent-chat]
 verify_jwt = false
 schedule = "0 */4 * * *"
