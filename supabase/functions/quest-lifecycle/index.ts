@@ -30,7 +30,6 @@ async function resolveUser(
   supabaseUrl: string,
   anonKey: string,
   serviceClient: ReturnType<typeof createClient>,
-  bodyAgentId?: string,
 ): Promise<{ userId: string | null; error: string | null }> {
   // 1. API key
   const apiKey = req.headers.get("X-API-Key") || req.headers.get("x-api-key");
@@ -56,19 +55,7 @@ async function resolveUser(
     }
   }
 
-  // 3. Fallback: resolve via agent_id (for unauthenticated SDK testing)
-  if (bodyAgentId) {
-    const { data: agent } = await serviceClient
-      .from("agents")
-      .select("user_id")
-      .eq("id", bodyAgentId)
-      .single();
-    if (agent) {
-      return { userId: agent.user_id, error: null };
-    }
-  }
-
-  return { userId: null, error: "Authentication required. Use X-API-Key, Bearer JWT, or provide agent_id." };
+  return { userId: null, error: "Authentication required. Use X-API-Key or Bearer JWT." };
 }
 
 /**
