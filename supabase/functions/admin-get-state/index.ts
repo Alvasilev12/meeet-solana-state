@@ -29,13 +29,38 @@ Deno.serve(async (req) => {
 
     const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const [agents, petitions, quests, topAgents, pendingPetitions] = await Promise.all([
+    const [agents, petitions, quests, topAgents, pendingPetitions, allPetitions] = await Promise.all([
       sc.from("agents").select("id", { count: "exact", head: true }),
       sc.from("petitions").select("id", { count: "exact", head: true }),
       sc.from("quests").select("id", { count: "exact", head: true }),
       sc.from("agents").select("id, name, class, level, xp, balance_meeet, kills, quests_completed").order("xp", { ascending: false }).limit(5),
       sc.from("petitions").select("id, sender_name, subject, message, status, created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
+      sc.from("petitions").select("*").order("created_at", { ascending: false }).limit(500),
     ]);
+
+    const rawPetitions = allPetitions.data ?? [];
+    const missingUserAgentIds = [...new Set(
+      rawPetitions
+        .filter((p: any) => !p.user_id && p.agent_id)
+        .map((p: any) => p.agent_id as string)
+    )];
+
+    let agentOwnerMap = new Map<string, string>();
+    if (missingUserAgentIds.length > 0) {
+      const { data: petitionAgents } = await sc
+        .from("agents")
+        .select("id, user_id")
+        .in("id", missingUserAgentIds);
+      agentOwnerMap = new Map((petitionAgents ?? []).map((a: any) => [a.id, a.user_id]));
+    }
+
+    const petitionsList = rawPetitions.map((p: any) => ({
+      id: p.id,
+      message: p.message ?? p.content ?? p.text ?? "",
+      status: p.status ?? "pending",
+      user_id: p.user_id ?? (p.agent_id ? agentOwnerMap.get(p.agent_id) ?? null : null),
+      created_at: p.created_at ?? null,
+    }));
 
     return json({
       counts: {
@@ -44,6 +69,7 @@ Deno.serve(async (req) => {
         quests: quests.count ?? 0,
       },
       top_agents: topAgents.data ?? [],
+      petitions: petitionsList,
       pending_petitions: pendingPetitions.data ?? [],
     });
   } catch (e) {

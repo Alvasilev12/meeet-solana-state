@@ -85,26 +85,58 @@ Deno.serve(async (req) => {
         };
       });
 
-    if (toInsert.length === 0) {
-      return json({ status: "skipped", message: "All 25 NPC agents already exist", inserted: 0 });
+    let insertedAgents: any[] = [];
+
+    if (toInsert.length > 0) {
+      const { data, error } = await sc.from("agents").insert(toInsert).select("id, name, class");
+      if (error) return json({ error: error.message }, 500);
+      insertedAgents = data ?? [];
     }
 
-    const { data, error } = await sc.from("agents").insert(toInsert).select("id, name, class");
-    if (error) return json({ error: error.message }, 500);
-
-    // Also seed deployed_agents entries for each new agent
-    const deployedInserts = (data ?? []).map((a: any) => ({
+    // Keep existing behavior: create deployed entries for newly inserted NPCs
+    const npcDeployedInserts = insertedAgents.map((a: any) => ({
       agent_id: a.id,
       user_id: presidentUserId,
       status: "running",
     }));
+
+    // Prompt 2: seed 10 random deployed agents with randomized progress stats
+    const { data: randomPool, error: randomPoolError } = await sc
+      .from("agents")
+      .select("id, user_id")
+      .limit(500);
+
+    if (randomPoolError) return json({ error: randomPoolError.message }, 500);
+
+    const newlyInsertedIds = new Set(npcDeployedInserts.map((d) => d.agent_id));
+    const randomAgents = [...(randomPool ?? [])]
+      .filter((a: any) => !newlyInsertedIds.has(a.id))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 10);
+
+    const randomDeployedInserts = randomAgents.map((a: any) => ({
+      agent_id: a.id,
+      user_id: a.user_id ?? presidentUserId,
+      status: "running",
+      quests_completed: 5 + Math.floor(Math.random() * 16),
+      total_earned_meeet: 500 + Math.floor(Math.random() * 4501),
+    }));
+
+    const deployedInserts = [...npcDeployedInserts, ...randomDeployedInserts];
 
     if (deployedInserts.length > 0) {
       const { error: deployErr } = await sc.from("deployed_agents").insert(deployedInserts);
       if (deployErr) console.error("deployed_agents seed error:", deployErr.message);
     }
 
-    return json({ status: "seeded", inserted: data?.length ?? 0, deployed: deployedInserts.length, agents: data }, 201);
+    return json({
+      status: insertedAgents.length > 0 ? "seeded" : "skipped",
+      message: insertedAgents.length > 0 ? undefined : "All 25 NPC agents already exist",
+      inserted: insertedAgents.length,
+      random_deployed_seeded: randomDeployedInserts.length,
+      deployed: deployedInserts.length,
+      agents: insertedAgents,
+    }, insertedAgents.length > 0 ? 201 : 200);
   } catch (e) {
     console.error(e);
     return json({ error: "Internal server error" }, 500);
