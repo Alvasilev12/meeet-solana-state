@@ -12,10 +12,11 @@ interface Agent {
   stateTimer: number; meetingPartner: number | null;
   balance: number; level: number; hp: number; maxHp: number;
   targetBuilding: number | null;
+  speechBubble?: { text: string; timer: number };
 }
 interface Building {
   id: number; x: number; y: number; type: string; name: string;
-  color: string; w: number; h: number;
+  color: string; w: number; h: number; zone: string;
 }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number; type: string; }
 interface FloatingText { x: number; y: number; text: string; color: string; life: number; vy: number; }
@@ -25,12 +26,14 @@ interface Road { x1: number; y1: number; x2: number; y2: number; }
 interface GameEvent { id: number; text: string; time: string; color: string; }
 interface Star { x: number; y: number; size: number; twinkleSpeed: number; phase: number; brightness: number; }
 interface AgentTrail { x: number; y: number; age: number; color: string; }
+interface Billboard { x: number; y: number; text: string; color: string; phase: number; }
+interface LiveStats { agents: number; quests: number; treasury: number; treasury_fmt: string; burned: number; burned_fmt: string; duels_today: number; active_laws: number; }
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
 const MAP_W = 200;
 const MAP_H = 140;
-const DAY_CYCLE_MS = 180000; // 3 min full cycle
+const DAY_CYCLE_MS = 180000;
 
 const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string; icon: string }> = {
   warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59", icon: "⚔️" },
@@ -42,13 +45,12 @@ const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string;
   president: { color: "#ffd700", speed: 0.5, glow: "255,215,0", icon: "👑" },
 };
 
-// Activity dot types for ambient particle system
 const ACTIVITY_PARTICLE_COLORS = [
-  { color: "255,60,60", type: "combat" },    // red
-  { color: "255,200,50", type: "quest" },     // yellow
-  { color: "50,255,120", type: "trade" },     // green
-  { color: "60,140,255", type: "oracle" },    // blue
-  { color: "180,80,255", type: "discovery" }, // purple
+  { color: "255,60,60", type: "combat" },
+  { color: "255,200,50", type: "quest" },
+  { color: "50,255,120", type: "trade" },
+  { color: "60,140,255", type: "oracle" },
+  { color: "180,80,255", type: "discovery" },
 ];
 
 const NAMES = [
@@ -61,6 +63,61 @@ const NAMES = [
   "sol_arc","dex_run","nft_mint","web3_io","dao_king","defi_pro","swap_bot",
   "lend_ai","farm_x","pool_mgr","byte_lord","hash_queen","node_x","pk_rush",
   "rug_guard","gem_scan","airdrop_z","stake_max","yield_bot","liq_prime",
+];
+
+const SPEECH_BUBBLES = [
+  "Found 500 $MEEET!", "Won duel!", "New law proposed", "Mining resources...",
+  "Alliance formed!", "Quest complete!", "Trading 200 $MEEET", "Level up!",
+  "Scanning perimeter", "Oracle predicts YES", "Guild treasury +100",
+  "Deploy successful!", "Staking rewards!", "New discovery!",
+];
+
+// ─── District Zones ─────────────────────────────────────────────
+const ZONES: Record<string, { cx: number; cy: number; color: string; label: string; accent: string }> = {
+  parliament: { cx: 40, cy: 25, color: "#FFD700", label: "⚖️ PARLIAMENT DISTRICT", accent: "255,215,0" },
+  arena:      { cx: 150, cy: 55, color: "#EF4444", label: "⚔️ ARENA QUARTER", accent: "239,68,68" },
+  market:     { cx: 100, cy: 115, color: "#14F195", label: "🏪 MARKET BAZAAR", accent: "20,241,149" },
+  oracle:     { cx: 160, cy: 20, color: "#9945FF", label: "🔮 ORACLE SANCTUM", accent: "153,69,255" },
+  mining:     { cx: 30, cy: 110, color: "#00AAFF", label: "⛏️ MINING CAVERNS", accent: "0,170,255" },
+  treasury:   { cx: 100, cy: 65, color: "#FBBF24", label: "🏛️ TREASURY VAULT", accent: "251,191,36" },
+};
+
+// ─── District Buildings ─────────────────────────────────────────
+const DISTRICT_BUILDINGS: Array<{ zone: string; type: string; name: string; color: string; w: number; h: number; ox: number; oy: number }> = [
+  // Parliament District (top-left)
+  { zone: "parliament", type: "parliament", name: "Grand Parliament", color: "#FFD700", w: 6, h: 5, ox: 0, oy: 0 },
+  { zone: "parliament", type: "embassy", name: "Diplomat Hall", color: "#DAA520", w: 4, h: 3, ox: -10, oy: 8 },
+  { zone: "parliament", type: "court", name: "High Court", color: "#B8860B", w: 5, h: 4, ox: 10, oy: 7 },
+  { zone: "parliament", type: "archive", name: "Law Archives", color: "#CD853F", w: 3, h: 3, ox: -8, oy: -6 },
+  { zone: "parliament", type: "senate", name: "Senate Chamber", color: "#F0E68C", w: 4, h: 3, ox: 8, oy: -5 },
+  // Arena Quarter (center-right)
+  { zone: "arena", type: "arena", name: "Grand Arena", color: "#EF4444", w: 7, h: 7, ox: 0, oy: 0 },
+  { zone: "arena", type: "barracks", name: "War Barracks", color: "#DC2626", w: 4, h: 3, ox: -12, oy: 8 },
+  { zone: "arena", type: "armory", name: "Armory", color: "#B91C1C", w: 3, h: 4, ox: 12, oy: -6 },
+  { zone: "arena", type: "guild", name: "Warriors Guild", color: "#F87171", w: 5, h: 4, ox: -10, oy: -7 },
+  { zone: "arena", type: "hospital", name: "Field Hospital", color: "#10B981", w: 4, h: 3, ox: 10, oy: 9 },
+  // Market Bazaar (bottom-center)
+  { zone: "market", type: "dex", name: "Central DEX", color: "#14F195", w: 5, h: 4, ox: 0, oy: 0 },
+  { zone: "market", type: "shop", name: "Token Exchange", color: "#34D399", w: 4, h: 3, ox: -10, oy: 6 },
+  { zone: "market", type: "guild", name: "Traders Guild", color: "#059669", w: 4, h: 4, ox: 10, oy: 5 },
+  { zone: "market", type: "auction", name: "NFT Auction", color: "#6EE7B7", w: 3, h: 3, ox: -8, oy: -5 },
+  { zone: "market", type: "bank", name: "Merchant Bank", color: "#A7F3D0", w: 4, h: 3, ox: 8, oy: -6 },
+  // Oracle Sanctum (top-right)
+  { zone: "oracle", type: "oracle", name: "Oracle Tower", color: "#9945FF", w: 3, h: 6, ox: 0, oy: 0 },
+  { zone: "oracle", type: "shrine", name: "Prediction Shrine", color: "#7C3AED", w: 4, h: 3, ox: -8, oy: 8 },
+  { zone: "oracle", type: "library", name: "Mystic Library", color: "#6D28D9", w: 4, h: 4, ox: 8, oy: 6 },
+  { zone: "oracle", type: "pool", name: "Scrying Pool", color: "#8B5CF6", w: 3, h: 3, ox: -6, oy: -5 },
+  // Mining Caverns (bottom-left)
+  { zone: "mining", type: "mine", name: "Crystal Mine", color: "#00AAFF", w: 5, h: 4, ox: 0, oy: 0 },
+  { zone: "mining", type: "mine", name: "Deep Shaft", color: "#0284C7", w: 4, h: 5, ox: -10, oy: 6 },
+  { zone: "mining", type: "refinery", name: "Ore Refinery", color: "#0EA5E9", w: 5, h: 3, ox: 8, oy: 7 },
+  { zone: "mining", type: "depot", name: "Resource Depot", color: "#38BDF8", w: 3, h: 3, ox: -6, oy: -5 },
+  // Treasury Vault (center)
+  { zone: "treasury", type: "treasury", name: "MEEET Vault", color: "#FBBF24", w: 6, h: 5, ox: 0, oy: 0 },
+  { zone: "treasury", type: "bank", name: "Central Bank", color: "#F59E0B", w: 5, h: 4, ox: -12, oy: 7 },
+  { zone: "treasury", type: "mint", name: "Token Mint", color: "#D97706", w: 4, h: 3, ox: 10, oy: 8 },
+  { zone: "treasury", type: "gate", name: "Solana Gateway", color: "#14F195", w: 4, h: 4, ox: 0, oy: -8 },
+  { zone: "treasury", type: "academy", name: "Academy", color: "#6366F1", w: 5, h: 4, ox: -10, oy: -6 },
 ];
 
 // ─── Noise ──────────────────────────────────────────────────────
@@ -82,14 +139,8 @@ function fbm(x: number, y: number, seed: number): number {
   return v;
 }
 
-// ─── Dark Atmospheric Terrain Colors ────────────────────────────
-// 0=deep ocean, 1=shallow water, 2=shore, 3=lowland, 4=grassland, 5=forest, 6=mountain, 7=peak
-const TERRAIN_DAY = [
-  "#060e1f", "#0a1a35", "#1a2a1a", "#0f2010", "#0d1c0d", "#081508", "#1a1a1a", "#2a2a30",
-];
-const TERRAIN_NIGHT = [
-  "#020810", "#050f1f", "#0a150a", "#060e06", "#050c05", "#030a03", "#101010", "#181820",
-];
+const TERRAIN_DAY = ["#060e1f", "#0a1a35", "#1a2a1a", "#0f2010", "#0d1c0d", "#081508", "#1a1a1a", "#2a2a30"];
+const TERRAIN_NIGHT = ["#020810", "#050f1f", "#0a150a", "#060e06", "#050c05", "#030a03", "#101010", "#181820"];
 
 function lerpColor(a: string, b: string, t: number): string {
   const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
@@ -133,46 +184,41 @@ function generateTerrain(): number[][] {
   return tiles;
 }
 
-// ─── Buildings — simplified for cinematic look ──────────────────
-const BUILDING_DEFS = [
-  { type: "parliament", name: "Parliament", color: "#9945FF", w: 5, h: 4 },
-  { type: "treasury", name: "Treasury", color: "#FBBF24", w: 4, h: 3 },
-  { type: "arena", name: "Grand Arena", color: "#EF4444", w: 6, h: 6 },
-  { type: "dex", name: "Central DEX", color: "#14F195", w: 5, h: 4 },
-  { type: "bank", name: "Central Bank", color: "#00C2FF", w: 5, h: 4 },
-  { type: "guild", name: "Warriors Guild", color: "#EF4444", w: 4, h: 4 },
-  { type: "guild", name: "Traders Guild", color: "#14F195", w: 4, h: 4 },
-  { type: "mine", name: "Crystal Mine", color: "#FBBF24", w: 3, h: 3 },
-  { type: "mine", name: "Deep Mine", color: "#B45309", w: 4, h: 3 },
-  { type: "oracle", name: "Oracle Tower", color: "#9945FF", w: 2, h: 5 },
-  { type: "academy", name: "Academy", color: "#6366F1", w: 5, h: 4 },
-  { type: "embassy", name: "Grand Embassy", color: "#34D399", w: 4, h: 3 },
-  { type: "quest", name: "Quest Board", color: "#06B6D4", w: 4, h: 3 },
-  { type: "gate", name: "Solana Gateway", color: "#14F195", w: 3, h: 3 },
-  { type: "hospital", name: "Hospital", color: "#10B981", w: 4, h: 3 },
-];
-
+// ─── Building generation using district zones ───────────────────
 function generateBuildings(terrain: number[][]): Building[] {
   const buildings: Building[] = [];
   const placed = new Set<string>();
   let id = 0;
-  for (const bt of BUILDING_DEFS) {
-    let attempts = 0;
-    while (attempts < 600) {
-      const bx = 5 + Math.floor(noise2d(attempts * 7 + id * 13, id * 3, 99) * (MAP_W - 15));
-      const by = 5 + Math.floor(noise2d(id * 5, attempts * 11 + id * 7, 77) * (MAP_H - 15));
-      let ok = true;
-      for (let dy = 0; dy < bt.h && ok; dy++)
-        for (let dx = 0; dx < bt.w && ok; dx++) {
-          const tx = bx + dx, ty = by + dy;
-          if (tx >= MAP_W || ty >= MAP_H || terrain[ty][tx] <= 1 || terrain[ty][tx] >= 7 || placed.has(`${tx},${ty}`)) ok = false;
+
+  for (const bd of DISTRICT_BUILDINGS) {
+    const zone = ZONES[bd.zone];
+    if (!zone) continue;
+    const baseTx = Math.floor(zone.cx + bd.ox);
+    const baseTy = Math.floor(zone.cy + bd.oy);
+    
+    // Find valid placement near target
+    let bestX = baseTx, bestY = baseTy;
+    let found = false;
+    for (let r = 0; r < 15 && !found; r++) {
+      for (let dy = -r; dy <= r && !found; dy++) {
+        for (let dx = -r; dx <= r && !found; dx++) {
+          const tx = baseTx + dx, ty = baseTy + dy;
+          if (tx < 2 || ty < 2 || tx + bd.w >= MAP_W - 2 || ty + bd.h >= MAP_H - 2) continue;
+          let ok = true;
+          for (let by = 0; by < bd.h && ok; by++)
+            for (let bx = 0; bx < bd.w && ok; bx++) {
+              const cx = tx + bx, cy = ty + by;
+              if (terrain[cy][cx] <= 1 || terrain[cy][cx] >= 7 || placed.has(`${cx},${cy}`)) ok = false;
+            }
+          if (ok) { bestX = tx; bestY = ty; found = true; }
         }
-      if (ok) {
-        for (let dy = 0; dy < bt.h; dy++) for (let dx = 0; dx < bt.w; dx++) placed.add(`${bx + dx},${by + dy}`);
-        buildings.push({ id: id++, x: bx * TILE, y: by * TILE, ...bt });
-        break;
       }
-      attempts++;
+    }
+    if (found) {
+      for (let by = 0; by < bd.h; by++)
+        for (let bx = 0; bx < bd.w; bx++)
+          placed.add(`${bestX + bx},${bestY + by}`);
+      buildings.push({ id: id++, x: bestX * TILE, y: bestY * TILE, type: bd.type, name: bd.name, color: bd.color, w: bd.w, h: bd.h, zone: bd.zone });
     }
   }
   return buildings;
@@ -193,13 +239,19 @@ function generateRoads(buildings: Building[]): Road[] {
   return roads;
 }
 
-// ─── Event Config ───────────────────────────────────────────────
 const EVENT_CFG: Record<string, { icon: string; color: string }> = {
   duel: { icon: "⚔️", color: "#EF4444" }, trade: { icon: "💰", color: "#14F195" },
   quest_complete: { icon: "📜", color: "#06B6D4" }, level_up: { icon: "🎓", color: "#6366F1" },
   alliance: { icon: "🤝", color: "#34D399" }, burn: { icon: "🔥", color: "#F97316" },
   spawn: { icon: "🆕", color: "#14F195" }, combat: { icon: "⚔️", color: "#EF4444" },
 };
+
+function formatNum(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // COMPONENT
@@ -222,6 +274,7 @@ const LiveMap = () => {
   const [weather, setWeather] = useState<'clear' | 'rain' | 'storm'>('clear');
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
 
   const agentsRef = useRef<Agent[]>([]);
   const terrainRef = useRef<number[][]>(generateTerrain());
@@ -246,18 +299,16 @@ const LiveMap = () => {
   const trailsRef = useRef<AgentTrail[]>([]);
   const weatherRef = useRef<'clear' | 'rain' | 'storm'>('clear');
   const weatherTimerRef = useRef(0);
+  const billboardsRef = useRef<Billboard[]>([]);
 
-  // Init stars — dense starfield for cyber command center feel
+  // Init stars
   useEffect(() => {
     const stars: Star[] = [];
     for (let i = 0; i < 600; i++) {
       stars.push({
-        x: Math.random() * MAP_W * TILE,
-        y: Math.random() * MAP_H * TILE,
-        size: 0.3 + Math.random() * 2,
-        twinkleSpeed: 0.001 + Math.random() * 0.006,
-        phase: Math.random() * Math.PI * 2,
-        brightness: 0.2 + Math.random() * 0.8,
+        x: Math.random() * MAP_W * TILE, y: Math.random() * MAP_H * TILE,
+        size: 0.3 + Math.random() * 2, twinkleSpeed: 0.001 + Math.random() * 0.006,
+        phase: Math.random() * Math.PI * 2, brightness: 0.2 + Math.random() * 0.8,
       });
     }
     starsRef.current = stars;
@@ -274,6 +325,37 @@ const LiveMap = () => {
       });
     }
     fogPatchesRef.current = patches;
+  }, []);
+
+  // Init billboards
+  useEffect(() => {
+    const bb: Billboard[] = [
+      { x: ZONES.treasury.cx * TILE + 200, y: ZONES.treasury.cy * TILE - 100, text: "$MEEET — THE FUTURE OF AI", color: "#14F195", phase: 0 },
+      { x: ZONES.arena.cx * TILE - 150, y: ZONES.arena.cy * TILE - 120, text: "⚔️ ARENA SEASON 1", color: "#EF4444", phase: 1.5 },
+      { x: ZONES.parliament.cx * TILE + 100, y: ZONES.parliament.cy * TILE - 80, text: "🏛️ JOIN PARLIAMENT", color: "#FFD700", phase: 3 },
+      { x: ZONES.oracle.cx * TILE - 80, y: ZONES.oracle.cy * TILE + 200, text: "🔮 PREDICT THE FUTURE", color: "#9945FF", phase: 4.5 },
+      { x: ZONES.market.cx * TILE + 150, y: ZONES.market.cy * TILE - 60, text: "💰 TRADE NOW", color: "#00ff88", phase: 2 },
+    ];
+    billboardsRef.current = bb;
+  }, []);
+
+  // Fetch live data from tg-app-data
+  useEffect(() => {
+    const fetchLive = async () => {
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "zujrmifaabkletgnpoyw";
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/tg-app-data`, {
+          headers: { "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.stats) setLiveStats(data.stats);
+        }
+      } catch { /* silent */ }
+    };
+    fetchLive();
+    const interval = setInterval(fetchLive, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const addEvent = useCallback((text: string, color: string) => {
@@ -388,7 +470,7 @@ const LiveMap = () => {
     return () => { supabase.removeChannel(channel); supabase.removeChannel(feedChannel); };
   }, [addEvent, addFloatingText, addRipple]);
 
-  // Ambient events
+  // Ambient events + speech bubbles
   useEffect(() => {
     const interval = setInterval(() => {
       const agents = agentsRef.current;
@@ -401,6 +483,15 @@ const LiveMap = () => {
         `${a.name} completed patrol`, `Data stream: ${a.name} ↔ ${b.name}`,
       ];
       addEvent(templates[Math.floor(Math.random() * templates.length)], "#3a5a5a");
+
+      // Random speech bubble
+      if (Math.random() < 0.5) {
+        const speaker = agents[Math.floor(Math.random() * agents.length)];
+        speaker.speechBubble = {
+          text: SPEECH_BUBBLES[Math.floor(Math.random() * SPEECH_BUBBLES.length)],
+          timer: 180,
+        };
+      }
     }, 6000);
     return () => clearInterval(interval);
   }, [addEvent]);
@@ -486,51 +577,34 @@ const LiveMap = () => {
             oc.fillStyle = lerpColor(dayC, nightC, nf);
             oc.fillRect(sx, sy, ts + 1, ts + 1);
 
-            // Water shimmer with wave pattern
             if (tile <= 1 && z > 0.3) {
               const shimmer = Math.sin(t * 0.001 + col * 0.3 + row * 0.2) * 0.03 + 0.02;
               oc.fillStyle = `rgba(20,60,120,${shimmer})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
-              // Wave highlight lines
               if (z > 0.5 && tile === 1) {
                 const waveOff = Math.sin(t * 0.0008 + col * 0.5) * ts * 0.3;
                 oc.fillStyle = `rgba(40,100,180,${shimmer * 0.5})`;
                 oc.fillRect(sx + waveOff, sy + ts * 0.4, ts * 0.4, 1);
               }
             }
-
-            // Shore foam
             if (tile === 2 && z > 0.4) {
               const foamAlpha = 0.03 + Math.sin(t * 0.002 + col + row * 0.7) * 0.015;
               oc.fillStyle = `rgba(80,140,80,${foamAlpha})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
             }
-
-            // Forest detail — tiny tree dots
             if (tile === 5 && z > 0.6 && (col + row) % 3 === 0) {
               oc.fillStyle = `rgba(20,60,20,${0.15 + nf * 0.1})`;
-              oc.beginPath();
-              oc.arc(sx + ts * 0.5, sy + ts * 0.4, ts * 0.2, 0, Math.PI * 2);
-              oc.fill();
+              oc.beginPath(); oc.arc(sx + ts * 0.5, sy + ts * 0.4, ts * 0.2, 0, Math.PI * 2); oc.fill();
             }
-
-            // Mountain peaks
             if (tile >= 6 && z > 0.5) {
               const peakAlpha = 0.08 + (tile === 7 ? 0.06 : 0);
               oc.fillStyle = `rgba(80,80,100,${peakAlpha})`;
-              oc.beginPath();
-              oc.moveTo(sx + ts * 0.2, sy + ts);
-              oc.lineTo(sx + ts * 0.5, sy + ts * 0.2);
-              oc.lineTo(sx + ts * 0.8, sy + ts);
-              oc.closePath();
-              oc.fill();
+              oc.beginPath(); oc.moveTo(sx + ts * 0.2, sy + ts); oc.lineTo(sx + ts * 0.5, sy + ts * 0.2); oc.lineTo(sx + ts * 0.8, sy + ts); oc.closePath(); oc.fill();
             }
           }
         }
-
         terrainCacheRef.current = { canvas: offCanvas, camX: cam.x, camY: cam.y, zoom: z, nf, w, h };
       }
-
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
       // ─── STARS (night only) ────────────────────────────────
@@ -545,7 +619,6 @@ const LiveMap = () => {
           const sr = s.size * z * 0.6;
           ctx.fillStyle = `rgba(200,220,255,${Math.min(alpha, 0.7)})`;
           ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
-          // Cross sparkle for bright stars
           if (s.brightness > 0.7 && sr > 0.5) {
             ctx.strokeStyle = `rgba(200,220,255,${alpha * 0.3})`;
             ctx.lineWidth = 0.5;
@@ -554,6 +627,23 @@ const LiveMap = () => {
             ctx.beginPath(); ctx.moveTo(sx, sy - len); ctx.lineTo(sx, sy + len); ctx.stroke();
           }
         });
+      }
+
+      // ─── AURORA BOREALIS (night) ──────────────────────────
+      if (nf > 0.4) {
+        const auroraAlpha = (nf - 0.4) * 0.12;
+        for (let i = 0; i < 4; i++) {
+          const ax = w * (0.1 + i * 0.25 + Math.sin(t * 0.0003 + i * 2) * 0.1);
+          const ay = h * (0.05 + Math.sin(t * 0.0004 + i * 1.5) * 0.08);
+          const ar = 150 + Math.sin(t * 0.001 + i) * 50;
+          const colors = ["80,255,120", "100,200,255", "180,100,255", "50,255,200"];
+          const grad = ctx.createRadialGradient(ax, ay, 0, ax, ay, ar);
+          grad.addColorStop(0, `rgba(${colors[i]},${auroraAlpha})`);
+          grad.addColorStop(0.5, `rgba(${colors[i]},${auroraAlpha * 0.3})`);
+          grad.addColorStop(1, "transparent");
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(ax, ay, ar, 0, Math.PI * 2); ctx.fill();
+        }
       }
 
       // ─── FOG PATCHES ──────────────────────────────────────
@@ -574,6 +664,22 @@ const LiveMap = () => {
         }
       });
 
+      // ─── HOLOGRAPHIC GRID OVERLAY ─────────────────────────
+      if (z > 0.3) {
+        const gridSpacing = 80 * z;
+        const gridAlpha = 0.04 + Math.sin(t * 0.001) * 0.015;
+        ctx.strokeStyle = `rgba(20,241,149,${gridAlpha})`;
+        ctx.lineWidth = 0.5;
+        const offX = (cam.x * z) % gridSpacing;
+        const offY = (cam.y * z) % gridSpacing;
+        for (let gx = -offX; gx < w; gx += gridSpacing) {
+          ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+        }
+        for (let gy = -offY; gy < h; gy += gridSpacing) {
+          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+        }
+      }
+
       // ─── WEATHER CYCLING ──────────────────────────────────
       weatherTimerRef.current -= 1;
       if (weatherTimerRef.current <= 0) {
@@ -585,115 +691,273 @@ const LiveMap = () => {
         setWeather(weatherRef.current);
       }
 
-      // Storm lightning flash
       if (weatherRef.current === 'storm' && Math.random() < 0.003) {
         ctx.fillStyle = 'rgba(200,220,255,0.06)';
         ctx.fillRect(0, 0, w, h);
       }
 
-      // ─── ROADS — data stream style ────────────────────────
+      // ─── DISTRICT ZONE GLOWS ──────────────────────────────
+      for (const [, zone] of Object.entries(ZONES)) {
+        const zx = (zone.cx * TILE - cam.x) * z;
+        const zy = (zone.cy * TILE - cam.y) * z;
+        if (zx < -400 || zx > w + 400 || zy < -400 || zy > h + 400) continue;
+        const zoneR = 300 * z;
+        const grad = ctx.createRadialGradient(zx, zy, 0, zx, zy, zoneR);
+        grad.addColorStop(0, `rgba(${zone.accent},0.06)`);
+        grad.addColorStop(0.5, `rgba(${zone.accent},0.02)`);
+        grad.addColorStop(1, "transparent");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(zx, zy, zoneR, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // ─── ROADS — neon-lit data streams ────────────────────
       roads.forEach(r => {
         const sx1 = (r.x1 - cam.x) * z, sy1 = (r.y1 - cam.y) * z;
         const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
         if (Math.max(sx1, sx2) < -100 || Math.min(sx1, sx2) > w + 100) return;
         if (Math.max(sy1, sy2) < -100 || Math.min(sy1, sy2) > h + 100) return;
-        // Dim path line
-        ctx.strokeStyle = `rgba(30,60,50,${0.2 + nf * 0.1})`;
-        ctx.lineWidth = Math.max(1, 2 * z);
+        // Main road
+        ctx.strokeStyle = `rgba(30,60,50,${0.25 + nf * 0.1})`;
+        ctx.lineWidth = Math.max(2, 3 * z);
+        ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+        // Neon center line
+        ctx.strokeStyle = `rgba(20,241,149,${0.08 + Math.sin(t * 0.002) * 0.03})`;
+        ctx.lineWidth = Math.max(0.5, 1 * z);
         ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
         // Flowing particles along road
-        for (let i = 0; i < 3; i++) {
-          const prog = ((t * 0.0003 + i * 0.33 + r.x1 * 0.0001) % 1);
+        for (let i = 0; i < 4; i++) {
+          const prog = ((t * 0.0003 + i * 0.25 + r.x1 * 0.0001) % 1);
           const px = sx1 + (sx2 - sx1) * prog;
           const py = sy1 + (sy2 - sy1) * prog;
-          const alpha = 0.3 + Math.sin(t * 0.003 + i) * 0.15;
-          ctx.fillStyle = `rgba(20,241,149,${alpha * 0.5})`;
-          ctx.beginPath(); ctx.arc(px, py, 1.5 * z, 0, Math.PI * 2); ctx.fill();
+          const alpha = 0.4 + Math.sin(t * 0.003 + i) * 0.2;
+          ctx.fillStyle = `rgba(20,241,149,${alpha * 0.6})`;
+          ctx.beginPath(); ctx.arc(px, py, 2 * z, 0, Math.PI * 2); ctx.fill();
+        }
+        // Neon road lights at intervals
+        if (z > 0.4) {
+          const roadLen = Math.hypot(sx2 - sx1, sy2 - sy1);
+          const lightCount = Math.floor(roadLen / (60 * z));
+          for (let li = 1; li < lightCount; li++) {
+            const lp = li / lightCount;
+            const lx = sx1 + (sx2 - sx1) * lp;
+            const ly = sy1 + (sy2 - sy1) * lp;
+            const lightPulse = 0.15 + Math.sin(t * 0.003 + li * 0.5) * 0.05;
+            const lightGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 8 * z);
+            lightGrad.addColorStop(0, `rgba(20,241,149,${lightPulse})`);
+            lightGrad.addColorStop(1, "transparent");
+            ctx.fillStyle = lightGrad;
+            ctx.beginPath(); ctx.arc(lx, ly, 8 * z, 0, Math.PI * 2); ctx.fill();
+          }
         }
       });
 
-      // ─── BUILDINGS — detailed structures ────────────────────
+      // ─── MATRIX DATA STREAMS to Treasury ──────────────────
+      if (z > 0.25) {
+        const txCenter = (ZONES.treasury.cx * TILE - cam.x) * z;
+        const tyCenter = (ZONES.treasury.cy * TILE - cam.y) * z;
+        if (txCenter > -500 && txCenter < w + 500 && tyCenter > -500 && tyCenter < h + 500) {
+          for (const [key, zone] of Object.entries(ZONES)) {
+            if (key === "treasury") continue;
+            const fromX = (zone.cx * TILE - cam.x) * z;
+            const fromY = (zone.cy * TILE - cam.y) * z;
+            // Subtle stream line
+            ctx.strokeStyle = `rgba(${zone.accent},0.04)`;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4 * z, 8 * z]);
+            ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(txCenter, tyCenter); ctx.stroke();
+            ctx.setLineDash([]);
+            // Matrix rain dots flowing along
+            for (let md = 0; md < 3; md++) {
+              const mp = ((t * 0.0002 + md * 0.33 + zone.cx * 0.01) % 1);
+              const mx = fromX + (txCenter - fromX) * mp;
+              const my = fromY + (tyCenter - fromY) * mp;
+              ctx.fillStyle = `rgba(${zone.accent},${0.3 + Math.sin(t * 0.005 + md) * 0.15})`;
+              ctx.beginPath(); ctx.arc(mx, my, 1.5 * z, 0, Math.PI * 2); ctx.fill();
+            }
+          }
+        }
+      }
+
+      // ─── BUILDINGS — compound shapes per type ─────────────
       buildings.forEach(b => {
         const cx2 = (b.x + b.w * TILE / 2 - cam.x) * z;
         const cy2 = (b.y + b.h * TILE / 2 - cam.y) * z;
-        if (cx2 < -100 || cx2 > w + 100 || cy2 < -100 || cy2 > h + 100) return;
+        if (cx2 < -150 || cx2 > w + 150 || cy2 < -150 || cy2 > h + 150) return;
         const size = Math.max(4, Math.max(b.w, b.h) * TILE * z * 0.2);
         const pulse = 0.6 + Math.sin(t * 0.002 + b.id) * 0.2;
 
-        // Large ambient glow
-        const glowR = size * 6;
+        // Ambient glow
+        const glowR = size * 5;
         const glow = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, glowR);
-        glow.addColorStop(0, b.color + Math.floor(pulse * 30).toString(16).padStart(2, "0"));
-        glow.addColorStop(0.2, b.color + "10");
-        glow.addColorStop(0.5, b.color + "05");
+        glow.addColorStop(0, b.color + Math.floor(pulse * 25).toString(16).padStart(2, "0"));
+        glow.addColorStop(0.3, b.color + "08");
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(cx2, cy2, glowR, 0, Math.PI * 2); ctx.fill();
 
-        // Building base platform
         const bw = b.w * TILE * z * 0.7;
         const bh = b.h * TILE * z * 0.5;
-        ctx.fillStyle = `rgba(10,15,25,${0.6 + pulse * 0.2})`;
-        ctx.fillRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
-        ctx.strokeStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
-        ctx.lineWidth = 1;
-        ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
 
-        // Building type-specific rendering
         if (z > 0.3) {
-          if (b.type === "parliament" || b.type === "embassy") {
-            // Columns
-            const cols = 4;
+          if (b.type === "parliament" || b.type === "embassy" || b.type === "senate" || b.type === "court") {
+            // Classical columns + roof
+            ctx.fillStyle = `rgba(10,15,25,${0.7 + pulse * 0.2})`;
+            ctx.fillRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+            const cols = b.type === "parliament" ? 6 : 4;
             for (let c = 0; c < cols; c++) {
               const colX = cx2 - bw / 2 + bw * (c + 0.5) / cols;
-              ctx.fillStyle = b.color + Math.floor(pulse * 120).toString(16).padStart(2, "0");
+              ctx.fillStyle = b.color + Math.floor(pulse * 100).toString(16).padStart(2, "0");
               ctx.fillRect(colX - z, cy2 - bh / 2 + 2 * z, z * 2, bh - 4 * z);
             }
-            // Roof triangle
+            // Pediment
             ctx.beginPath();
             ctx.moveTo(cx2 - bw / 2 - 2 * z, cy2 - bh / 2);
             ctx.lineTo(cx2, cy2 - bh / 2 - bh * 0.4);
             ctx.lineTo(cx2 + bw / 2 + 2 * z, cy2 - bh / 2);
             ctx.closePath();
-            ctx.fillStyle = b.color + Math.floor(pulse * 60).toString(16).padStart(2, "0");
+            ctx.fillStyle = b.color + Math.floor(pulse * 50).toString(16).padStart(2, "0");
             ctx.fill();
-          } else if (b.type === "oracle") {
-            // Tower — tall narrow shape
-            const tw = bw * 0.3;
-            ctx.fillStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
+            ctx.strokeStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+          } else if (b.type === "oracle" || b.type === "shrine" || b.type === "pool") {
+            // Mystical tower / crystal
+            const tw = bw * (b.type === "oracle" ? 0.3 : 0.5);
+            ctx.fillStyle = b.color + Math.floor(pulse * 60).toString(16).padStart(2, "0");
             ctx.fillRect(cx2 - tw / 2, cy2 - bh, tw, bh * 1.5);
-            // Eye at top
-            const eyeR = 3 * z;
-            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - eyeR, eyeR, 0, Math.PI * 2);
-            ctx.fillStyle = b.color + Math.floor(pulse * 200).toString(16).padStart(2, "0"); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - eyeR, eyeR * 0.4, 0, Math.PI * 2);
-            ctx.fillStyle = "#000"; ctx.fill();
-          } else if (b.type === "arena") {
-            // Circular colosseum
+            // Glowing orb at top
+            const orbR = 4 * z;
+            const orbGrad = ctx.createRadialGradient(cx2, cy2 - bh - orbR, 0, cx2, cy2 - bh - orbR, orbR * 3);
+            orbGrad.addColorStop(0, b.color + Math.floor(pulse * 200).toString(16).padStart(2, "0"));
+            orbGrad.addColorStop(0.3, b.color + "40");
+            orbGrad.addColorStop(1, "transparent");
+            ctx.fillStyle = orbGrad;
+            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - orbR, orbR * 3, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx2, cy2 - bh - orbR, orbR, 0, Math.PI * 2);
+            ctx.fillStyle = b.color + Math.floor(pulse * 220).toString(16).padStart(2, "0"); ctx.fill();
+          } else if (b.type === "arena" || b.type === "barracks") {
+            // Colosseum / fortress
+            ctx.fillStyle = `rgba(10,15,25,${0.6 + pulse * 0.2})`;
+            ctx.beginPath(); ctx.ellipse(cx2, cy2, bw / 2, bh / 2, 0, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = b.color + Math.floor(pulse * 100).toString(16).padStart(2, "0");
             ctx.lineWidth = 2 * z;
             ctx.beginPath(); ctx.ellipse(cx2, cy2, bw / 2, bh / 2, 0, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath(); ctx.ellipse(cx2, cy2, bw / 2 - 3 * z, bh / 2 - 2 * z, 0, 0, Math.PI * 2);
             ctx.strokeStyle = b.color + "30"; ctx.stroke();
+            // Combat particle effects for arena
+            if (b.type === "arena" && Math.random() < 0.15) {
+              particlesRef.current.push({
+                x: b.x + b.w * TILE / 2 + (Math.random() - 0.5) * b.w * TILE * 0.4,
+                y: b.y + b.h * TILE / 2 + (Math.random() - 0.5) * b.h * TILE * 0.4,
+                vx: (Math.random() - 0.5) * 0.8, vy: -0.5 - Math.random() * 0.8,
+                life: 30 + Math.random() * 20, maxLife: 50,
+                color: "#EF4444", size: 1.5 + Math.random(), type: "combat_fx",
+              });
+            }
+          } else if (b.type === "treasury" || b.type === "bank" || b.type === "mint") {
+            // Massive vault with shield effect
+            ctx.fillStyle = `rgba(10,15,25,${0.7 + pulse * 0.2})`;
+            ctx.fillRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+            ctx.strokeStyle = b.color + Math.floor(pulse * 90).toString(16).padStart(2, "0");
+            ctx.lineWidth = 2 * z;
+            ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+            // Pulsing shield ring for main vault
+            if (b.type === "treasury") {
+              const shieldR = Math.max(bw, bh) * 0.7;
+              const shieldAlpha = 0.1 + Math.sin(t * 0.003 + b.id) * 0.05;
+              ctx.strokeStyle = `rgba(251,191,36,${shieldAlpha})`;
+              ctx.lineWidth = 2 * z;
+              ctx.beginPath(); ctx.arc(cx2, cy2, shieldR, 0, Math.PI * 2); ctx.stroke();
+              // MEEET counter on top
+              if (z > 0.5 && liveStats) {
+                const fs = Math.max(8, 10 * z);
+                ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
+                ctx.textAlign = "center";
+                ctx.fillStyle = "#FBBF24";
+                ctx.fillText(`${liveStats.treasury_fmt} $MEEET`, cx2, cy2 - bh / 2 - 8 * z);
+              }
+            }
+            // Diamond accent
+            const ds = size * 0.5;
+            ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = b.color + Math.floor(pulse * 140).toString(16).padStart(2, "0");
+            ctx.fillRect(-ds / 2, -ds / 2, ds, ds); ctx.restore();
+          } else if (b.type === "mine" || b.type === "refinery" || b.type === "depot") {
+            // Industrial compound shape
+            ctx.fillStyle = `rgba(10,15,25,${0.65 + pulse * 0.2})`;
+            ctx.fillRect(cx2 - bw / 2, cy2 - bh / 4, bw, bh * 0.75);
+            // Chimney/shaft
+            const shaftW = bw * 0.15;
+            ctx.fillStyle = b.color + Math.floor(pulse * 70).toString(16).padStart(2, "0");
+            ctx.fillRect(cx2 - shaftW / 2, cy2 - bh * 0.8, shaftW, bh * 0.6);
+            ctx.strokeStyle = b.color + Math.floor(pulse * 60).toString(16).padStart(2, "0");
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 4, bw, bh * 0.75);
+            // Resource extraction particles
+            if (Math.random() < 0.1) {
+              particlesRef.current.push({
+                x: b.x + b.w * TILE / 2, y: b.y + b.h * TILE / 2,
+                vx: (Math.random() - 0.5) * 0.3, vy: -0.4 - Math.random() * 0.5,
+                life: 40 + Math.random() * 30, maxLife: 70,
+                color: "#00AAFF", size: 1 + Math.random(), type: "mine_fx",
+              });
+            }
+          } else if (b.type === "dex" || b.type === "shop" || b.type === "auction") {
+            // Market stall compound
+            ctx.fillStyle = `rgba(10,15,25,${0.65 + pulse * 0.2})`;
+            ctx.fillRect(cx2 - bw / 2, cy2 - bh / 3, bw, bh * 0.8);
+            // Awning
+            ctx.fillStyle = b.color + Math.floor(pulse * 40).toString(16).padStart(2, "0");
+            ctx.beginPath();
+            ctx.moveTo(cx2 - bw / 2 - 3 * z, cy2 - bh / 3);
+            ctx.lineTo(cx2 + bw / 2 + 3 * z, cy2 - bh / 3);
+            ctx.lineTo(cx2 + bw / 2, cy2 - bh / 3 - bh * 0.2);
+            ctx.lineTo(cx2 - bw / 2, cy2 - bh / 3 - bh * 0.2);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = b.color + Math.floor(pulse * 70).toString(16).padStart(2, "0");
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 3, bw, bh * 0.8);
+            // Price ticker for DEX
+            if (b.type === "dex" && z > 0.5) {
+              const tickerText = "$MEEET +12.4%";
+              const fs = Math.max(6, 7 * z);
+              ctx.font = `600 ${fs}px monospace`;
+              ctx.textAlign = "center";
+              ctx.fillStyle = "#14F195";
+              ctx.fillText(tickerText, cx2, cy2 - bh / 3 - bh * 0.25 - 2 * z);
+            }
           } else {
-            // Default — core diamond
-            const ds = size * 0.7;
-            ctx.save();
-            ctx.translate(cx2, cy2);
-            ctx.rotate(Math.PI / 4);
-            ctx.fillStyle = b.color + Math.floor(pulse * 180).toString(16).padStart(2, "0");
-            ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
-            ctx.restore();
+            // Default compound shape — diamond + rect
+            ctx.fillStyle = `rgba(10,15,25,${0.6 + pulse * 0.2})`;
+            ctx.fillRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+            ctx.strokeStyle = b.color + Math.floor(pulse * 80).toString(16).padStart(2, "0");
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx2 - bw / 2, cy2 - bh / 2, bw, bh);
+            const ds = size * 0.6;
+            ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(Math.PI / 4);
+            ctx.fillStyle = b.color + Math.floor(pulse * 150).toString(16).padStart(2, "0");
+            ctx.fillRect(-ds / 2, -ds / 2, ds, ds); ctx.restore();
+          }
+
+          // Building windows (random lit/dim)
+          if (z > 0.5 && bw > 20 && bh > 15) {
+            const winCols = Math.floor(bw / (6 * z));
+            const winRows = Math.floor(bh / (6 * z));
+            for (let wr = 0; wr < winRows; wr++) {
+              for (let wc = 0; wc < winCols; wc++) {
+                const wx = cx2 - bw / 2 + 3 * z + wc * (bw - 6 * z) / Math.max(1, winCols - 1);
+                const wy = cy2 - bh / 2 + 3 * z + wr * (bh - 6 * z) / Math.max(1, winRows - 1);
+                const lit = noise2d(wc + b.id * 10, wr + Math.floor(t * 0.0005), 42) > 0.5;
+                ctx.fillStyle = lit ? `rgba(255,220,100,${0.15 + pulse * 0.1})` : `rgba(20,30,50,0.3)`;
+                ctx.fillRect(wx - 1.5 * z, wy - 1.5 * z, 3 * z, 3 * z);
+              }
+            }
           }
         } else {
-          // Zoomed out — just diamond
           const ds = size * 0.6;
-          ctx.save();
-          ctx.translate(cx2, cy2);
-          ctx.rotate(Math.PI / 4);
+          ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(Math.PI / 4);
           ctx.fillStyle = b.color + Math.floor(pulse * 180).toString(16).padStart(2, "0");
-          ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
-          ctx.restore();
+          ctx.fillRect(-ds / 2, -ds / 2, ds, ds); ctx.restore();
         }
 
         // Label
@@ -701,13 +965,66 @@ const LiveMap = () => {
           const fs = Math.max(7, 9 * z);
           ctx.font = `600 ${fs}px 'Space Grotesk', monospace`;
           ctx.textAlign = "center";
-          // Shadow
           ctx.fillStyle = "rgba(0,0,0,0.5)";
           ctx.fillText(b.name.toUpperCase(), cx2 + 0.5, cy2 + size + fs + 2.5);
           ctx.fillStyle = b.color + "b0";
           ctx.fillText(b.name.toUpperCase(), cx2, cy2 + size + fs + 2);
         }
       });
+
+      // ─── HOLOGRAPHIC BILLBOARDS ───────────────────────────
+      if (z > 0.3) {
+        billboardsRef.current.forEach(bb => {
+          const bx = (bb.x - cam.x) * z;
+          const by = (bb.y - cam.y) * z;
+          if (bx < -200 || bx > w + 200 || by < -100 || by > h + 100) return;
+          const float = Math.sin(t * 0.002 + bb.phase) * 4 * z;
+          const alpha = 0.5 + Math.sin(t * 0.003 + bb.phase * 2) * 0.2;
+          const fs = Math.max(8, 11 * z);
+          ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
+          ctx.textAlign = "center";
+          // Holographic glow bg
+          const textW = ctx.measureText(bb.text).width;
+          const pad = 6 * z;
+          ctx.fillStyle = `rgba(0,0,0,${alpha * 0.4})`;
+          ctx.fillRect(bx - textW / 2 - pad, by + float - fs - pad / 2, textW + pad * 2, fs + pad);
+          // Glitch line
+          if (Math.random() < 0.02) {
+            ctx.fillStyle = `rgba(255,255,255,0.1)`;
+            ctx.fillRect(bx - textW / 2 - pad, by + float - fs + Math.random() * fs, textW + pad * 2, 1);
+          }
+          ctx.shadowColor = bb.color;
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = bb.color + Math.floor(alpha * 200).toString(16).padStart(2, "0");
+          ctx.fillText(bb.text, bx, by + float);
+          ctx.shadowBlur = 0;
+        });
+      }
+
+      // ─── ZONE LABELS ──────────────────────────────────────
+      if (z > 0.25 && z < 2) {
+        for (const [, zone] of Object.entries(ZONES)) {
+          const zx = (zone.cx * TILE - cam.x) * z;
+          const zy = (zone.cy * TILE - cam.y) * z - 200 * z;
+          if (zx < -200 || zx > w + 200 || zy < -100 || zy > h + 100) continue;
+          const fs = Math.max(10, 14 * z);
+          ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
+          ctx.textAlign = "center";
+          ctx.fillStyle = `rgba(${zone.accent},0.25)`;
+          ctx.fillText(zone.label, zx, zy);
+          // Agent count in zone
+          const zoneAgents = agents.filter(a => {
+            const dx = a.x - zone.cx * TILE;
+            const dy = a.y - zone.cy * TILE;
+            return Math.sqrt(dx * dx + dy * dy) < 500;
+          }).length;
+          if (zoneAgents > 0) {
+            ctx.font = `500 ${Math.max(8, 10 * z)}px monospace`;
+            ctx.fillStyle = `rgba(${zone.accent},0.35)`;
+            ctx.fillText(`${zoneAgents} agents`, zx, zy + fs + 2);
+          }
+        }
+      }
 
       // ─── DATA STREAMS between interacting agents ──────────
       const streams = dataStreamsRef.current;
@@ -717,11 +1034,9 @@ const LiveMap = () => {
         if (s.progress > 1) { streams.splice(i, 1); continue; }
         const sx1 = (s.x1 - cam.x) * z, sy1 = (s.y1 - cam.y) * z;
         const sx2 = (s.x2 - cam.x) * z, sy2 = (s.y2 - cam.y) * z;
-        // Stream line
         ctx.strokeStyle = s.color + "30";
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-        // Flowing dot
         const px = sx1 + (sx2 - sx1) * s.progress;
         const py = sy1 + (sy2 - sy1) * s.progress;
         const dotGlow = ctx.createRadialGradient(px, py, 0, px, py, 6 * z);
@@ -731,7 +1046,7 @@ const LiveMap = () => {
         ctx.beginPath(); ctx.arc(px, py, 6 * z, 0, Math.PI * 2); ctx.fill();
       }
 
-      // ─── CONNECTION LINES — animated data streams ─────────
+      // ─── CONNECTION LINES ─────────────────────────────────
       agents.forEach(a => {
         if ((a.state === "meeting" || a.state === "trading" || a.state === "combat") && a.meetingPartner !== null) {
           const other = agents.find(o => o.id === a.meetingPartner);
@@ -740,26 +1055,23 @@ const LiveMap = () => {
           const sx2 = (other.x - cam.x) * z, sy2 = (other.y - cam.y) * z;
 
           if (a.state === "combat") {
-            // RED LIGHTNING EFFECT
             ctx.strokeStyle = `rgba(255,50,50,${0.4 + Math.sin(t * 0.02) * 0.3})`;
             ctx.lineWidth = 2 * z;
             ctx.shadowColor = "rgba(255,0,0,0.5)";
             ctx.shadowBlur = 10;
             ctx.beginPath();
             const steps = 8;
-            let lx = sx1, ly = sy1;
-            ctx.moveTo(lx, ly);
+            ctx.moveTo(sx1, sy1);
             for (let s2 = 1; s2 <= steps; s2++) {
               const prog = s2 / steps;
-              const tx2 = sx1 + (sx2 - sx1) * prog + (Math.random() - 0.5) * 15 * z;
-              const ty2 = sy1 + (sy2 - sy1) * prog + (Math.random() - 0.5) * 15 * z;
-              ctx.lineTo(tx2, ty2);
-              lx = tx2; ly = ty2;
+              ctx.lineTo(
+                sx1 + (sx2 - sx1) * prog + (Math.random() - 0.5) * 15 * z,
+                sy1 + (sy2 - sy1) * prog + (Math.random() - 0.5) * 15 * z
+              );
             }
             ctx.stroke();
             ctx.shadowBlur = 0;
           } else if (a.state === "trading") {
-            // GREEN DATA STREAM
             for (let p2 = 0; p2 < 5; p2++) {
               const prog = ((t * 0.002 + p2 * 0.2) % 1);
               const px = sx1 + (sx2 - sx1) * prog;
@@ -770,7 +1082,6 @@ const LiveMap = () => {
             ctx.strokeStyle = "rgba(0,255,136,0.08)";
             ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
           } else {
-            // GOLDEN PULSE RINGS for diplomacy/meetings
             const midX = (sx1 + sx2) / 2, midY = (sy1 + sy2) / 2;
             const pulseR = 10 + Math.sin(t * 0.005) * 8;
             for (let ring = 0; ring < 3; ring++) {
@@ -800,7 +1111,7 @@ const LiveMap = () => {
       // ─── PARTICLES ────────────────────────────────────────
       const particles = particlesRef.current;
 
-      // Rain particles — weather-aware
+      // Rain
       const isRaining = weatherRef.current === 'rain' || weatherRef.current === 'storm';
       const rainIntensity = weatherRef.current === 'storm' ? 0.6 : weatherRef.current === 'rain' ? 0.3 : 0;
       if (isRaining && Math.random() < rainIntensity) {
@@ -815,7 +1126,7 @@ const LiveMap = () => {
         }
       }
 
-      // Fireflies at night
+      // Fireflies
       if (nf > 0.4 && Math.random() < 0.05) {
         particles.push({
           x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z,
@@ -825,7 +1136,7 @@ const LiveMap = () => {
         });
       }
 
-      // Mining particles from miner agents
+      // Mining particles
       agents.forEach(a => {
         if (a.cls === "miner" && a.state === "idle" && Math.random() < 0.1) {
           particles.push({
@@ -835,10 +1146,29 @@ const LiveMap = () => {
             color: "#00aaff", size: 1 + Math.random(), type: "mine",
           });
         }
+        // Trader coin trails near market
+        if (a.cls === "trader" && (a.state === "move" || a.state === "trading") && Math.random() < 0.06) {
+          particles.push({
+            x: a.x + (Math.random() - 0.5) * 8, y: a.y,
+            vx: (Math.random() - 0.5) * 0.3, vy: -0.2 - Math.random() * 0.4,
+            life: 30 + Math.random() * 20, maxLife: 50,
+            color: "#14F195", size: 1.2, type: "coin",
+          });
+        }
+        // Warrior combat sparks near arena
+        if (a.cls === "warrior" && a.state === "combat" && Math.random() < 0.2) {
+          for (let sp = 0; sp < 3; sp++) {
+            particles.push({
+              x: a.x + (Math.random() - 0.5) * 15, y: a.y + (Math.random() - 0.5) * 15,
+              vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+              life: 15 + Math.random() * 10, maxLife: 25,
+              color: "#ff6633", size: 1 + Math.random() * 0.5, type: "spark",
+            });
+          }
+        }
       });
 
-      // ─── ACTIVITY DOTS — hundreds of ambient colored dots ───
-      // Spawn near agents to create dense activity haze
+      // Activity dots
       if (agents.length > 0) {
         const dotsToSpawn = Math.min(8, Math.ceil(agents.length / 8));
         for (let d = 0; d < dotsToSpawn; d++) {
@@ -848,8 +1178,7 @@ const LiveMap = () => {
           particles.push({
             x: srcAgent.x + (Math.random() - 0.5) * spread,
             y: srcAgent.y + (Math.random() - 0.5) * spread,
-            vx: (Math.random() - 0.5) * 0.15,
-            vy: (Math.random() - 0.5) * 0.15,
+            vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15,
             life: 90 + Math.random() * 120, maxLife: 210,
             color: `rgb(${actType.color})`, size: 0.8 + Math.random() * 1.5, type: "activity",
           });
@@ -869,52 +1198,48 @@ const LiveMap = () => {
           ctx.lineWidth = weatherRef.current === 'storm' ? 0.8 : 0.5;
           ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - z * 0.5, sy + 6 * z); ctx.stroke();
         } else if (p.type === "firefly") {
-          // Fireflies with soft pulsing glow
-          p.vx += (Math.random() - 0.5) * 0.05;
-          p.vy += (Math.random() - 0.5) * 0.05;
+          p.vx += (Math.random() - 0.5) * 0.05; p.vy += (Math.random() - 0.5) * 0.05;
           p.vx *= 0.98; p.vy *= 0.98;
-          const pulse = 0.4 + Math.sin(t * 0.008 + p.x * 0.01) * 0.4;
+          const fp = 0.4 + Math.sin(t * 0.008 + p.x * 0.01) * 0.4;
           const gr = 8 * z;
           const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, gr);
-          glow.addColorStop(0, `rgba(136,255,68,${alpha * pulse * 0.6})`);
-          glow.addColorStop(0.5, `rgba(136,255,68,${alpha * pulse * 0.1})`);
+          glow.addColorStop(0, `rgba(136,255,68,${alpha * fp * 0.6})`);
+          glow.addColorStop(0.5, `rgba(136,255,68,${alpha * fp * 0.1})`);
           glow.addColorStop(1, "transparent");
           ctx.fillStyle = glow;
           ctx.beginPath(); ctx.arc(sx, sy, gr, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = `rgba(200,255,150,${alpha * pulse})`;
+          ctx.fillStyle = `rgba(200,255,150,${alpha * fp})`;
           ctx.beginPath(); ctx.arc(sx, sy, 1 * z, 0, Math.PI * 2); ctx.fill();
-        } else if (p.type === "mine") {
-          ctx.fillStyle = p.color + Math.floor(alpha * 150).toString(16).padStart(2, "0");
-          ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
         } else if (p.type === "activity") {
-          // Pulsing/twinkling activity dots
           const twinkle = 0.3 + Math.sin(t * 0.006 + p.x * 0.02 + p.y * 0.01) * 0.3;
           const dotAlpha = alpha * twinkle;
-          // Soft glow behind dot
           const glowR = p.size * z * 4;
           const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
           grad.addColorStop(0, p.color.replace("rgb(", "rgba(").replace(")", `,${dotAlpha * 0.4})`));
           grad.addColorStop(1, p.color.replace("rgb(", "rgba(").replace(")", ",0)"));
           ctx.fillStyle = grad;
           ctx.beginPath(); ctx.arc(sx, sy, glowR, 0, Math.PI * 2); ctx.fill();
-          // Core bright dot
           ctx.fillStyle = p.color.replace("rgb(", "rgba(").replace(")", `,${dotAlpha * 0.9})`);
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z * 0.6, 0, Math.PI * 2); ctx.fill();
+        } else if (p.type === "spark") {
+          ctx.fillStyle = `rgba(255,102,51,${alpha})`;
+          ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
+        } else if (p.type === "coin") {
+          ctx.fillStyle = `rgba(20,241,149,${alpha * 0.7})`;
+          ctx.fillRect(sx - 1 * z, sy - 1 * z, 2 * z, 2 * z);
         } else {
           ctx.fillStyle = p.color + Math.floor(alpha * 200).toString(16).padStart(2, "0");
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
         }
       }
-      if (particles.length > 1500) particles.splice(0, particles.length - 1500);
+      if (particles.length > 2000) particles.splice(0, particles.length - 2000);
 
       // ─── AGENT TRAILS ─────────────────────────────────────
       const trails = trailsRef.current;
-      // Age and cull old trails
       for (let i = trails.length - 1; i >= 0; i--) {
         trails[i].age++;
         if (trails[i].age > 60) trails.splice(i, 1);
       }
-      // Add new trail points for moving agents
       if (z > 0.4) {
         agents.forEach(a => {
           if ((a.state === "move" || a.state === "visiting") && Math.random() < 0.3) {
@@ -922,7 +1247,6 @@ const LiveMap = () => {
           }
         });
       }
-      // Draw trails
       trails.forEach(tr => {
         const sx = (tr.x - cam.x) * z, sy = (tr.y - cam.y) * z;
         if (sx < -5 || sx > w + 5 || sy < -5 || sy > h + 5) return;
@@ -932,16 +1256,21 @@ const LiveMap = () => {
       });
       if (trails.length > 500) trails.splice(0, trails.length - 500);
 
-      // ─── AGENTS — glowing orbs ────────────────────────────
+      // ─── AGENTS ───────────────────────────────────────────
       agents.forEach(a => {
         if (speed === 0) { drawOrb(ctx, a, cam, z, t, nf); return; }
         const spdMult = speed;
         a.stateTimer -= spdMult;
 
+        // Speech bubble timer
+        if (a.speechBubble) {
+          a.speechBubble.timer--;
+          if (a.speechBubble.timer <= 0) a.speechBubble = undefined;
+        }
+
         // State transitions
         if (a.stateTimer <= 0) {
           if (["meeting", "combat", "trading", "visiting"].includes(a.state)) {
-            // Generate interaction floating text on end
             if (a.state === "trading" && a.meetingPartner !== null) {
               const other = agents.find(o => o.id === a.meetingPartner);
               const amt = Math.floor(10 + Math.random() * 90);
@@ -953,6 +1282,8 @@ const LiveMap = () => {
               const winner = Math.random() > 0.5 ? a : (other || a);
               addFloatingText(winner.x, winner.y - 15, "VICTORY", "#ff3b3b");
               addRipple(a.x, a.y, "#ff3b3b", 50);
+              // Explosion ripple
+              addRipple((a.x + (other?.x || a.x)) / 2, (a.y + (other?.y || a.y)) / 2, "#ff6600", 70);
             } else if (a.state === "meeting" && a.meetingPartner !== null) {
               addFloatingText(a.x, a.y - 15, "Alliance formed", "#ffd700");
               addRipple(a.x, a.y, "#ffd700", 45);
@@ -985,7 +1316,6 @@ const LiveMap = () => {
                 a.state = "combat"; other.state = "combat"; a.meetingPartner = other.id; other.meetingPartner = a.id;
                 a.stateTimer = other.stateTimer = 80 + Math.random() * 60;
                 addRipple((a.x + other.x) / 2, (a.y + other.y) / 2, "#ff3b3b", 50);
-                // Add data stream
                 dataStreamsRef.current.push({ x1: a.x, y1: a.y, x2: other.x, y2: other.y, color: "#ff3b3b", progress: 0, speed: 0.02 });
               } else if ((a.cls === "trader" || other.cls === "trader") && r3 < 0.5) {
                 a.state = "trading"; other.state = "trading"; a.meetingPartner = other.id; other.meetingPartner = a.id;
@@ -1037,7 +1367,6 @@ const LiveMap = () => {
         const fs = Math.max(9, 12 * z);
         ctx.font = `bold ${fs}px 'Space Grotesk', monospace`;
         ctx.textAlign = "center";
-        // Glow behind text
         ctx.shadowColor = ft.color;
         ctx.shadowBlur = 8;
         ctx.fillStyle = ft.color + Math.floor(alpha * 255).toString(16).padStart(2, "0");
@@ -1046,14 +1375,12 @@ const LiveMap = () => {
       }
 
       // ─── ATMOSPHERIC OVERLAYS ─────────────────────────────
-
-      // Night overlay
       if (nf > 0.3) {
         ctx.fillStyle = `rgba(3,5,15,${(nf - 0.3) * 0.15})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Fog-of-war on edges — heavy cinematic vignette (command center feel)
+      // Vignette
       const vigR = Math.max(w, h) * 0.55;
       const vig = ctx.createRadialGradient(w / 2, h / 2, vigR * 0.35, w / 2, h / 2, vigR);
       vig.addColorStop(0, "transparent");
@@ -1063,12 +1390,10 @@ const LiveMap = () => {
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, w, h);
 
-      // Scanline effect — subtle CRT
+      // Scanlines
       if (z > 0.5) {
         ctx.fillStyle = "rgba(0,0,0,0.03)";
-        for (let sy2 = 0; sy2 < h; sy2 += 4) {
-          ctx.fillRect(0, sy2, w, 1);
-        }
+        for (let sy2 = 0; sy2 < h; sy2 += 4) { ctx.fillRect(0, sy2, w, 1); }
       }
 
       // ─── MINIMAP ──────────────────────────────────────────
@@ -1080,7 +1405,6 @@ const LiveMap = () => {
       ctx.lineWidth = 1;
       ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
       const mmScaleX = mmW / (MAP_W * TILE), mmScaleY = mmH / (MAP_H * TILE);
-      // Simplified terrain
       for (let y2 = 0; y2 < MAP_H; y2 += 3) {
         for (let x2 = 0; x2 < MAP_W; x2 += 3) {
           const tile = terrain[y2][x2];
@@ -1088,12 +1412,10 @@ const LiveMap = () => {
           ctx.fillRect(mmX + x2 * TILE * mmScaleX, mmY + y2 * TILE * mmScaleY, 3 * TILE * mmScaleX + 1, 3 * TILE * mmScaleY + 1);
         }
       }
-      // Agent dots on minimap
       agents.forEach(a => {
         ctx.fillStyle = a.color;
         ctx.fillRect(mmX + a.x * mmScaleX - 0.5, mmY + a.y * mmScaleY - 0.5, 2, 2);
       });
-      // Camera rect
       ctx.strokeStyle = "rgba(255,255,255,0.3)";
       ctx.lineWidth = 0.5;
       ctx.strokeRect(mmX + cam.x * mmScaleX, mmY + cam.y * mmScaleY, (w / z) * mmScaleX, (h / z) * mmScaleY);
@@ -1219,6 +1541,13 @@ const LiveMap = () => {
 
   const handleZoom = (d: number) => { const nz = Math.max(0.2, Math.min(4, zoomRef.current + d)); zoomRef.current = nz; setZoom(nz); terrainCacheRef.current = null; };
 
+  const displayAgentCount = liveStats?.agents || agentCount;
+  const displayQuests = liveStats?.quests || 0;
+  const displayTreasury = liveStats?.treasury_fmt || "0";
+  const displayBurned = liveStats?.burned_fmt || "0";
+  const displayDuels = liveStats?.duels_today || 0;
+  const displayLaws = liveStats?.active_laws || 0;
+
   return (
     <div className="fixed inset-0 bg-[#020510] overflow-hidden cursor-crosshair flex flex-col">
       <LiveStatsBanner />
@@ -1258,15 +1587,23 @@ const LiveMap = () => {
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2 py-1.5 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[9px] md:text-[10px] font-mono text-white/70">{agentCount}</span>
+          <span className="text-[9px] md:text-[10px] font-mono text-white/70">{displayAgentCount} agents</span>
         </div>
         <div className="hidden sm:flex bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 items-center gap-1.5">
           <span className="text-[9px] font-mono text-white/30">QUESTS</span>
-          <span className="text-[10px] font-mono text-cyan-400">{agentsRef.current.filter(a => a.state === "visiting").length}</span>
+          <span className="text-[10px] font-mono text-cyan-400">{displayQuests}</span>
         </div>
         <div className="hidden sm:flex bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 items-center gap-1.5">
-          <span className="text-[9px] font-mono text-white/30">$MEEET</span>
-          <span className="text-[10px] font-mono text-emerald-400">{agentsRef.current.reduce((s, a) => s + a.balance, 0).toLocaleString()}</span>
+          <span className="text-[9px] font-mono text-white/30">TREASURY</span>
+          <span className="text-[10px] font-mono text-amber-400">{displayTreasury}</span>
+        </div>
+        <div className="hidden md:flex bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">DUELS</span>
+          <span className="text-[10px] font-mono text-red-400">{displayDuels}</span>
+        </div>
+        <div className="hidden md:flex bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">BURNED</span>
+          <span className="text-[10px] font-mono text-orange-400">🔥{displayBurned}</span>
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2 py-1.5 flex items-center gap-1">
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300/70" /> : <Sun className="w-3 h-3 text-amber-400/70" />}
@@ -1384,7 +1721,7 @@ const LiveMap = () => {
             <h3 className="text-xs font-mono font-bold" style={{ color: selectedBuilding.color }}>{selectedBuilding.name}</h3>
             <button onClick={() => setSelectedBuilding(null)}><X className="w-3.5 h-3.5 text-white/30 hover:text-white" /></button>
           </div>
-          <p className="text-[9px] font-mono text-white/30">{selectedBuilding.type} · {selectedBuilding.w}×{selectedBuilding.h}</p>
+          <p className="text-[9px] font-mono text-white/30">{selectedBuilding.type} · {selectedBuilding.zone} district · {selectedBuilding.w}×{selectedBuilding.h}</p>
         </div>
       )}
 
@@ -1400,12 +1737,15 @@ const LiveMap = () => {
               <span className={`w-1.5 h-1.5 rounded-full ${combatCount >= 3 ? 'bg-red-500 animate-pulse' : 'bg-emerald-400'}`} />
               <span className="text-[9px] font-mono text-white/40">THREAT</span>
               <span className={`text-[10px] font-mono font-bold ${threatColor}`}>{threat}</span>
+              {displayLaws > 0 && (
+                <span className="text-[9px] font-mono text-amber-400/60 ml-2">⚖️{displayLaws}</span>
+              )}
             </div>
           );
         })()}
       </div>
 
-      {/* ═══ BOTTOM BAR — activity ticker ═══ */}
+      {/* ═══ BOTTOM BAR ═══ */}
       <div className="absolute bottom-0 left-0 right-0 z-20 h-10 bg-black/70 border-t border-white/[0.06] flex items-center px-4 gap-4">
         <div className="flex items-center gap-4 text-[9px] font-mono text-white/40">
           <span className="text-red-400/70">⚔ {agentsRef.current.filter(a => a.state === "combat").length}</span>
@@ -1415,7 +1755,6 @@ const LiveMap = () => {
           <span className="text-amber-400/70">🤝 {agentsRef.current.filter(a => a.state === "meeting").length}</span>
         </div>
         <div className="text-white/10">│</div>
-        {/* Scrolling activity ticker */}
         <div className="flex-1 overflow-hidden">
           <div className="flex items-center gap-6 animate-[scroll_45s_linear_infinite] whitespace-nowrap">
             {tickerEvents.slice(0, 15).map((ev, i) => (
@@ -1433,7 +1772,6 @@ const LiveMap = () => {
         </div>
       </div>
 
-      {/* Ticker animation */}
       <style>{`
         @keyframes scroll {
           0% { transform: translateX(0); }
@@ -1445,7 +1783,7 @@ const LiveMap = () => {
   );
 };
 
-// ─── Cyber Command Center Agent Badge Renderer ─────────────────
+// ─── Agent Badge Renderer ──────────────────────────────────────
 function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nf: number) {
   const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
   if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
@@ -1453,12 +1791,11 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   const cfg = CLASS_CONFIG[a.cls] || CLASS_CONFIG.warrior;
   const pulse = 0.7 + Math.sin(t * 0.004 + a.phase) * 0.3;
 
-  // Level-scaled badge radius (higher level = bigger presence)
   const baseR = Math.max(6, (8 + a.level * 1.2) * z);
   const isPresident = a.cls === "president";
   const badgeR = isPresident ? baseR * 1.4 : baseR;
 
-  // ── OUTER BLOOM GLOW (class-colored, level-scaled) ──
+  // Bloom
   const bloomR = badgeR * (3 + a.level * 0.4);
   const bloom = ctx.createRadialGradient(sx, sy, 0, sx, sy, bloomR);
   bloom.addColorStop(0, `rgba(${cfg.glow},${(isPresident ? 0.25 : 0.15) * pulse})`);
@@ -1468,7 +1805,6 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   ctx.fillStyle = bloom;
   ctx.beginPath(); ctx.arc(sx, sy, bloomR, 0, Math.PI * 2); ctx.fill();
 
-  // ── SECONDARY HAZE (warm atmospheric layer) ──
   if (a.level >= 3) {
     const hazeR = bloomR * 1.3;
     const haze = ctx.createRadialGradient(sx, sy, bloomR * 0.5, sx, sy, hazeR);
@@ -1478,17 +1814,15 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
     ctx.beginPath(); ctx.arc(sx, sy, hazeR, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Idle breathing float
   const floatY = sy - Math.sin(t * 0.003 + a.phase) * 2 * z;
 
-  // ── SHADOW ──
+  // Shadow
   ctx.fillStyle = `rgba(0,0,0,${0.3 * pulse})`;
   ctx.beginPath();
   ctx.ellipse(sx, floatY + badgeR * 1.3, badgeR * 0.9, badgeR * 0.25, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // ── CIRCULAR BADGE — dark bg with class border ──
-  // Outer ring glow
+  // Outer ring
   ctx.beginPath(); ctx.arc(sx, floatY, badgeR + 2 * z, 0, Math.PI * 2);
   ctx.strokeStyle = `rgba(${cfg.glow},${0.4 * pulse})`;
   ctx.lineWidth = 2 * z;
@@ -1497,7 +1831,7 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Badge background
+  // Badge bg
   ctx.beginPath(); ctx.arc(sx, floatY, badgeR, 0, Math.PI * 2);
   const badgeBg = ctx.createRadialGradient(sx, floatY - badgeR * 0.3, 0, sx, floatY, badgeR);
   badgeBg.addColorStop(0, `rgba(20,25,40,${0.9 * pulse})`);
@@ -1509,7 +1843,7 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   ctx.lineWidth = 1.5 * z;
   ctx.stroke();
 
-  // ── CLASS ICON (emoji) inside badge ──
+  // Icon
   const iconSize = Math.max(8, badgeR * 1.1);
   ctx.font = `${iconSize}px sans-serif`;
   ctx.textAlign = "center";
@@ -1517,13 +1851,12 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   ctx.fillText(cfg.icon, sx, floatY + 1);
   ctx.textBaseline = "alphabetic";
 
-  // ── SPINNING OUTER RING for high-level agents (5+) ──
+  // Spinning ring for high-level
   if (a.level >= 5) {
     const ringR = badgeR + 5 * z;
-    const rotAngle = t * 0.001 + a.phase;
     ctx.save();
     ctx.translate(sx, floatY);
-    ctx.rotate(rotAngle);
+    ctx.rotate(t * 0.001 + a.phase);
     ctx.strokeStyle = `rgba(${cfg.glow},${0.3 * pulse})`;
     ctx.lineWidth = 1 * z;
     ctx.setLineDash([4 * z, 6 * z]);
@@ -1532,7 +1865,7 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
     ctx.restore();
   }
 
-  // ── PULSE RING on interaction ──
+  // Interaction pulse ring
   if (a.state === "combat" || a.state === "trading" || a.state === "meeting") {
     const ringR = badgeR * (1.5 + Math.sin(t * 0.008) * 0.3);
     const ringColor = a.state === "combat" ? "255,50,50" : a.state === "trading" ? "0,255,136" : "255,215,0";
@@ -1542,14 +1875,13 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
     ctx.shadowBlur = 8;
     ctx.beginPath(); ctx.arc(sx, floatY, ringR, 0, Math.PI * 2); ctx.stroke();
     ctx.shadowBlur = 0;
-    // Second expanding ring
     const ringR2 = badgeR * (2 + Math.sin(t * 0.006 + 1) * 0.4);
     ctx.strokeStyle = `rgba(${ringColor},0.12)`;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(sx, floatY, ringR2, 0, Math.PI * 2); ctx.stroke();
   }
 
-  // ── HP BAR ──
+  // HP bar
   if (z > 0.5) {
     const barW = 20 * z;
     const barH = 2.5 * z;
@@ -1561,31 +1893,60 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
     const hpColor = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
     ctx.fillStyle = hpColor;
     ctx.fillRect(barX, barY, barW * hpFrac, barH);
-    // HP bar glow
     ctx.shadowColor = hpColor;
     ctx.shadowBlur = 4;
     ctx.fillRect(barX, barY, barW * hpFrac, barH);
     ctx.shadowBlur = 0;
   }
 
-  // ── NAME LABEL (white sans-serif) ──
+  // Name label
   if (z > 0.4) {
     const fs = Math.max(8, 10 * z);
     const labelY = floatY + badgeR + (z > 0.5 ? 10 : 6) * z + fs;
     ctx.font = `600 ${fs}px 'Inter', 'Segoe UI', sans-serif`;
     ctx.textAlign = "center";
-    // Text shadow for readability
     ctx.fillStyle = "rgba(0,0,0,0.7)";
     ctx.fillText(a.name, sx + 0.5, labelY + 0.5);
-    // White name
     ctx.fillStyle = `rgba(255,255,255,${0.85 + nf * 0.1})`;
     ctx.fillText(a.name, sx, labelY);
-    // Level badge
     if (z > 0.6) {
       ctx.font = `500 ${Math.max(6, 7 * z)}px 'Inter', sans-serif`;
       ctx.fillStyle = `rgba(${cfg.glow},0.5)`;
       ctx.fillText(`Lv.${a.level}`, sx, labelY + fs * 0.8 + 2);
     }
+    ctx.textAlign = "left";
+  }
+
+  // Speech bubble
+  if (a.speechBubble && z > 0.4) {
+    const bubbleText = a.speechBubble.text;
+    const bubbleAlpha = Math.min(1, a.speechBubble.timer / 30);
+    const bubbleFs = Math.max(7, 8 * z);
+    ctx.font = `500 ${bubbleFs}px 'Inter', sans-serif`;
+    const textW = ctx.measureText(bubbleText).width;
+    const bx = sx - textW / 2 - 6 * z;
+    const by = floatY - badgeR - 20 * z;
+    const bw2 = textW + 12 * z;
+    const bh2 = bubbleFs + 8 * z;
+    // Bubble bg
+    ctx.fillStyle = `rgba(0,0,0,${0.7 * bubbleAlpha})`;
+    ctx.beginPath();
+    ctx.roundRect(bx, by - bh2, bw2, bh2, 4 * z);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${cfg.glow},${0.3 * bubbleAlpha})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    // Bubble pointer
+    ctx.fillStyle = `rgba(0,0,0,${0.7 * bubbleAlpha})`;
+    ctx.beginPath();
+    ctx.moveTo(sx - 3 * z, by);
+    ctx.lineTo(sx, by + 4 * z);
+    ctx.lineTo(sx + 3 * z, by);
+    ctx.fill();
+    // Text
+    ctx.textAlign = "center";
+    ctx.fillStyle = `rgba(255,255,255,${0.9 * bubbleAlpha})`;
+    ctx.fillText(bubbleText, sx, by - bh2 / 2 + bubbleFs * 0.35);
     ctx.textAlign = "left";
   }
 }
