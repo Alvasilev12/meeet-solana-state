@@ -47,7 +47,9 @@ Deno.serve(async (req) => {
     if (!key || !stored || !timingSafeEqual(key, stored)) return json({ error: "Forbidden" }, 403);
 
     const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const presidentUserId = Deno.env.get("PRESIDENT_OWNER_USER_ID")!;
+    const ownerEnv = Deno.env.get("PRESIDENT_OWNER_USER_ID") ?? "";
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const presidentUserId = UUID_RE.test(ownerEnv) ? ownerEnv : "00000000-0000-0000-0000-000000000001";
 
     // Check which names already exist
     const { data: existing } = await sc.from("agents").select("name").in("name", NPC_NAMES);
