@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,21 +9,32 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Mail, Chrome, Apple, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "zujrmifaabkletgnpoyw";
 
 const Auth = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
 
   useEffect(() => {
     if (!loading && user) {
-      // Check if onboarded
+      // If there's a ref code, record the referral
+      if (refCode) {
+        fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/referral-api`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "record", ref_code: refCode, user_id: user.id }),
+        }).catch(() => {});
+      }
+
       supabase.from("profiles").select("is_onboarded").eq("user_id", user.id).maybeSingle().then(({ data }) => {
         if (data?.is_onboarded) navigate("/dashboard");
         else navigate("/onboarding");
       });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, refCode]);
 
   if (loading) {
     return (

@@ -670,6 +670,32 @@ const Dashboard = () => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
 
+  // Check for unread referral bonus notifications and show toast
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: notifications } = await supabase
+        .from("notifications")
+        .select("id, title")
+        .eq("user_id", user.id)
+        .eq("type", "referral_bonus")
+        .eq("is_read", false)
+        .limit(5);
+
+      if (notifications && notifications.length > 0) {
+        notifications.forEach((n: any) => {
+          toast({ title: n.title, description: "Check your agent balance!" });
+        });
+        // Mark as read
+        const ids = notifications.map((n: any) => n.id);
+        await supabase
+          .from("notifications")
+          .update({ is_read: true })
+          .in("id", ids);
+      }
+    })();
+  }, [user, toast]);
+
   const isLoading = authLoading || profileLoading || agentLoading;
   const totalIncome = MOCK_INCOME.reduce((s, v) => s + v, 0);
   const incomeChange = MOCK_INCOME[6] - MOCK_INCOME[5];

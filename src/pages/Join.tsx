@@ -69,7 +69,7 @@ export default function Join() {
                     <Sparkles className="w-3.5 h-3.5" /> Welcome Bonus
                   </div>
                   <p className="text-xs text-muted-foreground font-body">
-                    Sign up now and both you and your referrer earn <span className="text-foreground font-semibold">500 $MEEET</span> when you complete onboarding.
+                    Sign up now and both you and your referrer earn <span className="text-foreground font-semibold">100 $MEEET</span> when you complete onboarding.
                   </p>
                 </div>
               </CardContent>
