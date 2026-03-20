@@ -78,11 +78,45 @@ const Deploy = () => {
   const [agentStrategy, setAgentStrategy] = useState("passive");
   const [deploying, setDeploying] = useState(false);
   const [totalAgents, setTotalAgents] = useState<number>(0);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [meeetBalance, setMeeetBalance] = useState<number | null>(null);
 
   const { address: walletAddress, connect: connectWallet, getProvider, availableWallets } = useSolanaWallet();
 
   const freeSlots = Math.max(0, FREE_AGENT_LIMIT - totalAgents);
   const promoActive = freeSlots > 0;
+
+  // Fetch wallet balances when connected
+  const fetchBalances = useCallback(async (addr: string) => {
+    try {
+      const { Connection, PublicKey } = await import("@solana/web3.js");
+      const { getAssociatedTokenAddress, getAccount } = await import("@solana/spl-token");
+      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      const pubkey = new PublicKey(addr);
+      const MEEET_MINT = new PublicKey("EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump");
+
+      const [lamports, ata] = await Promise.all([
+        connection.getBalance(pubkey),
+        getAssociatedTokenAddress(MEEET_MINT, pubkey),
+      ]);
+      setSolBalance(lamports / 1_000_000_000);
+
+      try {
+        const tokenAccount = await getAccount(connection, ata);
+        setMeeetBalance(Number(tokenAccount.amount));
+      } catch {
+        setMeeetBalance(0);
+      }
+    } catch {
+      setSolBalance(null);
+      setMeeetBalance(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (walletAddress) fetchBalances(walletAddress);
+    else { setSolBalance(null); setMeeetBalance(null); }
+  }, [walletAddress, fetchBalances]);
 
   useEffect(() => {
     const fetchData = async () => {
