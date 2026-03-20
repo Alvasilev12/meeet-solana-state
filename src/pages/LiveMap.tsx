@@ -1308,15 +1308,15 @@ const LiveMap = () => {
       )}
 
       {/* ═══ Zoom + Speed — Left ═══ */}
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5">
+      <div className="absolute left-2 bottom-14 md:top-1/2 md:bottom-auto md:-translate-y-1/2 z-10 flex md:flex-col flex-row gap-1.5">
         <button onClick={() => handleZoom(0.25)} className="bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5"><ZoomIn className="w-3.5 h-3.5 text-white/50" /></button>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-1.5 py-0.5 text-center"><span className="text-[8px] font-mono text-white/30">{Math.round(zoom * 100)}%</span></div>
         <button onClick={() => handleZoom(-0.25)} className="bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5"><ZoomOut className="w-3.5 h-3.5 text-white/50" /></button>
-        <div className="w-full h-px bg-white/[0.05] my-0.5" />
-        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5">
+        <div className="hidden md:block w-full h-px bg-white/[0.05] my-0.5" />
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 0 ? 1 : 0; setSimSpeed(simSpeedRef.current as 0|1|2); }} className="hidden md:block bg-black/50 backdrop-blur border border-white/[0.06] rounded p-1.5 hover:bg-white/5">
           {simSpeed === 0 ? <Play className="w-3.5 h-3.5 text-white/50" /> : <Pause className="w-3.5 h-3.5 text-white/50" />}
         </button>
-        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`bg-black/50 backdrop-blur border rounded p-1.5 hover:bg-white/5 ${simSpeed === 2 ? 'border-primary/40' : 'border-white/[0.06]'}`}>
+        <button onClick={() => { simSpeedRef.current = simSpeedRef.current === 2 ? 1 : 2; setSimSpeed(simSpeedRef.current as 0|1|2); }} className={`hidden md:block bg-black/50 backdrop-blur border rounded p-1.5 hover:bg-white/5 ${simSpeed === 2 ? 'border-primary/40' : 'border-white/[0.06]'}`}>
           <FastForward className="w-3.5 h-3.5 text-white/50" />
         </button>
       </div>
