@@ -62,6 +62,8 @@ const FAQ = [
 
 type PayStep = "choose" | "paying" | "configuring";
 
+const FREE_AGENT_LIMIT = 100;
+
 const Deploy = () => {
   const [plans, setPlans] = useState<AgentPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,19 +77,24 @@ const Deploy = () => {
   const [agentClass, setAgentClass] = useState("warrior");
   const [agentStrategy, setAgentStrategy] = useState("passive");
   const [deploying, setDeploying] = useState(false);
+  const [totalAgents, setTotalAgents] = useState<number>(0);
 
   const { address: walletAddress, connect: connectWallet, getProvider, availableWallets } = useSolanaWallet();
 
+  const freeSlots = Math.max(0, FREE_AGENT_LIMIT - totalAgents);
+  const promoActive = freeSlots > 0;
+
   useEffect(() => {
-    const fetchPlans = async () => {
-      const { data, error } = await supabase
-        .from("agent_plans")
-        .select("*")
-        .order("price_usdc", { ascending: true });
-      if (!error && data) setPlans(data as unknown as AgentPlan[]);
+    const fetchData = async () => {
+      const [plansRes, countRes] = await Promise.all([
+        supabase.from("agent_plans").select("*").order("price_usdc", { ascending: true }),
+        supabase.from("agents").select("id", { count: "exact", head: true }),
+      ]);
+      if (!plansRes.error && plansRes.data) setPlans(plansRes.data as unknown as AgentPlan[]);
+      setTotalAgents(countRes.count ?? 0);
       setLoading(false);
     };
-    fetchPlans();
+    fetchData();
   }, []);
 
   const handleSelectPlan = (plan: AgentPlan) => {
