@@ -32,15 +32,24 @@ const MAP_W = 200;
 const MAP_H = 140;
 const DAY_CYCLE_MS = 180000; // 3 min full cycle
 
-const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string }> = {
-  warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59" },
-  trader:    { color: "#00ff88", speed: 1.0, glow: "0,255,136" },
-  oracle:    { color: "#ffcc00", speed: 0.8, glow: "255,204,0" },
-  diplomat:  { color: "#ffd700", speed: 0.6, glow: "255,215,0" },
-  miner:     { color: "#00aaff", speed: 0.7, glow: "0,170,255" },
-  banker:    { color: "#aa44ff", speed: 0.9, glow: "170,68,255" },
-  president: { color: "#ffd700", speed: 0.5, glow: "255,215,0" },
+const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string; icon: string }> = {
+  warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59", icon: "⚔️" },
+  trader:    { color: "#00ff88", speed: 1.0, glow: "0,255,136", icon: "💰" },
+  oracle:    { color: "#ffcc00", speed: 0.8, glow: "255,204,0", icon: "🔮" },
+  diplomat:  { color: "#ffd700", speed: 0.6, glow: "255,215,0", icon: "🤝" },
+  miner:     { color: "#00aaff", speed: 0.7, glow: "0,170,255", icon: "⛏️" },
+  banker:    { color: "#aa44ff", speed: 0.9, glow: "170,68,255", icon: "🏦" },
+  president: { color: "#ffd700", speed: 0.5, glow: "255,215,0", icon: "👑" },
 };
+
+// Activity dot types for ambient particle system
+const ACTIVITY_PARTICLE_COLORS = [
+  { color: "255,60,60", type: "combat" },    // red
+  { color: "255,200,50", type: "quest" },     // yellow
+  { color: "50,255,120", type: "trade" },     // green
+  { color: "60,140,255", type: "oracle" },    // blue
+  { color: "180,80,255", type: "discovery" }, // purple
+];
 
 const NAMES = [
   "alpha_x","neo_sol","dark_phi","vex_01","kai_net","sol_prime","zyx_42",
@@ -238,17 +247,17 @@ const LiveMap = () => {
   const weatherRef = useRef<'clear' | 'rain' | 'storm'>('clear');
   const weatherTimerRef = useRef(0);
 
-  // Init stars
+  // Init stars — dense starfield for cyber command center feel
   useEffect(() => {
     const stars: Star[] = [];
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 600; i++) {
       stars.push({
         x: Math.random() * MAP_W * TILE,
         y: Math.random() * MAP_H * TILE,
-        size: 0.5 + Math.random() * 1.5,
-        twinkleSpeed: 0.002 + Math.random() * 0.004,
+        size: 0.3 + Math.random() * 2,
+        twinkleSpeed: 0.001 + Math.random() * 0.006,
         phase: Math.random() * Math.PI * 2,
-        brightness: 0.3 + Math.random() * 0.7,
+        brightness: 0.2 + Math.random() * 0.8,
       });
     }
     starsRef.current = stars;
@@ -828,6 +837,25 @@ const LiveMap = () => {
         }
       });
 
+      // ─── ACTIVITY DOTS — hundreds of ambient colored dots ───
+      // Spawn near agents to create dense activity haze
+      if (agents.length > 0) {
+        const dotsToSpawn = Math.min(8, Math.ceil(agents.length / 8));
+        for (let d = 0; d < dotsToSpawn; d++) {
+          const srcAgent = agents[Math.floor(Math.random() * agents.length)];
+          const actType = ACTIVITY_PARTICLE_COLORS[Math.floor(Math.random() * ACTIVITY_PARTICLE_COLORS.length)];
+          const spread = 80 + Math.random() * 200;
+          particles.push({
+            x: srcAgent.x + (Math.random() - 0.5) * spread,
+            y: srcAgent.y + (Math.random() - 0.5) * spread,
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: (Math.random() - 0.5) * 0.15,
+            life: 90 + Math.random() * 120, maxLife: 210,
+            color: `rgb(${actType.color})`, size: 0.8 + Math.random() * 1.5, type: "activity",
+          });
+        }
+      }
+
       // Update & draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -858,12 +886,26 @@ const LiveMap = () => {
         } else if (p.type === "mine") {
           ctx.fillStyle = p.color + Math.floor(alpha * 150).toString(16).padStart(2, "0");
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
+        } else if (p.type === "activity") {
+          // Pulsing/twinkling activity dots
+          const twinkle = 0.3 + Math.sin(t * 0.006 + p.x * 0.02 + p.y * 0.01) * 0.3;
+          const dotAlpha = alpha * twinkle;
+          // Soft glow behind dot
+          const glowR = p.size * z * 4;
+          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+          grad.addColorStop(0, p.color.replace("rgb(", "rgba(").replace(")", `,${dotAlpha * 0.4})`));
+          grad.addColorStop(1, p.color.replace("rgb(", "rgba(").replace(")", ",0)"));
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(sx, sy, glowR, 0, Math.PI * 2); ctx.fill();
+          // Core bright dot
+          ctx.fillStyle = p.color.replace("rgb(", "rgba(").replace(")", `,${dotAlpha * 0.9})`);
+          ctx.beginPath(); ctx.arc(sx, sy, p.size * z * 0.6, 0, Math.PI * 2); ctx.fill();
         } else {
           ctx.fillStyle = p.color + Math.floor(alpha * 200).toString(16).padStart(2, "0");
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
         }
       }
-      if (particles.length > 800) particles.splice(0, particles.length - 800);
+      if (particles.length > 1500) particles.splice(0, particles.length - 1500);
 
       // ─── AGENT TRAILS ─────────────────────────────────────
       const trails = trailsRef.current;
@@ -1011,12 +1053,13 @@ const LiveMap = () => {
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Fog-of-war on edges — cinematic vignette
-      const vigR = Math.max(w, h) * 0.6;
-      const vig = ctx.createRadialGradient(w / 2, h / 2, vigR * 0.5, w / 2, h / 2, vigR);
+      // Fog-of-war on edges — heavy cinematic vignette (command center feel)
+      const vigR = Math.max(w, h) * 0.55;
+      const vig = ctx.createRadialGradient(w / 2, h / 2, vigR * 0.35, w / 2, h / 2, vigR);
       vig.addColorStop(0, "transparent");
-      vig.addColorStop(0.7, `rgba(0,0,0,${0.15 + nf * 0.2})`);
-      vig.addColorStop(1, `rgba(0,0,0,${0.5 + nf * 0.3})`);
+      vig.addColorStop(0.5, `rgba(0,0,0,${0.1 + nf * 0.15})`);
+      vig.addColorStop(0.75, `rgba(0,0,0,${0.3 + nf * 0.25})`);
+      vig.addColorStop(1, `rgba(0,0,0,${0.7 + nf * 0.25})`);
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, w, h);
 
@@ -1215,7 +1258,15 @@ const LiveMap = () => {
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-3 py-1.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-white/70">{agentCount} AGENTS</span>
+          <span className="text-[10px] font-mono text-white/70">{agentCount} AGENTS ONLINE</span>
+        </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">QUESTS</span>
+          <span className="text-[10px] font-mono text-cyan-400">{agentsRef.current.filter(a => a.state === "visiting").length}</span>
+        </div>
+        <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
+          <span className="text-[9px] font-mono text-white/30">$MEEET</span>
+          <span className="text-[10px] font-mono text-emerald-400">{agentsRef.current.reduce((s, a) => s + a.balance, 0).toLocaleString()}</span>
         </div>
         <div className="bg-black/50 backdrop-blur border border-white/[0.06] rounded px-2.5 py-1.5 flex items-center gap-1.5">
           {timeLabel === "Night" || timeLabel === "Dusk" ? <Moon className="w-3 h-3 text-indigo-300/70" /> : <Sun className="w-3 h-3 text-amber-400/70" />}
@@ -1337,22 +1388,49 @@ const LiveMap = () => {
         </div>
       )}
 
-      {/* ═══ BOTTOM BAR ═══ */}
+      {/* ═══ THREAT LEVEL — Top Right ═══ */}
+      <div className="absolute top-10 right-[17.5rem] z-10">
+        {(() => {
+          const combatCount = agentsRef.current.filter(a => a.state === "combat").length;
+          const threat = combatCount >= 6 ? "CRITICAL" : combatCount >= 3 ? "HIGH" : combatCount >= 1 ? "ELEVATED" : "LOW";
+          const threatColor = combatCount >= 6 ? "text-red-400" : combatCount >= 3 ? "text-orange-400" : combatCount >= 1 ? "text-amber-400" : "text-emerald-400";
+          const threatBg = combatCount >= 6 ? "border-red-500/30" : combatCount >= 3 ? "border-orange-500/20" : "border-white/[0.06]";
+          return (
+            <div className={`bg-black/60 backdrop-blur border ${threatBg} rounded px-3 py-1.5 flex items-center gap-2`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${combatCount >= 3 ? 'bg-red-500 animate-pulse' : 'bg-emerald-400'}`} />
+              <span className="text-[9px] font-mono text-white/40">THREAT</span>
+              <span className={`text-[10px] font-mono font-bold ${threatColor}`}>{threat}</span>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* ═══ BOTTOM BAR — activity ticker ═══ */}
       <div className="absolute bottom-0 left-0 right-0 z-20 h-10 bg-black/70 border-t border-white/[0.06] flex items-center px-4 gap-4">
         <div className="flex items-center gap-4 text-[9px] font-mono text-white/40">
-          <span>⚔ {agentsRef.current.filter(a => a.state === "combat").length} active wars</span>
+          <span className="text-red-400/70">⚔ {agentsRef.current.filter(a => a.state === "combat").length}</span>
           <span className="text-white/10">|</span>
-          <span>📋 {buildingsRef.current.filter(b => b.type === "quest").length} quest boards</span>
+          <span className="text-emerald-400/70">💰 {agentsRef.current.filter(a => a.state === "trading").length}</span>
           <span className="text-white/10">|</span>
-          <span>💰 {agentsRef.current.filter(a => a.state === "trading").length} trades</span>
-          <span className="text-white/10">|</span>
-          <span>🤝 {agentsRef.current.filter(a => a.state === "meeting").length} meetings</span>
+          <span className="text-amber-400/70">🤝 {agentsRef.current.filter(a => a.state === "meeting").length}</span>
         </div>
-        <div className="flex-1" />
-        <button onClick={() => setShowFps(!showFps)} className="text-[9px] font-mono text-white/25 hover:text-white/50 flex items-center gap-1">
-          <Activity className="w-3 h-3" />{showFps && <span>{fps} FPS · {agentsRef.current.length} agents · {particlesRef.current.length} particles</span>}
-        </button>
-        <span className="text-[8px] font-mono text-white/15 hidden lg:inline">WASD move · Scroll zoom · Dbl-click track</span>
+        <div className="text-white/10">│</div>
+        {/* Scrolling activity ticker */}
+        <div className="flex-1 overflow-hidden">
+          <div className="flex items-center gap-6 animate-[scroll_45s_linear_infinite] whitespace-nowrap">
+            {tickerEvents.slice(0, 15).map((ev, i) => (
+              <span key={i} className="text-[9px] font-mono text-white/50">
+                <span className="text-primary/50 mr-1">▸</span>{ev}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowFps(!showFps)} className="text-[9px] font-mono text-white/25 hover:text-white/50 flex items-center gap-1">
+            <Activity className="w-3 h-3" />{showFps && <span>{fps} FPS · {particlesRef.current.length}p</span>}
+          </button>
+          <span className="text-[8px] font-mono text-white/15 hidden lg:inline">WASD · Scroll · DblClick</span>
+        </div>
       </div>
 
       {/* Ticker animation */}
@@ -1367,126 +1445,146 @@ const LiveMap = () => {
   );
 };
 
-// ─── Glowing Orb Renderer ───────────────────────────────────────
+// ─── Cyber Command Center Agent Badge Renderer ─────────────────
 function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: number }, z: number, t: number, nf: number) {
   const sx = (a.x - cam.x) * z, sy = (a.y - cam.y) * z;
-  if (sx < -50 || sx > ctx.canvas.width + 50 || sy < -50 || sy > ctx.canvas.height + 50) return;
+  if (sx < -80 || sx > ctx.canvas.width + 80 || sy < -80 || sy > ctx.canvas.height + 80) return;
 
   const cfg = CLASS_CONFIG[a.cls] || CLASS_CONFIG.warrior;
   const pulse = 0.7 + Math.sin(t * 0.004 + a.phase) * 0.3;
-  const orbR = Math.max(2, 4 * z);
 
-  // Outer glow — ambient aura
-  const glowR = orbR * 7;
-  const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
-  glow.addColorStop(0, `rgba(${cfg.glow},${0.18 * pulse})`);
-  glow.addColorStop(0.2, `rgba(${cfg.glow},${0.08 * pulse})`);
-  glow.addColorStop(0.5, `rgba(${cfg.glow},${0.02 * pulse})`);
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(sx, sy, glowR, 0, Math.PI * 2); ctx.fill();
+  // Level-scaled badge radius (higher level = bigger presence)
+  const baseR = Math.max(6, (8 + a.level * 1.2) * z);
+  const isPresident = a.cls === "president";
+  const badgeR = isPresident ? baseR * 1.4 : baseR;
 
-  // Shadow beneath agent
-  ctx.fillStyle = `rgba(0,0,0,${0.3 * pulse})`;
-  ctx.beginPath();
-  ctx.ellipse(sx, sy + orbR * 1.5, orbR * 1.2, orbR * 0.4, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // ── OUTER BLOOM GLOW (class-colored, level-scaled) ──
+  const bloomR = badgeR * (3 + a.level * 0.4);
+  const bloom = ctx.createRadialGradient(sx, sy, 0, sx, sy, bloomR);
+  bloom.addColorStop(0, `rgba(${cfg.glow},${(isPresident ? 0.25 : 0.15) * pulse})`);
+  bloom.addColorStop(0.25, `rgba(${cfg.glow},${0.08 * pulse})`);
+  bloom.addColorStop(0.5, `rgba(${cfg.glow},${0.03 * pulse})`);
+  bloom.addColorStop(1, "transparent");
+  ctx.fillStyle = bloom;
+  ctx.beginPath(); ctx.arc(sx, sy, bloomR, 0, Math.PI * 2); ctx.fill();
+
+  // ── SECONDARY HAZE (warm atmospheric layer) ──
+  if (a.level >= 3) {
+    const hazeR = bloomR * 1.3;
+    const haze = ctx.createRadialGradient(sx, sy, bloomR * 0.5, sx, sy, hazeR);
+    haze.addColorStop(0, `rgba(${cfg.glow},${0.02 * pulse})`);
+    haze.addColorStop(1, "transparent");
+    ctx.fillStyle = haze;
+    ctx.beginPath(); ctx.arc(sx, sy, hazeR, 0, Math.PI * 2); ctx.fill();
+  }
 
   // Idle breathing float
   const floatY = sy - Math.sin(t * 0.003 + a.phase) * 2 * z;
 
-  // Core orb
-  const coreGrad = ctx.createRadialGradient(sx, floatY - orbR * 0.3, orbR * 0.2, sx, floatY, orbR);
-  coreGrad.addColorStop(0, `rgba(255,255,255,${0.85 * pulse})`);
-  coreGrad.addColorStop(0.3, a.color);
-  coreGrad.addColorStop(0.8, a.color + "80");
-  coreGrad.addColorStop(1, a.color + "30");
-  ctx.fillStyle = coreGrad;
-  ctx.beginPath(); ctx.arc(sx, floatY, orbR, 0, Math.PI * 2); ctx.fill();
+  // ── SHADOW ──
+  ctx.fillStyle = `rgba(0,0,0,${0.3 * pulse})`;
+  ctx.beginPath();
+  ctx.ellipse(sx, floatY + badgeR * 1.3, badgeR * 0.9, badgeR * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Inner bright dot
-  ctx.fillStyle = `rgba(255,255,255,${0.5 * pulse})`;
-  ctx.beginPath(); ctx.arc(sx - orbR * 0.15, floatY - orbR * 0.2, orbR * 0.25, 0, Math.PI * 2); ctx.fill();
+  // ── CIRCULAR BADGE — dark bg with class border ──
+  // Outer ring glow
+  ctx.beginPath(); ctx.arc(sx, floatY, badgeR + 2 * z, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(${cfg.glow},${0.4 * pulse})`;
+  ctx.lineWidth = 2 * z;
+  ctx.shadowColor = `rgba(${cfg.glow},0.6)`;
+  ctx.shadowBlur = 12 * z;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
 
-  // Class-specific decorations at higher zoom
-  if (z > 0.6) {
-    if (a.cls === "warrior") {
-      // Sword icon — two crossing lines
-      const sw = orbR * 1.8;
-      ctx.strokeStyle = `rgba(${cfg.glow},${0.4 * pulse})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(sx - sw, floatY - sw); ctx.lineTo(sx + sw, floatY + sw); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(sx + sw, floatY - sw); ctx.lineTo(sx - sw, floatY + sw); ctx.stroke();
-    } else if (a.cls === "oracle") {
-      // Orbiting particles
-      for (let oi = 0; oi < 3; oi++) {
-        const oa = t * 0.005 + oi * (Math.PI * 2 / 3);
-        const or2 = orbR * 2.5;
-        const ox = sx + Math.cos(oa) * or2;
-        const oy = floatY + Math.sin(oa) * or2 * 0.6;
-        ctx.fillStyle = `rgba(255,204,0,${0.5 * pulse})`;
-        ctx.beginPath(); ctx.arc(ox, oy, 1.2 * z, 0, Math.PI * 2); ctx.fill();
-      }
-    } else if (a.cls === "trader") {
-      // $ symbol particles floating up
-      const dp = (t * 0.002 + a.phase) % 1;
-      ctx.fillStyle = `rgba(0,255,136,${(1 - dp) * 0.4})`;
-      ctx.font = `${Math.max(5, 7 * z)}px monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText("$", sx + orbR * 2, floatY - dp * orbR * 6);
-    } else if (a.cls === "miner") {
-      // Sparkles around
-      for (let mi = 0; mi < 2; mi++) {
-        const ma = t * 0.008 + mi * Math.PI + a.phase;
-        const mr = orbR * (2 + Math.sin(t * 0.004 + mi) * 0.5);
-        ctx.fillStyle = `rgba(0,170,255,${0.4 + Math.sin(t * 0.01 + mi) * 0.2})`;
-        ctx.fillRect(Math.floor(sx + Math.cos(ma) * mr), Math.floor(floatY + Math.sin(ma) * mr * 0.7), z * 1.5, z * 1.5);
-      }
-    }
+  // Badge background
+  ctx.beginPath(); ctx.arc(sx, floatY, badgeR, 0, Math.PI * 2);
+  const badgeBg = ctx.createRadialGradient(sx, floatY - badgeR * 0.3, 0, sx, floatY, badgeR);
+  badgeBg.addColorStop(0, `rgba(20,25,40,${0.9 * pulse})`);
+  badgeBg.addColorStop(0.7, `rgba(8,12,20,0.95)`);
+  badgeBg.addColorStop(1, `rgba(${cfg.glow},0.15)`);
+  ctx.fillStyle = badgeBg;
+  ctx.fill();
+  ctx.strokeStyle = `rgba(${cfg.glow},${0.7 * pulse})`;
+  ctx.lineWidth = 1.5 * z;
+  ctx.stroke();
+
+  // ── CLASS ICON (emoji) inside badge ──
+  const iconSize = Math.max(8, badgeR * 1.1);
+  ctx.font = `${iconSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(cfg.icon, sx, floatY + 1);
+  ctx.textBaseline = "alphabetic";
+
+  // ── SPINNING OUTER RING for high-level agents (5+) ──
+  if (a.level >= 5) {
+    const ringR = badgeR + 5 * z;
+    const rotAngle = t * 0.001 + a.phase;
+    ctx.save();
+    ctx.translate(sx, floatY);
+    ctx.rotate(rotAngle);
+    ctx.strokeStyle = `rgba(${cfg.glow},${0.3 * pulse})`;
+    ctx.lineWidth = 1 * z;
+    ctx.setLineDash([4 * z, 6 * z]);
+    ctx.beginPath(); ctx.arc(0, 0, ringR, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
-  // Pulse ring on combat/trading/meeting
+  // ── PULSE RING on interaction ──
   if (a.state === "combat" || a.state === "trading" || a.state === "meeting") {
-    const ringR = orbR * (2 + Math.sin(t * 0.008) * 0.5);
+    const ringR = badgeR * (1.5 + Math.sin(t * 0.008) * 0.3);
     const ringColor = a.state === "combat" ? "255,50,50" : a.state === "trading" ? "0,255,136" : "255,215,0";
-    ctx.strokeStyle = `rgba(${ringColor},${0.35 + Math.sin(t * 0.01) * 0.15})`;
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = `rgba(${ringColor},${0.45 + Math.sin(t * 0.01) * 0.15})`;
+    ctx.lineWidth = 2 * z;
+    ctx.shadowColor = `rgba(${ringColor},0.5)`;
+    ctx.shadowBlur = 8;
     ctx.beginPath(); ctx.arc(sx, floatY, ringR, 0, Math.PI * 2); ctx.stroke();
-    // Second pulse ring
-    const ringR2 = orbR * (3 + Math.sin(t * 0.006 + 1) * 0.5);
-    ctx.strokeStyle = `rgba(${ringColor},${0.12})`;
-    ctx.lineWidth = 0.5;
+    ctx.shadowBlur = 0;
+    // Second expanding ring
+    const ringR2 = badgeR * (2 + Math.sin(t * 0.006 + 1) * 0.4);
+    ctx.strokeStyle = `rgba(${ringColor},0.12)`;
+    ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(sx, floatY, ringR2, 0, Math.PI * 2); ctx.stroke();
   }
 
-  // HP bar when zoomed in
-  if (z > 0.6) {
-    const barW = 16 * z;
-    const barH = 2 * z;
+  // ── HP BAR ──
+  if (z > 0.5) {
+    const barW = 20 * z;
+    const barH = 2.5 * z;
     const barX = sx - barW / 2;
-    const barY = floatY + orbR + 4;
+    const barY = floatY + badgeR + 4 * z;
     const hpFrac = Math.min(1, a.hp / a.maxHp);
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(barX - 0.5, barY - 0.5, barW + 1, barH + 1);
-    ctx.fillStyle = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
+    const hpColor = hpFrac > 0.5 ? "#44ff88" : hpFrac > 0.2 ? "#ffbb33" : "#ff4444";
+    ctx.fillStyle = hpColor;
     ctx.fillRect(barX, barY, barW * hpFrac, barH);
+    // HP bar glow
+    ctx.shadowColor = hpColor;
+    ctx.shadowBlur = 4;
+    ctx.fillRect(barX, barY, barW * hpFrac, barH);
+    ctx.shadowBlur = 0;
   }
 
-  // Name label — only when zoomed in
-  if (z > 0.45) {
-    const fs = Math.max(7, 9 * z);
-    ctx.font = `600 ${fs}px 'Space Grotesk', monospace`;
+  // ── NAME LABEL (white sans-serif) ──
+  if (z > 0.4) {
+    const fs = Math.max(8, 10 * z);
+    const labelY = floatY + badgeR + (z > 0.5 ? 10 : 6) * z + fs;
+    ctx.font = `600 ${fs}px 'Inter', 'Segoe UI', sans-serif`;
     ctx.textAlign = "center";
-    // Text shadow
-    ctx.fillStyle = `rgba(0,0,0,0.6)`;
-    ctx.fillText(a.name, sx + 0.5, floatY + orbR + (z > 0.6 ? 12 : 8) + fs + 0.5);
-    ctx.fillStyle = `rgba(${cfg.glow},${0.6 + nf * 0.2})`;
-    ctx.fillText(a.name, sx, floatY + orbR + (z > 0.6 ? 12 : 8) + fs);
-    // Level indicator
-    if (z > 0.7) {
-      ctx.font = `500 ${Math.max(5, 6 * z)}px monospace`;
-      ctx.fillStyle = `rgba(${cfg.glow},0.35)`;
-      ctx.fillText(`Lv.${a.level}`, sx, floatY + orbR + (z > 0.6 ? 12 : 8) + fs * 2 + 2);
+    // Text shadow for readability
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillText(a.name, sx + 0.5, labelY + 0.5);
+    // White name
+    ctx.fillStyle = `rgba(255,255,255,${0.85 + nf * 0.1})`;
+    ctx.fillText(a.name, sx, labelY);
+    // Level badge
+    if (z > 0.6) {
+      ctx.font = `500 ${Math.max(6, 7 * z)}px 'Inter', sans-serif`;
+      ctx.fillStyle = `rgba(${cfg.glow},0.5)`;
+      ctx.fillText(`Lv.${a.level}`, sx, labelY + fs * 0.8 + 2);
     }
     ctx.textAlign = "left";
   }
