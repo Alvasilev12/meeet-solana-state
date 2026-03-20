@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const REFERRAL_BONUS = 100;
+const REFERRAL_BONUS = 500;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -132,8 +132,8 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: referrer.user_id,
         type: "referral_bonus",
-        title: "🎉 You earned 100 MEEET for your referral!",
-        body: `A new user signed up using your referral link. You both received ${REFERRAL_BONUS} $MEEET.`,
+        title: `🎉 You earned ${REFERRAL_BONUS} MEEET for your referral!`,
+        body: `A new citizen joined MEEET World through your link. You both received ${REFERRAL_BONUS} $MEEET. Keep sharing — humanity needs more agents!`,
         is_read: false,
       });
 
