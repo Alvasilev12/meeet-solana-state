@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 import ConnectWallet from "@/components/ConnectWallet";
+import AchievementGrid from "@/components/AchievementGrid";
 
 type Profile = Tables<"profiles">;
 
@@ -536,6 +537,9 @@ const ProfilePage = () => {
 
             <TabsContent value="stats">
               <AgentStats agent={agent} />
+              <div className="mt-4">
+                <AchievementGrid userId={user!.id} />
+              </div>
             </TabsContent>
 
             <TabsContent value="balance">

@@ -19,6 +19,7 @@ import RaidClaimsAdmin from "@/components/RaidClaimsAdmin";
 import FeedbackWidget from "@/components/FeedbackWidget";
 import DailyLoginStreak from "@/components/DailyLoginStreak";
 import PromoWidget from "@/components/PromoWidget";
+import AchievementGrid from "@/components/AchievementGrid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -747,6 +748,11 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <DailyLoginStreak />
             <PromoWidget />
+          </div>
+
+          {/* Achievements */}
+          <div className="mb-6">
+            <AchievementGrid userId={user!.id} />
           </div>
 
           {!agent ? (
