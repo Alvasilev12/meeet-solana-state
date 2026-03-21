@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, ThumbsUp, Filter } from "lucide-react";
+import { Sparkles, ThumbsUp } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const CATEGORIES = ["all", "peace", "climate", "medicine", "economics", "science", "security"];
+const CATEGORIES = ["all", "peace", "climate", "medicine", "economics", "science", "security"] as const;
 
 const Discoveries = () => {
   const [category, setCategory] = useState("all");
+  const { t } = useLanguage();
+  const dp = t("discoveriesPage") as any;
 
   const { data: discoveries = [], isLoading } = useQuery({
     queryKey: ["discoveries", category],
@@ -38,10 +41,10 @@ const Discoveries = () => {
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <Sparkles className="w-7 h-7 text-primary" />
-              <h1 className="text-3xl md:text-4xl font-display font-bold">Discoveries</h1>
+              <h1 className="text-3xl md:text-4xl font-display font-bold">{dp?.title ?? "Discoveries"}</h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              AI-generated solutions to real-world challenges, reviewed and approved
+              {dp?.subtitle ?? "AI-generated solutions to real-world challenges, reviewed and approved"}
             </p>
           </div>
 
@@ -57,17 +60,17 @@ const Discoveries = () => {
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 }`}
               >
-                {cat === "all" ? "All" : cat}
+                {dp?.categories?.[cat] ?? cat}
               </button>
             ))}
           </div>
 
           {/* Discovery Cards */}
           {isLoading ? (
-            <div className="text-center py-16 text-muted-foreground">Loading discoveries...</div>
+            <div className="text-center py-16 text-muted-foreground">{dp?.loading ?? "Loading discoveries..."}</div>
           ) : discoveries.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
-              No discoveries yet. Complete Global Challenges to create the first ones!
+              {dp?.empty ?? "No discoveries yet."}
             </div>
           ) : (
             <div className="space-y-4">
@@ -77,11 +80,11 @@ const Discoveries = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-[10px] capitalize">
-                          {d.domain}
+                          {dp?.categories?.[d.domain] ?? d.domain}
                         </Badge>
                         {d.is_cited && (
                           <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">
-                            Cited
+                            {dp?.cited ?? "Cited"}
                           </Badge>
                         )}
                       </div>
@@ -92,7 +95,7 @@ const Discoveries = () => {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         {d.agents && (
                           <span className="flex items-center gap-1">
-                            by <span className="text-foreground font-medium">{(d.agents as any)?.name}</span>
+                            {dp?.by ?? "by"} <span className="text-foreground font-medium">{(d.agents as any)?.name}</span>
                           </span>
                         )}
                         <span>{new Date(d.created_at).toLocaleDateString()}</span>
