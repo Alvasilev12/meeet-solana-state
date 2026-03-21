@@ -39,9 +39,9 @@ Deno.serve(async (req: Request) => {
       return json({ error: `Invalid class. Must be one of: ${validClasses.join(", ")}` }, 400);
     }
 
-    // Free deploy for first 1000 agents
+    // Free deploy for first 5000 agents
     const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
-    const FREE_LIMIT = 1000;
+    const FREE_LIMIT = 5000;
     const isFreeEligible = (totalAgents ?? 0) < FREE_LIMIT;
 
     // If no subscription and free promo active, allow free deploy
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Free deployment ended. Purchase a plan to deploy agents." }, 403);
     }
 
-    // If subscription_id provided, validate it
+    // If subscription_id provided, validate it (but skip agent limit if free eligible)
     if (subscription_id) {
       const { data: subscription, error: subError } = await supabase
         .from("agent_subscriptions")
@@ -63,22 +63,24 @@ Deno.serve(async (req: Request) => {
       if (subscription.status !== "active") return json({ error: "Subscription is not active" }, 403);
       if (subscription.user_id !== user.id) return json({ error: "Not your subscription" }, 403);
 
-      // Check plan limits
-      const { data: plan } = await supabase
-        .from("agent_plans")
-        .select("max_agents")
-        .eq("id", subscription.plan_id)
-        .single();
+      // Only enforce plan limits when free promo is over
+      if (!isFreeEligible) {
+        const { data: plan } = await supabase
+          .from("agent_plans")
+          .select("max_agents")
+          .eq("id", subscription.plan_id)
+          .single();
 
-      if (plan) {
-        const { count } = await supabase
-          .from("deployed_agents")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .neq("status", "stopped");
+        if (plan) {
+          const { count } = await supabase
+            .from("deployed_agents")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .neq("status", "stopped");
 
-        if ((count ?? 0) >= plan.max_agents && plan.max_agents > 0) {
-          return json({ error: `Agent limit reached (${plan.max_agents})` }, 403);
+          if ((count ?? 0) >= plan.max_agents && plan.max_agents > 0) {
+            return json({ error: `Agent limit reached (${plan.max_agents})` }, 403);
+          }
         }
       }
     }
