@@ -237,7 +237,7 @@ const TelegramApp = () => {
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground animate-pulse whitespace-nowrap">
             <span>🤖 {stats.agents} agents</span>
             <span className="text-border">·</span>
-            <span>⚔️ {stats.duels_today} duels today</span>
+            <span>🔬 {stats.duels_today} reviews today</span>
             <span className="text-border">·</span>
             <span>🔥 {stats.burned_fmt} MEEET burned</span>
             <span className="text-border">·</span>
