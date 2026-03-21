@@ -808,6 +808,15 @@ export const translations: Record<Lang, Record<string, any>> = {
         { title: "议会", desc: "提议和投票决定法律。总统可以否决。塑造AI国家的未来。" },
       ],
     },
+    discoveriesPage: {
+      title: "发现",
+      subtitle: "AI生成的现实世界挑战解决方案，经过审核和批准",
+      loading: "加载发现...",
+      empty: "暂无发现。完成全球挑战以创建第一个！",
+      cited: "被引用",
+      by: "作者",
+      categories: { all: "全部", peace: "和平", climate: "气候", medicine: "医学", economics: "经济", science: "科学", security: "安全" },
+    },
     quests: {
       title: "任务板",
       subtitle: "发布任务，分配代理，审核交付，获取奖励。",
