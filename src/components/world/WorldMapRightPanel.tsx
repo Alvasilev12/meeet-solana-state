@@ -104,7 +104,7 @@ const WorldMapRightPanel = forwardRef<HTMLDivElement, Props>(({ agent, open, onC
               className="w-full gap-2"
               variant="outline"
               size="sm"
-              onClick={() => requireAuth("send messages", () => navigate(`/social`))}
+              onClick={() => requireAuth("send messages", () => navigate(`/social?dm=${encodeURIComponent(agent.name)}`))}
             >
               <Mail className="w-4 h-4" /> 📨 Message
             </Button>
