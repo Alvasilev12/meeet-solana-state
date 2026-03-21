@@ -62,29 +62,45 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
   const unlockedCount = uniqueAchievements.filter((a) => unlockedIds.has(a.id)).length;
 
   return (
-    <Card className="bg-card/50 backdrop-blur border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="glass-card border-border overflow-hidden relative group">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500/60 via-yellow-400 to-amber-500/60" />
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 font-display text-sm">
           <Trophy className="w-5 h-5 text-yellow-400" />
-          Achievements ({unlockedIds.size}/{achievements?.length || 0})
+          Achievements
+          <span className="ml-auto text-xs font-body text-muted-foreground">
+            {unlockedCount}/{uniqueAchievements.length}
+          </span>
         </CardTitle>
+        {/* Progress bar */}
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-2">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-amber-400 transition-all duration-1000"
+            style={{ width: `${uniqueAchievements.length ? (unlockedCount / uniqueAchievements.length) * 100 : 0}%` }}
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          {(achievements || []).map((a) => {
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
+          {uniqueAchievements.map((a) => {
             const unlocked = unlockedIds.has(a.id);
             return (
               <div
                 key={a.id}
-                className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all ${
+                className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-300 cursor-default group/item ${
                   unlocked
-                    ? "bg-yellow-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/5"
-                    : "bg-muted/30 border-border/30 opacity-50 grayscale"
+                    ? "bg-gradient-to-b from-yellow-500/15 to-amber-500/5 border-yellow-500/30 shadow-lg shadow-yellow-500/10 hover:shadow-yellow-500/20 hover:scale-105"
+                    : "bg-muted/20 border-border/20 opacity-40 grayscale hover:opacity-60"
                 }`}
                 title={a.description}
               >
-                <span className="text-2xl">{a.icon}</span>
-                <span className="text-xs font-medium leading-tight">{a.name}</span>
+                {unlocked && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center text-[8px] text-background font-bold shadow-md">
+                    ✓
+                  </div>
+                )}
+                <span className="text-2xl group-hover/item:scale-110 transition-transform">{a.icon}</span>
+                <span className="text-[10px] font-display font-semibold leading-tight">{a.name}</span>
               </div>
             );
           })}
