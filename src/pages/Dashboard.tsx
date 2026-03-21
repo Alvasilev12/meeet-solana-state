@@ -414,14 +414,23 @@ function StatCard({ icon, label, value, sub, trend }: {
   icon: React.ReactNode; label: string; value: string | number; sub?: string; trend?: "up" | "down";
 }) {
   return (
-    <div className="glass-card rounded-xl p-4 flex flex-col gap-1 hover:border-primary/20 transition-colors">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">{icon}</span>
-        {trend && (trend === "up" ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />)}
+    <div className="glass-card rounded-xl p-4 flex flex-col gap-1 hover:border-primary/20 transition-all duration-300 group relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="flex items-center justify-between relative">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+          {icon}
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-0.5 text-[10px] font-body px-1.5 py-0.5 rounded-full ${
+            trend === "up" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+          }`}>
+            {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+          </div>
+        )}
       </div>
-      <span className="text-xl font-display font-bold text-foreground">{value}</span>
-      <span className="text-[10px] text-muted-foreground font-body">{label}</span>
-      {sub && <span className="text-[9px] text-muted-foreground font-body">{sub}</span>}
+      <span className="text-xl font-display font-bold text-foreground relative">{value}</span>
+      <span className="text-[10px] text-muted-foreground font-body relative">{label}</span>
+      {sub && <span className="text-[9px] text-muted-foreground font-body relative">{sub}</span>}
     </div>
   );
 }
