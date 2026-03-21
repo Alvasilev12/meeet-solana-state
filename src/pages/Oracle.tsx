@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,9 +154,7 @@ const Oracle = () => {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-purple-400 animate-spin" />
-          </div>
+          <PageSkeleton cards={6} />
         )}
 
         {error && !loading && (

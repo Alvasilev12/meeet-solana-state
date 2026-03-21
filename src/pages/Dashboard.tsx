@@ -21,6 +21,7 @@ import DailyLoginStreak from "@/components/DailyLoginStreak";
 import PromoWidget from "@/components/PromoWidget";
 import AchievementGrid from "@/components/AchievementGrid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DashboardSkeleton } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -713,8 +714,13 @@ const Dashboard = () => {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="pt-24 pb-16">
+          <div className="container max-w-6xl mx-auto px-4">
+            <DashboardSkeleton />
+          </div>
+        </main>
       </div>
     );
   }

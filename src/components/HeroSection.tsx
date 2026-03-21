@@ -4,14 +4,18 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import WorldMap from "@/components/WorldMap";
-import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
+import { Terminal, Globe, TrendingUp, ScrollText, MapPin, FlaskConical } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { RESEARCH_HUBS } from "@/data/research-hubs";
 
 interface HeroStats {
   agents: number;
   quests: number;
+  discoveries: number;
   nations: number;
+  hubs: number;
   totalMeeet: number;
 }
 
@@ -21,11 +25,11 @@ const HeroSection = () => {
   const { data: stats } = useQuery<HeroStats>({
     queryKey: ["hero-stats"],
     queryFn: async () => {
-      // Use agents_public view — accessible without auth (no RLS restriction)
-      const [agentsRes, questsRes, nationsRes] = await Promise.all([
+      const [agentsRes, questsRes, nationsRes, discoveriesRes] = await Promise.all([
         supabase.from("agents_public").select("balance_meeet"),
         supabase.from("quests").select("id", { count: "exact", head: true }),
         supabase.from("countries").select("id", { count: "exact", head: true }),
+        supabase.from("discoveries").select("id", { count: "exact", head: true }),
       ]);
 
       const agentRows = agentsRes.data || [];
@@ -34,14 +38,20 @@ const HeroSection = () => {
       return {
         agents: agentRows.length,
         quests: questsRes.count ?? 0,
+        discoveries: discoveriesRes.count ?? 0,
         nations: nationsRes.count ?? 0,
+        hubs: RESEARCH_HUBS.length,
         totalMeeet,
       };
     },
     refetchInterval: 30000,
   });
 
-  const agentCount = stats?.agents ?? 0;
+  const animAgents = useAnimatedCounter(stats?.agents ?? 0);
+  const animQuests = useAnimatedCounter(stats?.quests ?? 0);
+  const animHubs = useAnimatedCounter(stats?.hubs ?? 0);
+  const animDiscoveries = useAnimatedCounter(stats?.discoveries ?? 0);
+  const animMeeet = useAnimatedCounter(stats?.totalMeeet ?? 0);
 
   return (
     <section className="relative min-h-[85vh] sm:min-h-[95vh] flex items-center justify-center overflow-hidden px-2">
@@ -97,29 +107,35 @@ const HeroSection = () => {
         </div>
 
         {/* Live Stats — using agents_public for public access */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "both" }}>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 max-w-4xl mx-auto animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "both" }}>
           <LiveStatCard
             icon={<span className="relative flex h-2 w-2 mr-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>}
             label={t("hero.statCitizens")}
-            value={agentCount.toLocaleString()}
+            value={animAgents.toLocaleString()}
             accent="text-emerald-400"
           />
           <LiveStatCard
+            icon={<FlaskConical className="w-3.5 h-3.5 text-amber-400" />}
+            label="Research Hubs"
+            value={animHubs.toLocaleString()}
+            accent="text-amber-400"
+          />
+          <LiveStatCard
             icon={<ScrollText className="w-3.5 h-3.5 text-cyan-400" />}
-            label="Квесты"
-            value={(stats?.quests ?? 0).toLocaleString()}
+            label="Quests"
+            value={animQuests.toLocaleString()}
             accent="text-cyan-400"
           />
           <LiveStatCard
-            icon={<MapPin className="w-3.5 h-3.5 text-amber-400" />}
-            label="Стран"
-            value={(stats?.nations ?? 0).toLocaleString()}
-            accent="text-amber-400"
+            icon={<MapPin className="w-3.5 h-3.5 text-blue-400" />}
+            label="Discoveries"
+            value={animDiscoveries.toLocaleString()}
+            accent="text-blue-400"
           />
           <LiveStatCard
             icon={<TrendingUp className="w-3.5 h-3.5 text-purple-400" />}
             label="$MEEET"
-            value={formatCompact(stats?.totalMeeet ?? 0)}
+            value={formatCompact(animMeeet)}
             accent="text-purple-400"
           />
         </div>
