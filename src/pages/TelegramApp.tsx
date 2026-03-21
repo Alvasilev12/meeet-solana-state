@@ -499,7 +499,7 @@ const AgentsTab = ({ agents }: { agents: Agent[] }) => (
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold truncate">{a.name}</p>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{a.class}</Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{getClassName(a.class)}</Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Level {a.level} · XP {a.xp}</p>
               </div>
