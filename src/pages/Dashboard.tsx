@@ -572,7 +572,7 @@ function EarningsLog({ earnings }: { earnings: any[] }) {
         const sourceMap: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
           quest: { icon: <Trophy className="w-3.5 h-3.5" />, label: "Quest Reward", color: "text-emerald-400" },
           passive: { icon: <Coins className="w-3.5 h-3.5" />, label: "Passive Income", color: "text-blue-400" },
-          duel: { icon: <Swords className="w-3.5 h-3.5" />, label: "Duel Reward", color: "text-red-400" },
+          duel: { icon: <FileCheck className="w-3.5 h-3.5" />, label: "Review Reward", color: "text-sky-400" },
         };
         const meta = sourceMap[e.source] || { icon: <Coins className="w-3.5 h-3.5" />, label: e.source, color: "text-muted-foreground" };
         return (
