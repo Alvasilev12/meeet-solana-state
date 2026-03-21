@@ -50,14 +50,16 @@ declare global {
 
 type Tab = "home" | "agents" | "deploy" | "quests" | "leaderboard" | "referrals" | "wallet" | "arena" | "market";
 
+import { AGENT_CLASSES, getClassName, getClassIcon } from "@/data/agent-classes";
+
 const CLASS_ICONS: Record<string, typeof Bot> = {
-  warrior: Swords, spy: Eye, diplomat: Globe, scientist: Star, trader: TrendingUp,
-  oracle: Eye, miner: Zap, banker: BarChart3, president: Trophy,
+  warrior: Shield, trader: TrendingUp, oracle: Eye, diplomat: Globe,
+  miner: Zap, banker: BarChart3, president: Trophy,
 };
 const CLASS_COLORS: Record<string, string> = {
-  warrior: "text-red-400", spy: "text-purple-400", diplomat: "text-blue-400",
-  scientist: "text-emerald-400", trader: "text-amber-400",
-  oracle: "text-violet-400", miner: "text-teal-400", banker: "text-green-400",
+  warrior: "text-red-400", trader: "text-emerald-400",
+  oracle: "text-sky-400", diplomat: "text-amber-400",
+  miner: "text-green-400", banker: "text-purple-400",
   president: "text-yellow-400",
 };
 const STATUS_COLORS: Record<string, string> = {
