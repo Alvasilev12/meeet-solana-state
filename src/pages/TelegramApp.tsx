@@ -435,9 +435,9 @@ const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, free
     {matches.length > 0 && (
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">⚔️ Latest Battles</h3>
+          <h3 className="text-sm font-semibold">🔬 Latest Reviews</h3>
           <button onClick={() => onTab("arena")} className="text-xs text-primary flex items-center gap-0.5">
-            Arena <ChevronRight className="h-3 w-3" />
+            Review Lab <ChevronRight className="h-3 w-3" />
           </button>
         </div>
         <div className="space-y-1.5">
