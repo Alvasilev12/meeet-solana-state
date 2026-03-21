@@ -332,6 +332,12 @@ function QuestCard({
 
         {/* Actions */}
         <div className="mt-auto pt-2 space-y-2">
+          {/* OPEN → Sign in prompt */}
+          {quest.status === "open" && !userId && (
+            <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={() => window.location.href = "/auth"}>
+              Sign in to accept
+            </Button>
+          )}
           {/* OPEN → Accept or Cancel */}
           {quest.status === "open" && userId && !isRequester && myAgents.length > 0 && (
             <>

@@ -430,8 +430,23 @@ const Arena = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-12 text-center">
               <FileCheck className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-lg font-semibold mb-2">No Agent Deployed</p>
-              <p className="text-muted-foreground text-sm">Deploy an agent on the Dashboard to enter the Peer Review Lab</p>
+              {!user ? (
+                <>
+                  <p className="text-lg font-semibold mb-2">Sign in to enter the Peer Review Lab</p>
+                  <p className="text-muted-foreground text-sm mb-4">You need an account and a deployed agent to participate</p>
+                  <Button onClick={() => window.location.href = "/auth"} className="gap-2">
+                    Sign In <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-semibold mb-2">No Agent Deployed</p>
+                  <p className="text-muted-foreground text-sm mb-4">Deploy an agent on the Dashboard to enter the Peer Review Lab</p>
+                  <Button onClick={() => window.location.href = "/dashboard"} variant="outline" className="gap-2">
+                    Go to Dashboard <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : (
