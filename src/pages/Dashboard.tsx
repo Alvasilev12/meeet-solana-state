@@ -414,14 +414,23 @@ function StatCard({ icon, label, value, sub, trend }: {
   icon: React.ReactNode; label: string; value: string | number; sub?: string; trend?: "up" | "down";
 }) {
   return (
-    <div className="glass-card rounded-xl p-4 flex flex-col gap-1 hover:border-primary/20 transition-colors">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">{icon}</span>
-        {trend && (trend === "up" ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />)}
+    <div className="glass-card rounded-xl p-4 flex flex-col gap-1 hover:border-primary/20 transition-all duration-300 group relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="flex items-center justify-between relative">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+          {icon}
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-0.5 text-[10px] font-body px-1.5 py-0.5 rounded-full ${
+            trend === "up" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+          }`}>
+            {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+          </div>
+        )}
       </div>
-      <span className="text-xl font-display font-bold text-foreground">{value}</span>
-      <span className="text-[10px] text-muted-foreground font-body">{label}</span>
-      {sub && <span className="text-[9px] text-muted-foreground font-body">{sub}</span>}
+      <span className="text-xl font-display font-bold text-foreground relative">{value}</span>
+      <span className="text-[10px] text-muted-foreground font-body relative">{label}</span>
+      {sub && <span className="text-[9px] text-muted-foreground font-body relative">{sub}</span>}
     </div>
   );
 }
@@ -500,13 +509,14 @@ function QuickAction({ icon, label, to, badge }: {
   return (
     <Link
       to={to}
-      className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group cursor-pointer"
+      className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 group cursor-pointer relative overflow-hidden"
     >
-      <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
         {icon}
       </div>
-      <span className="text-xs font-display font-semibold text-foreground">{label}</span>
-      {badge && <Badge className="text-[9px] bg-primary/20 text-primary border-primary/30">{badge}</Badge>}
+      <span className="text-[11px] font-display font-semibold text-foreground text-center leading-tight">{label}</span>
+      {badge && <Badge className="text-[8px] bg-primary/20 text-primary border-primary/30 px-1.5 py-0">{badge}</Badge>}
     </Link>
   );
 }
@@ -715,57 +725,61 @@ const Dashboard = () => {
       <main className="pt-24 pb-16">
         <div className="container max-w-6xl mx-auto px-4">
           {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-display font-bold mb-1">Dashboard</h1>
-              <p className="text-muted-foreground text-sm font-body">
-                Welcome back, <span className="text-foreground font-semibold">{profile?.display_name || user?.email?.split("@")[0] || "Agent"}</span>
-                {profile?.is_president && <Badge className="ml-2 bg-amber-500/20 text-amber-400 border-amber-500/30">👑 President</Badge>}
-              </p>
-            </div>
-            {agent && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <ConnectWallet savedAddress={profile?.wallet_address} compact />
-                <DepositTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} agentName={agent.name} />
-                <ClaimTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} walletAddress={profile?.wallet_address} />
-                <Link to="/profile">
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
-                    <Users className="w-3.5 h-3.5" /> Profile
-                  </Button>
-                </Link>
-                <Link to="/live">
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5">
-                    <Globe className="w-3.5 h-3.5" /> Live Map
-                  </Button>
-                </Link>
+          <div className="mb-8 relative">
+            <div className="absolute -top-8 -left-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-4 right-0 w-48 h-48 bg-secondary/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-display font-bold mb-1 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Dashboard</h1>
+                <p className="text-muted-foreground text-sm font-body">
+                  Welcome back, <span className="text-foreground font-semibold">{profile?.display_name || user?.email?.split("@")[0] || "Agent"}</span>
+                  {profile?.is_president && (
+                    <Badge className="ml-2 bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border-amber-500/30 shadow-sm shadow-amber-500/10">
+                      👑 President
+                    </Badge>
+                  )}
+                </p>
               </div>
-            )}
+              {agent && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ConnectWallet savedAddress={profile?.wallet_address} compact />
+                  <DepositTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} agentName={agent.name} />
+                  <ClaimTokens agentId={agent.id} agentBalance={Number(agent.balance_meeet)} walletAddress={profile?.wallet_address} />
+                  <Link to="/profile">
+                    <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                      <Users className="w-3.5 h-3.5" /> Profile
+                    </Button>
+                  </Link>
+                  <Link to="/live">
+                    <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                      <Globe className="w-3.5 h-3.5" /> Live Map
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Global Stats Banner */}
           {globalStats && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Users className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Citizens</span>
+              {[
+                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: "/ 1M", color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
+                { icon: <Trophy className="w-4 h-4" />, label: "Quests Done", value: globalStats.completedQuests, color: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20" },
+                { icon: <Map className="w-4 h-4" />, label: "Territories", value: globalStats.claimedTerritories, color: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20" },
+              ].map(({ icon, label, value, sub, color, accent, border }) => (
+                <div key={label} className={`glass-card rounded-xl p-4 text-center relative overflow-hidden group hover:${border} transition-all duration-300`}>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+                  <div className="flex items-center justify-center gap-1.5 mb-1.5 relative">
+                    <div className={accent}>{icon}</div>
+                    <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">{label}</span>
+                  </div>
+                  <span className="text-xl font-display font-bold relative">
+                    {value.toLocaleString()}
+                    {sub && <span className="text-xs text-muted-foreground ml-1">{sub}</span>}
+                  </span>
                 </div>
-                <span className="text-lg font-display font-bold">{globalStats.totalAgents.toLocaleString()} <span className="text-xs text-muted-foreground">/ 1M</span></span>
-              </div>
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Trophy className="w-3.5 h-3.5 text-secondary" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Quests Done</span>
-                </div>
-                <span className="text-lg font-display font-bold">{globalStats.completedQuests.toLocaleString()}</span>
-              </div>
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Map className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Territories</span>
-                </div>
-                <span className="text-lg font-display font-bold">{globalStats.claimedTerritories.toLocaleString()}</span>
-              </div>
+              ))}
             </div>
           )}
 
@@ -962,7 +976,7 @@ const Dashboard = () => {
               {agent.nation_code && <NationCard nationCode={agent.nation_code} />}
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <QuickAction icon={<Rocket className="w-5 h-5" />} label="Deploy Agent" to="/deploy" badge="🚀" />
                 <QuickAction icon={<Star className="w-5 h-5" />} label="Oracle Markets" to="/oracle" badge="🔮" />
                 <QuickAction icon={<Shield className="w-5 h-5" />} label="Warnings" to="/warnings" badge="⚠️" />

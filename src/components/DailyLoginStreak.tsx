@@ -3,10 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
-import { Flame, Gift, Zap } from "lucide-react";
+import { Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const STREAK_BONUSES = [10, 20, 30, 50, 75, 100, 200];
+const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 export default function DailyLoginStreak() {
   const { user } = useAuth();
@@ -93,14 +94,25 @@ export default function DailyLoginStreak() {
 
   const streak = streakData.currentStreak;
   const nextBonus = STREAK_BONUSES[Math.min(streak, STREAK_BONUSES.length - 1)];
+  const weekProgress = streak % 7;
 
   return (
-    <Card className="glass-card border-border overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
+    <Card className="glass-card border-border overflow-hidden relative group">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
+      {/* Glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <CardContent className="p-4 relative">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-              <Flame className="w-5 h-5 text-orange-400" />
+            <div className="relative">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center">
+                <Flame className="w-6 h-6 text-orange-400" />
+              </div>
+              {streak > 0 && (
+                <div className="absolute -top-1.5 -right-1.5 min-w-5 h-5 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 flex items-center justify-center text-[10px] font-bold text-background px-1 shadow-lg shadow-orange-500/30">
+                  {streak}
+                </div>
+              )}
             </div>
             <div>
               <p className="font-display text-sm font-bold">
@@ -112,27 +124,34 @@ export default function DailyLoginStreak() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground font-body">Следующий бонус</p>
-            <p className="font-display text-sm font-bold text-primary">+{nextBonus} $MEEET</p>
+            <p className="text-[10px] text-muted-foreground font-body">Следующий бонус</p>
+            <p className="font-display text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
+              +{nextBonus} $MEEET
+            </p>
           </div>
         </div>
 
-        {/* Week progress */}
-        <div className="flex gap-1 mt-3">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-1.5 rounded-full transition-colors ${
-                i < streak % 7
-                  ? "bg-gradient-to-r from-orange-500 to-amber-400"
-                  : "bg-muted/30"
-              }`}
-            />
-          ))}
-        </div>
-        <div className="flex justify-between mt-1">
-          <span className="text-[9px] text-muted-foreground">Пн</span>
-          <span className="text-[9px] text-muted-foreground">Вс</span>
+        {/* Week dots */}
+        <div className="flex gap-2">
+          {DAY_LABELS.map((day, i) => {
+            const isActive = i < weekProgress;
+            const isCurrent = i === weekProgress && streakData.todayCheckedIn;
+            return (
+              <div key={day} className="flex-1 flex flex-col items-center gap-1.5">
+                <div
+                  className={`w-full h-2.5 rounded-full transition-all duration-500 ${
+                    isActive || isCurrent
+                      ? "bg-gradient-to-r from-orange-500 to-amber-400 shadow-sm shadow-orange-500/30"
+                      : "bg-muted/30"
+                  }`}
+                  style={{ transitionDelay: `${i * 60}ms` }}
+                />
+                <span className={`text-[9px] font-body ${isActive || isCurrent ? "text-orange-400" : "text-muted-foreground/50"}`}>
+                  {day}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
