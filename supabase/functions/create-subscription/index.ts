@@ -214,8 +214,8 @@ Deno.serve(async (req: Request) => {
         return json({ error: "Free promo is only available for the Scout plan" }, 400);
       }
       const { count } = await supabase.from("agents").select("id", { count: "exact", head: true });
-      if ((count ?? 0) >= 1000) {
-        return json({ error: "Free promo has ended — all 1000 spots have been claimed" }, 400);
+      if ((count ?? 0) >= 5000) {
+        return json({ error: "Free promo has ended — all 5000 spots have been claimed" }, 400);
       }
       // Check if user already claimed free promo
       const { data: existingFree } = await supabase
