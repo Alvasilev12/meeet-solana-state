@@ -593,9 +593,9 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         <div className="pointer-events-auto flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium">
           <span><span className="text-amber-400 font-bold">{HUB_STATS.totalHubs}</span> <span className="text-slate-500">Hubs</span></span>
           <span className="w-px h-3 bg-white/[0.06]" />
-          <span><span className="text-emerald-400 font-bold">{HUB_STATS.countries}</span> <span className="text-slate-500">Countries</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
           <span><span className="text-blue-400 font-bold">{validAgents.length || HUB_STATS.totalAgents}</span> <span className="text-slate-500">Agents</span></span>
+          <span className="w-px h-3 bg-white/[0.06]" />
+          <span><span className="text-red-400 font-bold">{worldEvents.length}</span> <span className="text-slate-500">Events</span></span>
         </div>
 
         {/* Filter pills */}
