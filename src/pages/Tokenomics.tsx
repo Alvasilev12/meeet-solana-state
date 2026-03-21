@@ -52,7 +52,8 @@ function useCirculatingSupply() {
   return useQuery({
     queryKey: ["circulating-supply"],
     queryFn: async () => {
-      const { data } = await supabase.from("agents").select("balance_meeet");
+      // Use agents_public view to bypass RLS and get ALL agents
+      const { data } = await supabase.from("agents_public").select("balance_meeet");
       const total = (data ?? []).reduce((s, a) => s + Number(a.balance_meeet || 0), 0);
       return total;
     },
@@ -64,9 +65,20 @@ function useTreasuryBalance() {
   return useQuery({
     queryKey: ["treasury-balance"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("treasury-info");
-      if (error || !data) return { sol: 0, address: TREASURY_WALLET };
-      return { sol: data.balance_sol ?? 0, address: data.address ?? TREASURY_WALLET };
+      const { data: treasury } = await supabase
+        .from("state_treasury")
+        .select("balance_sol, balance_meeet, total_burned, total_quest_payouts, total_tax_collected")
+        .limit(1)
+        .maybeSingle();
+      if (!treasury) return { sol: 0, meeet: 0, burned: 0, questPayouts: 0, taxCollected: 0, address: TREASURY_WALLET };
+      return {
+        sol: Number(treasury.balance_sol ?? 0),
+        meeet: Number(treasury.balance_meeet ?? 0),
+        burned: Number(treasury.total_burned ?? 0),
+        questPayouts: Number(treasury.total_quest_payouts ?? 0),
+        taxCollected: Number(treasury.total_tax_collected ?? 0),
+        address: TREASURY_WALLET,
+      };
     },
     refetchInterval: 60000,
   });
@@ -76,19 +88,31 @@ function useEmissionData() {
   return useQuery({
     queryKey: ["emission-data"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("agent_earnings")
-        .select("amount_meeet, created_at")
+      // Use state_treasury for aggregate burn, and agent_earnings via public view approach
+      // Since agent_earnings has RLS, we approximate from agents_public + state_treasury
+      const { data: treasury } = await supabase
+        .from("state_treasury")
+        .select("total_quest_payouts, total_burned, total_tax_collected")
+        .limit(1)
+        .maybeSingle();
+
+      // Get recent activity_feed for emission timeline approximation
+      const { data: feed } = await supabase
+        .from("activity_feed")
+        .select("created_at, meeet_amount, event_type")
         .order("created_at", { ascending: true })
-        .limit(1000);
+        .limit(500);
 
       const byDay = new Map<string, { earned: number; burned: number }>();
-      for (const row of data ?? []) {
+      for (const row of feed ?? []) {
         const day = new Date(row.created_at!).toISOString().slice(0, 10);
         const cur = byDay.get(day) ?? { earned: 0, burned: 0 };
-        const amt = Number(row.amount_meeet || 0);
-        cur.earned += amt;
-        cur.burned += Math.floor(amt * 0.01); // 1% burn approximation from tax
+        const amt = Number(row.meeet_amount || 0);
+        if (row.event_type === 'burn' || row.event_type === 'tax') {
+          cur.burned += amt;
+        } else {
+          cur.earned += amt;
+        }
         byDay.set(day, cur);
       }
 
@@ -101,25 +125,11 @@ function useEmissionData() {
   });
 }
 
-function useBurnData() {
-  return useQuery({
-    queryKey: ["burn-stats"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("duels")
-        .select("burn_amount")
-        .not("burn_amount", "is", null);
-      const totalBurned = (data ?? []).reduce((s, d) => s + Number(d.burn_amount || 0), 0);
-      return totalBurned;
-    },
-  });
-}
-
 // ─── Pie Chart (Recharts) ───────────────────────────────────────
 function TokenPieChart({ circulatingMeeet }: { circulatingMeeet: number }) {
-  const agentPct = Math.min(40, Math.round((circulatingMeeet / TOTAL_SUPPLY) * 100));
+  const realAgentPct = Math.round((circulatingMeeet / TOTAL_SUPPLY) * 100 * 100) / 100; // precise %
   const chartData = DISTRIBUTION.map((d) =>
-    d.label === "Circulating (Agents)" ? { ...d, value: agentPct || d.pct } : { ...d, value: d.pct }
+    d.label === "Circulating (Agents)" ? { ...d, value: d.pct, realValue: realAgentPct } : { ...d, value: d.pct, realValue: d.pct }
   );
 
   return (
@@ -212,8 +222,8 @@ const Tokenomics = () => {
   const { data: circulating = 0, isLoading: loadCirc } = useCirculatingSupply();
   const { data: treasury, isLoading: loadTreasury } = useTreasuryBalance();
   const { data: emissions = [], isLoading: loadEmissions } = useEmissionData();
-  const { data: totalBurned = 0 } = useBurnData();
 
+  const totalBurned = treasury?.burned ?? 0;
   const todayEmission = emissions.length > 0 ? emissions[emissions.length - 1].earned : 0;
 
   return (
