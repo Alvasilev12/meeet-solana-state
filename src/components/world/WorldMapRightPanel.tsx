@@ -83,5 +83,8 @@ const WorldMapRightPanel = forwardRef<HTMLDivElement, Props>(({ agent, open, onC
     </div>
   );
 };
+});
+
+WorldMapRightPanel.displayName = "WorldMapRightPanel";
 
 export default WorldMapRightPanel;

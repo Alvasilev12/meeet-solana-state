@@ -117,5 +117,8 @@ const WorldMapCanvas = forwardRef<HTMLCanvasElement, Props>(({ hubGeoData = [], 
     />
   );
 };
+});
+
+WorldMapCanvas.displayName = "WorldMapCanvas";
 
 export default WorldMapCanvas;

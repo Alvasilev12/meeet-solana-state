@@ -586,4 +586,8 @@ function getTimeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+});
+
+WorldMap.displayName = "WorldMap";
+
 export default WorldMap;
