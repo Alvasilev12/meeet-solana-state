@@ -30,17 +30,17 @@ const ANIMATION_CLASSES: Record<string, { hidden: string; visible: string }> = {
   },
 };
 
-const AnimatedSection = ({
+const AnimatedSection = forwardRef<HTMLDivElement, AnimatedSectionProps>(({
   children,
   className = "",
   delay = 0,
   animation = "fade-up",
-}: AnimatedSectionProps) => {
-  const ref = useRef<HTMLDivElement>(null);
+}, forwardedRef) => {
+  const internalRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = internalRef.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(
@@ -61,12 +61,18 @@ const AnimatedSection = ({
 
   return (
     <div
-      ref={ref}
+      ref={(node) => {
+        (internalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof forwardedRef === "function") forwardedRef(node);
+        else if (forwardedRef) forwardedRef.current = node;
+      }}
       className={`transition-all duration-700 ease-out ${visible ? anim.visible : anim.hidden} ${className}`}
     >
       {children}
     </div>
   );
-};
+});
+
+AnimatedSection.displayName = "AnimatedSection";
 
 export default AnimatedSection;
