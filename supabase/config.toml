@@ -157,3 +157,9 @@ verify_jwt = false
 
 [functions.discovery-marketplace]
 verify_jwt = false
+
+[functions.agent-autonomy]
+verify_jwt = false
+
+[functions.agent-growth]
+verify_jwt = false
