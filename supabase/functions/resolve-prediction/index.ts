@@ -18,6 +18,13 @@ const PLATFORM_FEE_PCT = 0.02; // 2%
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Internal service authentication — prevent unauthorized oracle resolution
+  const secret = req.headers.get("x-internal-service");
+  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.slice(-16);
+  if (!secret || secret !== expected) {
+    return json({ error: "Forbidden" }, 403);
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

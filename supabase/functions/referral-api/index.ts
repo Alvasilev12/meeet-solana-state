@@ -60,11 +60,14 @@ Deno.serve(async (req) => {
       }
       // Store TG referral — lightweight, no user_id required
       // The bonus will be credited when the user actually creates a profile + agent
-      await supabase.from("agent_messages").insert({
-        from_agent_id: (await supabase.from("agents").select("id").limit(1).maybeSingle()).data?.id || "",
-        content: `🤝 New referral: TG user ${referred_tg_id} joined via ref from ${referrer_tg_id}`,
-        channel: "global",
-      }).catch(() => {});
+      const { data: firstAgent } = await supabase.from("agents").select("id").limit(1).maybeSingle();
+      if (firstAgent?.id) {
+        await supabase.from("agent_messages").insert({
+          from_agent_id: firstAgent.id,
+          content: `🤝 New referral: TG user ${referred_tg_id} joined via ref from ${referrer_tg_id}`,
+          channel: "global",
+        });
+      }
 
       return new Response(JSON.stringify({ ok: true, message: "TG referral tracked" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
