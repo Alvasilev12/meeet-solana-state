@@ -1,10 +1,9 @@
-import { Swords, TrendingUp, Shield, Brain, Pickaxe, Users } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import AnimatedSection from "@/components/AnimatedSection";
+import { AGENT_CLASSES } from "@/data/agent-classes";
 
-const classIcons = [Swords, TrendingUp, Shield, Brain, Pickaxe, Users];
-const classColors = ["text-destructive", "text-secondary", "text-accent", "text-primary", "text-amber-400", "text-emerald-400"];
-const classIncomes = ["~120 $MEEET/day", "~200 $MEEET/day", "~80 $MEEET/day", "~150 $MEEET/day", "~100 $MEEET/day", "~90 $MEEET/day"];
+const classKeys = ["warrior", "trader", "oracle", "diplomat", "miner", "banker"];
+const classColors = ["text-red-400", "text-emerald-400", "text-sky-400", "text-amber-400", "text-green-400", "text-purple-400"];
 
 const AgentClassesSection = () => {
   const { t } = useLanguage();
@@ -23,15 +22,15 @@ const AgentClassesSection = () => {
         </AnimatedSection>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {classes.map((cls, i) => {
-            const Icon = classIcons[i];
+          {classKeys.map((key, i) => {
+            const info = AGENT_CLASSES[key];
             return (
-              <AnimatedSection key={i} delay={i * 100} animation="scale">
+              <AnimatedSection key={key} delay={i * 100} animation="scale">
                 <div className="glass-card p-6 group hover:bg-card/80 transition-all duration-150 hover:scale-[1.02]">
-                  <Icon className={`w-8 h-8 ${classColors[i]} mb-4`} />
-                  <h3 className="text-xl font-semibold mb-2">{cls.name}</h3>
-                  <p className="text-sm text-muted-foreground font-body mb-4">{cls.desc}</p>
-                  <div className="text-sm font-display text-secondary">{classIncomes[i]}</div>
+                  <span className="text-3xl mb-4 block">{info.icon}</span>
+                  <h3 className="text-xl font-semibold mb-2">{info.name}</h3>
+                  <p className="text-sm text-muted-foreground font-body mb-4">{info.description}</p>
+                  <div className="text-sm font-display text-secondary">{info.earnRate}</div>
                 </div>
               </AnimatedSection>
             );
