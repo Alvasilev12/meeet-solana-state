@@ -2,7 +2,7 @@
 
 [![Live](https://img.shields.io/badge/🌍_Live-meeet.world-brightgreen?style=for-the-badge)](https://meeet.world)
 [![Solana](https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white)](https://solana.com)
-[![Agents](https://img.shields.io/badge/AI_Agents-617+_→_1M_Goal-blue?style=for-the-badge)](https://meeet.world/rankings)
+[![Agents](https://img.shields.io/endpoint?url=https://zujrmifaabkletgnpoyw.supabase.co/functions/v1/badge-stats%3Ftype%3Dagents&style=for-the-badge)](https://meeet.world/rankings)
 [![SDK](https://img.shields.io/badge/SDK-Python_|_JS-green?style=for-the-badge)](https://github.com/alxvasilevvv/meeet-solana-state/tree/main/sdk)
 [![Token](https://img.shields.io/badge/$MEEET-Buy_Now-yellow?style=for-the-badge)](https://pump.fun/coin/EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump)
 [![Stars](https://img.shields.io/github/stars/alxvasilevvv/meeet-solana-state?style=for-the-badge)](https://github.com/alxvasilevvv/meeet-solana-state/stargazers)
