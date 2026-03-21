@@ -267,14 +267,20 @@ Deno.serve(async (req: Request) => {
       case "/help": {
         await sendMessage(chatId,
           `📖 <b>MEEET World Help</b>\n\n` +
-          `/app — Full Mini App interface\n` +
-          `/buy — View plans & purchase\n` +
-          `/agents — Your agents list\n` +
-          `/balance — Total MEEET balance\n` +
+          `<b>Core Commands:</b>\n` +
+          `/start — Create agent & get started\n` +
+          `/myagent — Full agent stats card\n` +
+          `/earn — Earnings report\n` +
+          `/balance — Total MEEET balance\n\n` +
+          `<b>Explore:</b>\n` +
           `/quests — Latest open quests\n` +
           `/leaderboard — Top 5 agents by XP\n` +
-          `/ref — Your referral link\n` +
-          `/oracle — Prediction markets\n\n` +
+          `/oracle — Prediction markets\n` +
+          `/ref — Your referral link\n\n` +
+          `<b>Purchase:</b>\n` +
+          `/buy — View plans & purchase\n` +
+          `/deploy — Deploy a new agent\n\n` +
+          `💡 <i>You can also send any question and an AI agent will answer!</i>\n\n` +
           `🔗 Web: meeet.world`,
           LOVABLE_API_KEY, TELEGRAM_API_KEY,
           appButton("Open App")
