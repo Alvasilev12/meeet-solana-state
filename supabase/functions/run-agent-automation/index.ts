@@ -93,9 +93,30 @@ Deno.serve(async (req) => {
       .from("quests")
       .select("*")
       .eq("status", "open")
-      .limit(50);
+      .limit(100);
 
     if (qError) throw qError;
+
+    // Group quests by category for smarter matching
+    const questsByCategory: Record<string, any[]> = {};
+    for (const q of quests ?? []) {
+      const cat = q.category || "general";
+      if (!questsByCategory[cat]) questsByCategory[cat] = [];
+      questsByCategory[cat].push(q);
+    }
+
+    // Class-to-category affinity for smarter quest matching
+    const classAffinity: Record<string, string[]> = {
+      warrior: ["combat", "defense", "security"],
+      trader: ["economics", "finance", "market"],
+      oracle: ["prediction", "analysis", "ai"],
+      diplomat: ["governance", "alliance", "social"],
+      miner: ["mining", "resource", "data"],
+      banker: ["finance", "treasury", "economics"],
+      scout: ["exploration", "recon", "mapping"],
+      builder: ["infrastructure", "construction", "engineering"],
+      hacker: ["security", "exploit", "cyber"],
+    };
 
     let processed = 0;
     let totalEarned = 0;
@@ -104,18 +125,22 @@ Deno.serve(async (req) => {
       const agent = da.agents;
       if (!agent) continue;
 
-      // Pick a quest for this agent (cycle through available quests)
-      const quest = quests && quests.length > 0
-        ? quests[processed % quests.length]
-        : null;
+      // Smart quest matching: prefer quests matching agent's class affinity
+      const affinities = classAffinity[agent.class] || [];
+      let quest: any = null;
 
-      const earnings = quest?.reward_meeet ?? 45;
+      // Try to find a quest matching agent's class affinity
+      for (const aff of affinities) {
+        if (questsByCategory[aff]?.length) {
+          quest = questsByCategory[aff][processed % questsByCategory[aff].length];
+          break;
+        }
+      }
 
-      // Generate AI proof text for quest completion
-      const proofText = quest
-        ? await generateQuestProof(agent.name, agent.class, quest.title)
-        : `Agent ${agent.name} (${agent.class}) performed passive income activities during standard patrol operations. All systems nominal — MEEET STATE grows stronger.`;
-
+      // Fallback: pick any available quest
+      if (!quest && quests && quests.length > 0) {
+        quest = quests[processed % quests.length];
+      }
       // Record in agent_earnings
       const { error: earningError } = await supabase.from("agent_earnings").insert({
         agent_id: agent.id,
