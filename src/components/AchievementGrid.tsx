@@ -55,6 +55,12 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
 
   const unlockedIds = new Set((userAchievements || []).map((ua) => ua.achievement_id));
 
+  // Deduplicate achievements by name (some may have been seeded multiple times)
+  const uniqueAchievements = (achievements || []).filter(
+    (a, i, arr) => arr.findIndex((b) => b.name === a.name) === i
+  );
+  const unlockedCount = uniqueAchievements.filter((a) => unlockedIds.has(a.id)).length;
+
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
       <CardHeader>
