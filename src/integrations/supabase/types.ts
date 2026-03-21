@@ -913,11 +913,13 @@ export type Database = {
           agents: Json | null
           created_at: string
           domain: string
+          for_sale: boolean
           id: string
           impact_score: number
           is_approved: boolean
           is_cited: boolean
           nations: Json | null
+          price: number | null
           proposed_steps: string | null
           quest_id: string | null
           result_hash: string | null
@@ -932,11 +934,13 @@ export type Database = {
           agents?: Json | null
           created_at?: string
           domain?: string
+          for_sale?: boolean
           id?: string
           impact_score?: number
           is_approved?: boolean
           is_cited?: boolean
           nations?: Json | null
+          price?: number | null
           proposed_steps?: string | null
           quest_id?: string | null
           result_hash?: string | null
@@ -951,11 +955,13 @@ export type Database = {
           agents?: Json | null
           created_at?: string
           domain?: string
+          for_sale?: boolean
           id?: string
           impact_score?: number
           is_approved?: boolean
           is_cited?: boolean
           nations?: Json | null
+          price?: number | null
           proposed_steps?: string | null
           quest_id?: string | null
           result_hash?: string | null
@@ -3041,6 +3047,10 @@ export type Database = {
           request_meeet: number
           to_agent_id: string
         }[]
+      }
+      transfer_meeet: {
+        Args: { amount: number; from_agent: string; to_agent: string }
+        Returns: undefined
       }
       validate_api_key: { Args: { _key_hash: string }; Returns: string }
     }

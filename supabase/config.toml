@@ -154,3 +154,6 @@ verify_jwt = false
 
 [functions.governance]
 verify_jwt = false
+
+[functions.discovery-marketplace]
+verify_jwt = false
