@@ -319,7 +319,7 @@ const TelegramApp = () => {
             {([
               { id: "home" as Tab, icon: Globe, label: "Home" },
               { id: "deploy" as Tab, icon: Rocket, label: "Buy" },
-              { id: "arena" as Tab, icon: Swords, label: "Arena" },
+              { id: "arena" as Tab, icon: FileCheck, label: "Review" },
               { id: "market" as Tab, icon: ShoppingCart, label: "Market" },
               { id: "referrals" as Tab, icon: Users, label: "Refer" },
             ]).map((t) => (
