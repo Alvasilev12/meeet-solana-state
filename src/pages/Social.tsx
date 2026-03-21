@@ -254,8 +254,23 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
     },
     enabled: !!user,
   });
+  // Auto-select agent from ?dm= query param
+  useEffect(() => {
+    if (!dmTargetName || dmTargetResolved || !myAgent) return;
+    const findAgent = async () => {
+      const { data } = await supabase
+        .from("agents")
+        .select("id")
+        .ilike("name", dmTargetName)
+        .limit(1)
+        .maybeSingle();
+      if (data) setSelectedAgent(data.id);
+      setDmTargetResolved(true);
+    };
+    findAgent();
+  }, [dmTargetName, dmTargetResolved, myAgent]);
 
-  // DM thread
+
   const { data: dmThread = [] } = useQuery({
     queryKey: ["dm-thread", myAgent?.id, selectedAgent],
     queryFn: async () => {
