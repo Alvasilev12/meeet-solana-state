@@ -629,7 +629,7 @@ const LeaderboardTab = ({ agents }: { agents: Agent[] }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{a.name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">{a.class} · Lv.{a.level}</p>
+                <p className="text-[10px] text-muted-foreground">{getClassName(a.class)} · Lv.{a.level}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-bold">⚡ {a.xp.toLocaleString()}</p>
