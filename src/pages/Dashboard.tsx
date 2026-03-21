@@ -445,7 +445,7 @@ const TX_META: Record<string, { icon: React.ReactNode; label: string; color: str
   burn: { icon: <Flame className="w-3.5 h-3.5" />, label: "Burn", color: "text-orange-400" },
   transfer: { icon: <ArrowUpRight className="w-3.5 h-3.5" />, label: "Transfer", color: "text-primary" },
   mining_reward: { icon: <Coins className="w-3.5 h-3.5" />, label: "Mining", color: "text-amber-400" },
-  duel_reward: { icon: <Swords className="w-3.5 h-3.5" />, label: "Duel", color: "text-red-400" },
+  duel_reward: { icon: <FileCheck className="w-3.5 h-3.5" />, label: "Review", color: "text-sky-400" },
   guild_share: { icon: <Users className="w-3.5 h-3.5" />, label: "Guild Share", color: "text-teal-400" },
   vote_fee: { icon: <Scroll className="w-3.5 h-3.5" />, label: "Vote Fee", color: "text-purple-400" },
   passport_purchase: { icon: <Shield className="w-3.5 h-3.5" />, label: "Passport", color: "text-primary" },
