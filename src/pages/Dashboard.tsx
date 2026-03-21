@@ -763,27 +763,23 @@ const Dashboard = () => {
           {/* Global Stats Banner */}
           {globalStats && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Users className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Citizens</span>
+              {[
+                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: "/ 1M", color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
+                { icon: <Trophy className="w-4 h-4" />, label: "Quests Done", value: globalStats.completedQuests, color: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20" },
+                { icon: <Map className="w-4 h-4" />, label: "Territories", value: globalStats.claimedTerritories, color: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20" },
+              ].map(({ icon, label, value, sub, color, accent, border }) => (
+                <div key={label} className={`glass-card rounded-xl p-4 text-center relative overflow-hidden group hover:${border} transition-all duration-300`}>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+                  <div className="flex items-center justify-center gap-1.5 mb-1.5 relative">
+                    <div className={accent}>{icon}</div>
+                    <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">{label}</span>
+                  </div>
+                  <span className="text-xl font-display font-bold relative">
+                    {value.toLocaleString()}
+                    {sub && <span className="text-xs text-muted-foreground ml-1">{sub}</span>}
+                  </span>
                 </div>
-                <span className="text-lg font-display font-bold">{globalStats.totalAgents.toLocaleString()} <span className="text-xs text-muted-foreground">/ 1M</span></span>
-              </div>
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Trophy className="w-3.5 h-3.5 text-secondary" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Quests Done</span>
-                </div>
-                <span className="text-lg font-display font-bold">{globalStats.completedQuests.toLocaleString()}</span>
-              </div>
-              <div className="glass-card rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Map className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">Territories</span>
-                </div>
-                <span className="text-lg font-display font-bold">{globalStats.claimedTerritories.toLocaleString()}</span>
-              </div>
+              ))}
             </div>
           )}
 
