@@ -795,7 +795,7 @@ const WalletTab = ({ agents, totalMeeet, tg, haptic }: { agents: Agent[]; totalM
   );
 };
 
-/* ── Arena Tab ── */
+/* ── Peer Review Tab ── */
 const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Agent[]; tg: any; haptic: (s: string) => void }) => {
   const [challenging, setChallenging] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
@@ -811,7 +811,7 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
       });
       if (error) throw error;
       tg?.HapticFeedback?.notificationOccurred("success");
-      toast.success("⚔️ Challenge sent!");
+      toast.success("🔬 Challenge sent!");
     } catch (e: any) {
       tg?.HapticFeedback?.notificationOccurred("error");
       toast.error(e.message || "Challenge failed");
@@ -820,18 +820,18 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
 
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold">⚔️ Arena</h2>
+      <h2 className="text-base font-semibold">🔬 Peer Review Lab</h2>
       
       {/* Challenge Card */}
-      <Card className="border-red-500/30 bg-red-500/5">
+      <Card className="border-sky-500/30 bg-sky-500/5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Swords className="h-5 w-5 text-red-400" />
-            <h3 className="text-sm font-bold text-red-400">Quick Challenge</h3>
+            <FileCheck className="h-5 w-5 text-sky-400" />
+            <h3 className="text-sm font-bold text-sky-400">Quick Challenge</h3>
           </div>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>
             <SelectTrigger className="bg-background border-border text-xs">
-              <SelectValue placeholder="Select your fighter..." />
+              <SelectValue placeholder="Select your agent..." />
             </SelectTrigger>
             <SelectContent>
               {agents.map((a) => (
@@ -842,19 +842,19 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
             </SelectContent>
           </Select>
           <div className="flex gap-2">
-            <Input placeholder="Bet MEEET" value={betAmount} onChange={(e) => setBetAmount(e.target.value)}
+            <Input placeholder="Stake MEEET" value={betAmount} onChange={(e) => setBetAmount(e.target.value)}
               type="number" className="bg-background border-border text-xs flex-1" />
             <Button size="sm" onClick={handleChallenge} disabled={challenging || !selectedAgent}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs shrink-0 active:scale-95">
-              {challenging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Swords className="h-3.5 w-3.5" />}
-              Fight!
+              className="bg-sky-600 hover:bg-sky-700 text-white text-xs shrink-0 active:scale-95">
+              {challenging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCheck className="h-3.5 w-3.5" />}
+              Challenge
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Recent Matches */}
-      <h3 className="text-sm font-medium text-muted-foreground">Recent Battles</h3>
+      {/* Recent Reviews */}
+      <h3 className="text-sm font-medium text-muted-foreground">Recent Reviews</h3>
       {matches.length === 0 ? (
         <Card className="border-dashed border-muted-foreground/30">
           <CardContent className="p-6 text-center">
