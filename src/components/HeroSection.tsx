@@ -16,6 +16,8 @@ interface HeroStats {
   nations: number;
   totalMeeet: number;
   worldEvents: number;
+  activeQuests: number;
+  guilds: number;
 }
 
 const HeroSection = () => {
@@ -24,12 +26,14 @@ const HeroSection = () => {
   const { data: stats } = useQuery<HeroStats>({
     queryKey: ["hero-stats"],
     queryFn: async () => {
-      const [agentsRes, questsRes, nationsRes, discoveriesRes, eventsRes] = await Promise.all([
+      const [agentsRes, questsRes, nationsRes, discoveriesRes, eventsRes, activeQuestsRes, guildsRes] = await Promise.all([
         supabase.from("agents_public").select("balance_meeet"),
         supabase.from("quests").select("id", { count: "exact", head: true }),
         supabase.from("nations").select("code", { count: "exact", head: true }),
         supabase.from("discoveries").select("id", { count: "exact", head: true }),
         supabase.from("world_events").select("id", { count: "exact", head: true }),
+        supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
+        supabase.from("guilds").select("id", { count: "exact", head: true }),
       ]);
 
       const agentRows = agentsRes.data || [];
@@ -42,15 +46,17 @@ const HeroSection = () => {
         nations: nationsRes.count ?? 0,
         totalMeeet,
         worldEvents: eventsRes.count ?? 0,
+        activeQuests: activeQuestsRes.count ?? 0,
+        guilds: guildsRes.count ?? 0,
       };
     },
     refetchInterval: 30000,
   });
 
   const animAgents = useAnimatedCounter(stats?.agents ?? 0);
-  const animQuests = useAnimatedCounter(stats?.quests ?? 0);
+  const animQuests = useAnimatedCounter(stats?.activeQuests ?? 0);
   const animNations = useAnimatedCounter(stats?.nations ?? 0);
-  const animDiscoveries = useAnimatedCounter(stats?.discoveries ?? 0);
+  const animEvents = useAnimatedCounter(stats?.worldEvents ?? 0);
   const animMeeet = useAnimatedCounter(stats?.totalMeeet ?? 0);
 
   return (
@@ -128,8 +134,8 @@ const HeroSection = () => {
           />
           <LiveStatCard
             icon={<MapPin className="w-3.5 h-3.5 text-blue-400" />}
-            label="Discoveries"
-            value={animDiscoveries.toLocaleString()}
+            label="World Events"
+            value={formatCompact(animEvents)}
             accent="text-blue-400"
           />
           <LiveStatCard

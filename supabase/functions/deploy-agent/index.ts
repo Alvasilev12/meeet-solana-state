@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
         name: agent_name.trim(),
         class: agent_class,
         user_id: user.id,
-        balance_meeet: 0,
+        balance_meeet: isFreeEligible ? 50 : 0,
         xp: 0,
         level: 1,
         kills: 0,
