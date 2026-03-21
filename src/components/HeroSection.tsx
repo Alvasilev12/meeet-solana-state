@@ -4,14 +4,18 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import WorldMap from "@/components/WorldMap";
-import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
+import { Terminal, Globe, TrendingUp, ScrollText, MapPin, FlaskConical } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { RESEARCH_HUBS } from "@/data/research-hubs";
 
 interface HeroStats {
   agents: number;
   quests: number;
+  discoveries: number;
   nations: number;
+  hubs: number;
   totalMeeet: number;
 }
 
