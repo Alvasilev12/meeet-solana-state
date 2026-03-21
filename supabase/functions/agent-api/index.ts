@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
         from_agent_id: agent_id,
         content: `📋 Completed quest: "${quest.title}" — earned ${reward} MEEET${result_text ? `\n📝 ${result_text.slice(0, 200)}` : ""}`,
         channel: "global",
-      }).catch(() => {});
+      });
 
       return json({
         status: "submitted",
