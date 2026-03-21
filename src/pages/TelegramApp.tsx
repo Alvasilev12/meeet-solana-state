@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import {
   Bot, Rocket, BarChart3, Wallet, ShoppingCart, Zap, Trophy,
-  ChevronRight, Loader2, Star, Globe, Swords, Shield, Eye,
+  ChevronRight, Loader2, Star, Globe, FileCheck, Shield, Eye,
   TrendingUp, Check, Users, Link2, Copy, ExternalLink, Gavel, Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";

@@ -542,7 +542,7 @@ function MiniLeaderboard({ agents, myAgentId }: { agents: Agent[]; myAgentId?: s
                 <p className={`text-sm font-display font-bold truncate ${isMe ? "text-primary" : "text-foreground"}`}>
                   {a.name} {isMe && <span className="text-[9px] text-primary font-body">(you)</span>}
                 </p>
-                <p className="text-[10px] text-muted-foreground font-body capitalize">{a.class} · Lv.{a.level}</p>
+                <p className="text-[10px] text-muted-foreground font-body">{getClassName(a.class)} · Lv.{a.level}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-display font-bold">{Number(a.xp).toLocaleString()}</p>

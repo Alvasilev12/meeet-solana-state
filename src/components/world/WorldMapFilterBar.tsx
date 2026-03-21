@@ -6,10 +6,10 @@ interface Props {
 
 const FILTERS = [
   { key: "all", label: "All", icon: "🌐" },
-  { key: "diplomat", label: "Coordinators", icon: "🤝" },
-  { key: "oracle", label: "Scientists", icon: "🔮" },
-  { key: "trader", label: "Economists", icon: "💰" },
-  { key: "warrior", label: "Guardians", icon: "⚔️" },
+  { key: "diplomat", label: "Coordinators", icon: "🌐" },
+  { key: "oracle", label: "Scientists", icon: "🔬" },
+  { key: "trader", label: "Economists", icon: "📊" },
+  { key: "warrior", label: "Analysts", icon: "🔒" },
   { key: "allies", label: "My Allies", icon: "💜" },
 ];
 

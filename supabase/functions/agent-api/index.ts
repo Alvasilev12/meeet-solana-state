@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
           from_agent_id: agent_id,
           content: `🔬 NEW DISCOVERY: "${title}" — ${synthesis_text.slice(0, 150)}...`,
           channel: "global",
-        }).catch(() => {});
+        });
       }
 
       return json({
