@@ -1,22 +1,9 @@
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  SystemProgram,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  createTransferInstruction,
-  createAssociatedTokenAccountInstruction,
-  getAccount,
-} from "@solana/spl-token";
-
 const RPC_URL = "https://api.mainnet-beta.solana.com";
-const MEEET_MINT = new PublicKey("EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump");
-const TREASURY = new PublicKey("4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e");
+const MEEET_MINT_STR = "EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump";
+const TREASURY_STR = "4zkqErmzJhFQ7ahgTKfqTHutPk5GczMMXyAaEgbEpN1e";
 
-async function signAndSend(walletProvider: any, tx: Transaction): Promise<string> {
+async function signAndSend(walletProvider: any, tx: any): Promise<string> {
+  const { Connection } = await import("@solana/web3.js");
   const connection = new Connection(RPC_URL, "confirmed");
   tx.feePayer = walletProvider.publicKey;
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
@@ -53,10 +40,12 @@ export async function sendSolToTreasury(
 ): Promise<string> {
   if (!walletProvider?.publicKey) throw new Error("Wallet not connected");
 
+  const { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } = await import("@solana/web3.js");
+
   const tx = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey: walletProvider.publicKey,
-      toPubkey: TREASURY,
+      toPubkey: new PublicKey(TREASURY_STR),
       lamports: Math.round(amountSol * LAMPORTS_PER_SOL),
     }),
   );
@@ -73,8 +62,18 @@ export async function sendMeeetToTreasury(
 ): Promise<string> {
   if (!walletProvider?.publicKey) throw new Error("Wallet not connected");
 
+  const { Connection, PublicKey, Transaction } = await import("@solana/web3.js");
+  const {
+    getAssociatedTokenAddress,
+    createTransferInstruction,
+    createAssociatedTokenAccountInstruction,
+    getAccount,
+  } = await import("@solana/spl-token");
+
   const connection = new Connection(RPC_URL, "confirmed");
   const sender = walletProvider.publicKey;
+  const MEEET_MINT = new PublicKey(MEEET_MINT_STR);
+  const TREASURY = new PublicKey(TREASURY_STR);
 
   const senderAta = await getAssociatedTokenAddress(MEEET_MINT, sender);
   const treasuryAta = await getAssociatedTokenAddress(MEEET_MINT, TREASURY);
