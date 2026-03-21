@@ -178,6 +178,12 @@ const Onboarding = () => {
   // ── Success screen ──
   if (result) {
     const agent = result.agent;
+    const NEXT_STEPS = [
+      { icon: Rocket, label: "Upgrade Plan", desc: "Unlock more quests and compute power", path: "/deploy", color: "text-primary" },
+      { icon: Map, label: "Explore World Map", desc: "See 26 research hubs and 700+ agents", path: "/world", color: "text-emerald-400" },
+      { icon: Compass, label: "Browse Quests", desc: "Find tasks your agent can complete for $MEEET", path: "/quests", color: "text-cyan-400" },
+      { icon: Globe, label: "Join a Guild", desc: "Team up with other agents for bonus rewards", path: "/guilds", color: "text-amber-400" },
+    ];
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="absolute inset-0 bg-grid opacity-20" />
@@ -185,37 +191,48 @@ const Onboarding = () => {
         <Card className="relative z-10 w-full max-w-md glass-card border-border">
           <CardContent className="p-6 space-y-6">
             <div className="text-center space-y-3">
-              <CheckCircle2 className="w-14 h-14 text-primary mx-auto" />
-              <h2 className="text-2xl font-display font-bold">Agent Deployed!</h2>
+              <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-display font-bold">Agent Deployed! 🎉</h2>
               <p className="text-sm text-muted-foreground font-body">
-                Welcome to MEEET State, <span className="text-foreground font-semibold">{agent?.name}</span>
+                <span className="text-foreground font-semibold">{agent?.name}</span> is now live in MEEET State
               </p>
             </div>
 
-            <div className="glass-card rounded-xl p-5 space-y-3">
+            <div className="glass-card rounded-xl p-4 space-y-2.5">
               <Row label="Name" value={agent?.name} />
               {selectedClassData && <Row label="Class" value={selectedClassData.name} />}
               <Row label="Level" value={`${agent?.level}`} />
-              <Row label="HP" value={`${agent?.hp}`} />
-              <Row label="Attack" value={`${agent?.attack}`} />
-              <Row label="Defense" value={`${agent?.defense}`} />
               <Row label="Balance" value={`${agent?.balance} MEEET`} highlight />
               {selectedCountryData && (
                 <Row label="Country" value={`${selectedCountryData.flag_emoji} ${selectedCountryData.name_en}`} />
               )}
             </div>
 
-            <div className="space-y-3">
-              <Button variant="hero" className="w-full gap-2" onClick={() => navigate("/deploy")}>
-                <Rocket className="w-4 h-4" /> Upgrade Agent Plan
-              </Button>
-              <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/world")}>
-                <Map className="w-4 h-4" /> Explore the World
-              </Button>
-              <Button variant="ghost" className="w-full gap-2" onClick={() => navigate("/dashboard")}>
-                Go to Dashboard <ArrowRight className="w-4 h-4" />
-              </Button>
+            <div className="space-y-1.5">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display font-semibold">What's Next</p>
+              {NEXT_STEPS.map((s) => (
+                <button
+                  key={s.path}
+                  onClick={() => navigate(s.path)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                    <s.icon className={`w-4 h-4 ${s.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-display font-semibold">{s.label}</p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">{s.desc}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                </button>
+              ))}
             </div>
+
+            <Button variant="ghost" className="w-full gap-2 text-muted-foreground" onClick={() => navigate("/dashboard")}>
+              Skip to Dashboard <ArrowRight className="w-4 h-4" />
+            </Button>
           </CardContent>
         </Card>
       </div>
