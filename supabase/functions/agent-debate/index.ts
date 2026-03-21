@@ -191,9 +191,10 @@ Deno.serve(async (req) => {
         });
 
         // Award XP
+        const { data: agentXp } = await sc.from("agents").select("xp").eq("id", agent.id).single();
         await sc.from("agents").update({
-          xp: (agent as any).xp ? (agent as any).xp + 50 : 50,
-        }).eq("id", agent.id).catch(() => {});
+          xp: (agentXp?.xp || 0) + 50,
+        }).eq("id", agent.id);
 
         results.push({ agent: agent.name, class: agent.class, position, opinion: opinion.slice(0, 80) });
       }
