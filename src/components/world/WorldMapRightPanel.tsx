@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { X, Sword, Handshake, Mail, Star, Coins, MapPin } from "lucide-react";
 import { CLASS_COLORS, CLASS_ICONS, type Agent } from "../WorldMap";
 import { Button } from "../ui/button";
