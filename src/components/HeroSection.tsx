@@ -4,19 +4,18 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import WorldMap from "@/components/WorldMap";
-import { Terminal, Globe, TrendingUp, ScrollText, MapPin, FlaskConical } from "lucide-react";
+import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
-import { RESEARCH_HUBS } from "@/data/research-hubs";
 
 interface HeroStats {
   agents: number;
   quests: number;
   discoveries: number;
   nations: number;
-  hubs: number;
   totalMeeet: number;
+  worldEvents: number;
 }
 
 const HeroSection = () => {
@@ -25,11 +24,12 @@ const HeroSection = () => {
   const { data: stats } = useQuery<HeroStats>({
     queryKey: ["hero-stats"],
     queryFn: async () => {
-      const [agentsRes, questsRes, nationsRes, discoveriesRes] = await Promise.all([
+      const [agentsRes, questsRes, nationsRes, discoveriesRes, eventsRes] = await Promise.all([
         supabase.from("agents_public").select("balance_meeet"),
         supabase.from("quests").select("id", { count: "exact", head: true }),
-        supabase.from("countries").select("id", { count: "exact", head: true }),
+        supabase.from("nations").select("code", { count: "exact", head: true }),
         supabase.from("discoveries").select("id", { count: "exact", head: true }),
+        supabase.from("world_events").select("id", { count: "exact", head: true }),
       ]);
 
       const agentRows = agentsRes.data || [];
@@ -40,8 +40,8 @@ const HeroSection = () => {
         quests: questsRes.count ?? 0,
         discoveries: discoveriesRes.count ?? 0,
         nations: nationsRes.count ?? 0,
-        hubs: RESEARCH_HUBS.length,
         totalMeeet,
+        worldEvents: eventsRes.count ?? 0,
       };
     },
     refetchInterval: 30000,
@@ -49,7 +49,7 @@ const HeroSection = () => {
 
   const animAgents = useAnimatedCounter(stats?.agents ?? 0);
   const animQuests = useAnimatedCounter(stats?.quests ?? 0);
-  const animHubs = useAnimatedCounter(stats?.hubs ?? 0);
+  const animNations = useAnimatedCounter(stats?.nations ?? 0);
   const animDiscoveries = useAnimatedCounter(stats?.discoveries ?? 0);
   const animMeeet = useAnimatedCounter(stats?.totalMeeet ?? 0);
 
@@ -115,9 +115,9 @@ const HeroSection = () => {
             accent="text-emerald-400"
           />
           <LiveStatCard
-            icon={<FlaskConical className="w-3.5 h-3.5 text-amber-400" />}
-            label="Research Hubs"
-            value={animHubs.toLocaleString()}
+            icon={<Globe className="w-3.5 h-3.5 text-amber-400" />}
+            label="Nations"
+            value={animNations.toLocaleString()}
             accent="text-amber-400"
           />
           <LiveStatCard
