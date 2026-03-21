@@ -159,17 +159,29 @@ const POPUP_CSS = `
 .hub-marker--active { animation: hub-pulse 2.5s ease-in-out infinite; }
 `;
 
+const EVENT_COLORS: Record<string, string> = {
+  conflict: "#ff3333", disaster: "#ff8800", discovery: "#33aaff",
+  diplomacy: "#33ff88", geopolitical: "#a78bfa",
+};
+const EVENT_ICONS: Record<string, string> = {
+  conflict: "⚔️", disaster: "🌋", discovery: "🔬",
+  diplomacy: "🕊️", geopolitical: "🌍",
+};
+
 const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", interactive = true, showSidebar = false, onEventClick, myAgent }, _ref) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [worldEvents, setWorldEvents] = useState<WorldEvent[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
+  const [eventFilter, setEventFilter] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedExpanded, setFeedExpanded] = useState(false);
   const hubMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const eventMarkersRef = useRef<maplibregl.Marker[]>([]);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const isMobile = useIsMobile();
 
@@ -232,7 +244,103 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     return () => { if (at) clearTimeout(at); supabase.removeChannel(ch); };
   }, [fetchAgents]);
 
-  // ═══ RESEARCH HUB MARKERS — colored by type, scaled by agentCount ═══
+  // ═══ FETCH WORLD EVENTS ═══
+  const fetchWorldEvents = useCallback(async () => {
+    const { data } = await supabase
+      .from("world_events")
+      .select("id, event_type, title, lat, lng, nation_codes, goldstein_scale, created_at")
+      .not("lat", "is", null).not("lng", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (data) setWorldEvents(data as WorldEvent[]);
+  }, []);
+
+  useEffect(() => { fetchWorldEvents(); const iv = setInterval(fetchWorldEvents, 60000); return () => clearInterval(iv); }, [fetchWorldEvents]);
+
+  // Trigger sync on mount (fire-and-forget)
+  useEffect(() => {
+    supabase.functions.invoke("sync-world-events").catch(() => {});
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    if (!eventFilter) return worldEvents;
+    return worldEvents.filter(e => e.event_type === eventFilter);
+  }, [worldEvents, eventFilter]);
+
+  // ═══ WORLD EVENT MARKERS ═══
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    eventMarkersRef.current.forEach(m => m.remove());
+    eventMarkersRef.current = [];
+
+    filteredEvents.forEach(ev => {
+      if (!ev.lat || !ev.lng) return;
+      const color = EVENT_COLORS[ev.event_type] || "#a78bfa";
+      const icon = EVENT_ICONS[ev.event_type] || "📡";
+      const severity = ev.goldstein_scale ? Math.abs(ev.goldstein_scale) : 3;
+      const size = Math.max(14, Math.min(28, 14 + severity * 1.2));
+      const isHot = severity > 6;
+
+      const el = document.createElement("div");
+      el.style.cssText = `position:relative;width:${size}px;height:${size}px;cursor:pointer;`;
+
+      // Pulse ring for severe events
+      if (isHot) {
+        const ring = document.createElement("div");
+        ring.style.cssText = `position:absolute;inset:-${size * 0.4}px;border-radius:50%;border:1.5px solid ${color}60;animation:hub-pulse 2s ease-in-out infinite;pointer-events:none;`;
+        el.appendChild(ring);
+      }
+
+      // Core diamond/circle
+      const core = document.createElement("div");
+      core.style.cssText = `
+        width:100%;height:100%;border-radius:${ev.event_type === 'conflict' ? '2px' : '50%'};
+        background:radial-gradient(circle,${color}90 0%,${color}40 100%);
+        border:1px solid ${color};transform:${ev.event_type === 'conflict' ? 'rotate(45deg)' : 'none'};
+        box-shadow:0 0 ${size}px ${color}50;display:flex;align-items:center;justify-content:center;
+        font-size:${Math.max(8, size * 0.45)}px;
+      `;
+      core.textContent = icon;
+      core.style.transform = ev.event_type === 'conflict' ? 'rotate(45deg)' : 'none';
+      el.appendChild(core);
+
+      // Popup on click
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (popupRef.current) popupRef.current.remove();
+        const ago = getTimeAgo(ev.created_at);
+        const gs = ev.goldstein_scale != null ? ev.goldstein_scale.toFixed(1) : "N/A";
+        const gsColor = (ev.goldstein_scale ?? 0) < 0 ? "#ef4444" : "#22c55e";
+        popupRef.current = new maplibregl.Popup({ closeButton: true, offset: size / 2 + 8, maxWidth: "320px" })
+          .setLngLat([ev.lng!, ev.lat!])
+          .setHTML(`
+            <div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                <span style="font-size:16px">${icon}</span>
+                <span style="font-size:10px;color:${color};font-weight:600;text-transform:uppercase;letter-spacing:0.05em">${ev.event_type}</span>
+                <span style="font-size:9px;color:#64748b;margin-left:auto">${ago}</span>
+              </div>
+              <div style="font-size:12px;font-weight:600;line-height:1.4;margin-bottom:8px">${ev.title}</div>
+              <div style="display:flex;gap:8px;font-size:10px">
+                <span style="color:${gsColor};font-weight:600">Goldstein: ${gs}</span>
+                ${Array.isArray(ev.nation_codes) && ev.nation_codes.length ? `<span style="color:#94a3b8">${ev.nation_codes.join(", ")}</span>` : ""}
+              </div>
+            </div>
+          `)
+          .addTo(map);
+        map.flyTo({ center: [ev.lng!, ev.lat!], zoom: Math.max(map.getZoom(), 4), duration: 800 });
+        if (onEventClick) onEventClick(ev);
+      });
+
+      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([ev.lng!, ev.lat!]).addTo(map);
+      eventMarkersRef.current.push(marker);
+    });
+  }, [filteredEvents, mapLoaded, onEventClick]);
+
+  // ═══ RESEARCH HUB MARKERS ═══
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -436,23 +544,36 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     type: h.type, agentCount: h.agentCount,
   })), [filteredHubs]);
 
-  // Activity feed
+  // Activity feed — merge platform activity + world events
+  const combinedFeed = useMemo(() => {
+    const eventFeed = worldEvents.slice(0, 8).map(ev => ({
+      id: ev.id,
+      text: ev.title,
+      icon: EVENT_ICONS[ev.event_type] || "📡",
+      time: getTimeAgo(ev.created_at),
+    }));
+    return eventFeed;
+  }, [worldEvents]);
+
   const [activityFeed, setActivityFeed] = useState<Array<{ id: string; text: string; icon: string; time: string }>>([]);
   useEffect(() => {
     const fetchFeed = async () => {
       const { data } = await supabase
         .from("activity_feed")
         .select("id, title, event_type, created_at, meeet_amount")
-        .order("created_at", { ascending: false }).limit(10);
+        .order("created_at", { ascending: false }).limit(5);
       if (data?.length) {
-        setActivityFeed(data.map(d => {
+        const platformFeed = data.map(d => {
           const icons: Record<string, string> = { duel: "⚔️", trade: "📊", quest: "📜", discovery: "🔬", alliance: "🤝", deploy: "🚀", reward: "🏆" };
           return { id: d.id, text: d.title, icon: icons[d.event_type] || "📡", time: getTimeAgo(d.created_at) };
-        }));
+        });
+        setActivityFeed([...combinedFeed, ...platformFeed].slice(0, 10));
+      } else {
+        setActivityFeed(combinedFeed);
       }
     };
     fetchFeed();
-  }, []);
+  }, [combinedFeed]);
 
   // Legend items
   const legendItems = [
@@ -485,9 +606,9 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         <div className="pointer-events-auto flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium">
           <span><span className="text-amber-400 font-bold">{HUB_STATS.totalHubs}</span> <span className="text-slate-500">Hubs</span></span>
           <span className="w-px h-3 bg-white/[0.06]" />
-          <span><span className="text-emerald-400 font-bold">{HUB_STATS.countries}</span> <span className="text-slate-500">Countries</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
           <span><span className="text-blue-400 font-bold">{validAgents.length || HUB_STATS.totalAgents}</span> <span className="text-slate-500">Agents</span></span>
+          <span className="w-px h-3 bg-white/[0.06]" />
+          <span><span className="text-red-400 font-bold">{worldEvents.length}</span> <span className="text-slate-500">Events</span></span>
         </div>
 
         {/* Filter pills */}
@@ -504,6 +625,26 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
               style={typeFilter === t.key && t.color ? { color: t.color } : undefined}
             >
               {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Event type filters */}
+        <div className="pointer-events-auto flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06]">
+          <button
+            onClick={() => setEventFilter(null)}
+            className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${!eventFilter ? "bg-white/[0.1] text-white" : "text-slate-500 hover:text-slate-300"}`}
+          >
+            All
+          </button>
+          {EVENT_TYPES.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setEventFilter(eventFilter === t.key ? null : t.key)}
+              className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${eventFilter === t.key ? "bg-white/[0.1]" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"}`}
+              style={eventFilter === t.key ? { color: t.color } : undefined}
+            >
+              {t.icon}
             </button>
           ))}
         </div>
@@ -526,14 +667,33 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       {!isMobile && (
         <div className="absolute bottom-6 left-3 z-20 pointer-events-auto">
           <div className="px-3 py-2.5 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06]">
-            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Hub Types</div>
+            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">World Events</div>
             <div className="space-y-1">
-              {legendItems.map(l => (
-                <div key={l.label} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: l.color, boxShadow: `0 0 6px ${l.color}40` }} />
-                  <span className="text-[10px] text-slate-400">{l.label}</span>
-                </div>
-              ))}
+              {EVENT_TYPES.map(t => {
+                const count = worldEvents.filter(e => e.event_type === t.key).length;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setEventFilter(eventFilter === t.key ? null : t.key)}
+                    className={`flex items-center gap-2 w-full text-left ${eventFilter === t.key ? 'opacity-100' : 'opacity-60 hover:opacity-90'} transition-opacity`}
+                  >
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: t.color, boxShadow: `0 0 6px ${t.color}40` }} />
+                    <span className="text-[10px] text-slate-400 flex-1">{t.label}</span>
+                    <span className="text-[9px] text-slate-600 font-mono">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 pt-1.5 border-t border-white/[0.04]">
+              <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Hub Types</div>
+              <div className="space-y-1">
+                {legendItems.map(l => (
+                  <div key={l.label} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: l.color, boxShadow: `0 0 6px ${l.color}40` }} />
+                    <span className="text-[10px] text-slate-400">{l.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
