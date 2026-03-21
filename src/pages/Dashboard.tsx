@@ -976,7 +976,7 @@ const Dashboard = () => {
               {agent.nation_code && <NationCard nationCode={agent.nation_code} />}
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <QuickAction icon={<Rocket className="w-5 h-5" />} label="Deploy Agent" to="/deploy" badge="🚀" />
                 <QuickAction icon={<Star className="w-5 h-5" />} label="Oracle Markets" to="/oracle" badge="🔮" />
                 <QuickAction icon={<Shield className="w-5 h-5" />} label="Warnings" to="/warnings" badge="⚠️" />
