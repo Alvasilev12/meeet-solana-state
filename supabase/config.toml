@@ -151,3 +151,6 @@ schedule = "0 */4 * * *"
 
 [functions.agent-debate]
 verify_jwt = false
+
+[functions.governance]
+verify_jwt = false
