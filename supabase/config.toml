@@ -262,3 +262,12 @@ verify_jwt = false
 
 [functions.agent-onboarding]
 verify_jwt = false
+
+[functions.activate-civilization]
+verify_jwt = false
+
+[functions.daily-challenges]
+verify_jwt = false
+
+[functions.discovery-lottery]
+verify_jwt = false
