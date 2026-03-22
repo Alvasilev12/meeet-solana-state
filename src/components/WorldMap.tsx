@@ -800,60 +800,64 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       <WorldMapCanvas agentGeoData={[]} eventGeoData={[]} hubGeoData={hubGeoData} mapRef={mapRef} />
 
       {/* ═══ TOP BAR: Stats + Filters + Search ═══ */}
-      <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center gap-2 pointer-events-none">
+      <div className={`absolute top-3 left-3 right-3 z-20 pointer-events-none ${isMobile ? 'flex flex-col gap-2' : 'flex flex-wrap items-center gap-2'}`}>
         {/* Back / Home button */}
-        <Link
-          to="/"
-          className="pointer-events-auto flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium text-slate-300 hover:text-white hover:border-white/[0.12] transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Back</span>
-        </Link>
-        {/* Stats */}
-        <div className="pointer-events-auto flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium">
-          <span><span className="text-amber-400 font-bold">{filteredHubs.length}</span> <span className="text-slate-500">Hubs</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
-          <span><span className="text-blue-400 font-bold">{validAgents.length || HUB_STATS.totalAgents}</span> <span className="text-slate-500">Agents</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
-          <span><span className="text-red-400 font-bold">{worldEvents.length}</span> <span className="text-slate-500">Events</span></span>
-        </div>
-
-        {/* Filter pills */}
-        <div className="pointer-events-auto flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06]">
-          {TYPE_LABELS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTypeFilter(t.key)}
-              className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
-                typeFilter === t.key
-                  ? "bg-white/[0.1] text-white"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
-              }`}
-              style={typeFilter === t.key && t.color ? { color: t.color } : undefined}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Event type filters */}
-        <div className="pointer-events-auto flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06]">
-          <button
-            onClick={() => setEventFilter(null)}
-            className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${!eventFilter ? "bg-white/[0.1] text-white" : "text-slate-500 hover:text-slate-300"}`}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium text-slate-300 hover:text-white hover:border-white/[0.12] transition-colors"
           >
-            All
-          </button>
-          {EVENT_TYPES.map(t => (
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Back</span>
+          </Link>
+          {/* Stats */}
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] text-[11px] font-medium">
+            <span><span className="text-amber-400 font-bold">{filteredHubs.length}</span> <span className="text-slate-500">Hubs</span></span>
+            <span className="w-px h-3 bg-white/[0.06]" />
+            <span><span className="text-blue-400 font-bold">{validAgents.length || HUB_STATS.totalAgents}</span> <span className="text-slate-500">Agents</span></span>
+            <span className="w-px h-3 bg-white/[0.06]" />
+            <span><span className="text-red-400 font-bold">{worldEvents.length}</span> <span className="text-slate-500">Events</span></span>
+          </div>
+        </div>
+
+        {/* Filter pills — scrollable on mobile */}
+        <div className="pointer-events-auto flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] shrink-0">
+            {TYPE_LABELS.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTypeFilter(t.key)}
+                className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all whitespace-nowrap ${
+                  typeFilter === t.key
+                    ? "bg-white/[0.1] text-white"
+                    : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"
+                }`}
+                style={typeFilter === t.key && t.color ? { color: t.color } : undefined}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Event type filters */}
+          <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-lg bg-[rgba(8,12,24,0.88)] backdrop-blur-xl border border-white/[0.06] shrink-0">
             <button
-              key={t.key}
-              onClick={() => setEventFilter(eventFilter === t.key ? null : t.key)}
-              className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${eventFilter === t.key ? "bg-white/[0.1]" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"}`}
-              style={eventFilter === t.key ? { color: t.color } : undefined}
+              onClick={() => setEventFilter(null)}
+              className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${!eventFilter ? "bg-white/[0.1] text-white" : "text-slate-500 hover:text-slate-300"}`}
             >
-              {t.icon}
+              All
             </button>
-          ))}
+            {EVENT_TYPES.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setEventFilter(eventFilter === t.key ? null : t.key)}
+                className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${eventFilter === t.key ? "bg-white/[0.1]" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]"}`}
+                style={eventFilter === t.key ? { color: t.color } : undefined}
+              >
+                {t.icon}{!isMobile && <span className="ml-1">{t.label}</span>}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search — hidden on mobile */}
