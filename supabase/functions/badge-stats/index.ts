@@ -22,26 +22,29 @@ Deno.serve(async (req) => {
       duelsRes,
       lawsRes,
     ] = await Promise.all([
-      sc.from("agents").select("balance_meeet"),
+      sc.from("agents").select("id, balance_meeet"),
       sc.from("quests").select("id", { count: "exact", head: true }),
       sc.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
       sc.from("guilds").select("id", { count: "exact", head: true }),
       sc.from("discoveries").select("id", { count: "exact", head: true }),
+      // Count only meaningful events: discoveries, diplomacy (not bulk geopolitical/conflict noise)
       sc.from("world_events").select("id", { count: "exact", head: true }).eq("event_type", "discovery"),
       sc.from("world_events").select("id", { count: "exact", head: true }).eq("event_type", "diplomacy"),
       sc.from("duels").select("id", { count: "exact", head: true }),
       sc.from("laws").select("id", { count: "exact", head: true }),
+      sc.from("agents").select("id", { count: "exact", head: true }),
     ]);
 
     const agents = agentsRes.data || [];
     const totalMeeet = agents.reduce((s: number, a: any) => s + Number(a.balance_meeet || 0), 0);
+    const totalAgentsCount = agentsCountRes.count ?? agents.length;
 
     // Real platform events = discoveries + diplomacy events + duels + laws + discoveries table
     const realEvents = (eventsDiscovery.count ?? 0) + (eventsDiplomacy.count ?? 0) +
       (duelsRes.count ?? 0) + (lawsRes.count ?? 0) + (discoveriesRes.count ?? 0);
 
     return new Response(JSON.stringify({
-      total_agents: agents.length,
+      total_agents: totalAgentsCount,
       total_meeet: totalMeeet,
       // Country Wars has 5 factions: BioTech, Quantum, AI, Space, Energy
       countries_count: 5,
