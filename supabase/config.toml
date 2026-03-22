@@ -220,3 +220,12 @@ verify_jwt = false
 
 [functions.nft-certificates]
 verify_jwt = false
+
+[functions.agent-did]
+verify_jwt = false
+
+[functions.credential-bridge]
+verify_jwt = false
+
+[functions.cross-reputation]
+verify_jwt = false
