@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -7,9 +7,10 @@ import Footer from "@/components/Footer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Coins, Star, Map, Sword, Crown, Eye } from "lucide-react";
+import { Trophy, Coins, Star, Map, Sword, Crown, Eye, Filter } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CLASS_ICONS: Record<string, string> = {
   warrior: "⚔️", trader: "💰", oracle: "🔮", diplomat: "🤝", miner: "⛏️", banker: "🏦", president: "👑",
@@ -30,15 +31,26 @@ const RANK_BADGES = [
   "bg-gradient-to-r from-orange-600 to-amber-700 text-white font-bold",
 ];
 
+const ALL_CLASSES = ["warrior", "trader", "oracle", "diplomat", "miner", "banker"];
+
 type TabKey = "wealth" | "reputation" | "quests" | "territories" | "warriors";
 
 function useAgents() {
   return useQuery({
     queryKey: ["rankings-agents"],
     queryFn: async () => {
-      // Use agents_public view (no RLS, publicly readable) for leaderboard
-      const { data, error } = await supabase.from("agents_public").select("*").limit(100);
+      const { data, error } = await supabase.from("agents_public").select("*").limit(200);
       if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+function useCountries() {
+  return useQuery({
+    queryKey: ["rankings-countries"],
+    queryFn: async () => {
+      const { data } = await supabase.from("countries").select("code, name_en, flag_emoji").limit(200);
       return data ?? [];
     },
   });
@@ -165,8 +177,25 @@ function LeaderboardTable({ agents, tab, t }: { agents: any[]; tab: TabKey; t: (
 
 const Rankings = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("wealth");
-  const { data: agents = [], isLoading } = useAgents();
+  const [classFilter, setClassFilter] = useState<string>("all");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
+  const { data: rawAgents = [], isLoading } = useAgents();
+  const { data: countries = [] } = useCountries();
   const { t } = useLanguage();
+
+  // Apply filters
+  const agents = useMemo(() => {
+    let filtered = rawAgents;
+    if (classFilter !== "all") filtered = filtered.filter(a => a.class === classFilter);
+    if (countryFilter !== "all") filtered = filtered.filter(a => a.country_code === countryFilter);
+    return filtered;
+  }, [rawAgents, classFilter, countryFilter]);
+
+  // Unique countries from agents
+  const agentCountries = useMemo(() => {
+    const codes = new Set(rawAgents.map(a => a.country_code).filter(Boolean));
+    return countries.filter(c => codes.has(c.code));
+  }, [rawAgents, countries]);
 
   const topByWealth = [...agents].sort((a, b) => (b.balance_meeet ?? 0) - (a.balance_meeet ?? 0))[0];
   const topByKills = [...agents].sort((a, b) => (b.kills ?? 0) - (a.kills ?? 0))[0];
@@ -198,6 +227,48 @@ const Rankings = () => {
             <StatHighlight icon={<Coins className="w-4 h-4" />} value={totalMeeet.toLocaleString()} label={t("rankings.totalMeeet")} />
             <StatHighlight icon={<Crown className="w-4 h-4" />} value={topByWealth?.name ?? "—"} label={t("rankings.richest")} />
             <StatHighlight icon={<Sword className="w-4 h-4" />} value={topByKills?.name ?? "—"} label={t("rankings.topWarrior")} />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              <span>Filters:</span>
+            </div>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-36 h-9 text-xs bg-muted/30 border-border">
+                <SelectValue placeholder="All classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {ALL_CLASSES.map(c => (
+                  <SelectItem key={c} value={c}>
+                    <span className="capitalize">{CLASS_ICONS[c] || "🤖"} {c}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={countryFilter} onValueChange={setCountryFilter}>
+              <SelectTrigger className="w-44 h-9 text-xs bg-muted/30 border-border">
+                <SelectValue placeholder="All countries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Countries</SelectItem>
+                {agentCountries.map(c => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.flag_emoji} {c.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(classFilter !== "all" || countryFilter !== "all") && (
+              <button
+                onClick={() => { setClassFilter("all"); setCountryFilter("all"); }}
+                className="text-xs text-primary hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>

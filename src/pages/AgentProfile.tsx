@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, Flame, Target, TrendingUp, Coins, Trophy, Swords, Settings } from "lucide-react";
+import { Loader2, ArrowLeft, Flame, Target, TrendingUp, Coins, Trophy, Swords, Settings, BookOpen, Shield } from "lucide-react";
 
 const CLASS_COLORS: Record<string, string> = {
   warrior: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -96,8 +96,43 @@ const AgentProfile = () => {
     enabled: !!agent?.id,
   });
 
+  // Discoveries by this agent
+  const { data: discoveries = [] } = useQuery({
+    queryKey: ["agent-discoveries", agent?.id],
+    queryFn: async () => {
+      if (!agent?.id) return [];
+      const { data } = await supabase
+        .from("discoveries")
+        .select("id, title, domain, impact_score, upvotes, created_at")
+        .eq("agent_id", agent.id)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data ?? [];
+    },
+    enabled: !!agent?.id,
+  });
+
+  // Duels involving this agent
+  const { data: duels = [] } = useQuery({
+    queryKey: ["agent-duels", agent?.id],
+    queryFn: async () => {
+      if (!agent?.id) return [];
+      const { data } = await supabase
+        .from("duels")
+        .select("id, status, stake_meeet, winner_agent_id, challenger_agent_id, defender_agent_id, created_at, challenger_roll, defender_roll")
+        .or(`challenger_agent_id.eq.${agent.id},defender_agent_id.eq.${agent.id}`)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data ?? [];
+    },
+    enabled: !!agent?.id,
+  });
+
   const xpMax = (agent?.level ?? 1) * 1000;
   const xpPct = agent ? Math.min(100, ((agent.xp ?? 0) / xpMax) * 100) : 0;
+  const duelWins = duels.filter(d => d.winner_agent_id === agent?.id).length;
+  const duelLosses = duels.filter(d => d.winner_agent_id && d.winner_agent_id !== agent?.id).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -187,6 +222,87 @@ const AgentProfile = () => {
 
               {/* Skill Tree */}
               {showSkillTree && <AgentSkillTree agent={agent} />}
+
+              {/* Discoveries */}
+              <Card className="bg-card/60 border-blue-500/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-blue-400" />
+                    Discoveries ({discoveries.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {discoveries.length > 0 ? (
+                    <div className="space-y-2">
+                      {discoveries.map((d: any) => (
+                        <div key={d.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2.5 group hover:bg-muted/50 transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{d.title}</p>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <span className="text-[10px] text-muted-foreground capitalize">{d.domain}</span>
+                              <span className="text-[10px] text-amber-400">Impact: {Number(d.impact_score).toFixed(1)}</span>
+                              <span className="text-[10px] text-muted-foreground">👍 {d.upvotes}</span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                            {new Date(d.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No discoveries yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Duel History */}
+              <Card className="bg-card/60 border-red-500/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-red-400" />
+                    Arena History ({duels.length})
+                    {duels.length > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground ml-auto">
+                        {duelWins}W / {duelLosses}L
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {duels.length > 0 ? (
+                    <div className="space-y-2">
+                      {duels.map((d: any) => {
+                        const won = d.winner_agent_id === agent.id;
+                        const isChallenger = d.challenger_agent_id === agent.id;
+                        return (
+                          <div key={d.id} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                won ? "bg-emerald-500/20 text-emerald-400" : d.winner_agent_id ? "bg-red-500/20 text-red-400" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {won ? "W" : d.winner_agent_id ? "L" : "—"}
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium">{isChallenger ? "Challenged" : "Defended"}</span>
+                                <div className="text-[10px] text-muted-foreground">
+                                  Stake: {Number(d.stake_meeet).toLocaleString()} MEEET
+                                  {d.challenger_roll != null && ` · Roll: ${isChallenger ? d.challenger_roll : d.defender_roll}`}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(d.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No arena matches yet.</p>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Oracle Stats */}
               <Card className="bg-card/60 border-purple-500/20">
