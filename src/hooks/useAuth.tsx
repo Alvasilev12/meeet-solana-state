@@ -25,22 +25,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const authClient = supabase.auth as any;
+    let isMounted = true;
+
+    const applyValidatedSession = async (nextSession: AuthSession | null) => {
+      if (!isMounted) return;
+
+      if (!nextSession?.access_token) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await authClient.getUser();
+      if (!isMounted) return;
+
+      if (error || !data?.user?.id) {
+        await authClient.signOut({ scope: "local" }).catch(() => {});
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(nextSession);
+      setUser(data.user);
+      setLoading(false);
+    };
 
     const {
       data: { subscription },
     } = authClient.onAuthStateChange((_event: any, nextSession: AuthSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
+      void applyValidatedSession(nextSession);
     });
 
-    authClient.getSession().then(({ data: { session: currentSession } }: { data: { session: AuthSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-    });
+    authClient
+      .getSession()
+      .then(({ data: { session: currentSession } }: { data: { session: AuthSession } }) => {
+        void applyValidatedSession(currentSession);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
-    return () => subscription?.unsubscribe?.();
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe?.();
+    };
   }, []);
 
   const signOut = async () => {

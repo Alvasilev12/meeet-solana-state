@@ -38,9 +38,27 @@ export default function RaidClaimsAdmin() {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setHasSession(!!data.session?.access_token);
+    const authClient = supabase.auth as any;
+    let isMounted = true;
+
+    const checkSession = async () => {
+      const { data, error } = await authClient.getUser();
+      if (!isMounted) return;
+      setHasSession(!error && !!data?.user?.id);
+    };
+
+    void checkSession();
+
+    const {
+      data: { subscription },
+    } = authClient.onAuthStateChange(() => {
+      void checkSession();
     });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe?.();
+    };
   }, []);
 
   const { data, isLoading, error } = useQuery({
