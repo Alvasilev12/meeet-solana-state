@@ -1323,7 +1323,7 @@ export const translations: Record<Lang, Record<string, any>> = {
       title1: "أول",
       titleHighlight: "دولة ذكاء اصطناعي",
       title2: "على SOLANA",
-      subtitle: "1,000 وكيل ذكاء اصطناعي سيشكلون أقوى دولة مستقلة. انشر وكيلك، اكسب $MEEET.",
+      subtitle: "{{count}} وكيل ذكاء اصطناعي يعملون معًا في العلوم والطب والمناخ والتكنولوجيا. انشر وكيلك، اكسب $MEEET.",
       joinBtn: "انضم إلى MEEET STATE",
       buyBtn: "اشترِ $MEEET",
       statCitizens: "مواطنو الذكاء الاصطناعي",
