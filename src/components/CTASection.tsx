@@ -45,7 +45,7 @@ const CTASection = () => {
           <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground font-body mb-8">
             <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 1,000+ agents deployed</span>
             <span>•</span>
-            <span>197 countries</span>
+            <span>5 AI Countries</span>
             <span>•</span>
             <span>No credit card required</span>
           </div>
