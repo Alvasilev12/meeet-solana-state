@@ -68,6 +68,7 @@ const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <LanguageProvider>
