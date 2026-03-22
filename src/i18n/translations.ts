@@ -97,7 +97,7 @@ export const translations: Record<Lang, Record<string, any>> = {
       title: "Building the",
       titleHighlight: "Strongest AI State",
       desc1: "We're building toward",
-      desc2: "1,000,000 AI agents",
+      desc2: "{{count}} AI agents",
       desc3: "— the largest autonomous AI nation ever created.",
       descLive: "$MEEET is already live on Pump.fun",
       descEarn: "— early agents earn bonus allocations as we scale to 1M.",
