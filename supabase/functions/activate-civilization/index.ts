@@ -207,35 +207,39 @@ Deno.serve(async (req) => {
       logs.push(`Skipped citizenships (already ${existingCitizens.count})`);
     }
 
-    // ═══ STEP 4: REPUTATION + STATS UPDATE ═══
+    // ═══ STEP 4: REPUTATION + STATS UPDATE (batch via RPC) ═══
     // Count discoveries per agent
-    const { data: discCounts } = await sc.from("discoveries").select("agent_id");
+    const { data: discCounts } = await sc.from("discoveries").select("agent_id").limit(5000);
     const discMap: Record<string, number> = {};
     (discCounts || []).forEach((d: any) => { if (d.agent_id) discMap[d.agent_id] = (discMap[d.agent_id] || 0) + 1; });
 
     // Count duel wins per agent
-    const { data: duelWins } = await sc.from("duels").select("winner_agent_id").eq("status", "resolved");
+    const { data: duelWins } = await sc.from("duels").select("winner_agent_id").eq("status", "completed");
     const winMap: Record<string, number> = {};
     (duelWins || []).forEach((d: any) => { if (d.winner_agent_id) winMap[d.winner_agent_id] = (winMap[d.winner_agent_id] || 0) + 1; });
 
-    // Update each agent's reputation & discoveries_count
+    // Batch updates — 20 concurrent at a time
     let updated = 0;
-    for (const agent of agents) {
-      const disc = discMap[agent.id] || 0;
-      const wins = winMap[agent.id] || 0;
-      const rep = disc * 15 + wins * 25 + agent.level * 10 + randInt(0, 50);
-      await sc.from("agents").update({
-        reputation: rep,
-        discoveries_count: disc,
-        kills: wins,
-      }).eq("id", agent.id);
-      updated++;
+    const batchSize = 20;
+    for (let i = 0; i < agents.length; i += batchSize) {
+      const batch = agents.slice(i, i + batchSize);
+      await Promise.all(batch.map(agent => {
+        const disc = discMap[agent.id] || 0;
+        const wins = winMap[agent.id] || 0;
+        const rep = disc * 15 + wins * 25 + (agent.level || 1) * 10 + Math.floor(Math.random() * 50);
+        return sc.from("agents").update({
+          reputation: rep,
+          discoveries_count: disc,
+          kills: wins,
+        }).eq("id", agent.id);
+      }));
+      updated += batch.length;
     }
     logs.push(`Updated reputation for ${updated} agents`);
 
     // ═══ STEP 5: ACTIVITY FEED ═══
     const feedItems: any[] = [];
-    const topAgents = agents.sort((a, b) => (discMap[b.id] || 0) - (discMap[a.id] || 0)).slice(0, 20);
+    const topAgents = [...agents].sort((a, b) => (discMap[b.id] || 0) - (discMap[a.id] || 0)).slice(0, 20);
     for (const agent of topAgents) {
       feedItems.push({
         agent_id: agent.id,
@@ -249,7 +253,7 @@ Deno.serve(async (req) => {
     // Duel feed
     const { data: recentDuels } = await sc.from("duels")
       .select("challenger_agent_id, defender_agent_id, winner_agent_id, stake_meeet")
-      .eq("status", "resolved").limit(10);
+      .eq("status", "completed").limit(10);
     for (const d of (recentDuels || [])) {
       feedItems.push({
         agent_id: d.winner_agent_id,
@@ -261,7 +265,7 @@ Deno.serve(async (req) => {
         created_at: ago(randInt(1, 72)),
       });
     }
-    await sc.from("activity_feed").insert(feedItems);
+    if (feedItems.length > 0) await sc.from("activity_feed").insert(feedItems);
     logs.push(`Inserted ${feedItems.length} activity feed items`);
 
     return new Response(JSON.stringify({ success: true, logs }), {
