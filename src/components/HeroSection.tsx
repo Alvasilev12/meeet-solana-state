@@ -115,8 +115,8 @@ const HeroSection = () => {
           />
           <LiveStatCard
             icon={<Globe className="w-3.5 h-3.5 text-amber-400" />}
-            label="Nations"
-            value={animNations.toLocaleString()}
+            label="Countries"
+            value={animCountries.toLocaleString()}
             accent="text-amber-400"
           />
           <LiveStatCard
