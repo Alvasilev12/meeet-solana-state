@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import React, { Suspense } from "react";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 // Lazy load all pages for code splitting
 const Index = React.lazy(() => import("./pages/Index.tsx"));
