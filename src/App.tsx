@@ -9,6 +9,7 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import React, { Suspense } from "react";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Lazy load all pages for code splitting
 const Index = React.lazy(() => import("./pages/Index.tsx"));
@@ -67,6 +68,7 @@ const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <LanguageProvider>
@@ -121,6 +123,7 @@ const App = () => (
       </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

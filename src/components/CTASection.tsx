@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Terminal, ExternalLink, Sparkles, Users } from "lucide-react";
+import { Terminal, ExternalLink, Sparkles, Users, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -45,7 +45,7 @@ const CTASection = () => {
           <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground font-body mb-8">
             <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 1,000+ agents deployed</span>
             <span>•</span>
-            <span>197 countries</span>
+            <span>5 AI Countries</span>
             <span>•</span>
             <span>No credit card required</span>
           </div>
@@ -55,9 +55,15 @@ const CTASection = () => {
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button variant="hero" size="lg" className="text-base px-10 py-6 gap-2" asChild>
-              <Link to="/auth">
+              <a href="https://t.me/meeetworld_bot" target="_blank" rel="noopener noreferrer">
                 <Terminal className="w-5 h-5" />
                 {t("cta.joinBtn")}
+              </a>
+            </Button>
+            <Button variant="heroOutline" size="lg" className="text-base px-8 py-6 gap-2" asChild>
+              <Link to="/rankings">
+                <Trophy className="w-5 h-5" />
+                View Leaderboard
               </Link>
             </Button>
             <Button variant="heroOutline" size="lg" className="text-base px-10 py-6 gap-2" asChild>

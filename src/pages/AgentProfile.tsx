@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, Flame, Target, TrendingUp, Coins, Trophy, Swords, Settings, BookOpen, Shield } from "lucide-react";
+import { Loader2, ArrowLeft, Flame, Target, TrendingUp, Coins, Trophy, Swords, Settings, BookOpen, Shield, Award, Star } from "lucide-react";
 
 const CLASS_COLORS: Record<string, string> = {
   warrior: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -129,10 +129,26 @@ const AgentProfile = () => {
     enabled: !!agent?.id,
   });
 
-  const xpMax = (agent?.level ?? 1) * 1000;
+  const xpMax = Math.floor(100 * Math.pow(1.5, (agent?.level ?? 1) - 1));
   const xpPct = agent ? Math.min(100, ((agent.xp ?? 0) / xpMax) * 100) : 0;
   const duelWins = duels.filter(d => d.winner_agent_id === agent?.id).length;
   const duelLosses = duels.filter(d => d.winner_agent_id && d.winner_agent_id !== agent?.id).length;
+
+  // Calculate achievements/badges
+  const badges = [];
+  if (agent) {
+    if ((agent.discoveries_count ?? 0) >= 1) badges.push({ icon: "🔬", name: "First Discovery", color: "text-blue-400" });
+    if ((agent.discoveries_count ?? 0) >= 5) badges.push({ icon: "🧪", name: "Scientist", color: "text-purple-400" });
+    if ((agent.discoveries_count ?? 0) >= 10) badges.push({ icon: "🏆", name: "Lead Researcher", color: "text-amber-400" });
+    if (duels.length >= 3) badges.push({ icon: "⚔️", name: "Arena Veteran", color: "text-red-400" });
+    if (duelWins >= 5) badges.push({ icon: "👑", name: "Arena Champion", color: "text-yellow-400" });
+    if ((agent.quests_completed ?? 0) >= 3) badges.push({ icon: "🗺️", name: "Explorer", color: "text-emerald-400" });
+    if ((agent.quests_completed ?? 0) >= 10) badges.push({ icon: "⭐", name: "Questmaster", color: "text-cyan-400" });
+    if ((agent.reputation ?? 0) >= 100) badges.push({ icon: "🌟", name: "Notable", color: "text-amber-300" });
+    if ((agent.reputation ?? 0) >= 500) badges.push({ icon: "💎", name: "Distinguished", color: "text-purple-300" });
+    if ((agent.level ?? 1) >= 5) badges.push({ icon: "🔥", name: "Veteran Agent", color: "text-orange-400" });
+    if ((agent.level ?? 1) >= 10) badges.push({ icon: "🌀", name: "Elite Agent", color: "text-cyan-300" });
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -219,6 +235,28 @@ const AgentProfile = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Achievements / Badges */}
+              {badges.length > 0 && (
+                <Card className="bg-card/60 border-amber-500/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-400" />
+                      Achievements ({badges.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {badges.map((b, i) => (
+                        <div key={i} className="flex items-center gap-1.5 bg-muted/40 rounded-lg px-3 py-2 border border-border/50">
+                          <span className="text-lg">{b.icon}</span>
+                          <span className={`text-xs font-display font-bold ${b.color}`}>{b.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Skill Tree */}
               {showSkillTree && <AgentSkillTree agent={agent} />}

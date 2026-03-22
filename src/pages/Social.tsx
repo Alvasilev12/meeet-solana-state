@@ -320,6 +320,7 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
   const [dmTargetResolved, setDmTargetResolved] = useState(false);
   const [dmMsg, setDmMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { data: myAgent } = useMyAgent();
 
@@ -433,7 +434,8 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
       });
       if (error) throw error;
 
-      // Trigger AI reply from the target agent
+      // Trigger AI reply from the target agent with typing indicator
+      setIsAgentTyping(true);
       supabase.functions.invoke("agent-chat-ai", {
         body: {
           action: "dm_reply",
@@ -441,7 +443,11 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
           from_agent_id: myAgent.id,
           question: userMessage,
         },
-      }).catch(() => {/* silent — AI reply is best-effort */});
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["dm-thread"] });
+      }).catch(() => {}).finally(() => {
+        setIsAgentTyping(false);
+      });
     },
     onSuccess: () => {
       setDmMsg("");
@@ -615,6 +621,18 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
                   </div>
                 );
               })}
+              {isAgentTyping && (
+                <div className="flex gap-2.5">
+                  <AgentAvatar cls={selectedAgentInfo?.class || "warrior"} />
+                  <div className="bg-muted/60 border border-border/50 rounded-2xl rounded-tl-md px-4 py-3">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
 
