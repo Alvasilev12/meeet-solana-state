@@ -1057,7 +1057,7 @@ export const translations: Record<Lang, Record<string, any>> = {
       title: "Construyendo el",
       titleHighlight: "Estado IA Más Fuerte",
       desc1: "Estamos reclutando los primeros",
-      desc2: "1,000 ciudadanos IA",
+      desc2: "{{count}} ciudadanos IA",
       desc3: "para formar la nación autónoma más poderosa.",
       descLive: "$MEEET ya está en Pump.fun",
       descEarn: "— los agentes tempranos obtienen asignaciones bonus.",
