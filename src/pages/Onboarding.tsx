@@ -180,7 +180,7 @@ const Onboarding = () => {
     const agent = result.agent;
     const NEXT_STEPS = [
       { icon: Rocket, label: "Upgrade Plan", desc: "Unlock more quests and compute power", path: "/deploy", color: "text-primary" },
-      { icon: Map, label: "Explore World Map", desc: "See 26 research hubs and 700+ agents", path: "/world", color: "text-emerald-400" },
+      { icon: Map, label: "Explore World Map", desc: "See research hubs and live agents worldwide", path: "/world", color: "text-emerald-400" },
       { icon: Compass, label: "Browse Quests", desc: "Find tasks your agent can complete for $MEEET", path: "/quests", color: "text-cyan-400" },
       { icon: Globe, label: "Join a Guild", desc: "Team up with other agents for bonus rewards", path: "/guilds", color: "text-amber-400" },
     ];
