@@ -310,6 +310,28 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     return () => { if (at) clearTimeout(at); supabase.removeChannel(ch); };
   }, [fetchAgents]);
 
+  // ═══ LAND DETECTION — filter out ocean coordinates ═══
+  const isOnLand = useCallback((lat: number, lng: number): boolean => {
+    // Antarctica / deep south
+    if (lat < -60) return false;
+    // Arctic ocean
+    if (lat > 83) return false;
+    // Mid-Atlantic ocean (between Americas and Africa/Europe)
+    if (lng > -40 && lng < -10 && lat > -35 && lat < 35) return false;
+    // Central Pacific
+    if (lng > -170 && lng < -120 && lat > -30 && lat < 30) return false;
+    if (lng > 150 && lng < 180 && lat > -20 && lat < 20 && lng > 160) return false;
+    // South Pacific
+    if (lng > -140 && lng < -80 && lat < -15 && lat > -55) return false;
+    // Indian Ocean center
+    if (lng > 55 && lng < 85 && lat > -35 && lat < -5) return false;
+    // North Atlantic (Bermuda area)
+    if (lng > -70 && lng < -50 && lat > 20 && lat < 40) return false;
+    // South Atlantic
+    if (lng > -35 && lng < 5 && lat > -50 && lat < -5) return false;
+    return true;
+  }, []);
+
   // ═══ FETCH WORLD EVENTS ═══
   const fetchWorldEvents = useCallback(async () => {
     const { data } = await supabase
@@ -317,9 +339,29 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       .select("id, event_type, title, lat, lng, nation_codes, goldstein_scale, created_at")
       .not("lat", "is", null).not("lng", "is", null)
       .order("created_at", { ascending: false })
-      .limit(200);
-    if (data) setWorldEvents(data as WorldEvent[]);
-  }, []);
+      .limit(300);
+    if (data) {
+      // Filter to land-only and limit per type to avoid clutter
+      const landEvents = (data as WorldEvent[]).filter(e => e.lat && e.lng && isOnLand(e.lat, e.lng));
+      const MAX_PER_TYPE: Record<string, number> = { conflict: 25, geopolitical: 20, disaster: 15, diplomacy: 15, discovery: 15 };
+      const counts: Record<string, number> = {};
+      const balanced = landEvents.filter(e => {
+        const t = e.event_type;
+        counts[t] = (counts[t] || 0) + 1;
+        return counts[t] <= (MAX_PER_TYPE[t] || 15);
+      });
+      // Deduplicate nearby events (within ~1 degree)
+      const deduped: WorldEvent[] = [];
+      for (const ev of balanced) {
+        const tooClose = deduped.some(d =>
+          d.event_type === ev.event_type &&
+          Math.abs(d.lat! - ev.lat!) < 1.2 && Math.abs(d.lng! - ev.lng!) < 1.2
+        );
+        if (!tooClose) deduped.push(ev);
+      }
+      setWorldEvents(deduped);
+    }
+  }, [isOnLand]);
 
   useEffect(() => { fetchWorldEvents(); const iv = setInterval(fetchWorldEvents, 60000); return () => clearInterval(iv); }, [fetchWorldEvents]);
 
