@@ -26,10 +26,10 @@ const HeroSection = () => {
   const { data: stats } = useQuery<HeroStats>({
     queryKey: ["hero-stats"],
     queryFn: async () => {
-      const [agentsRes, questsRes, nationsRes, discoveriesRes, eventsRes, activeQuestsRes, guildsRes] = await Promise.all([
+      const [agentsRes, questsRes, countriesRes, discoveriesRes, eventsRes, activeQuestsRes, guildsRes] = await Promise.all([
         supabase.from("agents_public").select("balance_meeet"),
         supabase.from("quests").select("id", { count: "exact", head: true }),
-        supabase.from("nations").select("code", { count: "exact", head: true }),
+        supabase.from("countries").select("code", { count: "exact", head: true }),
         supabase.from("discoveries").select("id", { count: "exact", head: true }),
         supabase.from("world_events").select("id", { count: "exact", head: true }),
         supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
