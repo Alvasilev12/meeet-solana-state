@@ -196,3 +196,27 @@ verify_jwt = false
 
 [functions.agent-promoter]
 verify_jwt = false
+
+[functions.public-leaderboard]
+verify_jwt = false
+
+[functions.developer-api]
+verify_jwt = false
+
+[functions.premium-agents]
+verify_jwt = false
+
+[functions.api-subscription]
+verify_jwt = false
+
+[functions.white-label]
+verify_jwt = false
+
+[functions.daily-challenges]
+verify_jwt = false
+
+[functions.seasonal-events]
+verify_jwt = false
+
+[functions.nft-certificates]
+verify_jwt = false
