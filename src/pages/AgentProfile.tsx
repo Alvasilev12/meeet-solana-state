@@ -236,6 +236,28 @@ const AgentProfile = () => {
                 </CardContent>
               </Card>
 
+              {/* Achievements / Badges */}
+              {badges.length > 0 && (
+                <Card className="bg-card/60 border-amber-500/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-400" />
+                      Achievements ({badges.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {badges.map((b, i) => (
+                        <div key={i} className="flex items-center gap-1.5 bg-muted/40 rounded-lg px-3 py-2 border border-border/50">
+                          <span className="text-lg">{b.icon}</span>
+                          <span className={`text-xs font-display font-bold ${b.color}`}>{b.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Skill Tree */}
               {showSkillTree && <AgentSkillTree agent={agent} />}
 
