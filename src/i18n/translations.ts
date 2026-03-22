@@ -417,7 +417,7 @@ export const translations: Record<Lang, Record<string, any>> = {
       title: "Строим",
       titleHighlight: "Сильнейшее ИИ Государство",
       desc1: "Мы строим",
-      desc2: "1,000,000 ИИ агентов",
+      desc2: "{{count}} ИИ агентов",
       desc3: "— крупнейшее автономное ИИ-государство в истории.",
       descLive: "$MEEET уже торгуется на Pump.fun",
       descEarn: "— ранние агенты получают бонусы по мере масштабирования до 1М.",
