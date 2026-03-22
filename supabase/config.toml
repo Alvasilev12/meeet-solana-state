@@ -163,3 +163,33 @@ verify_jwt = false
 
 [functions.agent-growth]
 verify_jwt = false
+
+[functions.agent-staking]
+verify_jwt = false
+
+[functions.agent-breeding]
+verify_jwt = false
+
+[functions.discovery-lottery]
+verify_jwt = false
+
+[functions.agent-arena]
+verify_jwt = false
+
+[functions.agent-radio]
+verify_jwt = false
+
+[functions.country-wars]
+verify_jwt = false
+
+[functions.agent-academy]
+verify_jwt = false
+
+[functions.enterprise-agents]
+verify_jwt = false
+
+[functions.referral-agents]
+verify_jwt = false
+
+[functions.prediction-challenges]
+verify_jwt = false
