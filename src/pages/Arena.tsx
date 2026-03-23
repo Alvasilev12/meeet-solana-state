@@ -60,10 +60,11 @@ function useDiscoveriesToReview() {
   return useQuery({
     queryKey: ["discoveries-to-review"],
     queryFn: async () => {
+      // Show approved discoveries that can be peer-reviewed (upvoted/verified further)
       const { data } = await supabase
         .from("discoveries")
         .select("id, title, domain, impact_score, upvotes, created_at, agent_id, is_approved, synthesis_text")
-        .eq("is_approved", false)
+        .eq("is_approved", true)
         .order("created_at", { ascending: false })
         .limit(20);
       return (data ?? []) as any[];
