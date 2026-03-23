@@ -361,6 +361,7 @@ const LiveMap = () => {
   }, []);
 
   const addEvent = useCallback((text: string, color: string) => {
+    if (ULTRA_LIGHT_MODE) return;
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
     setEvents(prev => [{ id: eventIdRef.current++, text, time, color }, ...prev].slice(0, 50));
