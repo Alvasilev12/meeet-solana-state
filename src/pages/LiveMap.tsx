@@ -1808,6 +1808,22 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
   const cfg = CLASS_CONFIG[a.cls] || CLASS_CONFIG.warrior;
   const pulse = 0.7 + Math.sin(t * 0.004 + a.phase) * 0.3;
 
+  if (ULTRA_LIGHT_MODE) {
+    const r = Math.max(4, (5 + a.level * 0.6) * z);
+    ctx.fillStyle = cfg.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (z > 0.8) {
+      ctx.font = `${Math.max(7, 8 * z)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText(a.name, sx, sy + r + 10 * z);
+    }
+    return;
+  }
+
   const baseR = Math.max(6, (8 + a.level * 1.2) * z);
   const isPresident = a.cls === "president";
   const badgeR = isPresident ? baseR * 1.4 : baseR;
