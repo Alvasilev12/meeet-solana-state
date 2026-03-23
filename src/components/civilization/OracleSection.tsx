@@ -79,7 +79,7 @@ export default function OracleSection() {
             const noPct = 100 - m.yes_pct;
             return (
               <div key={m.id} className="rounded-xl border border-purple-500/15 bg-card/40 backdrop-blur p-5 hover:border-purple-500/30 transition-all group">
-                <p className="text-foreground text-sm font-medium mb-4 line-clamp-2">{m.question}</p>
+                <p className="text-foreground text-sm font-medium mb-4 line-clamp-2">{m.question_text}</p>
                 {/* YES/NO bars */}
                 <div className="space-y-2 mb-3">
                   <div className="flex items-center gap-2">
