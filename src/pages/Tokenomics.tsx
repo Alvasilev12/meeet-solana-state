@@ -358,17 +358,19 @@ const Tokenomics = () => {
               <TrendingUp className="w-5 h-5 text-amber-400" />
               Price Chart
             </h2>
-            <div className="glass-card p-6">
-              <iframe
-                src={`https://dexscreener.com/solana/${MEEET_CONTRACT_ADDRESS}?embed=1&theme=dark&trades=0&info=0`}
-                className="w-full h-[400px] rounded-lg border border-border"
-                title="MEEET Price Chart"
-                allow="clipboard-write"
-              />
-              <div className="mt-3 text-center">
-                <Button variant="heroOutline" size="sm" asChild>
+            <div className="glass-card p-6 text-center space-y-4">
+              <p className="text-muted-foreground text-sm">
+                DexScreener embed is not available in iframe mode. View the live chart directly:
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button variant="heroOutline" size="lg" asChild>
                   <a href={DEXSCREENER_URL} target="_blank" rel="noopener noreferrer" className="gap-2">
-                    <ExternalLink className="w-3.5 h-3.5" /> Full Chart on DexScreener
+                    <TrendingUp className="w-4 h-4" /> Live Chart on DexScreener
+                  </a>
+                </Button>
+                <Button variant="heroOutline" size="lg" asChild>
+                  <a href={PUMP_FUN_URL} target="_blank" rel="noopener noreferrer" className="gap-2">
+                    <ExternalLink className="w-4 h-4" /> Trade on Pump.fun
                   </a>
                 </Button>
               </div>
