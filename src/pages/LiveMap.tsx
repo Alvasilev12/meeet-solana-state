@@ -1255,7 +1255,7 @@ const LiveMap = () => {
         trails[i].age++;
         if (trails[i].age > 60) trails.splice(i, 1);
       }
-      if (z > 0.4) {
+      if (!ULTRA_LIGHT_MODE && z > 0.4) {
         agents.forEach(a => {
           if (!ULTRA_LIGHT_MODE && (a.state === "move" || a.state === "visiting") && Math.random() < 0.12) {
             trails.push({ x: a.x, y: a.y, age: 0, color: a.color });
