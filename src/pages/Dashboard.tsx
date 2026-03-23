@@ -108,7 +108,7 @@ function useTopAgents() {
   return useQuery({
     queryKey: ["top-agents"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("agents").select("*").order("xp", { ascending: false }).limit(5);
+      const { data, error } = await supabase.from("agents_public").select("*").order("xp", { ascending: false }).limit(5);
       if (error) throw error;
       return (data ?? []) as Agent[];
     },
