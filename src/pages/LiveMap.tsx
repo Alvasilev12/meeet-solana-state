@@ -306,7 +306,7 @@ const LiveMap = () => {
   // Init stars
   useEffect(() => {
     const stars: Star[] = [];
-    for (let i = 0; i < 600; i++) {
+    for (let i = 0; i < 120; i++) {
       stars.push({
         x: Math.random() * MAP_W * TILE, y: Math.random() * MAP_H * TILE,
         size: 0.3 + Math.random() * 2, twinkleSpeed: 0.001 + Math.random() * 0.006,
