@@ -713,8 +713,21 @@ const Dashboard = () => {
   const isLoading = authLoading || profileLoading || agentLoading;
   const totalIncome = MOCK_INCOME.reduce((s, v) => s + v, 0);
   const incomeChange = MOCK_INCOME[6] - MOCK_INCOME[5];
-  const xpProgress = agent ? Math.min(100, (agent.xp / (agent.level * 500)) * 100) : 0;
+  const xpForNextLevel = agent ? Math.round(100 * Math.pow(1.5, agent.level - 1)) : 500;
+  const xpProgress = agent ? Math.min(100, (agent.xp / xpForNextLevel) * 100) : 0;
   const hpProgress = agent ? (agent.hp / agent.max_hp) * 100 : 0;
+
+  // Faction mapping
+  const CLASS_TO_FACTION: Record<string, { emoji: string; name: string }> = {
+    oracle: { emoji: "🧬", name: "BioTech" },
+    diplomat: { emoji: "⚛️", name: "Quantum" },
+    miner: { emoji: "🤖", name: "AI" },
+    warrior: { emoji: "🚀", name: "Space" },
+    scout: { emoji: "🚀", name: "Space" },
+    trader: { emoji: "⚡", name: "Energy" },
+    banker: { emoji: "⚡", name: "Energy" },
+    president: { emoji: "👑", name: "President" },
+  };
 
   if (isLoading || !user) {
     return (
@@ -772,22 +785,24 @@ const Dashboard = () => {
 
           {/* Global Stats Banner */}
           {globalStats && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-3 gap-3 mb-6">
               {[
-                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: `/ 10K`, color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
-                { icon: <Trophy className="w-4 h-4" />, label: "Quests Done", value: globalStats.completedQuests, color: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20" },
-                { icon: <Map className="w-4 h-4" />, label: "Territories", value: globalStats.claimedTerritories, color: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20" },
-              ].map(({ icon, label, value, sub, color, accent, border }) => (
-                <div key={label} className={`glass-card rounded-xl p-4 text-center relative overflow-hidden group hover:${border} transition-all duration-300`}>
-                  <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
-                  <div className="flex items-center justify-center gap-1.5 mb-1.5 relative">
-                    <div className={accent}>{icon}</div>
-                    <span className="text-[10px] text-muted-foreground font-body uppercase tracking-wider">{label}</span>
+                { icon: <Users className="w-5 h-5" />, label: "CITIZENS", value: globalStats.totalAgents.toLocaleString(), sub: "/ 10K", gradient: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20", glow: "shadow-primary/10" },
+                { icon: <Trophy className="w-5 h-5" />, label: "QUESTS DONE", value: globalStats.completedQuests.toLocaleString(), gradient: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20", glow: "shadow-secondary/10" },
+                { icon: <Map className="w-5 h-5" />, label: "TERRITORIES", value: globalStats.claimedTerritories.toLocaleString(), gradient: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20", glow: "shadow-amber-500/10" },
+              ].map(({ icon, label, value, sub, gradient, accent, border, glow }) => (
+                <div key={label} className={`glass-card rounded-xl p-4 sm:p-5 text-center relative overflow-hidden group hover:${border} hover:shadow-lg hover:${glow} transition-all duration-300`}>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-40 group-hover:opacity-70 transition-opacity pointer-events-none`} />
+                  <div className="relative">
+                    <div className="flex items-center justify-center gap-1.5 mb-2">
+                      <div className={accent}>{icon}</div>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground font-body uppercase tracking-widest font-semibold">{label}</span>
+                    </div>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-2xl sm:text-3xl font-display font-bold">{value}</span>
+                      {sub && <span className="text-xs sm:text-sm text-muted-foreground font-body">{sub}</span>}
+                    </div>
                   </div>
-                  <span className="text-xl font-display font-bold relative">
-                    {value.toLocaleString()}
-                    {sub && <span className="text-xs text-muted-foreground ml-1">{sub}</span>}
-                  </span>
                 </div>
               ))}
             </div>
@@ -832,6 +847,11 @@ const Dashboard = () => {
                         <Badge variant="outline" className="text-[10px] mt-1 capitalize bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                           {agent.status.replace("_", " ")}
                         </Badge>
+                        {CLASS_TO_FACTION[agent.class] && agent.class !== "president" && (
+                          <Badge variant="outline" className="text-[10px] mt-1 ml-1 bg-primary/10 text-primary border-primary/20">
+                            {CLASS_TO_FACTION[agent.class].emoji} {CLASS_TO_FACTION[agent.class].name}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -850,7 +870,7 @@ const Dashboard = () => {
                     <div className="mb-4">
                       <div className="flex justify-between text-[10px] text-muted-foreground mb-1 font-body">
                         <span className="flex items-center gap-1"><Star className="w-3 h-3 text-primary" /> XP</span>
-                        <span>{agent.xp} / {agent.level * 500}</span>
+                        <span>{agent.xp} / {xpForNextLevel}</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-primary to-secondary" style={{ width: `${xpProgress}%` }} />
