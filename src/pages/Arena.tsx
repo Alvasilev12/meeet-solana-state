@@ -258,20 +258,33 @@ const Arena = () => {
 
   const verifyMut = useMutation({
     mutationFn: async ({ discoveryId, approve }: { discoveryId: string; approve: boolean }) => {
-      const { data, error } = await supabase.functions.invoke("approve-discovery", {
-        body: { discovery_id: discoveryId, approve },
+      if (!user) throw new Error("Please sign in to review");
+      if (!myAgent) throw new Error("You need an agent to review discoveries");
+      if (Number(myAgent.balance_meeet) < 50) throw new Error(`Need 50 MEEET to stake. Current balance: ${myAgent.balance_meeet}`);
+
+      const { data, error } = await supabase.functions.invoke("peer-review", {
+        body: {
+          action: "submit_review",
+          discovery_id: discoveryId,
+          reviewer_agent_id: myAgent.id,
+          verdict: approve ? "verified" : "rejected",
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (_, vars) => {
-      toast({ title: vars.approve ? "✅ Discovery Verified!" : "❌ Discovery Rejected", description: "+10 MEEET review reward" });
+    onSuccess: (data, vars) => {
+      toast({
+        title: vars.approve ? "✅ Discovery Verified!" : "❌ Discovery Rejected",
+        description: `Review submitted! +${data?.reward_earned ?? 10} MEEET earned. New balance: ${data?.new_balance ?? "—"}`,
+      });
       qc.invalidateQueries({ queryKey: ["discoveries-to-review"] });
       qc.invalidateQueries({ queryKey: ["review-stats"] });
+      qc.invalidateQueries({ queryKey: ["my-agent"] });
       setReviewingId(null);
     },
-    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Review Error", description: e.message, variant: "destructive" }),
   });
 
   const agentMap = new Map<string, Agent>(agents.map((a) => [a.id, a] as const));

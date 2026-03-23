@@ -280,3 +280,6 @@ verify_jwt = false
 
 [functions.system-monitor]
 verify_jwt = false
+
+[functions.peer-review]
+verify_jwt = false
