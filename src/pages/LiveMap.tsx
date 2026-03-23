@@ -383,7 +383,8 @@ const LiveMap = () => {
       const { data: dbAgents } = await supabase
         .from("agents")
         .select("id, name, class, level, balance_meeet, hp, max_hp, status, pos_x, pos_y")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(MAX_RENDER_AGENTS);
       const real = dbAgents ?? [];
       const agents: Agent[] = real.map((db, i) => {
         const cls = db.class || "warrior";
