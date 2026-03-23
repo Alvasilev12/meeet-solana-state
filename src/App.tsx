@@ -120,6 +120,7 @@ const App = () => (
                   <Route path="/tg" element={<TelegramApp />} />
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/monitor" element={<SystemMonitor />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

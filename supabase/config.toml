@@ -277,3 +277,6 @@ verify_jwt = false
 
 [functions.agent-telegram-bot]
 verify_jwt = false
+
+[functions.system-monitor]
+verify_jwt = false
