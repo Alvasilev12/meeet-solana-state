@@ -1,13 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Map, FileCheck, Sparkles, User } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const items = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/map", icon: Map, label: "Map" },
-  { href: "/arena", icon: FileCheck, label: "Arena" },
-  { href: "/oracle", icon: Sparkles, label: "Oracle" },
-  { href: "/profile", icon: User, label: "Profile" },
-];
+const useNavItems = () => {
+  const { t } = useLanguage();
+  return [
+    { href: "/", icon: Home, label: t("nav.dashboard") || "Home" },
+    { href: "/map", icon: Map, label: t("nav.map") || "Map" },
+    { href: "/arena", icon: FileCheck, label: t("nav.arena") || "Arena" },
+    { href: "/oracle", icon: Sparkles, label: "Oracle" },
+    { href: "/profile", icon: User, label: t("profile.passport") || "Profile" },
+  ];
+};
 
 // Pages where the bottom nav should be hidden (full-screen experiences)
 const HIDDEN_ON = ["/live", "/world", "/tg"];

@@ -17,7 +17,7 @@ const Navbar = () => {
   const { t } = useLanguage();
 
   const NAV_LINKS = [
-    { href: "/about", label: "О проекте" },
+    { href: "/about", label: t("nav.world") === "Мир" ? "О проекте" : "About" },
     { href: "/world", label: t("nav.world") },
     { href: "/quests", label: t("nav.quests") },
     { href: "/oracle", label: "🔮 Oracle" },
