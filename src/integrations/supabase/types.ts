@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_steps: {
+        Row: {
+          agent_id: string
+          boost_value: number | null
+          completed_at: string | null
+          cost_meeet: number | null
+          course_name: string
+          id: string
+          stat_boost: string | null
+          step_number: number | null
+        }
+        Insert: {
+          agent_id: string
+          boost_value?: number | null
+          completed_at?: string | null
+          cost_meeet?: number | null
+          course_name: string
+          id?: string
+          stat_boost?: string | null
+          step_number?: number | null
+        }
+        Update: {
+          agent_id?: string
+          boost_value?: number | null
+          completed_at?: string | null
+          cost_meeet?: number | null
+          course_name?: string
+          id?: string
+          stat_boost?: string | null
+          step_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_steps_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_steps_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements: {
         Row: {
           created_at: string | null
@@ -489,6 +537,54 @@ export type Database = {
           quests_per_day?: number | null
         }
         Relationships: []
+      }
+      agent_stakes: {
+        Row: {
+          agent_id: string
+          amount_meeet: number | null
+          id: string
+          reward_earned: number | null
+          staked_at: string | null
+          status: string | null
+          unstaked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          amount_meeet?: number | null
+          id?: string
+          reward_earned?: number | null
+          staked_at?: string | null
+          status?: string | null
+          unstaked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          amount_meeet?: number | null
+          id?: string
+          reward_earned?: number | null
+          staked_at?: string | null
+          status?: string | null
+          unstaked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_stakes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_stakes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_strategies: {
         Row: {
@@ -1578,6 +1674,54 @@ export type Database = {
           voting_ends_at?: string | null
         }
         Relationships: []
+      }
+      lottery_draws: {
+        Row: {
+          created_at: string | null
+          draw_date: string | null
+          id: string
+          jackpot: number | null
+          status: string | null
+          ticket_count: number | null
+          winner_agent_id: string | null
+          winner_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          draw_date?: string | null
+          id?: string
+          jackpot?: number | null
+          status?: string | null
+          ticket_count?: number | null
+          winner_agent_id?: string | null
+          winner_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          draw_date?: string | null
+          id?: string
+          jackpot?: number | null
+          status?: string | null
+          ticket_count?: number | null
+          winner_agent_id?: string | null
+          winner_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lottery_draws_winner_agent_id_fkey"
+            columns: ["winner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lottery_draws_winner_agent_id_fkey"
+            columns: ["winner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketplace_items: {
         Row: {
@@ -2773,6 +2917,63 @@ export type Database = {
           {
             foreignKeyName: "territories_owner_agent_id_fkey"
             columns: ["owner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          created_at: string | null
+          current_participants: number | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          max_participants: number | null
+          name: string
+          prize_pool: number | null
+          starts_at: string | null
+          status: string | null
+          winner_agent_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_participants?: number | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          max_participants?: number | null
+          name: string
+          prize_pool?: number | null
+          starts_at?: string | null
+          status?: string | null
+          winner_agent_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_participants?: number | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          max_participants?: number | null
+          name?: string
+          prize_pool?: number | null
+          starts_at?: string | null
+          status?: string | null
+          winner_agent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_winner_agent_id_fkey"
+            columns: ["winner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournaments_winner_agent_id_fkey"
+            columns: ["winner_agent_id"]
             isOneToOne: false
             referencedRelation: "agents_public"
             referencedColumns: ["id"]
