@@ -31,9 +31,11 @@ interface LiveStats { agents: number; quests: number; treasury: number; treasury
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
-const MAP_W = 200;
-const MAP_H = 140;
+const MAP_W = 120;
+const MAP_H = 84;
 const DAY_CYCLE_MS = 180000;
+const ULTRA_LIGHT_MODE = true;
+const MAX_RENDER_AGENTS = 180;
 
 const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string; icon: string }> = {
   warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59", icon: "🔒" },
