@@ -29,7 +29,7 @@ export default function OracleSection() {
   useEffect(() => {
     (async () => {
       const [{ data: questions }, { count: betCount }] = await Promise.all([
-        supabase.from("oracle_questions").select("id,question,total_pool_meeet,status,deadline")
+        supabase.from("oracle_questions").select("id,question_text,total_pool_meeet,status,deadline")
           .eq("status", "open").order("total_pool_meeet", { ascending: false }).limit(6),
         supabase.from("oracle_bets").select("id", { count: "exact", head: true }),
       ]);
