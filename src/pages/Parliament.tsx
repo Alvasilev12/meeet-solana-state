@@ -337,16 +337,20 @@ const Parliament = () => {
     }
     setVotingId(lawId);
     try {
-      // Client-side vote via edge function or direct increment
-      const { error } = await supabase.functions.invoke("quest-lifecycle", {
-        body: { action: "vote-law", law_id: lawId, vote },
-      });
+      const law = laws.find(l => l.id === lawId);
+      if (!law) throw new Error("Law not found");
+
+      const updates: Record<string, number> = vote
+        ? { votes_yes: (Number(law.votes_yes) || 0) + 1, voter_count: (Number(law.voter_count) || 0) + 1 }
+        : { votes_no: (Number(law.votes_no) || 0) + 1, voter_count: (Number(law.voter_count) || 0) + 1 };
+
+      const { error } = await supabase.from("laws").update(updates).eq("id", lawId);
       if (error) throw error;
+
       toast({ title: vote ? "Voted YES ✅" : "Voted NO ❌" });
       qc.invalidateQueries({ queryKey: ["laws"] });
     } catch (e: any) {
-      // Fallback: just show the vote intent
-      toast({ title: vote ? "Voted YES ✅" : "Voted NO ❌", description: "Vote recorded locally" });
+      toast({ title: vote ? "Voted YES ✅" : "Voted NO ❌", description: e.message || "Vote recorded locally" });
     }
     setVotingId(null);
   };
