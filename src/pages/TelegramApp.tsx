@@ -168,6 +168,8 @@ const TelegramApp = () => {
         setQuests(data.open_quests || []);
         setMarketListings(data.marketplace || []);
         setArenaMatches(data.duels || []);
+        if (data.top_countries?.length) setTopCountries(data.top_countries);
+        setArenaMatches(data.duels || []);
 
         const { data: userAgents } = await supabase.from("agents")
           .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code")
