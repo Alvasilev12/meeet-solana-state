@@ -18,6 +18,7 @@ const HIDDEN_ON = ["/live", "/world", "/tg"];
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
+  const items = useNavItems();
 
   if (HIDDEN_ON.includes(pathname)) return null;
 
