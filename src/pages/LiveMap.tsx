@@ -319,7 +319,7 @@ const LiveMap = () => {
   // Init fog patches
   useEffect(() => {
     const patches: typeof fogPatchesRef.current = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 4; i++) {
       patches.push({
         x: Math.random() * MAP_W * TILE, y: Math.random() * MAP_H * TILE,
         r: 200 + Math.random() * 400, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.15,
