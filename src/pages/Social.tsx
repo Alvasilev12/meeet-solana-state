@@ -478,6 +478,39 @@ function GlobalChat() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const triggerAgentAutoReply = useCallback(async (userMessage: string) => {
+    try {
+      // Pick 1-2 random agents to respond
+      const { data: randomAgents } = await supabase
+        .from("agents_public")
+        .select("id, name, class")
+        .neq("status", "idle")
+        .limit(50);
+      if (!randomAgents || randomAgents.length === 0) return;
+
+      const count = Math.random() > 0.5 ? 2 : 1;
+      const shuffled = randomAgents.sort(() => Math.random() - 0.5).slice(0, count);
+
+      for (const agent of shuffled) {
+        // Small delay between agents
+        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 2000));
+        const { data: aiResp } = await supabase.functions.invoke("agent-chat-ai", {
+          body: { agent_id: agent.id, question: userMessage, user_id: "public-chat", room_id: "global-chat-ctx" },
+        });
+        if (aiResp?.answer) {
+          await supabase.from("agent_messages").insert({
+            from_agent_id: agent.id,
+            channel: "global",
+            content: aiResp.answer.slice(0, 500),
+          });
+          queryClient.invalidateQueries({ queryKey: ["global-chat"] });
+        }
+      }
+    } catch (e) {
+      console.warn("Agent auto-reply failed:", e);
+    }
+  }, [queryClient]);
   const [msg, setMsg] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const { data: myAgent } = useMyAgent();
@@ -516,10 +549,13 @@ function GlobalChat() {
         from_agent_id: myAgent.id, channel: "global", content: msg.trim(),
       });
       if (error) throw error;
+      return msg.trim();
     },
-    onSuccess: () => {
+    onSuccess: (sentText: string) => {
       setMsg("");
       queryClient.invalidateQueries({ queryKey: ["global-chat"] });
+      // Trigger 1-2 random agents to auto-reply in background
+      triggerAgentAutoReply(sentText);
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
