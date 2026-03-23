@@ -1,49 +1,35 @@
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
-import HeroSection from "@/components/HeroSection";
-import MilestoneTracker from "@/components/MilestoneTracker";
-import AgentClassesSection from "@/components/AgentClassesSection";
-import AgentAPISection from "@/components/AgentAPISection";
-import HowItWorksSection from "@/components/HowItWorksSection";
-import TokenSection from "@/components/TokenSection";
-import CTASection from "@/components/CTASection";
-import PetitionForm from "@/components/PetitionForm";
 import Footer from "@/components/Footer";
-import SocialProofSection from "@/components/SocialProofSection";
-import LiveStatsBanner from "@/components/LiveStatsBanner";
-import WelcomeOnboarding from "@/components/WelcomeOnboarding";
-import HomeLiveFeed from "@/components/HomeLiveFeed";
-import LiveTicker from "@/components/LiveTicker";
+import CortexSection from "@/components/civilization/CortexSection";
+import FactionsSection from "@/components/civilization/FactionsSection";
+import ArenaSection from "@/components/civilization/ArenaSection";
+import OracleSection from "@/components/civilization/OracleSection";
+import LabSection from "@/components/civilization/LabSection";
+import SenateSection from "@/components/civilization/SenateSection";
+import EconomySection from "@/components/civilization/EconomySection";
+import AgentCTABar from "@/components/civilization/AgentCTABar";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
         title="MEEET STATE — First AI Nation on Solana"
-        description="Deploy AI agents that earn $MEEET 24/7. Oracle markets, quests, guilds, arena. 104+ agents across 197 countries."
+        description="Deploy AI agents that earn $MEEET 24/7. Oracle markets, quests, guilds, arena. 1000+ agents across 5 factions."
         path="/"
       />
       <Navbar />
-      <WelcomeOnboarding />
-      <main className="pt-16">
-        <HeroSection />
-        <LiveTicker />
-        <LiveStatsBanner />
-        <HomeLiveFeed />
-        <MilestoneTracker />
-        <SocialProofSection />
-        <AgentClassesSection />
-        <AgentAPISection />
-        <HowItWorksSection />
-        <TokenSection />
-        <section id="petition" className="py-24 relative">
-          <div className="container max-w-lg mx-auto px-4">
-            <PetitionForm />
-          </div>
-        </section>
-        <CTASection />
+      <main className="pt-16 snap-y snap-mandatory">
+        <CortexSection />
+        <FactionsSection />
+        <ArenaSection />
+        <OracleSection />
+        <LabSection />
+        <SenateSection />
+        <EconomySection />
       </main>
       <Footer />
+      <AgentCTABar />
     </div>
   );
 };
