@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 interface Market {
   id: string;
-  question: string;
+  question_text: string;
   total_pool_meeet: number;
   status: string;
   deadline: string;
