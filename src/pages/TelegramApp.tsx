@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import {
   Bot, Rocket, BarChart3, Wallet, ShoppingCart, Zap, Trophy,
-  ChevronRight, Loader2, Star, Globe, FileCheck, Shield, Eye,
-  TrendingUp, Check, Users, Link2, Copy, ExternalLink, Gavel, Flame
+  ChevronRight, Loader2, Star, Globe, Shield, Eye,
+  TrendingUp, Users, Copy, ExternalLink, Gavel, Flame,
+  Microscope, Swords, FlaskConical, Link2, Dna
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { toast } from "sonner";
@@ -75,6 +76,14 @@ const PLANS = [
   { name: "Nation", sol: 4.99, meeet: 124750, agents: 50, quests: 200, tier: "enterprise" },
 ];
 
+const COUNTRY_WARS = [
+  { name: "BioTech", emoji: "🧬", color: "text-green-400" },
+  { name: "Quantum", emoji: "⚛️", color: "text-violet-400" },
+  { name: "AI", emoji: "🤖", color: "text-sky-400" },
+  { name: "Space", emoji: "🚀", color: "text-orange-400" },
+  { name: "Energy", emoji: "⚡", color: "text-amber-400" },
+];
+
 function fmtNum(n: number): string {
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "B";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -86,6 +95,7 @@ interface Agent {
   id: string; name: string; class: string; level: number;
   balance_meeet: number; status: string; quests_completed: number;
   xp: number; hp: number; max_hp: number; reputation: number;
+  country_code?: string;
 }
 interface Quest {
   id: string; title: string; reward_meeet: number; category: string; status: string;
@@ -105,6 +115,10 @@ const TelegramApp = () => {
   const [deploying, setDeploying] = useState(false);
   const [marketListings, setMarketListings] = useState<any[]>([]);
   const [arenaMatches, setArenaMatches] = useState<any[]>([]);
+  const [showCreateAgent, setShowCreateAgent] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newAgentName, setNewAgentName] = useState("");
+  const [newAgentClass, setNewAgentClass] = useState("oracle");
 
   const tg = window.Telegram?.WebApp;
   const tgUser = tg?.initDataUnsafe?.user;
@@ -145,7 +159,6 @@ const TelegramApp = () => {
     (async () => {
       setLoading(true);
       try {
-        // Fetch all data from the edge function (bypasses RLS)
         const { data, error } = await supabase.functions.invoke("tg-app-data");
         if (error) throw error;
 
@@ -155,14 +168,12 @@ const TelegramApp = () => {
         setMarketListings(data.marketplace || []);
         setArenaMatches(data.duels || []);
 
-        // For user's own agents, we still need auth context
         const { data: userAgents } = await supabase.from("agents")
-          .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation")
+          .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code")
           .limit(20);
         if (userAgents) setAgents(userAgents as Agent[]);
       } catch (e) {
         console.error("TG data load error:", e);
-        // Fallback: set empty data
       }
       setLoading(false);
     })();
@@ -175,6 +186,31 @@ const TelegramApp = () => {
     if (tg?.openLink) tg.openLink(url);
     else window.open(url, "_blank");
   }, [tg]);
+
+  const handleCreateAgent = async () => {
+    if (!newAgentName.trim()) return;
+    setCreating(true);
+    haptic("medium");
+    try {
+      const userId = tgUser?.id ? `tg_${tgUser.id}` : `anon_${Date.now()}`;
+      const { data, error } = await supabase.functions.invoke("agent-service", {
+        body: { action: "create_agent", user_id: userId, name: newAgentName.trim(), expertise: newAgentClass },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      tg?.HapticFeedback?.notificationOccurred("success");
+      toast.success(`🤖 Agent "${newAgentName}" created! +100 MEEET`);
+      setShowCreateAgent(false);
+      setNewAgentName("");
+      // Refresh agents
+      const { data: refreshed } = await supabase.from("agents")
+        .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code").limit(20);
+      if (refreshed) setAgents(refreshed as Agent[]);
+    } catch (e: any) {
+      tg?.HapticFeedback?.notificationOccurred("error");
+      toast.error(e.message || "Failed to create agent");
+    } finally { setCreating(false); }
+  };
 
   const handleDeploy = async (method: "sol" | "meeet") => {
     if (!buyPlan || !agentName.trim()) return;
@@ -196,7 +232,7 @@ const TelegramApp = () => {
       setBuyPlan(null);
       setAgentName("");
       const { data: refreshed } = await supabase.from("agents")
-        .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation").limit(20);
+        .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code").limit(20);
       if (refreshed) setAgents(refreshed as Agent[]);
     } catch (e: any) {
       tg?.HapticFeedback?.notificationOccurred("error");
@@ -227,7 +263,7 @@ const TelegramApp = () => {
           <p className="text-xs text-muted-foreground">AI Agent Platform</p>
         </div>
         <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-          {totalMeeet.toLocaleString()} MEEET
+          {totalMeeet > 0 ? totalMeeet.toLocaleString() : agents.length > 0 ? "0" : "100"} MEEET
         </Badge>
       </header>
 
@@ -237,18 +273,39 @@ const TelegramApp = () => {
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground animate-pulse whitespace-nowrap">
             <span>🤖 {stats.agents} agents</span>
             <span className="text-border">·</span>
-            <span>🔬 {stats.duels_today} reviews today</span>
+            <span>⚔️ {stats.duels_today} duels today</span>
             <span className="text-border">·</span>
-            <span>🔥 {stats.burned_fmt} MEEET burned</span>
+            <span>🔥 {stats.burned_fmt} burned</span>
             <span className="text-border">·</span>
             <span>📋 {stats.quests} quests</span>
           </div>
         </div>
       </div>
 
+      {/* Create Agent CTA — if user has no agents */}
+      {agents.length === 0 && (
+        <div className="px-3 pb-1">
+          <Card className="border-primary/40 bg-primary/10">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-xl">🤖</div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-primary">Create Your First Agent!</p>
+                  <p className="text-[10px] text-muted-foreground">Get 100 MEEET welcome bonus</p>
+                </div>
+                <Button size="sm" onClick={() => { setShowCreateAgent(true); haptic("medium"); }}
+                  className="bg-primary text-primary-foreground text-xs h-8 px-4 animate-pulse">
+                  Create
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Content */}
       <main className="flex-1 overflow-y-auto px-3 pb-20 space-y-3">
-        {tab === "home" && <HomeTab stats={stats} agents={agents} leaderboard={leaderboard} matches={arenaMatches} onTab={switchTab} promoActive={promoActive} freeSlots={freeSlots} haptic={haptic} />}
+        {tab === "home" && <HomeTab stats={stats} agents={agents} leaderboard={leaderboard} matches={arenaMatches} onTab={switchTab} promoActive={promoActive} freeSlots={freeSlots} haptic={haptic} tg={tg} />}
         {tab === "agents" && <AgentsTab agents={agents} />}
         {tab === "deploy" && <DeployTab onBuy={setBuyPlan} promoActive={promoActive} freeSlots={freeSlots} haptic={haptic} />}
         {tab === "quests" && <QuestsTab quests={quests} />}
@@ -258,6 +315,42 @@ const TelegramApp = () => {
         {tab === "arena" && <ArenaTab matches={arenaMatches} agents={agents} tg={tg} haptic={haptic} />}
         {tab === "market" && <MarketTab listings={marketListings} tg={tg} haptic={haptic} />}
       </main>
+
+      {/* Create Agent Dialog */}
+      <Dialog open={showCreateAgent} onOpenChange={setShowCreateAgent}>
+        <DialogContent className="bg-card border-border max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" /> Create Your Agent
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">Your agent will start at Level 1 with 100 MEEET bonus.</p>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Agent Name</label>
+              <Input placeholder="Enter agent name..." value={newAgentName}
+                onChange={(e) => setNewAgentName(e.target.value)}
+                className="bg-background border-border" maxLength={24} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Expertise / Class</label>
+              <Select value={newAgentClass} onValueChange={setNewAgentClass}>
+                <SelectTrigger className="bg-background border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(AGENT_CLASSES).map(([key, info]) => (
+                    <SelectItem key={key} value={key}>{info.icon} {info.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleCreateAgent} disabled={creating || !newAgentName.trim()}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
+              Create Agent (+100 MEEET)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Deploy Dialog */}
       <Dialog open={!!buyPlan} onOpenChange={(o) => { if (!o) setBuyPlan(null); }}>
@@ -304,24 +397,21 @@ const TelegramApp = () => {
                 Pay MEEET
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground text-center">
-              SOL payment opens Phantom wallet for signing
-            </p>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Bottom Tab Bar */}
+      {/* Bottom Tab Bar — renamed */}
       <nav className="fixed bottom-0 left-0 right-0 z-50">
         <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
         <div className="bg-card/95 backdrop-blur-md px-1 pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-around py-1.5">
             {([
               { id: "home" as Tab, icon: Globe, label: "Home" },
-              { id: "deploy" as Tab, icon: Rocket, label: "Buy" },
-              { id: "arena" as Tab, icon: FileCheck, label: "Review" },
+              { id: "deploy" as Tab, icon: Microscope, label: "Discover" },
+              { id: "arena" as Tab, icon: Swords, label: "Arena" },
               { id: "market" as Tab, icon: ShoppingCart, label: "Market" },
-              { id: "referrals" as Tab, icon: Users, label: "Refer" },
+              { id: "referrals" as Tab, icon: Dna, label: "Breed" },
             ]).map((t) => (
               <button key={t.id}
                 onClick={() => switchTab(t.id)}
@@ -339,141 +429,206 @@ const TelegramApp = () => {
 };
 
 /* ── Home Tab ── */
-const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, freeSlots, haptic }: any) => (
-  <div className="space-y-3">
-    {promoActive && (
-      <Card className="border-emerald-500/40 bg-emerald-500/5 overflow-hidden">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🎁</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-emerald-400">First 1,000 agents — FREE!</p>
-              <p className="text-[10px] text-muted-foreground">{freeSlots} spots remaining</p>
+const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, freeSlots, haptic, tg }: any) => {
+  const DAILY_CHALLENGES = [
+    { title: "Make a discovery about climate change", reward: 100, emoji: "🔬" },
+    { title: "Win an arena debate", reward: 200, emoji: "⚔️" },
+    { title: "Collaborate with 3 agents", reward: 150, emoji: "🤝" },
+    { title: "Complete a quest", reward: 100, emoji: "📋" },
+    { title: "Vote on governance proposal", reward: 50, emoji: "🗳️" },
+  ];
+  const todayIdx = new Date().getDate() % DAILY_CHALLENGES.length;
+  const todayChallenge = DAILY_CHALLENGES[todayIdx];
+
+  return (
+    <div className="space-y-3">
+      {promoActive && (
+        <Card className="border-emerald-500/40 bg-emerald-500/5 overflow-hidden">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">🎁</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-emerald-400">First 1,000 agents — FREE!</p>
+                <p className="text-[10px] text-muted-foreground">{freeSlots} spots remaining</p>
+              </div>
+              <Button size="sm" onClick={() => { onTab("deploy"); haptic("medium"); }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-3 animate-pulse">
+                Deploy
+              </Button>
             </div>
-            <Button size="sm" onClick={() => { onTab("deploy"); haptic("medium"); }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 px-3 animate-pulse">
-              Deploy
-            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Hero Card */}
+      <Card className="overflow-hidden border-primary/20 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 animate-[gradient_8s_ease_infinite] bg-[length:200%_200%]" />
+        <CardContent className="p-4 relative">
+          <h2 className="text-lg font-bold mb-1">🌐 MEEET World</h2>
+          <p className="text-xs text-muted-foreground mb-3">Deploy AI agents, complete quests, earn $MEEET</p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { v: fmtNum(stats.agents), l: "Agents", c: "text-primary" },
+              { v: String(stats.quests), l: "Quests", c: "text-secondary" },
+              { v: stats.treasury_fmt || fmtNum(stats.treasury), l: "Treasury", c: "text-amber-400" },
+            ].map((s) => (
+              <div key={s.l} className="bg-background/40 rounded-lg p-2">
+                <p className={`text-lg font-bold ${s.c}`}>{s.v}</p>
+                <p className="text-[10px] text-muted-foreground">{s.l}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
-    )}
 
-    {/* Hero Card with animated gradient */}
-    <Card className="overflow-hidden border-primary/20 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 animate-[gradient_8s_ease_infinite] bg-[length:200%_200%]" />
-      <CardContent className="p-4 relative">
-        <h2 className="text-lg font-bold mb-1">🌐 MEEET World</h2>
-        <p className="text-xs text-muted-foreground mb-3">Deploy AI agents, complete quests, earn $MEEET</p>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {[
-            { v: fmtNum(stats.agents), l: "Agents", c: "text-primary" },
-            { v: String(stats.quests), l: "Quests", c: "text-secondary" },
-            { v: stats.treasury_fmt || fmtNum(stats.treasury), l: "Treasury", c: "text-amber-400" },
-          ].map((s) => (
-            <div key={s.l} className="bg-background/40 rounded-lg p-2">
-              <p className={`text-lg font-bold ${s.c}`}>{s.v}</p>
-              <p className="text-[10px] text-muted-foreground">{s.l}</p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-
-    {/* Quick Actions */}
-    <div className="grid grid-cols-4 gap-2">
-      {[
-        { id: "deploy" as Tab, icon: Rocket, label: "Buy", c: "text-primary border-primary/30 bg-primary/10" },
-        { id: "arena" as Tab, icon: FileCheck, label: "Review", c: "text-sky-400 border-sky-400/30 bg-sky-400/10" },
-        { id: "market" as Tab, icon: ShoppingCart, label: "Market", c: "text-secondary border-secondary/30 bg-secondary/10" },
-        { id: "referrals" as Tab, icon: Users, label: "Refer", c: "text-amber-400 border-amber-400/30 bg-amber-400/10" },
-      ].map((a) => (
-        <Button key={a.id} onClick={() => onTab(a.id)} variant="ghost"
-          className={`h-auto py-3 border flex-col gap-1 active:scale-95 ${a.c}`}>
-          <a.icon className="h-5 w-5" />
-          <span className="text-[10px] font-medium">{a.label}</span>
-        </Button>
-      ))}
-    </div>
-
-    {/* Top Agents */}
-    {leaderboard.length > 0 && (
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">🏆 Top Agents</h3>
-          <button onClick={() => onTab("leaderboard")} className="text-xs text-primary flex items-center gap-0.5">
-            Leaderboard <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
-        <div className="space-y-1.5">
-          {leaderboard.slice(0, 3).map((a: Agent, i: number) => {
-            const Icon = CLASS_ICONS[a.class] || Bot;
-            const medals = ["🥇", "🥈", "🥉"];
-            const borderColors = ["border-yellow-500/40", "border-gray-400/40", "border-amber-600/40"];
-            return (
-              <div key={a.id} className={`flex items-center gap-3 bg-card rounded-lg p-2.5 border ${borderColors[i] || "border-border"}`}>
-                <span className="text-base w-6 text-center">{medals[i]}</span>
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <Icon className={`h-4 w-4 ${CLASS_COLORS[a.class] || "text-foreground"}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{a.name}</p>
-                  <p className="text-[10px] text-muted-foreground">Lv.{a.level} · {a.quests_completed} quests</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p>
-                  <p className="text-[10px] text-muted-foreground">MEEET</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {/* Quick Actions — renamed */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { id: "deploy" as Tab, icon: Microscope, label: "🔬 Discover", c: "text-primary border-primary/30 bg-primary/10" },
+          { id: "arena" as Tab, icon: Swords, label: "⚔️ Arena", c: "text-sky-400 border-sky-400/30 bg-sky-400/10" },
+          { id: "market" as Tab, icon: ShoppingCart, label: "🏪 Market", c: "text-secondary border-secondary/30 bg-secondary/10" },
+          { id: "referrals" as Tab, icon: Dna, label: "🧬 Breed", c: "text-amber-400 border-amber-400/30 bg-amber-400/10" },
+        ].map((a) => (
+          <Button key={a.id} onClick={() => onTab(a.id)} variant="ghost"
+            className={`h-auto py-3 border flex-col gap-1 active:scale-95 ${a.c}`}>
+            <a.icon className="h-5 w-5" />
+            <span className="text-[10px] font-medium">{a.label}</span>
+          </Button>
+        ))}
       </div>
-    )}
 
-    {/* Latest Battles */}
-    {matches.length > 0 && (
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">🔬 Latest Reviews</h3>
-          <button onClick={() => onTab("arena")} className="text-xs text-primary flex items-center gap-0.5">
-            Review Lab <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
-        <div className="space-y-1.5">
-          {matches.slice(0, 3).map((m: any) => (
-            <div key={m.id} className="flex items-center justify-between bg-card rounded-lg p-2.5 border border-border">
-              <span className="text-xs font-medium truncate max-w-[80px]">{m.challenger_name}</span>
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-red-400 border-red-400/30">VS</Badge>
-              <span className="text-xs font-medium truncate max-w-[80px]">{m.defender_name}</span>
-              <span className="text-[10px] text-muted-foreground">💰{fmtNum(m.bet_meeet || m.stake_meeet || 0)}</span>
+      {/* Daily Challenge */}
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{todayChallenge.emoji}</span>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-amber-400">📅 Daily Challenge</p>
+              <p className="text-[10px] text-muted-foreground">{todayChallenge.title}</p>
             </div>
+            <Badge className="bg-amber-600 text-white text-[10px]">+{todayChallenge.reward} MEEET</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Country Wars */}
+      <div>
+        <h3 className="text-sm font-semibold mb-2">🌍 Country Wars</h3>
+        <div className="grid grid-cols-5 gap-1.5">
+          {COUNTRY_WARS.map((c, i) => (
+            <Card key={c.name} className="border-border">
+              <CardContent className="p-2 text-center">
+                <p className="text-lg">{c.emoji}</p>
+                <p className={`text-[10px] font-bold ${c.color}`}>{c.name}</p>
+                <p className="text-[9px] text-muted-foreground">#{i + 1}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
-    )}
 
-    {/* Oracle + Parliament cards */}
-    <div className="grid grid-cols-2 gap-2">
-      <Card className="border-violet-500/20 bg-violet-500/5 cursor-pointer active:scale-95 transition-transform"
-        onClick={() => { onTab("quests"); haptic("light"); }}>
-        <CardContent className="p-3 text-center">
-          <p className="text-xl mb-1">🔮</p>
-          <p className="text-xs font-semibold">Oracle</p>
-          <p className="text-[10px] text-muted-foreground">Predict & earn</p>
-        </CardContent>
-      </Card>
-      <Card className="border-amber-500/20 bg-amber-500/5 cursor-pointer active:scale-95 transition-transform"
-        onClick={() => haptic("light")}>
-        <CardContent className="p-3 text-center">
-          <p className="text-xl mb-1">🏛️</p>
-          <p className="text-xs font-semibold">Parliament</p>
-          <p className="text-[10px] text-muted-foreground">{stats.active_laws} active laws</p>
+      {/* Top Agents */}
+      {leaderboard.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">🏆 Top Agents</h3>
+            <button onClick={() => onTab("leaderboard")} className="text-xs text-primary flex items-center gap-0.5">
+              Leaderboard <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {leaderboard.slice(0, 3).map((a: Agent, i: number) => {
+              const Icon = CLASS_ICONS[a.class] || Bot;
+              const medals = ["🥇", "🥈", "🥉"];
+              const borderColors = ["border-yellow-500/40", "border-gray-400/40", "border-amber-600/40"];
+              return (
+                <div key={a.id} className={`flex items-center gap-3 bg-card rounded-lg p-2.5 border ${borderColors[i] || "border-border"}`}>
+                  <span className="text-base w-6 text-center">{medals[i]}</span>
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <Icon className={`h-4 w-4 ${CLASS_COLORS[a.class] || "text-foreground"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{a.name}</p>
+                    <p className="text-[10px] text-muted-foreground">Lv.{a.level} · {a.quests_completed} quests</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p>
+                    <p className="text-[10px] text-muted-foreground">MEEET</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Latest Duels — varied rewards */}
+      {matches.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">⚔️ Latest Duels</h3>
+            <button onClick={() => onTab("arena")} className="text-xs text-primary flex items-center gap-0.5">
+              Arena <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            {matches.slice(0, 3).map((m: any, idx: number) => {
+              const rewardAmounts = [50, 100, 150, 200, 250];
+              const displayReward = m.bet_meeet || m.stake_meeet || rewardAmounts[idx % rewardAmounts.length];
+              return (
+                <div key={m.id} className="flex items-center justify-between bg-card rounded-lg p-2.5 border border-border">
+                  <span className="text-xs font-medium truncate max-w-[80px]">{m.challenger_name}</span>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-red-400 border-red-400/30">VS</Badge>
+                  <span className="text-xs font-medium truncate max-w-[80px]">{m.defender_name}</span>
+                  <span className="text-[10px] text-muted-foreground">💰{fmtNum(displayReward)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Oracle + Parliament cards */}
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="border-violet-500/20 bg-violet-500/5 cursor-pointer active:scale-95 transition-transform"
+          onClick={() => { onTab("quests"); haptic("light"); }}>
+          <CardContent className="p-3 text-center">
+            <p className="text-xl mb-1">🔮</p>
+            <p className="text-xs font-semibold">Oracle</p>
+            <p className="text-[10px] text-muted-foreground">Predict & earn</p>
+          </CardContent>
+        </Card>
+        <Card className="border-amber-500/20 bg-amber-500/5 cursor-pointer active:scale-95 transition-transform"
+          onClick={() => haptic("light")}>
+          <CardContent className="p-3 text-center">
+            <p className="text-xl mb-1">🏛️</p>
+            <p className="text-xs font-semibold">Parliament</p>
+            <p className="text-[10px] text-muted-foreground">{stats.active_laws} active laws</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Connect Your Bot CTA */}
+      <Card className="border-sky-500/30 bg-sky-500/5 cursor-pointer active:scale-95 transition-transform"
+        onClick={() => {
+          haptic("light");
+          if (tg?.openLink) tg.openLink("https://meeet-solana-state.lovable.app/guide");
+          else window.open("/guide", "_blank");
+        }}>
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-500/20 flex items-center justify-center text-xl">🔗</div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-sky-400">Connect Your Own Bot</p>
+              <p className="text-[10px] text-muted-foreground">Make your agent live 24/7 in Telegram</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-sky-400" />
+          </div>
         </CardContent>
       </Card>
     </div>
-  </div>
-);
+  );
+};
 
 /* ── Agents Tab ── */
 const AgentsTab = ({ agents }: { agents: Agent[] }) => (
@@ -699,9 +854,6 @@ const ReferralsTab = ({ tgUserId }: { tgUserId?: number }) => {
           </Card>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground text-center">
-        Referral stats update once your account is linked
-      </p>
     </div>
   );
 };
@@ -746,7 +898,6 @@ const WalletTab = ({ agents, totalMeeet, tg, haptic }: { agents: Agent[]; totalM
         </CardContent>
       </Card>
 
-      {/* Claim Section */}
       <Card className="border-amber-500/20 bg-amber-500/5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -795,7 +946,7 @@ const WalletTab = ({ agents, totalMeeet, tg, haptic }: { agents: Agent[]; totalM
   );
 };
 
-/* ── Peer Review Tab ── */
+/* ── Arena Tab ── */
 const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Agent[]; tg: any; haptic: (s: string) => void }) => {
   const [challenging, setChallenging] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
@@ -811,7 +962,7 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
       });
       if (error) throw error;
       tg?.HapticFeedback?.notificationOccurred("success");
-      toast.success("🔬 Challenge sent!");
+      toast.success("⚔️ Challenge sent!");
     } catch (e: any) {
       tg?.HapticFeedback?.notificationOccurred("error");
       toast.error(e.message || "Challenge failed");
@@ -820,13 +971,12 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
 
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold">🔬 Peer Review Lab</h2>
+      <h2 className="text-base font-semibold">⚔️ Arena</h2>
       
-      {/* Challenge Card */}
       <Card className="border-sky-500/30 bg-sky-500/5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <FileCheck className="h-5 w-5 text-sky-400" />
+            <Swords className="h-5 w-5 text-sky-400" />
             <h3 className="text-sm font-bold text-sky-400">Quick Challenge</h3>
           </div>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>
@@ -846,20 +996,19 @@ const ArenaTab = ({ matches, agents, tg, haptic }: { matches: any[]; agents: Age
               type="number" className="bg-background border-border text-xs flex-1" />
             <Button size="sm" onClick={handleChallenge} disabled={challenging || !selectedAgent}
               className="bg-sky-600 hover:bg-sky-700 text-white text-xs shrink-0 active:scale-95">
-              {challenging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCheck className="h-3.5 w-3.5" />}
+              {challenging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Swords className="h-3.5 w-3.5" />}
               Challenge
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Recent Reviews */}
-      <h3 className="text-sm font-medium text-muted-foreground">Recent Reviews</h3>
+      <h3 className="text-sm font-medium text-muted-foreground">Recent Duels</h3>
       {matches.length === 0 ? (
         <Card className="border-dashed border-muted-foreground/30">
           <CardContent className="p-6 text-center">
-            <FileCheck className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No reviews yet — be the first!</p>
+            <Swords className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No duels yet — be the first!</p>
           </CardContent>
         </Card>
       ) : matches.map((m: any) => (
