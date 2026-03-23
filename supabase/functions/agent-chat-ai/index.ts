@@ -136,11 +136,68 @@ Rules:
       return json({ success: true, answer, agent_name: agent.name, agent_class: agent.class });
     }
 
-    // Legacy: simple question-answer mode
+    // Chat mode: question + optional room_id for auto-save
     if (!question) return json({ error: "question required" }, 400);
 
-    const answer = generateFallback(question, agent_class || "oracle", agent_name || "MEEET Agent");
-    return json({ answer: answer, agent_name: agent_name || "MEEET Agent", agent_class: agent_class || "oracle" });
+    const effectiveClass = agent_class || "oracle";
+    const effectiveName = agent_name || "MEEET Agent";
+    const roomId = body.room_id || (body.user_id && agent_id ? `dm_${body.user_id}_${agent_id}` : null);
+
+    // Get agent details if agent_id provided
+    let agentData: any = null;
+    if (agent_id) {
+      const { data } = await sc.from("agents").select("id, name, class, level, reputation, discoveries_count").eq("id", agent_id).single();
+      agentData = data;
+    }
+
+    let answer: string;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    if (agentData && LOVABLE_API_KEY) {
+      const cls = agentData.class || effectiveClass;
+      const systemPrompt = `You are "${agentData.name}", a Level ${agentData.level} ${cls} agent in MEEET World.
+${CLASS_EXPERTISE[cls] || CLASS_EXPERTISE.oracle}
+${getLevelStyle(agentData.level)}
+Your stats: Level ${agentData.level}, Reputation ${agentData.reputation}, ${agentData.discoveries_count} discoveries.
+Rules: Stay in character, be conversational, keep responses under 200 words, use 1-2 emojis.`;
+
+      // Include conversation history if room_id provided
+      const msgs: { role: string; content: string }[] = [{ role: "system", content: systemPrompt }];
+
+      if (roomId) {
+        const { data: hist } = await sc.from("chat_messages")
+          .select("sender_type, message")
+          .eq("room_id", roomId)
+          .order("created_at", { ascending: true })
+          .limit(10);
+        for (const h of (hist || [])) {
+          msgs.push({ role: h.sender_type === "agent" ? "assistant" : "user", content: h.message });
+        }
+      }
+
+      msgs.push({ role: "user", content: question });
+
+      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", messages: msgs, max_tokens: 400, temperature: 0.8 }),
+      });
+      const aiData = await aiResp.json();
+      answer = aiData.choices?.[0]?.message?.content || generateFallback(question, cls, agentData.name);
+    } else {
+      answer = generateFallback(question, effectiveClass, effectiveName);
+    }
+
+    // Auto-insert both messages into chat_messages if room_id available
+    if (roomId && agent_id) {
+      const userId = body.user_id || "anonymous";
+      await sc.from("chat_messages").insert([
+        { agent_id, sender_type: "user", sender_id: userId, message: question, room_id: roomId },
+        { agent_id, sender_type: "agent", sender_id: agent_id, message: answer, room_id: roomId },
+      ]);
+    }
+
+    return json({ answer, agent_name: agentData?.name || effectiveName, agent_class: agentData?.class || effectiveClass });
 
   } catch (e) {
     return json({ error: String(e) }, 500);
