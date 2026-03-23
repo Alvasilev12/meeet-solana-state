@@ -118,6 +118,7 @@ const App = () => (
                   <Route path="/breeding" element={<BreedingLab />} />
                   <Route path="/tg" element={<TelegramApp />} />
                   <Route path="/guide" element={<Guide />} />
+                  <Route path="/pricing" element={<Pricing />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
