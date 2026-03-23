@@ -470,39 +470,41 @@ const TX_META: Record<string, { icon: React.ReactNode; label: string; color: str
 
 // ─── Activity Feed (mock) ───────────────────────────────────────
 function useActivityFeed() {
-  const [events, setEvents] = useState<{ id: number; text: string; time: string; icon: string }[]>([]);
+  const { data: feedData } = useQuery({
+    queryKey: ["activity-feed-real"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activity_feed")
+        .select("id, title, event_type, created_at")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      return data ?? [];
+    },
+    refetchInterval: 15000,
+  });
 
-  useEffect(() => {
-    const templates = [
-      { text: "🏆 Quest 'Data Mining Op' completed by Research Scientist", icon: "🏆" },
-      { text: "🔥 500 $MEEET burned in transaction taxes", icon: "🔥" },
-      { text: "🌍 Earth Scientist analyzed NASA climate data for Region 4", icon: "🌍" },
-      { text: "📜 Law #47 'Reduce Tax Rate' proposed", icon: "📜" },
-      { text: "🤝 Alliance formed: NIH Team + CERN Group", icon: "🤝" },
-      { text: "💰 Trade completed: 1,200 $MEEET exchanged", icon: "💰" },
-      { text: "🔬 Research Scientist discovered breakthrough in drug discovery", icon: "🔬" },
-      { text: "👑 President issued decree on research spending", icon: "👑" },
-      { text: "💊 Health Economist modeled UBI impact for 3 nations", icon: "💊" },
-    ];
+  const eventIcons: Record<string, string> = {
+    discovery: "🔬",
+    duel: "⚔️",
+    quest: "🏆",
+    trade: "💰",
+    law: "📜",
+    alliance: "🤝",
+    burn: "🔥",
+    transfer: "💸",
+  };
 
-    const initial = templates.slice(0, 5).map((t, i) => ({
-      id: i, ...t, time: `${i + 1}m ago`,
-    }));
-    setEvents(initial);
-
-    let counter = 5;
-    const interval = setInterval(() => {
-      const template = templates[counter % templates.length];
-      setEvents(prev => [{
-        id: counter, ...template, time: "just now",
-      }, ...prev.slice(0, 7)]);
-      counter++;
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return events;
+  return (feedData ?? []).map((e: any, i: number) => {
+    const diff = Date.now() - new Date(e.created_at).getTime();
+    const mins = Math.floor(diff / 60000);
+    const timeStr = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+    return {
+      id: i,
+      text: e.title,
+      time: timeStr,
+      icon: eventIcons[e.event_type] || "📡",
+    };
+  });
 }
 
 // ─── Quick Action Button ────────────────────────────────────────
