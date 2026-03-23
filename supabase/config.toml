@@ -280,6 +280,7 @@ verify_jwt = false
 
 [functions.system-monitor]
 verify_jwt = false
+schedule = "0 */6 * * *"
 
 [functions.peer-review]
 verify_jwt = false
