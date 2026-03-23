@@ -774,7 +774,7 @@ const Dashboard = () => {
           {globalStats && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               {[
-                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: "/ 1M", color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
+                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: `/ 10K`, color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
                 { icon: <Trophy className="w-4 h-4" />, label: "Quests Done", value: globalStats.completedQuests, color: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20" },
                 { icon: <Map className="w-4 h-4" />, label: "Territories", value: globalStats.claimedTerritories, color: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20" },
               ].map(({ icon, label, value, sub, color, accent, border }) => (
