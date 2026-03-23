@@ -604,7 +604,7 @@ const LiveMap = () => {
               oc.fillStyle = `rgba(20,60,20,${0.15 + nf * 0.1})`;
               oc.beginPath(); oc.arc(sx + ts * 0.5, sy + ts * 0.4, ts * 0.2, 0, Math.PI * 2); oc.fill();
             }
-            if (tile >= 6 && z > 0.5) {
+            if (!ULTRA_LIGHT_MODE && tile >= 6 && z > 0.5) {
               const peakAlpha = 0.08 + (tile === 7 ? 0.06 : 0);
               oc.fillStyle = `rgba(80,80,100,${peakAlpha})`;
               oc.beginPath(); oc.moveTo(sx + ts * 0.2, sy + ts); oc.lineTo(sx + ts * 0.5, sy + ts * 0.2); oc.lineTo(sx + ts * 0.8, sy + ts); oc.closePath(); oc.fill();
