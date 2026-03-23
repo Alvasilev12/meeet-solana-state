@@ -691,19 +691,24 @@ const LiveMap = () => {
       }
 
       // ─── WEATHER CYCLING ──────────────────────────────────
-      weatherTimerRef.current -= 1;
-      if (weatherTimerRef.current <= 0) {
-        const r = Math.random();
-        if (r < 0.6) weatherRef.current = 'clear';
-        else if (r < 0.85) weatherRef.current = 'rain';
-        else weatherRef.current = 'storm';
-        weatherTimerRef.current = 600 + Math.random() * 1200;
-        setWeather(weatherRef.current);
-      }
+      if (!ULTRA_LIGHT_MODE) {
+        weatherTimerRef.current -= 1;
+        if (weatherTimerRef.current <= 0) {
+          const r = Math.random();
+          if (r < 0.6) weatherRef.current = 'clear';
+          else if (r < 0.85) weatherRef.current = 'rain';
+          else weatherRef.current = 'storm';
+          weatherTimerRef.current = 600 + Math.random() * 1200;
+          setWeather(weatherRef.current);
+        }
 
-      if (weatherRef.current === 'storm' && Math.random() < 0.003) {
-        ctx.fillStyle = 'rgba(200,220,255,0.06)';
-        ctx.fillRect(0, 0, w, h);
+        if (weatherRef.current === 'storm' && Math.random() < 0.003) {
+          ctx.fillStyle = 'rgba(200,220,255,0.06)';
+          ctx.fillRect(0, 0, w, h);
+        }
+      } else if (weatherRef.current !== 'clear') {
+        weatherRef.current = 'clear';
+        setWeather('clear');
       }
 
       // ─── DISTRICT ZONE GLOWS ──────────────────────────────
