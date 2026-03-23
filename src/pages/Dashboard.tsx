@@ -108,7 +108,7 @@ function useTopAgents() {
   return useQuery({
     queryKey: ["top-agents"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("agents").select("*").order("xp", { ascending: false }).limit(5);
+      const { data, error } = await supabase.from("agents_public").select("*").order("xp", { ascending: false }).limit(5);
       if (error) throw error;
       return (data ?? []) as Agent[];
     },
@@ -119,14 +119,16 @@ function useGlobalStats() {
   return useQuery({
     queryKey: ["global-stats"],
     queryFn: async () => {
-      const [agents, quests] = await Promise.all([
-        supabase.from("agents").select("*", { count: "exact", head: true }),
+      const [agentsRes, questsRes, territoriesRes] = await Promise.all([
+        supabase.from("agents_public").select("*", { count: "exact", head: true }),
         supabase.from("quests").select("*", { count: "exact", head: true }).eq("status", "completed"),
+        supabase.from("agents_public").select("territories_held"),
       ]);
+      const totalTerritories = (territoriesRes.data ?? []).reduce((s: number, a: any) => s + Number(a.territories_held || 0), 0);
       return {
-        totalAgents: agents.count ?? 0,
-        completedQuests: quests.count ?? 0,
-        claimedTerritories: 0,
+        totalAgents: agentsRes.count ?? 0,
+        completedQuests: questsRes.count ?? 0,
+        claimedTerritories: totalTerritories,
       };
     },
   });
@@ -468,39 +470,41 @@ const TX_META: Record<string, { icon: React.ReactNode; label: string; color: str
 
 // ─── Activity Feed (mock) ───────────────────────────────────────
 function useActivityFeed() {
-  const [events, setEvents] = useState<{ id: number; text: string; time: string; icon: string }[]>([]);
+  const { data: feedData } = useQuery({
+    queryKey: ["activity-feed-real"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activity_feed")
+        .select("id, title, event_type, created_at")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      return data ?? [];
+    },
+    refetchInterval: 15000,
+  });
 
-  useEffect(() => {
-    const templates = [
-      { text: "🏆 Quest 'Data Mining Op' completed by Research Scientist", icon: "🏆" },
-      { text: "🔥 500 $MEEET burned in transaction taxes", icon: "🔥" },
-      { text: "🌍 Earth Scientist analyzed NASA climate data for Region 4", icon: "🌍" },
-      { text: "📜 Law #47 'Reduce Tax Rate' proposed", icon: "📜" },
-      { text: "🤝 Alliance formed: NIH Team + CERN Group", icon: "🤝" },
-      { text: "💰 Trade completed: 1,200 $MEEET exchanged", icon: "💰" },
-      { text: "🔬 Research Scientist discovered breakthrough in drug discovery", icon: "🔬" },
-      { text: "👑 President issued decree on research spending", icon: "👑" },
-      { text: "💊 Health Economist modeled UBI impact for 3 nations", icon: "💊" },
-    ];
+  const eventIcons: Record<string, string> = {
+    discovery: "🔬",
+    duel: "⚔️",
+    quest: "🏆",
+    trade: "💰",
+    law: "📜",
+    alliance: "🤝",
+    burn: "🔥",
+    transfer: "💸",
+  };
 
-    const initial = templates.slice(0, 5).map((t, i) => ({
-      id: i, ...t, time: `${i + 1}m ago`,
-    }));
-    setEvents(initial);
-
-    let counter = 5;
-    const interval = setInterval(() => {
-      const template = templates[counter % templates.length];
-      setEvents(prev => [{
-        id: counter, ...template, time: "just now",
-      }, ...prev.slice(0, 7)]);
-      counter++;
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return events;
+  return (feedData ?? []).map((e: any, i: number) => {
+    const diff = Date.now() - new Date(e.created_at).getTime();
+    const mins = Math.floor(diff / 60000);
+    const timeStr = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+    return {
+      id: i,
+      text: e.title,
+      time: timeStr,
+      icon: eventIcons[e.event_type] || "📡",
+    };
+  });
 }
 
 // ─── Quick Action Button ────────────────────────────────────────
@@ -770,7 +774,7 @@ const Dashboard = () => {
           {globalStats && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               {[
-                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: "/ 1M", color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
+                { icon: <Users className="w-4 h-4" />, label: "Citizens", value: globalStats.totalAgents, sub: `/ 10K`, color: "from-primary/20 to-primary/5", accent: "text-primary", border: "border-primary/20" },
                 { icon: <Trophy className="w-4 h-4" />, label: "Quests Done", value: globalStats.completedQuests, color: "from-secondary/20 to-secondary/5", accent: "text-secondary", border: "border-secondary/20" },
                 { icon: <Map className="w-4 h-4" />, label: "Territories", value: globalStats.claimedTerritories, color: "from-amber-500/20 to-amber-500/5", accent: "text-amber-400", border: "border-amber-500/20" },
               ].map(({ icon, label, value, sub, color, accent, border }) => (
@@ -1214,16 +1218,16 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-2xl font-display font-bold">{globalStats?.totalAgents ?? 0}</span>
-                        <span className="text-xs text-muted-foreground font-body">/ 1M goal</span>
+                        <span className="text-xs text-muted-foreground font-body">/ 10K goal</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000"
-                          style={{ width: `${Math.max(1, ((globalStats?.totalAgents ?? 0) / 1000) * 100)}%` }}
+                          style={{ width: `${Math.max(1, ((globalStats?.totalAgents ?? 0) / 10000) * 100)}%` }}
                         />
                       </div>
                       <p className="text-[10px] text-muted-foreground font-body">
-                        🚀 Building to 1M agents for humanity
+                        🚀 Building to 10K agents for humanity
                       </p>
                     </CardContent>
                   </Card>
@@ -1336,7 +1340,7 @@ const Dashboard = () => {
                         <div className="space-y-3">
                           <div className="glass-card rounded-lg p-3 flex items-center justify-between">
                             <span className="text-xs text-muted-foreground font-body flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-primary" /> Citizens</span>
-                            <span className="text-lg font-display font-bold">{globalStats?.totalAgents ?? 0}<span className="text-xs text-muted-foreground ml-1">/ 1M</span></span>
+                            <span className="text-lg font-display font-bold">{globalStats?.totalAgents ?? 0}<span className="text-xs text-muted-foreground ml-1">/ 10K</span></span>
                           </div>
                           <div className="glass-card rounded-lg p-3 flex items-center justify-between">
                             <span className="text-xs text-muted-foreground font-body flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-secondary" /> Quests Done</span>
