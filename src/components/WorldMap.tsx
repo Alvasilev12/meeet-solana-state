@@ -681,8 +681,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     <div className="relative w-full h-full" style={{ height, minHeight: "320px" }}>
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
-      {/* Canvas — subtle connection lines */}
-      <WorldMapCanvas agentGeoData={[]} eventGeoData={[]} hubGeoData={hubGeoData} mapRef={mapRef} />
+      {/* Canvas removed for performance */}
 
       {/* ═══ TOP BAR: Stats + Filters + Search ═══ */}
       <div className={`absolute top-3 left-3 right-3 z-20 pointer-events-none ${isMobile ? 'flex flex-col gap-2' : 'flex items-center gap-2'}`}>
