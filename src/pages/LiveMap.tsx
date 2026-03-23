@@ -595,7 +595,7 @@ const LiveMap = () => {
                 oc.fillRect(sx + waveOff, sy + ts * 0.4, ts * 0.4, 1);
               }
             }
-            if (tile === 2 && z > 0.4) {
+            if (!ULTRA_LIGHT_MODE && tile === 2 && z > 0.4) {
               const foamAlpha = 0.03 + Math.sin(t * 0.002 + col + row * 0.7) * 0.015;
               oc.fillStyle = `rgba(80,140,80,${foamAlpha})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
