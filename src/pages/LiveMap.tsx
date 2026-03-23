@@ -31,9 +31,11 @@ interface LiveStats { agents: number; quests: number; treasury: number; treasury
 
 // ─── Constants ──────────────────────────────────────────────────
 const TILE = 32;
-const MAP_W = 200;
-const MAP_H = 140;
+const MAP_W = 120;
+const MAP_H = 84;
 const DAY_CYCLE_MS = 180000;
+const ULTRA_LIGHT_MODE = true;
+const MAX_RENDER_AGENTS = 180;
 
 const CLASS_CONFIG: Record<string, { color: string; speed: number; glow: string; icon: string }> = {
   warrior:   { color: "#ff3b3b", speed: 1.4, glow: "255,59,59", icon: "🔒" },
@@ -261,7 +263,7 @@ const LiveMap = () => {
   const navigate = useNavigate();
   const [agentCount, setAgentCount] = useState(0);
   const [events, setEvents] = useState<GameEvent[]>([]);
-  const [showEvents, setShowEvents] = useState(true);
+  const [showEvents, setShowEvents] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -304,7 +306,7 @@ const LiveMap = () => {
   // Init stars
   useEffect(() => {
     const stars: Star[] = [];
-    for (let i = 0; i < 600; i++) {
+    for (let i = 0; i < 120; i++) {
       stars.push({
         x: Math.random() * MAP_W * TILE, y: Math.random() * MAP_H * TILE,
         size: 0.3 + Math.random() * 2, twinkleSpeed: 0.001 + Math.random() * 0.006,
@@ -317,7 +319,7 @@ const LiveMap = () => {
   // Init fog patches
   useEffect(() => {
     const patches: typeof fogPatchesRef.current = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 4; i++) {
       patches.push({
         x: Math.random() * MAP_W * TILE, y: Math.random() * MAP_H * TILE,
         r: 200 + Math.random() * 400, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.15,
@@ -354,11 +356,12 @@ const LiveMap = () => {
       } catch { /* silent */ }
     };
     fetchLive();
-    const interval = setInterval(fetchLive, 30000);
+    const interval = setInterval(fetchLive, 120000);
     return () => clearInterval(interval);
   }, []);
 
   const addEvent = useCallback((text: string, color: string) => {
+    if (ULTRA_LIGHT_MODE) return;
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
     setEvents(prev => [{ id: eventIdRef.current++, text, time, color }, ...prev].slice(0, 50));
@@ -380,9 +383,10 @@ const LiveMap = () => {
       const { data: dbAgents } = await supabase
         .from("agents")
         .select("id, name, class, level, balance_meeet, hp, max_hp, status, pos_x, pos_y")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(MAX_RENDER_AGENTS);
       const real = dbAgents ?? [];
-      const agents: Agent[] = real.map((db, i) => {
+      const agents: Agent[] = real.slice(0, MAX_RENDER_AGENTS).map((db, i) => {
         const cls = db.class || "warrior";
         const cfg = CLASS_CONFIG[cls] || CLASS_CONFIG.warrior;
         let x = (db.pos_x || 50) * TILE, y = (db.pos_y || 50) * TILE;
@@ -421,6 +425,7 @@ const LiveMap = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'agents' }, (payload) => {
         const agents = agentsRef.current;
         if (payload.eventType === 'INSERT') {
+          if (agents.length >= MAX_RENDER_AGENTS) return;
           const db = payload.new as any;
           const cls = db.class || 'warrior';
           const cfg = CLASS_CONFIG[cls] || CLASS_CONFIG.warrior;
@@ -492,7 +497,7 @@ const LiveMap = () => {
           timer: 180,
         };
       }
-    }, 6000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [addEvent]);
 
@@ -516,7 +521,12 @@ const LiveMap = () => {
 
     const render = () => {
       const t = performance.now();
-      const dt = t - lastTime; lastTime = t;
+      const dt = t - lastTime;
+      if (dt < 33) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
+      lastTime = t;
       frameCount++;
       fpsTimer += dt;
       if (fpsTimer > 1000) { setFps(frameCount); frameCount = 0; fpsTimer = 0; }
@@ -531,10 +541,8 @@ const LiveMap = () => {
       const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
       const nightFactor = Math.max(0, Math.min(1, Math.sin(cyclePos * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5));
       const nf = Math.max(0, Math.min(1, nightFactor));
-      if (cyclePos < 0.15) setTimeLabel("Dawn");
-      else if (cyclePos < 0.4) setTimeLabel("Day");
-      else if (cyclePos < 0.55) setTimeLabel("Dusk");
-      else setTimeLabel("Night");
+      const nextLabel = cyclePos < 0.15 ? "Dawn" : cyclePos < 0.4 ? "Day" : cyclePos < 0.55 ? "Dusk" : "Night";
+      setTimeLabel(prev => (prev === nextLabel ? prev : nextLabel));
 
       // Camera follow
       if (followRef.current !== null) {
@@ -577,7 +585,7 @@ const LiveMap = () => {
             oc.fillStyle = lerpColor(dayC, nightC, nf);
             oc.fillRect(sx, sy, ts + 1, ts + 1);
 
-            if (tile <= 1 && z > 0.3) {
+            if (!ULTRA_LIGHT_MODE && tile <= 1 && z > 0.3) {
               const shimmer = Math.sin(t * 0.001 + col * 0.3 + row * 0.2) * 0.03 + 0.02;
               oc.fillStyle = `rgba(20,60,120,${shimmer})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
@@ -587,16 +595,16 @@ const LiveMap = () => {
                 oc.fillRect(sx + waveOff, sy + ts * 0.4, ts * 0.4, 1);
               }
             }
-            if (tile === 2 && z > 0.4) {
+            if (!ULTRA_LIGHT_MODE && tile === 2 && z > 0.4) {
               const foamAlpha = 0.03 + Math.sin(t * 0.002 + col + row * 0.7) * 0.015;
               oc.fillStyle = `rgba(80,140,80,${foamAlpha})`;
               oc.fillRect(sx, sy, ts + 1, ts + 1);
             }
-            if (tile === 5 && z > 0.6 && (col + row) % 3 === 0) {
+            if (!ULTRA_LIGHT_MODE && tile === 5 && z > 0.6 && (col + row) % 3 === 0) {
               oc.fillStyle = `rgba(20,60,20,${0.15 + nf * 0.1})`;
               oc.beginPath(); oc.arc(sx + ts * 0.5, sy + ts * 0.4, ts * 0.2, 0, Math.PI * 2); oc.fill();
             }
-            if (tile >= 6 && z > 0.5) {
+            if (!ULTRA_LIGHT_MODE && tile >= 6 && z > 0.5) {
               const peakAlpha = 0.08 + (tile === 7 ? 0.06 : 0);
               oc.fillStyle = `rgba(80,80,100,${peakAlpha})`;
               oc.beginPath(); oc.moveTo(sx + ts * 0.2, sy + ts); oc.lineTo(sx + ts * 0.5, sy + ts * 0.2); oc.lineTo(sx + ts * 0.8, sy + ts); oc.closePath(); oc.fill();
@@ -608,7 +616,7 @@ const LiveMap = () => {
       ctx.drawImage(terrainCacheRef.current!.canvas, 0, 0);
 
       // ─── STARS (night only) ────────────────────────────────
-      if (nf > 0.3) {
+      if (!ULTRA_LIGHT_MODE && nf > 0.3) {
         const stars = starsRef.current;
         stars.forEach(s => {
           const sx = (s.x - cam.x) * z, sy = (s.y - cam.y) * z;
@@ -630,7 +638,7 @@ const LiveMap = () => {
       }
 
       // ─── AURORA BOREALIS (night) ──────────────────────────
-      if (nf > 0.4) {
+      if (!ULTRA_LIGHT_MODE && nf > 0.4) {
         const auroraAlpha = (nf - 0.4) * 0.12;
         for (let i = 0; i < 4; i++) {
           const ax = w * (0.1 + i * 0.25 + Math.sin(t * 0.0003 + i * 2) * 0.1);
@@ -647,25 +655,27 @@ const LiveMap = () => {
       }
 
       // ─── FOG PATCHES ──────────────────────────────────────
-      const fogs = fogPatchesRef.current;
-      fogs.forEach(f => {
-        f.x += f.vx; f.y += f.vy;
-        if (f.x < -f.r) f.x = MAP_W * TILE + f.r;
-        if (f.x > MAP_W * TILE + f.r) f.x = -f.r;
-        const sx = (f.x - cam.x) * z, sy = (f.y - cam.y) * z;
-        const fr = f.r * z;
-        if (sx > -fr && sx < w + fr && sy > -fr && sy < h + fr) {
-          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, fr);
-          grad.addColorStop(0, `rgba(100,140,160,${f.alpha * (0.5 + nf * 0.5)})`);
-          grad.addColorStop(0.6, `rgba(60,80,100,${f.alpha * 0.3})`);
-          grad.addColorStop(1, "transparent");
-          ctx.fillStyle = grad;
-          ctx.beginPath(); ctx.arc(sx, sy, fr, 0, Math.PI * 2); ctx.fill();
-        }
-      });
+      if (!ULTRA_LIGHT_MODE) {
+        const fogs = fogPatchesRef.current;
+        fogs.forEach(f => {
+          f.x += f.vx; f.y += f.vy;
+          if (f.x < -f.r) f.x = MAP_W * TILE + f.r;
+          if (f.x > MAP_W * TILE + f.r) f.x = -f.r;
+          const sx = (f.x - cam.x) * z, sy = (f.y - cam.y) * z;
+          const fr = f.r * z;
+          if (sx > -fr && sx < w + fr && sy > -fr && sy < h + fr) {
+            const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, fr);
+            grad.addColorStop(0, `rgba(100,140,160,${f.alpha * (0.5 + nf * 0.5)})`);
+            grad.addColorStop(0.6, `rgba(60,80,100,${f.alpha * 0.3})`);
+            grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(sx, sy, fr, 0, Math.PI * 2); ctx.fill();
+          }
+        });
+      }
 
       // ─── HOLOGRAPHIC GRID OVERLAY ─────────────────────────
-      if (z > 0.3) {
+      if (!ULTRA_LIGHT_MODE && z > 0.3) {
         const gridSpacing = 80 * z;
         const gridAlpha = 0.04 + Math.sin(t * 0.001) * 0.015;
         ctx.strokeStyle = `rgba(20,241,149,${gridAlpha})`;
@@ -681,23 +691,28 @@ const LiveMap = () => {
       }
 
       // ─── WEATHER CYCLING ──────────────────────────────────
-      weatherTimerRef.current -= 1;
-      if (weatherTimerRef.current <= 0) {
-        const r = Math.random();
-        if (r < 0.6) weatherRef.current = 'clear';
-        else if (r < 0.85) weatherRef.current = 'rain';
-        else weatherRef.current = 'storm';
-        weatherTimerRef.current = 600 + Math.random() * 1200;
-        setWeather(weatherRef.current);
-      }
+      if (!ULTRA_LIGHT_MODE) {
+        weatherTimerRef.current -= 1;
+        if (weatherTimerRef.current <= 0) {
+          const r = Math.random();
+          if (r < 0.6) weatherRef.current = 'clear';
+          else if (r < 0.85) weatherRef.current = 'rain';
+          else weatherRef.current = 'storm';
+          weatherTimerRef.current = 600 + Math.random() * 1200;
+          setWeather(weatherRef.current);
+        }
 
-      if (weatherRef.current === 'storm' && Math.random() < 0.003) {
-        ctx.fillStyle = 'rgba(200,220,255,0.06)';
-        ctx.fillRect(0, 0, w, h);
+        if (weatherRef.current === 'storm' && Math.random() < 0.003) {
+          ctx.fillStyle = 'rgba(200,220,255,0.06)';
+          ctx.fillRect(0, 0, w, h);
+        }
+      } else if (weatherRef.current !== 'clear') {
+        weatherRef.current = 'clear';
+        setWeather('clear');
       }
 
       // ─── DISTRICT ZONE GLOWS ──────────────────────────────
-      for (const [, zone] of Object.entries(ZONES)) {
+      if (!ULTRA_LIGHT_MODE) for (const [, zone] of Object.entries(ZONES)) {
         const zx = (zone.cx * TILE - cam.x) * z;
         const zy = (zone.cy * TILE - cam.y) * z;
         if (zx < -400 || zx > w + 400 || zy < -400 || zy > h + 400) continue;
@@ -711,7 +726,7 @@ const LiveMap = () => {
       }
 
       // ─── ROADS — neon-lit data streams ────────────────────
-      roads.forEach(r => {
+      if (!ULTRA_LIGHT_MODE) roads.forEach(r => {
         const sx1 = (r.x1 - cam.x) * z, sy1 = (r.y1 - cam.y) * z;
         const sx2 = (r.x2 - cam.x) * z, sy2 = (r.y2 - cam.y) * z;
         if (Math.max(sx1, sx2) < -100 || Math.min(sx1, sx2) > w + 100) return;
@@ -752,7 +767,7 @@ const LiveMap = () => {
       });
 
       // ─── MATRIX DATA STREAMS to Treasury ──────────────────
-      if (z > 0.25) {
+      if (!ULTRA_LIGHT_MODE && z > 0.25) {
         const txCenter = (ZONES.treasury.cx * TILE - cam.x) * z;
         const tyCenter = (ZONES.treasury.cy * TILE - cam.y) * z;
         if (txCenter > -500 && txCenter < w + 500 && tyCenter > -500 && tyCenter < h + 500) {
@@ -798,7 +813,7 @@ const LiveMap = () => {
         const bw = b.w * TILE * z * 0.7;
         const bh = b.h * TILE * z * 0.5;
 
-        if (z > 0.3) {
+        if (!ULTRA_LIGHT_MODE && z > 0.3) {
           if (b.type === "parliament" || b.type === "embassy" || b.type === "senate" || b.type === "court") {
             // Classical columns + roof
             ctx.fillStyle = `rgba(10,15,25,${0.7 + pulse * 0.2})`;
@@ -973,7 +988,7 @@ const LiveMap = () => {
       });
 
       // ─── HOLOGRAPHIC BILLBOARDS ───────────────────────────
-      if (z > 0.3) {
+      if (!ULTRA_LIGHT_MODE && z > 0.3) {
         billboardsRef.current.forEach(bb => {
           const bx = (bb.x - cam.x) * z;
           const by = (bb.y - cam.y) * z;
@@ -1002,7 +1017,7 @@ const LiveMap = () => {
       }
 
       // ─── ZONE LABELS ──────────────────────────────────────
-      if (z > 0.25 && z < 2) {
+      if (!ULTRA_LIGHT_MODE && z > 0.25 && z < 2) {
         for (const [, zone] of Object.entries(ZONES)) {
           const zx = (zone.cx * TILE - cam.x) * z;
           const zy = (zone.cy * TILE - cam.y) * z - 200 * z;
@@ -1027,7 +1042,7 @@ const LiveMap = () => {
       }
 
       // ─── DATA STREAMS between interacting agents ──────────
-      const streams = dataStreamsRef.current;
+      const streams = ULTRA_LIGHT_MODE ? [] : dataStreamsRef.current;
       for (let i = streams.length - 1; i >= 0; i--) {
         const s = streams[i];
         s.progress += s.speed;
@@ -1047,7 +1062,7 @@ const LiveMap = () => {
       }
 
       // ─── CONNECTION LINES ─────────────────────────────────
-      agents.forEach(a => {
+      if (!ULTRA_LIGHT_MODE) agents.forEach(a => {
         if ((a.state === "meeting" || a.state === "trading" || a.state === "combat") && a.meetingPartner !== null) {
           const other = agents.find(o => o.id === a.meetingPartner);
           if (!other || a.id > (other?.id ?? 0)) return;
@@ -1114,7 +1129,7 @@ const LiveMap = () => {
       // Rain
       const isRaining = weatherRef.current === 'rain' || weatherRef.current === 'storm';
       const rainIntensity = weatherRef.current === 'storm' ? 0.6 : weatherRef.current === 'rain' ? 0.3 : 0;
-      if (isRaining && Math.random() < rainIntensity) {
+      if (!ULTRA_LIGHT_MODE && isRaining && Math.random() < rainIntensity) {
         const count = weatherRef.current === 'storm' ? 8 : 3;
         for (let i = 0; i < count; i++) {
           particles.push({
@@ -1127,7 +1142,7 @@ const LiveMap = () => {
       }
 
       // Fireflies
-      if (nf > 0.4 && Math.random() < 0.05) {
+      if (!ULTRA_LIGHT_MODE && nf > 0.4 && Math.random() < 0.05) {
         particles.push({
           x: cam.x + Math.random() * w / z, y: cam.y + Math.random() * h / z,
           vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
@@ -1137,7 +1152,7 @@ const LiveMap = () => {
       }
 
       // Mining particles
-      agents.forEach(a => {
+      if (!ULTRA_LIGHT_MODE) agents.forEach(a => {
         if (a.cls === "miner" && a.state === "idle" && Math.random() < 0.1) {
           particles.push({
             x: a.x + (Math.random() - 0.5) * 10, y: a.y,
@@ -1169,7 +1184,7 @@ const LiveMap = () => {
       });
 
       // Activity dots
-      if (agents.length > 0) {
+      if (!ULTRA_LIGHT_MODE && agents.length > 0) {
         const dotsToSpawn = Math.min(8, Math.ceil(agents.length / 8));
         for (let d = 0; d < dotsToSpawn; d++) {
           const srcAgent = agents[Math.floor(Math.random() * agents.length)];
@@ -1232,7 +1247,7 @@ const LiveMap = () => {
           ctx.beginPath(); ctx.arc(sx, sy, p.size * z, 0, Math.PI * 2); ctx.fill();
         }
       }
-      if (particles.length > 2000) particles.splice(0, particles.length - 2000);
+      if (particles.length > 300) particles.splice(0, particles.length - 300);
 
       // ─── AGENT TRAILS ─────────────────────────────────────
       const trails = trailsRef.current;
@@ -1240,9 +1255,9 @@ const LiveMap = () => {
         trails[i].age++;
         if (trails[i].age > 60) trails.splice(i, 1);
       }
-      if (z > 0.4) {
+      if (!ULTRA_LIGHT_MODE && z > 0.4) {
         agents.forEach(a => {
-          if ((a.state === "move" || a.state === "visiting") && Math.random() < 0.3) {
+          if (!ULTRA_LIGHT_MODE && (a.state === "move" || a.state === "visiting") && Math.random() < 0.12) {
             trails.push({ x: a.x, y: a.y, age: 0, color: a.color });
           }
         });
@@ -1254,7 +1269,7 @@ const LiveMap = () => {
         ctx.fillStyle = tr.color + Math.floor(alpha * 255).toString(16).padStart(2, "0");
         ctx.beginPath(); ctx.arc(sx, sy, 1.5 * z, 0, Math.PI * 2); ctx.fill();
       });
-      if (trails.length > 500) trails.splice(0, trails.length - 500);
+      if (trails.length > 120) trails.splice(0, trails.length - 120);
 
       // ─── AGENTS ───────────────────────────────────────────
       agents.forEach(a => {
@@ -1391,34 +1406,36 @@ const LiveMap = () => {
       ctx.fillRect(0, 0, w, h);
 
       // Scanlines
-      if (z > 0.5) {
+      if (!ULTRA_LIGHT_MODE && z > 0.5) {
         ctx.fillStyle = "rgba(0,0,0,0.03)";
         for (let sy2 = 0; sy2 < h; sy2 += 4) { ctx.fillRect(0, sy2, w, 1); }
       }
 
       // ─── MINIMAP ──────────────────────────────────────────
-      const mmW = 140, mmH = 100;
-      const mmX = w - mmW - 12, mmY = h - mmH - 50;
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.fillRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
-      ctx.strokeStyle = "rgba(20,241,149,0.15)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
-      const mmScaleX = mmW / (MAP_W * TILE), mmScaleY = mmH / (MAP_H * TILE);
-      for (let y2 = 0; y2 < MAP_H; y2 += 3) {
-        for (let x2 = 0; x2 < MAP_W; x2 += 3) {
-          const tile = terrain[y2][x2];
-          ctx.fillStyle = tile <= 1 ? "rgba(6,14,31,0.8)" : tile <= 2 ? "rgba(20,40,20,0.6)" : tile <= 5 ? "rgba(15,35,15,0.6)" : "rgba(30,30,30,0.6)";
-          ctx.fillRect(mmX + x2 * TILE * mmScaleX, mmY + y2 * TILE * mmScaleY, 3 * TILE * mmScaleX + 1, 3 * TILE * mmScaleY + 1);
+      if (!ULTRA_LIGHT_MODE) {
+        const mmW = 140, mmH = 100;
+        const mmX = w - mmW - 12, mmY = h - mmH - 50;
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+        ctx.strokeStyle = "rgba(20,241,149,0.15)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+        const mmScaleX = mmW / (MAP_W * TILE), mmScaleY = mmH / (MAP_H * TILE);
+        for (let y2 = 0; y2 < MAP_H; y2 += 3) {
+          for (let x2 = 0; x2 < MAP_W; x2 += 3) {
+            const tile = terrain[y2][x2];
+            ctx.fillStyle = tile <= 1 ? "rgba(6,14,31,0.8)" : tile <= 2 ? "rgba(20,40,20,0.6)" : tile <= 5 ? "rgba(15,35,15,0.6)" : "rgba(30,30,30,0.6)";
+            ctx.fillRect(mmX + x2 * TILE * mmScaleX, mmY + y2 * TILE * mmScaleY, 3 * TILE * mmScaleX + 1, 3 * TILE * mmScaleY + 1);
+          }
         }
+        agents.forEach(a => {
+          ctx.fillStyle = a.color;
+          ctx.fillRect(mmX + a.x * mmScaleX - 0.5, mmY + a.y * mmScaleY - 0.5, 2, 2);
+        });
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(mmX + cam.x * mmScaleX, mmY + cam.y * mmScaleY, (w / z) * mmScaleX, (h / z) * mmScaleY);
       }
-      agents.forEach(a => {
-        ctx.fillStyle = a.color;
-        ctx.fillRect(mmX + a.x * mmScaleX - 0.5, mmY + a.y * mmScaleY - 0.5, 2, 2);
-      });
-      ctx.strokeStyle = "rgba(255,255,255,0.3)";
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(mmX + cam.x * mmScaleX, mmY + cam.y * mmScaleY, (w / z) * mmScaleX, (h / z) * mmScaleY);
 
       raf = requestAnimationFrame(render);
     };
@@ -1790,6 +1807,22 @@ function drawOrb(ctx: CanvasRenderingContext2D, a: Agent, cam: { x: number; y: n
 
   const cfg = CLASS_CONFIG[a.cls] || CLASS_CONFIG.warrior;
   const pulse = 0.7 + Math.sin(t * 0.004 + a.phase) * 0.3;
+
+  if (ULTRA_LIGHT_MODE) {
+    const r = Math.max(4, (5 + a.level * 0.6) * z);
+    ctx.fillStyle = cfg.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (z > 0.8) {
+      ctx.font = `${Math.max(7, 8 * z)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillText(a.name, sx, sy + r + 10 * z);
+    }
+    return;
+  }
 
   const baseR = Math.max(6, (8 + a.level * 1.2) * z);
   const isPresident = a.cls === "president";
