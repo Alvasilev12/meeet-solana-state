@@ -821,8 +821,8 @@ const LiveMap = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Users className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-sm font-mono font-bold text-foreground">{agentCount}</span>
-            <span className="text-[10px] text-muted-foreground/60">neurons</span>
+            <span className="text-sm font-mono font-bold text-foreground">{agentCount.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground/60">agents</span>
           </div>
           <div className="w-px h-4 bg-white/10 hidden lg:block" />
           {FK.map(k => (
