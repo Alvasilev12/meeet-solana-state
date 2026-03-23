@@ -117,6 +117,7 @@ const TelegramApp = () => {
   const [arenaMatches, setArenaMatches] = useState<any[]>([]);
   const [showCreateAgent, setShowCreateAgent] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [topCountries, setTopCountries] = useState<any[]>(COUNTRY_WARS_FALLBACK);
   const [newAgentName, setNewAgentName] = useState("");
   const [newAgentClass, setNewAgentClass] = useState("oracle");
 
