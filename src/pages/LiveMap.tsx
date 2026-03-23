@@ -521,7 +521,12 @@ const LiveMap = () => {
 
     const render = () => {
       const t = performance.now();
-      const dt = t - lastTime; lastTime = t;
+      const dt = t - lastTime;
+      if (dt < 33) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
+      lastTime = t;
       frameCount++;
       fpsTimer += dt;
       if (fpsTimer > 1000) { setFps(frameCount); frameCount = 0; fpsTimer = 0; }
@@ -536,10 +541,8 @@ const LiveMap = () => {
       const cyclePos = (t % DAY_CYCLE_MS) / DAY_CYCLE_MS;
       const nightFactor = Math.max(0, Math.min(1, Math.sin(cyclePos * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5));
       const nf = Math.max(0, Math.min(1, nightFactor));
-      if (cyclePos < 0.15) setTimeLabel("Dawn");
-      else if (cyclePos < 0.4) setTimeLabel("Day");
-      else if (cyclePos < 0.55) setTimeLabel("Dusk");
-      else setTimeLabel("Night");
+      const nextLabel = cyclePos < 0.15 ? "Dawn" : cyclePos < 0.4 ? "Day" : cyclePos < 0.55 ? "Dusk" : "Night";
+      setTimeLabel(prev => (prev === nextLabel ? prev : nextLabel));
 
       // Camera follow
       if (followRef.current !== null) {
