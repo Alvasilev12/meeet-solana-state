@@ -109,14 +109,7 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
       id: "base", type: "raster", source: "carto-dark",
       paint: { "raster-brightness-max": 0.55, "raster-brightness-min": 0.08, "raster-contrast": 0.2, "raster-saturation": -0.6 },
     },
-    {
-      id: "country-fill", type: "fill", source: "country-borders",
-      paint: { "fill-color": "#0E1628", "fill-opacity": 0.35 },
-    },
-    {
-      id: "country-borders-line", type: "line", source: "country-borders",
-      paint: { "line-color": "#2A3A5C", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.6, 3, 1, 6, 1.5] },
-    },
+    // country fill/borders layers removed for performance
     {
       id: "labels", type: "raster", source: "carto-labels",
       minzoom: 3,
