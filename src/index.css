@@ -308,10 +308,36 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Safe area insets for notched devices */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Add bottom padding on pages so content isn't hidden behind bottom nav */
 @media (max-width: 767px) {
   main, .page-content {
-    padding-bottom: 4rem !important;
+    padding-bottom: 4.5rem !important;
+  }
+
+  /* Bigger touch targets on mobile */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text overflow */
+  h1, h2, h3 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Tablet layout tweaks */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container {
+    max-width: 100%;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
@@ -339,6 +365,60 @@ html, body {
 /* Touch-action for map canvases */
 canvas {
   touch-action: none;
+}
+
+/* ─── RTL Support (Arabic) ─── */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .gap-2 > *,
+[dir="rtl"] .gap-3 > *,
+[dir="rtl"] .gap-4 > * {
+  /* Maintain proper spacing in RTL */
+}
+
+/* RTL: flip directional margins/paddings */
+[dir="rtl"] .ml-auto { margin-left: unset; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: unset; margin-left: auto; }
+[dir="rtl"] .ml-2 { margin-left: unset; margin-right: 0.5rem; }
+[dir="rtl"] .mr-2 { margin-right: unset; margin-left: 0.5rem; }
+[dir="rtl"] .ml-3 { margin-left: unset; margin-right: 0.75rem; }
+[dir="rtl"] .mr-3 { margin-right: unset; margin-left: 0.75rem; }
+[dir="rtl"] .ml-4 { margin-left: unset; margin-right: 1rem; }
+[dir="rtl"] .mr-4 { margin-right: unset; margin-left: 1rem; }
+[dir="rtl"] .pl-4 { padding-left: unset; padding-right: 1rem; }
+[dir="rtl"] .pr-4 { padding-right: unset; padding-left: 1rem; }
+
+/* RTL: flip icons/arrows */
+[dir="rtl"] .lucide-chevron-right { transform: scaleX(-1); }
+[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
+[dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
+[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
+
+/* RTL: fix gradients */
+[dir="rtl"] .bg-gradient-to-r {
+  background-direction: to left;
+}
+
+/* RTL: text alignment fixes */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+}
+
+/* RTL: sidebar positioning */
+[dir="rtl"] .rpg-sidebar {
+  border-right: none;
+  border-left: 2px solid rgba(180, 130, 50, 0.2);
+  box-shadow:
+    inset 1px 0 0 rgba(180, 130, 50, 0.05),
+    -4px 0 20px rgba(0, 0, 0, 0.4);
 }
 
 /* Scrollbar hide utility */
