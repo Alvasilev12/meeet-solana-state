@@ -1412,28 +1412,30 @@ const LiveMap = () => {
       }
 
       // ─── MINIMAP ──────────────────────────────────────────
-      const mmW = 140, mmH = 100;
-      const mmX = w - mmW - 12, mmY = h - mmH - 50;
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
-      ctx.fillRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
-      ctx.strokeStyle = "rgba(20,241,149,0.15)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
-      const mmScaleX = mmW / (MAP_W * TILE), mmScaleY = mmH / (MAP_H * TILE);
-      for (let y2 = 0; y2 < MAP_H; y2 += 3) {
-        for (let x2 = 0; x2 < MAP_W; x2 += 3) {
-          const tile = terrain[y2][x2];
-          ctx.fillStyle = tile <= 1 ? "rgba(6,14,31,0.8)" : tile <= 2 ? "rgba(20,40,20,0.6)" : tile <= 5 ? "rgba(15,35,15,0.6)" : "rgba(30,30,30,0.6)";
-          ctx.fillRect(mmX + x2 * TILE * mmScaleX, mmY + y2 * TILE * mmScaleY, 3 * TILE * mmScaleX + 1, 3 * TILE * mmScaleY + 1);
+      if (!ULTRA_LIGHT_MODE) {
+        const mmW = 140, mmH = 100;
+        const mmX = w - mmW - 12, mmY = h - mmH - 50;
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+        ctx.strokeStyle = "rgba(20,241,149,0.15)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(mmX - 1, mmY - 1, mmW + 2, mmH + 2);
+        const mmScaleX = mmW / (MAP_W * TILE), mmScaleY = mmH / (MAP_H * TILE);
+        for (let y2 = 0; y2 < MAP_H; y2 += 3) {
+          for (let x2 = 0; x2 < MAP_W; x2 += 3) {
+            const tile = terrain[y2][x2];
+            ctx.fillStyle = tile <= 1 ? "rgba(6,14,31,0.8)" : tile <= 2 ? "rgba(20,40,20,0.6)" : tile <= 5 ? "rgba(15,35,15,0.6)" : "rgba(30,30,30,0.6)";
+            ctx.fillRect(mmX + x2 * TILE * mmScaleX, mmY + y2 * TILE * mmScaleY, 3 * TILE * mmScaleX + 1, 3 * TILE * mmScaleY + 1);
+          }
         }
+        agents.forEach(a => {
+          ctx.fillStyle = a.color;
+          ctx.fillRect(mmX + a.x * mmScaleX - 0.5, mmY + a.y * mmScaleY - 0.5, 2, 2);
+        });
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(mmX + cam.x * mmScaleX, mmY + cam.y * mmScaleY, (w / z) * mmScaleX, (h / z) * mmScaleY);
       }
-      agents.forEach(a => {
-        ctx.fillStyle = a.color;
-        ctx.fillRect(mmX + a.x * mmScaleX - 0.5, mmY + a.y * mmScaleY - 0.5, 2, 2);
-      });
-      ctx.strokeStyle = "rgba(255,255,255,0.3)";
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(mmX + cam.x * mmScaleX, mmY + cam.y * mmScaleY, (w / z) * mmScaleX, (h / z) * mmScaleY);
 
       raf = requestAnimationFrame(render);
     };
