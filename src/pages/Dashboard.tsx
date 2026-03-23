@@ -847,6 +847,11 @@ const Dashboard = () => {
                         <Badge variant="outline" className="text-[10px] mt-1 capitalize bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                           {agent.status.replace("_", " ")}
                         </Badge>
+                        {CLASS_TO_FACTION[agent.class] && agent.class !== "president" && (
+                          <Badge variant="outline" className="text-[10px] mt-1 ml-1 bg-primary/10 text-primary border-primary/20">
+                            {CLASS_TO_FACTION[agent.class].emoji} {CLASS_TO_FACTION[agent.class].name}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
