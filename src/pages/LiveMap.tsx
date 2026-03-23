@@ -1017,7 +1017,7 @@ const LiveMap = () => {
       }
 
       // ─── ZONE LABELS ──────────────────────────────────────
-      if (z > 0.25 && z < 2) {
+      if (!ULTRA_LIGHT_MODE && z > 0.25 && z < 2) {
         for (const [, zone] of Object.entries(ZONES)) {
           const zx = (zone.cx * TILE - cam.x) * z;
           const zy = (zone.cy * TILE - cam.y) * z - 200 * z;
