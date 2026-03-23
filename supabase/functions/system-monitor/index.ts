@@ -227,7 +227,52 @@ ${Object.entries(levelBuckets).map(([k, v]) => `- Level ${k}: ${v} agents`).join
 ${report.recent_activity.map((f: any) => `- [${f.type}] ${f.title} (${f.at})`).join("\n") || "No recent activity"}
 `;
 
-    return json({ report, markdown: md });
+    // ── Send to Telegram if ADMIN_CHAT_ID is set ──
+    const adminChatId = Deno.env.get("ADMIN_CHAT_ID");
+    let telegramSent = false;
+    if (adminChatId) {
+      try {
+        const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        const TELEGRAM_API_KEY = Deno.env.get("TELEGRAM_API_KEY");
+
+        if (LOVABLE_API_KEY && TELEGRAM_API_KEY) {
+          // Telegram has 4096 char limit, send a compact summary
+          const tgText = `📊 <b>MEEET System Report</b>\n` +
+            `🕐 ${new Date().toISOString().replace("T", " ").slice(0, 19)}\n\n` +
+            `👥 Agents: <b>${agents}</b> (${activeAgents} active)\n` +
+            `🔬 Discoveries: <b>${discoveries}</b> (${approvedDisc} approved)\n` +
+            `⚔️ Duels: <b>${duels}</b> (${completedDuels} completed)\n` +
+            `💰 MEEET Supply: <b>${totalMeeet.toLocaleString()}</b>\n` +
+            `🔮 Oracle: <b>${oracleQuestions}</b> markets (${openQuestions} open)\n` +
+            `⚖️ Laws: <b>${laws}</b> (${passedLaws} passed)\n` +
+            `🏛 Guilds: <b>${guilds}</b> (${guildMembers} members)\n\n` +
+            `🏆 Top 3:\n` +
+            report.top_agents.slice(0, 3).map((a: any, i: number) =>
+              `${["🥇","🥈","🥉"][i]} ${a.name} — Lv.${a.level} ${a.class} (rep: ${a.reputation})`
+            ).join("\n") +
+            `\n\n📦 Tables: ${Object.keys(report.table_counts).length} | ` +
+            `🌍 Countries: ${Object.keys(countryMap).length}`;
+
+          const tgRes = await fetch(`${GATEWAY_URL}/sendMessage`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "X-Connection-Api-Key": TELEGRAM_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: adminChatId,
+              text: tgText,
+              parse_mode: "HTML",
+            }),
+          });
+          telegramSent = tgRes.ok;
+        }
+      } catch { /* silent */ }
+    }
+
+    return json({ report, markdown: md, telegram_sent: telegramSent });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
