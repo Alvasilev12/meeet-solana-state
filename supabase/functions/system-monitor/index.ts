@@ -21,13 +21,35 @@ async function safeCount(sc: any, table: string, filter?: { col: string; val: an
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
   try {
     const body = await req.json().catch(() => ({}));
 
-    // Health check
+    // Health check — public
     if (body.action === "health_check") return json({ status: "ok", service: "system-monitor" });
+
+    // Auth: require valid JWT + president role
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await anonClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
+    const userId = claimsData.claims.sub;
+
+    // Check president
+    const { data: profile } = await createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    ).from("profiles").select("is_president").eq("user_id", userId).single();
+
+    if (!profile?.is_president) return json({ error: "Forbidden: admin only" }, 403);
+
+    const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // ── Collect all counts in parallel ──
     const [
