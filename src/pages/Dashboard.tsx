@@ -708,6 +708,7 @@ const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [skipBotSetup, setSkipBotSetup] = useState(false);
   const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
   const { data: agent, isLoading: agentLoading } = useMyAgent(user?.id);
   const { data: quests = [], isLoading: questsLoading } = useMyQuests(user?.id);
@@ -718,6 +719,21 @@ const Dashboard = () => {
   const { data: oracleBets = [] } = useOracleBets(user?.id);
   const { data: impactScore } = useImpactScore(agent?.id);
   const activityFeed = useActivityFeed();
+
+  // Check if user has a connected bot
+  const { data: connectedBot } = useQuery({
+    queryKey: ["my-telegram-bot-check", user?.id],
+    enabled: !!user?.id && !!agent,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_bots_safe" as any)
+        .select("bot_username")
+        .eq("user_id", user!.id)
+        .limit(1);
+      return (data && data.length > 0) ? data[0] : null;
+    },
+  });
+  const hasConnectedBot = !!connectedBot || skipBotSetup;
 
   // Subscription tier
   const { data: subscription } = useQuery({
@@ -881,7 +897,44 @@ const Dashboard = () => {
           {!agent ? (
              <div className="max-w-md mx-auto space-y-4">
                <CreateAgentForm userId={user!.id} isPresident={!!profile?.is_president} />
-               {/* Show raid claim form even without agent to inform users */}
+             </div>
+          ) : !hasConnectedBot ? (
+             /* Post-creation onboarding: prompt to connect Telegram bot */
+             <div className="space-y-6">
+               {/* Agent created confirmation */}
+               <Card className="glass-card border-primary/20 overflow-hidden relative">
+                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-primary to-emerald-500" />
+                 <CardContent className="p-5">
+                   <div className="flex items-center gap-4">
+                     <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl">
+                       {CLASS_META[agent.class]?.emoji || "🤖"}
+                     </div>
+                     <div className="flex-1">
+                       <div className="flex items-center gap-2 mb-1">
+                         <h2 className="font-display font-bold text-lg">{agent.name}</h2>
+                         <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[10px]">✅ Created</Badge>
+                       </div>
+                       <p className="text-sm text-muted-foreground font-body">
+                         {getClassName(agent.class)} · Lv.{agent.level} · {Number(agent.balance_meeet).toLocaleString()} $MEEET
+                       </p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+
+               {/* Prominent bot connection wizard */}
+               <div className="max-w-lg mx-auto">
+                 <h3 className="font-display font-bold text-center mb-3 text-lg">🤖 Next Step: Connect a Telegram Bot</h3>
+                 <p className="text-sm text-muted-foreground text-center mb-4 font-body">Give your agent its own Telegram bot so you can chat with it 24/7</p>
+                 <TelegramBotWizard userId={user!.id} agentId={agent.id} tier={currentTier} />
+               </div>
+
+               {/* Skip link */}
+               <div className="text-center">
+                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => setSkipBotSetup(true)}>
+                   Skip for now → Go to Dashboard
+                 </Button>
+               </div>
              </div>
           ) : (
             <div className="space-y-6">
