@@ -320,6 +320,142 @@ function AgentStatsPanel({ userId }: { userId: string }) {
   );
 }
 
+// ─── Telegram Bot Guide ─────────────────────────────────────────
+function TelegramBotGuide() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = [
+    {
+      num: 1,
+      title: "Open @BotFather",
+      desc: "Go to Telegram and search for @BotFather — it's the official bot for creating bots.",
+      action: (
+        <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-500/20 transition-colors">
+          <Bot className="w-4 h-4" /> Open @BotFather →
+        </a>
+      ),
+    },
+    {
+      num: 2,
+      title: "Create a new bot",
+      desc: "Send /newbot to BotFather. It will ask you two things:",
+      details: [
+        "1️⃣ Bot name — display name, e.g. \"My Research Assistant\"",
+        "2️⃣ Bot username — must end with 'bot', e.g. @myresearch_bot",
+      ],
+    },
+    {
+      num: 3,
+      title: "Copy the token",
+      desc: "BotFather will give you an API token that looks like this:",
+      code: "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
+      details: ["⚠️ Keep this token secret — anyone with it can control your bot."],
+    },
+    {
+      num: 4,
+      title: "Connect in Dashboard",
+      desc: "Go to your Dashboard → click \"Connect Telegram Bot\" → paste the token.",
+      action: (
+        <Button variant="outline" size="sm" className="gap-1.5" asChild>
+          <a href="/dashboard"><Zap className="w-4 h-4" /> Go to Dashboard →</a>
+        </Button>
+      ),
+    },
+    {
+      num: 5,
+      title: "Done! Your agent is live 🎉",
+      desc: "Your AI agent now responds 24/7 in your Telegram bot. Send any message and it'll reply with AI-powered responses based on its expertise.",
+      details: [
+        "💬 Users message your bot → agent responds with AI",
+        "🧠 Agent remembers conversation context",
+        "📊 Track usage in your Dashboard",
+      ],
+    },
+  ];
+
+  return (
+    <Card className="bg-card border-border overflow-hidden">
+      <CardHeader>
+        <CardTitle className="font-display text-xl flex items-center gap-2">
+          <Bot className="w-6 h-6 text-sky-400" />
+          Connect Your Agent to Telegram
+        </CardTitle>
+        <CardDescription>
+          Give your agent its own Telegram bot in 5 minutes — no coding required
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-1">
+        {steps.map((step, i) => {
+          const isActive = activeStep === i;
+          const isDone = activeStep > i;
+          return (
+            <button
+              key={step.num}
+              type="button"
+              onClick={() => setActiveStep(i)}
+              className={`w-full text-left rounded-xl p-4 transition-all duration-300 border ${
+                isActive
+                  ? "bg-primary/5 border-primary/30"
+                  : isDone
+                    ? "bg-emerald-500/5 border-emerald-500/20"
+                    : "bg-muted/20 border-transparent hover:bg-muted/40"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                  isDone
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : isActive
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
+                }`}>
+                  {isDone ? "✓" : step.num}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-display font-bold text-sm ${isActive ? "text-foreground" : isDone ? "text-emerald-400" : "text-muted-foreground"}`}>
+                    {step.title}
+                  </p>
+                  {isActive && (
+                    <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <p className="text-sm text-muted-foreground">{step.desc}</p>
+                      {step.details && (
+                        <div className="space-y-1">
+                          {step.details.map((d, j) => (
+                            <p key={j} className="text-xs text-muted-foreground pl-1">{d}</p>
+                          ))}
+                        </div>
+                      )}
+                      {step.code && (
+                        <code className="block bg-muted rounded-lg px-3 py-2 text-xs font-mono text-foreground break-all">
+                          {step.code}
+                        </code>
+                      )}
+                      {step.action && <div className="pt-1">{step.action}</div>}
+                      <div className="flex gap-2 pt-2">
+                        {i > 0 && (
+                          <Button variant="ghost" size="sm" className="text-xs" onClick={(e) => { e.stopPropagation(); setActiveStep(i - 1); }}>
+                            ← Back
+                          </Button>
+                        )}
+                        {i < steps.length - 1 && (
+                          <Button variant="outline" size="sm" className="text-xs" onClick={(e) => { e.stopPropagation(); setActiveStep(i + 1); }}>
+                            Next step →
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────
 export default function Pricing() {
   const { t } = useLanguage();
