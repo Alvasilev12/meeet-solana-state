@@ -493,6 +493,11 @@ export default function Pricing() {
             )}
           </div>
 
+          {/* Telegram Bot Setup Guide */}
+          <div className="max-w-3xl mx-auto mb-16" id="connect-bot">
+            <TelegramBotGuide />
+          </div>
+
           {/* FAQ */}
           <div className="max-w-2xl mx-auto">
             <h2 className="text-2xl font-display font-bold mb-6 text-center">FAQ</h2>
