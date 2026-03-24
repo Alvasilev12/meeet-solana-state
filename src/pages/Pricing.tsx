@@ -205,6 +205,7 @@ function InlineCreateAgent({ userId }: { userId: string }) {
 
 // ─── Agent Stats Card ───────────────────────────────────────────
 function AgentStatsPanel({ userId }: { userId: string }) {
+  const { usdToMeeet } = useMeeetPrice();
   const { data: agent } = useQuery({
     queryKey: ["my-agent-pricing", userId],
     enabled: !!userId,
