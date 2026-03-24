@@ -13,8 +13,8 @@ function json(body: unknown, status = 200) {
 }
 
 const TIERS: Record<string, { price_sol: number; price_meeet: number; max_agents: number; label: string }> = {
-  pro: { price_sol: 0.5, price_meeet: 50000, max_agents: 5, label: "Pro" },
-  enterprise: { price_sol: 1.5, price_meeet: 150000, max_agents: 50, label: "Enterprise" },
+  pro: { price_sol: 0.07, price_meeet: 9990, max_agents: 5, label: "Pro" },
+  enterprise: { price_sol: 0.21, price_meeet: 29990, max_agents: 50, label: "Enterprise" },
 };
 
 Deno.serve(async (req) => {

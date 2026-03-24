@@ -1008,9 +1008,10 @@ function SubscriptionTiers({ userId }: { userId?: string }) {
                 t.highlight ? "border-primary shadow-lg shadow-primary/10" : "border-border"
               }`}
             >
-              {t.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground px-4 py-1">Most Popular</Badge>
+              {(t.highlight || t.badge) && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1">
+                  {t.highlight && <Badge className="bg-primary text-primary-foreground px-3 py-1">Most Popular</Badge>}
+                  {t.badge && <Badge className="bg-amber-500 text-black px-3 py-1">{t.badge}</Badge>}
                 </div>
               )}
               <div className="flex items-center gap-3 mb-4">
