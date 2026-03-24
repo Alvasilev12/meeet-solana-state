@@ -238,12 +238,76 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Purchase with MEEET (from agent internal balance) ──
+    if (action === "purchase_meeet") {
+      if (!user_id || !tier) return json({ error: "user_id and tier required" }, 400);
+
+      const tierInfo = TIERS[tier];
+      if (!tierInfo) return json({ error: "Invalid tier" }, 400);
+
+      const agent_id = (await req.json().catch(() => ({}))).agent_id;
+
+      // Get user's first agent
+      const { data: agent } = await sc
+        .from("agents")
+        .select("id, balance_meeet")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .single();
+
+      if (!agent) return json({ error: "No agent found. Create an agent first." }, 400);
+      if (agent.balance_meeet < tierInfo.price_meeet) {
+        return json({
+          error: `Insufficient MEEET balance. Need ${tierInfo.price_meeet.toLocaleString()}, have ${agent.balance_meeet.toLocaleString()}.`,
+          required: tierInfo.price_meeet,
+          current: agent.balance_meeet,
+        }, 402);
+      }
+
+      // Deduct MEEET
+      await sc
+        .from("agents")
+        .update({ balance_meeet: agent.balance_meeet - tierInfo.price_meeet })
+        .eq("id", agent.id);
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      // Upsert subscription
+      const { data: existingSub } = await sc
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("status", "active")
+        .single();
+
+      if (existingSub) {
+        await sc.from("subscriptions").update({
+          tier, plan: tier, max_agents: tierInfo.max_agents,
+          price: 0, expires_at: expiresAt.toISOString(),
+        }).eq("id", existingSub.id);
+      } else {
+        await sc.from("subscriptions").insert({
+          user_id, tier, plan: tier, status: "active",
+          price: 0, max_agents: tierInfo.max_agents,
+          expires_at: expiresAt.toISOString(),
+        });
+      }
+
+      return json({
+        success: true, tier,
+        max_agents: tierInfo.max_agents,
+        expires_at: expiresAt.toISOString(),
+        meeet_charged: tierInfo.price_meeet,
+      });
+    }
+
     // ── Get pricing ──
     if (action === "get_tiers") {
       return json({
         tiers: Object.entries(TIERS).map(([key, val]) => ({
-          id: key,
-          ...val,
+          id: key, ...val,
         })),
       });
     }
