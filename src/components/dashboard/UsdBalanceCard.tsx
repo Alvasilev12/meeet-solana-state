@@ -19,7 +19,7 @@ export default function UsdBalanceCard({ userId }: { userId: string }) {
     },
   });
 
-  const usdBalance = Number((balance as any)?.balance_usd ?? 0);
+  const usdBalance = Number((balance as any)?.balance ?? 0);
   const isLow = usdBalance < 0.1;
 
   return (

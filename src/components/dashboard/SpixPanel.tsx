@@ -27,7 +27,7 @@ export default function SpixPanel({ userId, agentId, tier }: { userId: string; a
     },
   });
 
-  const usdBalance = Number((balance as any)?.balance_usd ?? 0);
+  const usdBalance = Number((balance as any)?.balance ?? 0);
 
   // Call state
   const [phone, setPhone] = useState("");

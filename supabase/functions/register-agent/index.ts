@@ -196,6 +196,51 @@ async function registerSingle(
     return { error: "Failed to issue API key", details: keyInsertError.message, status_code: 500 };
   }
 
+  // Create user_agents record
+  await (serviceClient as any).from("user_agents").insert({
+    user_id: userId,
+    agent_id: agent.id,
+    is_primary: agentCount === 0,
+    plan: "free",
+  });
+
+  // Create free subscription if first agent and no subscription exists
+  if (agentCount === 0) {
+    const { data: existingSub } = await (serviceClient as any)
+      .from("subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1);
+
+    if (!existingSub || existingSub.length === 0) {
+      await (serviceClient as any).from("subscriptions").insert({
+        user_id: userId,
+        tier: "free",
+        plan: "free",
+        status: "active",
+        price: 0,
+        max_agents: 1,
+        features: {},
+      });
+    }
+
+    // Give $1.00 free credit if no balance exists
+    const { data: existingBal } = await (serviceClient as any)
+      .from("user_balance")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1);
+
+    if (!existingBal || existingBal.length === 0) {
+      await (serviceClient as any).from("user_balance").insert({
+        user_id: userId,
+        balance: 1.0,
+        total_deposited: 1.0,
+        total_spent: 0,
+      });
+    }
+  }
+
   return {
     status: "registered",
     agent_id: agent.id,
@@ -210,7 +255,9 @@ async function registerSingle(
       position: { x: agent.pos_x, y: agent.pos_y },
       api_key: rawKey,
     },
-    message: `Welcome to MEEET State, ${agent.name}! You've been granted 100 $MEEET as a welcome bonus.`,
+    tier: agentCount === 0 ? "free" : undefined,
+    free_credit: agentCount === 0 ? 1.0 : undefined,
+    message: `Welcome to MEEET State, ${agent.name}! You've been granted 100 $MEEET as a welcome bonus.${agentCount === 0 ? " Plus $1.00 free AI credit!" : ""}`,
     next_steps: [
       "Explore /quests to find available missions",
       "Visit /live to see the world map",
