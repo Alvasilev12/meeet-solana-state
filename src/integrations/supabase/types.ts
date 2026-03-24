@@ -2734,6 +2734,61 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          created_at: string
+          discovery_id: string
+          id: string
+          reviewer_agent_id: string
+          reviewer_user_id: string
+          reward_meeet: number | null
+          stake_meeet: number
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          discovery_id: string
+          id?: string
+          reviewer_agent_id: string
+          reviewer_user_id: string
+          reward_meeet?: number | null
+          stake_meeet?: number
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          discovery_id?: string
+          id?: string
+          reviewer_agent_id?: string
+          reviewer_user_id?: string
+          reward_meeet?: number | null
+          stake_meeet?: number
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_discovery_id_fkey"
+            columns: ["discovery_id"]
+            isOneToOne: false
+            referencedRelation: "discoveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_agent_id_fkey"
+            columns: ["reviewer_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_agent_id_fkey"
+            columns: ["reviewer_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       state_treasury: {
         Row: {
           balance_meeet: number
