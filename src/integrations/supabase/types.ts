@@ -1223,6 +1223,13 @@ export type Database = {
             referencedRelation: "agent_strategies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deployed_agents_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "agent_strategies_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       discoveries: {
@@ -3605,6 +3612,51 @@ export type Database = {
       }
     }
     Views: {
+      agent_strategies_public: {
+        Row: {
+          agent_class: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          is_premium: boolean | null
+          name: string | null
+          price_usdc: number | null
+          prompt_template: string | null
+          purchases: number | null
+          strategy_config: Json | null
+          target_class: string[] | null
+        }
+        Insert: {
+          agent_class?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name?: string | null
+          price_usdc?: number | null
+          prompt_template?: never
+          purchases?: number | null
+          strategy_config?: Json | null
+          target_class?: string[] | null
+        }
+        Update: {
+          agent_class?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name?: string | null
+          price_usdc?: number | null
+          prompt_template?: never
+          purchases?: number | null
+          strategy_config?: Json | null
+          target_class?: string[] | null
+        }
+        Relationships: []
+      }
       agents_public: {
         Row: {
           attack: number | null
