@@ -48,23 +48,26 @@ const World = () => {
   const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<{ agent: AgentData; x: number; y: number } | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentData | null>(null);
-  const [recentEvents, setRecentEvents] = useState<Array<{ title: string }>>([]);
+  const [recentEvents, setRecentEvents] = useState<Array<{ title: string; agentName: string }>>([]);
   const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }>>([]);
 
   // ── Fetch data ──
   useEffect(() => {
     const fetchAll = async () => {
-      const [agentsRes, discRes, duelsRes, meeetRes, lawsRes] = await Promise.all([
+      const [agentsRes, discRes, duelsRes, lawsRes] = await Promise.all([
         supabase.from("agents_public").select("id, name, class, level, reputation, balance_meeet, status, country_code").eq("status", "active").order("reputation", { ascending: false }),
-        supabase.from("discoveries").select("*", { count: "exact", head: true }),
-        supabase.from("duels").select("*", { count: "exact", head: true }).eq("status", "completed"),
-        supabase.from("agents").select("balance_meeet"),
-        supabase.from("laws").select("*", { count: "exact", head: true }).eq("status", "passed"),
+        supabase.from("discoveries").select("*", { count: "exact", head: true }).eq("is_approved", true),
+        supabase.from("duels").select("*", { count: "exact", head: true }),
+        supabase.from("laws").select("*", { count: "exact", head: true }),
       ]);
-      if (agentsRes.data) setAgents(agentsRes.data as AgentData[]);
+      if (agentsRes.data) {
+        setAgents(agentsRes.data as AgentData[]);
+        // Sum balance from agents_public (no RLS restriction)
+        const total = agentsRes.data.reduce((s: number, a: any) => s + (a.balance_meeet || 0), 0);
+        setTotalMeeet(total);
+      }
       setTotalDiscoveries(discRes.count ?? 0);
       setTotalDebates(duelsRes.count ?? 0);
-      if (meeetRes.data) setTotalMeeet(meeetRes.data.reduce((s, a) => s + (a.balance_meeet || 0), 0));
       setTotalLaws(lawsRes.count ?? 0);
     };
     fetchAll();
@@ -72,8 +75,12 @@ const World = () => {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from("discoveries").select("title").order("created_at", { ascending: false }).limit(10);
-      if (data) setRecentEvents(data.map(d => ({ title: d.title?.slice(0, 60) || "New discovery" })));
+      const { data } = await supabase.from("discoveries").select("title, agents").eq("is_approved", true).order("created_at", { ascending: false }).limit(20);
+      if (data) setRecentEvents(data.map(d => {
+        const agentsJson = d.agents as any[];
+        const agentName = agentsJson?.[0]?.name || "Agent";
+        return { title: d.title?.slice(0, 50) || "New discovery", agentName };
+      }));
     };
     fetchEvents();
   }, []);
@@ -83,9 +90,8 @@ const World = () => {
     let idx = 0;
     const iv = setInterval(() => {
       const ev = recentEvents[idx % recentEvents.length];
-      const icons = ["🔬", "⚔️", "🧬", "💰", "🏛"];
       const id = `${Date.now()}`;
-      setToasts(prev => [...prev.slice(-2), { id, text: ev.title, icon: icons[idx % icons.length], time: Date.now() }]);
+      setToasts(prev => [...prev.slice(-2), { id, text: `${ev.agentName}: ${ev.title}`, icon: "🔬", time: Date.now() }]);
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
       idx++;
     }, 8000);
@@ -405,7 +411,18 @@ const World = () => {
       ctx.fillStyle = "#fff";
       ctx.font = `900 ${24 * dpr}px system-ui`;
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("MEEET", ccx, ccy - 10 * dpr);
+      ctx.fillText("MEEET", ccx - 14 * dpr, ccy - 10 * dpr);
+      // LIVE dot
+      const liveAlpha = 0.5 + Math.sin(frame * 0.06) * 0.5;
+      ctx.beginPath(); ctx.arc(ccx + 38 * dpr, ccy - 12 * dpr, 3 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(239,68,68,${liveAlpha})`; ctx.fill();
+      // LIVE glow
+      ctx.beginPath(); ctx.arc(ccx + 38 * dpr, ccy - 12 * dpr, 6 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(239,68,68,${liveAlpha * 0.2})`; ctx.fill();
+      ctx.font = `800 ${8 * dpr}px system-ui`;
+      ctx.fillStyle = `rgba(239,68,68,${0.6 + liveAlpha * 0.4})`;
+      ctx.fillText("LIVE", ccx + 52 * dpr, ccy - 12 * dpr);
+      // Agent count
       ctx.font = `600 ${11 * dpr}px system-ui`;
       ctx.fillStyle = "rgba(255,255,255,0.65)";
       ctx.fillText(`${totalAgents} active agents`, ccx, ccy + 16 * dpr);
