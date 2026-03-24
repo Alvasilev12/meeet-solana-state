@@ -7,8 +7,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity } from "lucide-react";
+import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity, MessageSquare } from "lucide-react";
 import * as Recharts from "recharts";
+import AdminDialogs from "@/components/admin/AdminDialogs";
 
 const COLORS = ["#9945FF", "#14F195", "#EF4444", "#FBBF24", "#00C2FF", "#F97316", "#6366F1"];
 const {
@@ -177,6 +178,7 @@ const Admin = () => {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="agents">Agents</TabsTrigger>
               <TabsTrigger value="economy">Economy</TabsTrigger>
+              <TabsTrigger value="dialogs" className="gap-1"><MessageSquare className="w-3.5 h-3.5" /> Dialogs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -305,6 +307,10 @@ const Admin = () => {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="dialogs">
+              <AdminDialogs />
             </TabsContent>
           </Tabs>
         </div>

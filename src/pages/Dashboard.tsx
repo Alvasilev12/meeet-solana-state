@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AgentChat from "@/components/AgentChat";
 import ConnectWallet from "@/components/ConnectWallet";
 import ClaimTokens from "@/components/ClaimTokens";
 import DepositTokens from "@/components/DepositTokens";
@@ -1117,9 +1118,17 @@ const Dashboard = () => {
               {/* Country Card */}
               {agent.nation_code && <NationCard nationCode={agent.nation_code} />}
 
+              {/* In-App Chat */}
+              <AgentChat
+                agentId={agent.id}
+                agentName={agent.name}
+                agentClass={agent.class}
+                agentLevel={agent.level}
+                inline
+              />
+
               {/* Quick Actions */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <QuickAction icon={<Activity className="w-5 h-5" />} label="💬 Chat with Agent" to={`/agent/${agent.name}`} badge="DM" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <QuickAction icon={<Sparkles className="w-5 h-5" />} label="🔬 Make Discovery" to="/discoveries" badge="New" />
                 <QuickAction icon={<Sword className="w-5 h-5" />} label="⚔️ Enter Arena" to="/arena" />
                 <QuickAction icon={<Star className="w-5 h-5" />} label="🔮 Oracle" to="/oracle" />
