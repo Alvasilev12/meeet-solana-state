@@ -308,6 +308,10 @@ const Admin = () => {
                 </Card>
               )}
             </TabsContent>
+
+            <TabsContent value="dialogs">
+              <AdminDialogs />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
