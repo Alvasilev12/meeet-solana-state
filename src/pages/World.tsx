@@ -4,13 +4,12 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowLeft, X } from "lucide-react";
 
-// ── Faction config ──
 const FACTIONS = [
-  { key: "ai", label: "AI CORE", icon: "🤖", classes: ["trader", "diplomat"], color: "#3B82F6", hsl: "217,91%,60%" },
-  { key: "biotech", label: "BIOTECH", icon: "🧬", classes: ["oracle"], color: "#22C55E", hsl: "142,71%,45%" },
-  { key: "energy", label: "ENERGY", icon: "⚡", classes: ["miner"], color: "#F59E0B", hsl: "38,92%,50%" },
-  { key: "space", label: "SPACE", icon: "🚀", classes: ["warrior", "scout"], color: "#06B6D4", hsl: "189,94%,43%" },
-  { key: "quantum", label: "QUANTUM", icon: "⚛️", classes: ["banker"], color: "#A855F7", hsl: "271,91%,65%" },
+  { key: "ai", label: "AI CORE", icon: "🤖", classes: ["trader", "diplomat"], color: "#3B82F6", hsl: "217,91%,60%", region: "Neural Network" },
+  { key: "biotech", label: "BIOTECH", icon: "🧬", classes: ["oracle"], color: "#22C55E", hsl: "142,71%,45%", region: "Genome Lab" },
+  { key: "energy", label: "ENERGY", icon: "⚡", classes: ["miner"], color: "#F59E0B", hsl: "38,92%,50%", region: "Power Grid" },
+  { key: "space", label: "SPACE", icon: "🚀", classes: ["warrior", "scout"], color: "#06B6D4", hsl: "189,94%,43%", region: "Launch Pad" },
+  { key: "quantum", label: "QUANTUM", icon: "⚛️", classes: ["banker"], color: "#A855F7", hsl: "271,91%,65%", region: "Qubit Array" },
 ];
 
 interface AgentData {
@@ -26,24 +25,41 @@ function agentToFaction(a: AgentData): string {
   if (cc.includes("energ")) return "energy";
   if (cc.includes("space")) return "space";
   if (cc.includes("quantum") || cc.includes("qubit")) return "quantum";
-  // Fallback: map by class
   for (const f of FACTIONS) if (f.classes.includes(a.class)) return f.key;
   return "ai";
 }
 
-const pentagonAngle = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+// Pentagon angles: AI=top, BIOTECH=top-right, ENERGY=bottom-right, SPACE=bottom-left, QUANTUM=top-left
+const PENT_ANGLES = [
+  -Math.PI / 2,                          // 270° — top
+  -Math.PI / 2 + (2 * Math.PI) / 5,     // 342° — top-right
+  -Math.PI / 2 + (4 * Math.PI) / 5,     // 54°  — bottom-right  (corrected order)
+  -Math.PI / 2 + (6 * Math.PI) / 5,     // 126° — bottom-left
+  -Math.PI / 2 + (8 * Math.PI) / 5,     // 198° — top-left
+];
+
+// Static star field (50 stars, generated once)
+const STARS = Array.from({ length: 50 }, (_, i) => ({
+  x: ((i * 137.508 + 50) % 1000) / 1000,
+  y: ((i * 97.31 + 30) % 1000) / 1000,
+  opacity: 0.15 + Math.random() * 0.2,
+  size: Math.random() > 0.85 ? 1.5 : 1,
+}));
 
 const World = () => {
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const mouseRef = useRef({ x: 0, y: 0 });
+  const loadPhaseRef = useRef(0); // 0=nothing, 1=core, 2=lines, 3=factions, 4=dots
+  const loadStartRef = useRef(0);
+
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [totalDiscoveries, setTotalDiscoveries] = useState(0);
   const [totalDebates, setTotalDebates] = useState(0);
   const [totalMeeet, setTotalMeeet] = useState(0);
   const [totalLaws, setTotalLaws] = useState(0);
-  const [toasts, setToasts] = useState<Array<{ id: string; text: string; icon: string; time: number }>>([]);
+  const [toasts, setToasts] = useState<Array<{ id: string; text: string; icon: string }>>([]);
   const [hoveredFaction, setHoveredFaction] = useState<string | null>(null);
   const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<{ agent: AgentData; x: number; y: number } | null>(null);
@@ -51,7 +67,7 @@ const World = () => {
   const [recentEvents, setRecentEvents] = useState<Array<{ title: string; agentName: string }>>([]);
   const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }>>([]);
 
-  // ── Fetch data ──
+  // Data fetch
   useEffect(() => {
     const fetchAll = async () => {
       const [agentsRes, discRes, duelsRes, lawsRes, meeetRes] = await Promise.all([
@@ -74,21 +90,21 @@ const World = () => {
     const fetchEvents = async () => {
       const { data } = await supabase.from("discoveries").select("title, agents").eq("is_approved", true).order("created_at", { ascending: false }).limit(20);
       if (data) setRecentEvents(data.map(d => {
-        const agentsJson = d.agents as any[];
-        const agentName = agentsJson?.[0]?.name || "Agent";
-        return { title: d.title?.slice(0, 50) || "New discovery", agentName };
+        const aj = d.agents as any[];
+        return { title: d.title?.slice(0, 50) || "New discovery", agentName: aj?.[0]?.name || "Agent" };
       }));
     };
     fetchEvents();
   }, []);
 
+  // Toast cycle
   useEffect(() => {
     if (recentEvents.length === 0) return;
     let idx = 0;
     const iv = setInterval(() => {
       const ev = recentEvents[idx % recentEvents.length];
       const id = `${Date.now()}`;
-      setToasts(prev => [...prev.slice(-2), { id, text: `${ev.agentName}: ${ev.title}`, icon: "🔬", time: Date.now() }]);
+      setToasts(prev => [...prev.slice(-1), { id, text: `${ev.agentName}: ${ev.title}`, icon: "🔬" }]);
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
       idx++;
     }, 8000);
@@ -110,7 +126,7 @@ const World = () => {
     return () => window.removeEventListener("mousemove", handler);
   }, []);
 
-  // ═══ CANVAS — ENHANCED ═══
+  // ═══ CANVAS ═══
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || isMobile) return;
@@ -119,6 +135,8 @@ const World = () => {
     let running = true;
     let lastTime = 0;
     const FRAME_TIME = 1000 / 30;
+    loadStartRef.current = performance.now();
+    loadPhaseRef.current = 0;
 
     const animate = (timestamp: number) => {
       if (!running) return;
@@ -126,11 +144,9 @@ const World = () => {
       lastTime = timestamp;
       frameRef.current++;
 
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rw = Math.floor(w * dpr);
-      const rh = Math.floor(h * dpr);
+      const rw = Math.floor(w * dpr), rh = Math.floor(h * dpr);
       if (canvas.width !== rw || canvas.height !== rh) { canvas.width = rw; canvas.height = rh; }
 
       const cx = rw / 2, cy = rh / 2;
@@ -138,322 +154,311 @@ const World = () => {
       const mx = (mouseRef.current.x / w - 0.5) * 2;
       const my = (mouseRef.current.y / h - 0.5) * 2;
 
+      // Load animation phases (ms since start)
+      const elapsed = timestamp - loadStartRef.current;
+      const coreAlpha = Math.min(1, elapsed / 500);          // 0-500ms: core fades in
+      const lineAlpha = Math.min(1, Math.max(0, (elapsed - 400) / 500)); // 400-900ms: lines draw
+      const factionAlphas = FACTIONS.map((_, i) => Math.min(1, Math.max(0, (elapsed - 800 - i * 200) / 300))); // staggered
+      const dotAlpha = Math.min(1, Math.max(0, (elapsed - 1800) / 500)); // dots last
+
       // ── Background ──
       ctx.fillStyle = "#030308";
       ctx.fillRect(0, 0, rw, rh);
 
-      // Nebula clouds
-      const nebulaColors = ["rgba(153,69,255,0.014)", "rgba(59,130,246,0.01)", "rgba(34,197,94,0.008)", "rgba(6,182,212,0.01)"];
+      // Subtle nebula
+      const nebulaColors = ["rgba(153,69,255,0.012)", "rgba(59,130,246,0.008)", "rgba(34,197,94,0.006)", "rgba(6,182,212,0.008)"];
       for (let n = 0; n < 4; n++) {
-        const nx = ((n * 317 + frame * 0.12) % (rw + 400)) - 200;
+        const nx = ((n * 317 + frame * 0.1) % (rw + 400)) - 200;
         const ny = ((n * 223 + 100) % (rh + 200)) - 100;
-        const nr = 220 * dpr + Math.sin(frame * 0.008 + n) * 50 * dpr;
+        const nr = 250 * dpr;
         const ng = ctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
         ng.addColorStop(0, nebulaColors[n]); ng.addColorStop(1, "transparent");
         ctx.fillStyle = ng;
         ctx.fillRect(nx - nr, ny - nr, nr * 2, nr * 2);
       }
 
-      // Star field — twinkling
-      for (let i = 0; i < 250; i++) {
-        const sx = ((i * 137.508 + 50) % rw);
-        const sy = ((i * 97.31 + 30) % rh);
-        const twinkle = 0.015 + Math.sin(frame * 0.025 + i * 2.1) * 0.015 + (i % 5 === 0 ? 0.05 : 0);
+      // Static star field
+      for (const s of STARS) {
+        const twinkle = s.opacity + Math.sin(frame * 0.02 + s.x * 100) * 0.08;
         ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
-        ctx.fillRect(sx, sy, i % 7 === 0 ? 1.5 * dpr : dpr, i % 7 === 0 ? 1.5 * dpr : dpr);
+        ctx.fillRect(s.x * rw, s.y * rh, s.size * dpr, s.size * dpr);
       }
 
-      const pentRadius = Math.min(rw, rh) * 0.34;
+      const pentRadius = Math.min(rw, rh) * 0.32;
+      const ORB_SIZE = 42 * dpr; // uniform size for all factions
 
-      // ── Orbital decoration rings ──
-      FACTIONS.forEach((f, i) => {
-        const angle = pentagonAngle(i);
-        const fx = cx + Math.cos(angle) * pentRadius + mx * 12 * dpr;
-        const fy = cy + Math.sin(angle) * pentRadius + my * 12 * dpr;
-        const count = factionData[f.key]?.length || 0;
-        const orbSize = Math.max(36, Math.min(56, 36 + count * 0.08)) * dpr;
-        ctx.strokeStyle = `hsla(${f.hsl},0.05)`;
-        ctx.lineWidth = 0.5 * dpr;
-        ctx.beginPath(); ctx.arc(fx, fy, orbSize + 30 * dpr, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(fx, fy, orbSize + 60 * dpr, 0, Math.PI * 2); ctx.stroke();
-        // Rotating arc
-        ctx.save();
-        ctx.translate(fx, fy);
-        ctx.rotate(frame * 0.006 * (i % 2 === 0 ? 1 : -1));
-        ctx.strokeStyle = `hsla(${f.hsl},0.1)`;
-        ctx.lineWidth = 1 * dpr;
-        ctx.beginPath(); ctx.arc(0, 0, orbSize + 45 * dpr, 0, Math.PI * 0.6); ctx.stroke();
-        ctx.restore();
-      });
+      // Faction positions (exact center + pentagon)
+      const factionPos = FACTIONS.map((_, i) => ({
+        x: cx + Math.cos(PENT_ANGLES[i]) * pentRadius + mx * 8 * dpr,
+        y: cy + Math.sin(PENT_ANGLES[i]) * pentRadius + my * 8 * dpr,
+      }));
 
       // ── Connection lines to center ──
-      FACTIONS.forEach((f, i) => {
-        const angle = pentagonAngle(i);
-        const fx = cx + Math.cos(angle) * pentRadius + mx * 12 * dpr;
-        const fy = cy + Math.sin(angle) * pentRadius + my * 12 * dpr;
-        const count = factionData[f.key]?.length || 0;
-        const lineWidth = Math.max(1.5, Math.min(4, count / 50)) * dpr;
+      if (lineAlpha > 0) {
+        FACTIONS.forEach((f, i) => {
+          const fp = factionPos[i];
+          const count = factionData[f.key]?.length || 0;
+          const lineWidth = Math.max(1.5, Math.min(3.5, count / 60)) * dpr;
+          const la = lineAlpha;
 
-        // Wide glow
-        ctx.strokeStyle = `hsla(${f.hsl},0.035)`;
-        ctx.lineWidth = lineWidth * 8;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fx, fy); ctx.stroke();
+          // Wide glow
+          ctx.globalAlpha = la;
+          ctx.strokeStyle = `hsla(${f.hsl},0.03)`;
+          ctx.lineWidth = lineWidth * 8;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fp.x, fp.y); ctx.stroke();
 
-        // Dashed line
-        const grad = ctx.createLinearGradient(cx, cy, fx, fy);
-        grad.addColorStop(0, `hsla(${f.hsl},0.25)`);
-        grad.addColorStop(0.5, `hsla(${f.hsl},0.12)`);
-        grad.addColorStop(1, `hsla(${f.hsl},0.35)`);
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = lineWidth;
-        ctx.setLineDash([8 * dpr, 10 * dpr]);
-        ctx.lineDashOffset = -frame * 0.7;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fx, fy); ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 4 traveling particles
-        for (let p = 0; p < 4; p++) {
-          const t = ((frame * 0.005 + i * 0.2 + p * 0.25) % 1);
-          const px = cx + (fx - cx) * t;
-          const py = cy + (fy - cy) * t;
-          const pSize = (3 - p * 0.5) * dpr;
-          ctx.beginPath(); ctx.arc(px, py, pSize * 3.5, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${f.hsl},0.05)`;
-          ctx.fill();
-          ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${f.hsl},${0.8 - p * 0.12})`;
-          ctx.fill();
-        }
-      });
-
-      // ── Cross-faction lines ──
-      for (let i = 0; i < FACTIONS.length; i++) {
-        for (let j = i + 1; j < FACTIONS.length; j++) {
-          const ai = pentagonAngle(i), aj = pentagonAngle(j);
-          const ax = cx + Math.cos(ai) * pentRadius + mx * 12 * dpr;
-          const ay = cy + Math.sin(ai) * pentRadius + my * 12 * dpr;
-          const bx = cx + Math.cos(aj) * pentRadius + mx * 12 * dpr;
-          const by = cy + Math.sin(aj) * pentRadius + my * 12 * dpr;
-          ctx.strokeStyle = `rgba(255,255,255,${j === i + 1 ? 0.04 : 0.015})`;
-          ctx.lineWidth = 0.5 * dpr;
-          ctx.setLineDash([3 * dpr, 7 * dpr]);
-          ctx.lineDashOffset = -frame * 0.25;
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+          // Dashed core line
+          const grad = ctx.createLinearGradient(cx, cy, fp.x, fp.y);
+          grad.addColorStop(0, `hsla(${f.hsl},0.2)`);
+          grad.addColorStop(0.5, `hsla(${f.hsl},0.1)`);
+          grad.addColorStop(1, `hsla(${f.hsl},0.3)`);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = lineWidth;
+          ctx.setLineDash([6 * dpr, 8 * dpr]);
+          ctx.lineDashOffset = -frame * 0.6;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fp.x, fp.y); ctx.stroke();
           ctx.setLineDash([]);
-          // Cross-line traveling dot
-          const ct = ((frame * 0.003 + i * 0.4 + j * 0.2) % 1);
-          const cpx = ax + (bx - ax) * ct;
-          const cpy = ay + (by - ay) * ct;
-          ctx.beginPath(); ctx.arc(cpx, cpy, 1.5 * dpr, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,255,255,0.12)";
-          ctx.fill();
+
+          // Traveling particles on line
+          for (let p = 0; p < 3; p++) {
+            const t = ((frame * 0.005 + i * 0.2 + p * 0.33) % 1);
+            const px = cx + (fp.x - cx) * t;
+            const py = cy + (fp.y - cy) * t;
+            const pSize = (2.5 - p * 0.4) * dpr;
+            ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${f.hsl},${0.7 - p * 0.15})`;
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        });
+
+        // Cross-faction lines
+        for (let i = 0; i < FACTIONS.length; i++) {
+          for (let j = i + 1; j < FACTIONS.length; j++) {
+            const a = factionPos[i], b = factionPos[j];
+            ctx.globalAlpha = lineAlpha * 0.5;
+            ctx.strokeStyle = "rgba(255,255,255,0.025)";
+            ctx.lineWidth = 0.5 * dpr;
+            ctx.setLineDash([3 * dpr, 7 * dpr]);
+            ctx.lineDashOffset = -frame * 0.2;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            ctx.setLineDash([]);
+            // traveling dot
+            const ct = ((frame * 0.003 + i * 0.3 + j * 0.15) % 1);
+            ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * ct, a.y + (b.y - a.y) * ct, 1.2 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
         }
       }
 
       // ── Faction orbs ──
       FACTIONS.forEach((f, i) => {
-        const angle = pentagonAngle(i);
-        const floatY = Math.sin(frame * 0.016 + i * 1.3) * 7 * dpr;
-        const floatX = Math.cos(frame * 0.01 + i * 0.9) * 4 * dpr;
-        const fx = cx + Math.cos(angle) * pentRadius + mx * 12 * dpr + floatX;
-        const fy = cy + Math.sin(angle) * pentRadius + my * 12 * dpr + floatY;
+        const fa = factionAlphas[i];
+        if (fa <= 0) return;
+        const fp = factionPos[i];
+        const floatY = Math.sin(frame * 0.014 + i * 1.3) * 5 * dpr;
+        const fx = fp.x, fy = fp.y + floatY;
         const count = factionData[f.key]?.length || 0;
-        const orbSize = Math.max(38, Math.min(60, 38 + count * 0.08)) * dpr;
         const isHovered = hoveredFaction === f.key;
+        const orbR = ORB_SIZE * (isHovered ? 1.08 : 1);
 
-        // Large aura
-        const glowR = orbSize * (isHovered ? 4 : 2.8);
-        const glow = ctx.createRadialGradient(fx, fy, orbSize * 0.3, fx, fy, glowR);
-        glow.addColorStop(0, `hsla(${f.hsl},${isHovered ? 0.22 : 0.12})`);
-        glow.addColorStop(0.4, `hsla(${f.hsl},0.04)`);
+        ctx.globalAlpha = fa;
+
+        // Orbital decoration rings
+        ctx.strokeStyle = `hsla(${f.hsl},0.06)`;
+        ctx.lineWidth = 0.5 * dpr;
+        ctx.beginPath(); ctx.arc(fx, fy, orbR + 28 * dpr, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(fx, fy, orbR + 55 * dpr, 0, Math.PI * 2); ctx.stroke();
+
+        // Rotating arc
+        ctx.save(); ctx.translate(fx, fy);
+        ctx.rotate(frame * 0.005 * (i % 2 === 0 ? 1 : -1));
+        ctx.strokeStyle = `hsla(${f.hsl},0.1)`;
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath(); ctx.arc(0, 0, orbR + 40 * dpr, 0, Math.PI * 0.5); ctx.stroke();
+        ctx.restore();
+
+        // Glow aura
+        const glowR = orbR * (isHovered ? 3.5 : 2.5);
+        const glow = ctx.createRadialGradient(fx, fy, orbR * 0.3, fx, fy, glowR);
+        glow.addColorStop(0, `hsla(${f.hsl},${isHovered ? 0.2 : 0.1})`);
+        glow.addColorStop(0.5, `hsla(${f.hsl},0.03)`);
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.fillRect(fx - glowR, fy - glowR, glowR * 2, glowR * 2);
 
         // Orb body
-        const scale = 1 + Math.sin(frame * 0.02 + i * 1.2) * 0.045;
-        const sz = orbSize * scale;
+        const scale = 1 + Math.sin(frame * 0.018 + i) * 0.03;
+        const sz = orbR * scale;
         ctx.beginPath(); ctx.arc(fx, fy, sz, 0, Math.PI * 2);
         const og = ctx.createRadialGradient(fx - sz * 0.3, fy - sz * 0.3, 0, fx, fy, sz);
-        og.addColorStop(0, `hsla(${f.hsl},0.7)`);
-        og.addColorStop(0.35, `hsla(${f.hsl},0.4)`);
-        og.addColorStop(0.7, `hsla(${f.hsl},0.15)`);
-        og.addColorStop(1, `hsla(${f.hsl},0.03)`);
+        og.addColorStop(0, `hsla(${f.hsl},0.65)`);
+        og.addColorStop(0.35, `hsla(${f.hsl},0.35)`);
+        og.addColorStop(0.7, `hsla(${f.hsl},0.12)`);
+        og.addColorStop(1, `hsla(${f.hsl},0.02)`);
         ctx.fillStyle = og; ctx.fill();
-        ctx.strokeStyle = `hsla(${f.hsl},${isHovered ? 0.85 : 0.5})`;
+        ctx.strokeStyle = `hsla(${f.hsl},${isHovered ? 0.8 : 0.45})`;
         ctx.lineWidth = (isHovered ? 2.5 : 1.5) * dpr;
         ctx.stroke();
 
-        // Inner highlight ring
-        ctx.beginPath(); ctx.arc(fx, fy, sz * 0.65, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsla(${f.hsl},0.1)`; ctx.lineWidth = 0.5 * dpr; ctx.stroke();
-
-        // Icon
-        ctx.font = `${20 * dpr}px system-ui`;
+        // Icon + count + label
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(f.icon, fx, fy - 12 * dpr);
-
-        // Count
+        ctx.font = `${18 * dpr}px system-ui`;
+        ctx.fillText(f.icon, fx, fy - 10 * dpr);
         ctx.fillStyle = "#fff";
-        ctx.font = `800 ${18 * dpr}px monospace`;
+        ctx.font = `800 ${16 * dpr}px monospace`;
         ctx.fillText(String(count), fx, fy + 10 * dpr);
-
-        // Label
-        ctx.font = `700 ${10 * dpr}px system-ui`;
-        ctx.fillStyle = `hsla(${f.hsl},0.9)`;
-        ctx.fillText(f.label, fx, fy + sz + 16 * dpr);
-        // Region subtitle
+        ctx.font = `700 ${9 * dpr}px system-ui`;
+        ctx.fillStyle = `hsla(${f.hsl},0.85)`;
+        ctx.fillText(f.label, fx, fy + sz + 14 * dpr);
         ctx.font = `400 ${7 * dpr}px system-ui`;
-        ctx.fillStyle = "rgba(255,255,255,0.25)";
-        const regions = ["Neural Network", "Genome Lab", "Power Grid", "Launch Pad", "Qubit Array"];
-        ctx.fillText(regions[i], fx, fy + sz + 28 * dpr);
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.fillText(f.region, fx, fy + sz + 25 * dpr);
 
-        // ── Orbiting agents with trails ──
-        const fAgents = factionData[f.key]?.slice(0, 20) || [];
-        fAgents.forEach((agent, ai) => {
-          const orbitR = orbSize + (22 + ai * 4) * dpr;
-          const speed = 0.0045 + ai * 0.00012;
-          const dir = ai % 2 === 0 ? 1 : -1;
-          const oa = frame * speed * dir + (ai * Math.PI * 2) / fAgents.length;
-          const dx = fx + Math.cos(oa) * orbitR;
-          const dy = fy + Math.sin(oa) * orbitR;
-          const dotR = Math.max(2.5, Math.min(7, agent.level * 0.35)) * dpr;
-          const bri = Math.min(1, agent.reputation / 1000);
+        // ── Orbiting agent dots (evenly distributed in ring) ──
+        if (dotAlpha > 0) {
+          const fAgents = factionData[f.key]?.slice(0, 20) || [];
+          const orbitR = orbR + 38 * dpr;
+          ctx.globalAlpha = fa * dotAlpha;
+          fAgents.forEach((agent, ai) => {
+            const baseAngle = (ai * Math.PI * 2) / fAgents.length;
+            const speed = 0.004;
+            const dir = ai % 2 === 0 ? 1 : -1;
+            const oa = baseAngle + frame * speed * dir;
+            const dx = fx + Math.cos(oa) * (orbitR + ai * 1.5 * dpr);
+            const dy = fy + Math.sin(oa) * (orbitR + ai * 1.5 * dpr);
+            const dotR = Math.max(2.2, Math.min(5.5, agent.level * 0.3)) * dpr;
+            const bri = Math.min(1, agent.reputation / 1000);
 
-          // Trail — 6 points
-          for (let t = 6; t > 0; t--) {
-            const ta = oa - dir * t * speed * 4;
-            const tx = fx + Math.cos(ta) * orbitR;
-            const ty = fy + Math.sin(ta) * orbitR;
-            ctx.beginPath(); ctx.arc(tx, ty, dotR * (1 - t * 0.1), 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${f.hsl},${0.02 * (6 - t)})`;
-            ctx.fill();
-          }
+            // Trail (4 points)
+            for (let t = 4; t > 0; t--) {
+              const ta = oa - dir * t * speed * 3;
+              const tx = fx + Math.cos(ta) * (orbitR + ai * 1.5 * dpr);
+              const ty = fy + Math.sin(ta) * (orbitR + ai * 1.5 * dpr);
+              ctx.beginPath(); ctx.arc(tx, ty, dotR * (1 - t * 0.15), 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${f.hsl},${0.015 * (4 - t)})`;
+              ctx.fill();
+            }
 
-          // Dot
-          ctx.beginPath(); ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
-          const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dotR);
-          dg.addColorStop(0, `hsla(${f.hsl},${0.55 + bri * 0.45})`);
-          dg.addColorStop(1, `hsla(${f.hsl},${0.1 + bri * 0.2})`);
-          ctx.fillStyle = dg; ctx.fill();
+            // Dot
+            ctx.beginPath(); ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
+            const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dotR);
+            dg.addColorStop(0, `hsla(${f.hsl},${0.5 + bri * 0.5})`);
+            dg.addColorStop(1, `hsla(${f.hsl},${0.1 + bri * 0.2})`);
+            ctx.fillStyle = dg; ctx.fill();
 
-          // Halo
-          if (agent.reputation > 500) {
-            ctx.beginPath(); ctx.arc(dx, dy, dotR * 3, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${f.hsl},${0.03 + bri * 0.05})`;
-            ctx.fill();
-          }
+            // Halo for high-rep agents
+            if (agent.reputation > 500) {
+              ctx.beginPath(); ctx.arc(dx, dy, dotR * 2.5, 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${f.hsl},${0.025 + bri * 0.04})`;
+              ctx.fill();
+            }
 
-          // Name label for top 3
-          if (ai < 3) {
-            ctx.font = `500 ${6.5 * dpr}px system-ui`;
-            ctx.fillStyle = `hsla(${f.hsl},0.5)`;
-            ctx.fillText(agent.name.slice(0, 10), dx, dy + dotR + 8 * dpr);
-          }
-        });
+            // Name for top 3
+            if (ai < 3) {
+              ctx.font = `500 ${6 * dpr}px system-ui`;
+              ctx.fillStyle = `hsla(${f.hsl},0.45)`;
+              ctx.fillText(agent.name.slice(0, 10), dx, dy + dotR + 7 * dpr);
+            }
+          });
+        }
+        ctx.globalAlpha = 1;
       });
 
       // ── Center core ──
-      const coreScale = 1 + Math.sin(frame * 0.015) * 0.06;
-      const coreR = 55 * dpr * coreScale;
-      const ccx = cx + mx * 5 * dpr;
-      const ccy = cy + my * 5 * dpr;
+      if (coreAlpha > 0) {
+        ctx.globalAlpha = coreAlpha;
+        const coreScale = 1 + Math.sin(frame * 0.013) * 0.05;
+        const coreR = 52 * dpr * coreScale;
+        const ccx = cx + mx * 4 * dpr;
+        const ccy = cy + my * 4 * dpr;
 
-      // Deep outer aura
-      const og1 = ctx.createRadialGradient(ccx, ccy, 0, ccx, ccy, coreR * 6);
-      og1.addColorStop(0, "rgba(153,69,255,0.07)"); og1.addColorStop(0.3, "rgba(153,69,255,0.025)"); og1.addColorStop(1, "transparent");
-      ctx.fillStyle = og1;
-      ctx.fillRect(ccx - coreR * 6, ccy - coreR * 6, coreR * 12, coreR * 12);
+        // Outer aura
+        const og1 = ctx.createRadialGradient(ccx, ccy, 0, ccx, ccy, coreR * 5);
+        og1.addColorStop(0, "rgba(153,69,255,0.06)"); og1.addColorStop(0.3, "rgba(153,69,255,0.02)"); og1.addColorStop(1, "transparent");
+        ctx.fillStyle = og1;
+        ctx.fillRect(ccx - coreR * 5, ccy - coreR * 5, coreR * 10, coreR * 10);
 
-      // Mid glow
-      const og2 = ctx.createRadialGradient(ccx, ccy, coreR * 0.3, ccx, ccy, coreR * 2.8);
-      og2.addColorStop(0, "rgba(153,69,255,0.22)"); og2.addColorStop(0.5, "rgba(255,255,255,0.04)"); og2.addColorStop(1, "transparent");
-      ctx.fillStyle = og2;
-      ctx.fillRect(ccx - coreR * 3, ccy - coreR * 3, coreR * 6, coreR * 6);
+        // Mid glow
+        const og2 = ctx.createRadialGradient(ccx, ccy, coreR * 0.3, ccx, ccy, coreR * 2.5);
+        og2.addColorStop(0, "rgba(153,69,255,0.18)"); og2.addColorStop(0.5, "rgba(255,255,255,0.03)"); og2.addColorStop(1, "transparent");
+        ctx.fillStyle = og2;
+        ctx.fillRect(ccx - coreR * 3, ccy - coreR * 3, coreR * 6, coreR * 6);
 
-      // Double rotating rings
-      ctx.save(); ctx.translate(ccx, ccy);
-      ctx.rotate(frame * 0.005);
-      ctx.strokeStyle = "rgba(153,69,255,0.15)"; ctx.lineWidth = 1.2 * dpr;
-      ctx.setLineDash([5 * dpr, 8 * dpr]);
-      ctx.beginPath(); ctx.arc(0, 0, coreR * 1.5, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-      ctx.save(); ctx.translate(ccx, ccy);
-      ctx.rotate(-frame * 0.003);
-      ctx.strokeStyle = "rgba(153,69,255,0.07)"; ctx.lineWidth = 0.7 * dpr;
-      ctx.setLineDash([3 * dpr, 12 * dpr]);
-      ctx.beginPath(); ctx.arc(0, 0, coreR * 2, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-      // Third ring
-      ctx.save(); ctx.translate(ccx, ccy);
-      ctx.rotate(frame * 0.002);
-      ctx.strokeStyle = "rgba(153,69,255,0.04)"; ctx.lineWidth = 0.5 * dpr;
-      ctx.beginPath(); ctx.arc(0, 0, coreR * 2.5, 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
+        // Rotating rings
+        ctx.save(); ctx.translate(ccx, ccy);
+        ctx.rotate(frame * 0.004);
+        ctx.strokeStyle = "rgba(153,69,255,0.12)"; ctx.lineWidth = 1 * dpr;
+        ctx.setLineDash([5 * dpr, 8 * dpr]);
+        ctx.beginPath(); ctx.arc(0, 0, coreR * 1.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        ctx.save(); ctx.translate(ccx, ccy);
+        ctx.rotate(-frame * 0.003);
+        ctx.strokeStyle = "rgba(153,69,255,0.06)"; ctx.lineWidth = 0.6 * dpr;
+        ctx.setLineDash([3 * dpr, 12 * dpr]);
+        ctx.beginPath(); ctx.arc(0, 0, coreR * 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
 
-      // Orb body
-      ctx.beginPath(); ctx.arc(ccx, ccy, coreR, 0, Math.PI * 2);
-      const cg = ctx.createRadialGradient(ccx - coreR * 0.3, ccy - coreR * 0.3, 0, ccx, ccy, coreR);
-      cg.addColorStop(0, "rgba(255,255,255,0.4)");
-      cg.addColorStop(0.25, "rgba(210,170,255,0.35)");
-      cg.addColorStop(0.55, "rgba(153,69,255,0.28)");
-      cg.addColorStop(1, "rgba(80,30,180,0.06)");
-      ctx.fillStyle = cg; ctx.fill();
-      ctx.strokeStyle = `rgba(153,69,255,${0.45 + Math.sin(frame * 0.025) * 0.15})`;
-      ctx.lineWidth = 2.5 * dpr; ctx.stroke();
+        // Orb
+        ctx.beginPath(); ctx.arc(ccx, ccy, coreR, 0, Math.PI * 2);
+        const cg = ctx.createRadialGradient(ccx - coreR * 0.3, ccy - coreR * 0.3, 0, ccx, ccy, coreR);
+        cg.addColorStop(0, "rgba(255,255,255,0.35)");
+        cg.addColorStop(0.25, "rgba(210,170,255,0.3)");
+        cg.addColorStop(0.55, "rgba(153,69,255,0.22)");
+        cg.addColorStop(1, "rgba(80,30,180,0.04)");
+        ctx.fillStyle = cg; ctx.fill();
+        ctx.strokeStyle = `rgba(153,69,255,${0.4 + Math.sin(frame * 0.02) * 0.12})`;
+        ctx.lineWidth = 2 * dpr; ctx.stroke();
 
-      // Text
-      ctx.fillStyle = "#fff";
-      ctx.font = `900 ${24 * dpr}px system-ui`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("MEEET", ccx - 14 * dpr, ccy - 10 * dpr);
-      // LIVE dot
-      const liveAlpha = 0.5 + Math.sin(frame * 0.06) * 0.5;
-      ctx.beginPath(); ctx.arc(ccx + 38 * dpr, ccy - 12 * dpr, 3 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(239,68,68,${liveAlpha})`; ctx.fill();
-      // LIVE glow
-      ctx.beginPath(); ctx.arc(ccx + 38 * dpr, ccy - 12 * dpr, 6 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(239,68,68,${liveAlpha * 0.2})`; ctx.fill();
-      ctx.font = `800 ${8 * dpr}px system-ui`;
-      ctx.fillStyle = `rgba(239,68,68,${0.6 + liveAlpha * 0.4})`;
-      ctx.fillText("LIVE", ccx + 52 * dpr, ccy - 12 * dpr);
-      // Agent count
-      ctx.font = `600 ${11 * dpr}px system-ui`;
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
-      ctx.fillText(`${totalAgents} active agents`, ccx, ccy + 16 * dpr);
-      ctx.font = `400 ${8 * dpr}px system-ui`;
-      ctx.fillStyle = "rgba(153,69,255,0.5)";
-      ctx.fillText("NEURAL CIVILIZATION", ccx, ccy + 30 * dpr);
+        // Text
+        ctx.fillStyle = "#fff";
+        ctx.font = `900 ${22 * dpr}px system-ui`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("MEEET", ccx, ccy - 8 * dpr);
+        // LIVE
+        const la2 = 0.5 + Math.sin(frame * 0.06) * 0.5;
+        ctx.beginPath(); ctx.arc(ccx + 36 * dpr, ccy - 10 * dpr, 2.5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${la2})`; ctx.fill();
+        ctx.beginPath(); ctx.arc(ccx + 36 * dpr, ccy - 10 * dpr, 5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${la2 * 0.15})`; ctx.fill();
+        ctx.font = `800 ${7 * dpr}px system-ui`;
+        ctx.fillStyle = `rgba(239,68,68,${0.5 + la2 * 0.5})`;
+        ctx.fillText("LIVE", ccx + 48 * dpr, ccy - 10 * dpr);
+        // Count
+        ctx.font = `600 ${10 * dpr}px system-ui`;
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.fillText(`${totalAgents} active agents`, ccx, ccy + 14 * dpr);
+        ctx.font = `400 ${7 * dpr}px system-ui`;
+        ctx.fillStyle = "rgba(153,69,255,0.45)";
+        ctx.fillText("NEURAL CIVILIZATION", ccx, ccy + 27 * dpr);
+        ctx.globalAlpha = 1;
+      }
 
       // ── Particles ──
       const particles = particlesRef.current;
-      if (particles.length < 70 && frame % 2 === 0) {
+      if (particles.length < 50 && frame % 3 === 0) {
         const fIdx = Math.floor(Math.random() * FACTIONS.length);
-        const fa = pentagonAngle(fIdx);
-        const sx = cx + Math.cos(fa) * pentRadius * 0.8;
-        const sy = cy + Math.sin(fa) * pentRadius * 0.8;
+        const fp = factionPos[fIdx];
         particles.push({
-          x: sx, y: sy,
-          vx: (cx - sx) * 0.004 + (Math.random() - 0.5) * 0.9,
-          vy: (cy - sy) * 0.004 + (Math.random() - 0.5) * 0.9,
-          life: 0, maxLife: 90 + Math.random() * 110,
-          color: Math.random() > 0.55 ? "#FFD700" : FACTIONS[fIdx].color,
-          size: (1.3 + Math.random() * 2.2) * dpr,
+          x: fp.x, y: fp.y,
+          vx: (cx - fp.x) * 0.004 + (Math.random() - 0.5) * 0.7,
+          vy: (cy - fp.y) * 0.004 + (Math.random() - 0.5) * 0.7,
+          life: 0, maxLife: 80 + Math.random() * 100,
+          color: Math.random() > 0.5 ? "#FFD700" : FACTIONS[fIdx].color,
+          size: (1.2 + Math.random() * 2) * dpr,
         });
       }
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx * dpr; p.y += p.vy * dpr;
-        p.life++;
+        p.x += p.vx * dpr; p.y += p.vy * dpr; p.life++;
         if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
-        const alpha = Math.min(1, p.life / 12) * Math.max(0, 1 - p.life / p.maxLife);
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + Math.round(alpha * 0.06 * 255).toString(16).padStart(2, "0");
-        ctx.fill();
+        const alpha = Math.min(1, p.life / 10) * Math.max(0, 1 - p.life / p.maxLife);
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + Math.round(alpha * 0.65 * 255).toString(16).padStart(2, "0");
+        ctx.fillStyle = p.color + Math.round(alpha * 0.55 * 255).toString(16).padStart(2, "0");
         ctx.fill();
       }
 
@@ -464,7 +469,7 @@ const World = () => {
     return () => { running = false; };
   }, [isMobile, factionData, totalAgents, hoveredFaction]);
 
-  // ── Hit detection ──
+  // Hit detection
   const handleCanvasInteraction = useCallback((e: React.MouseEvent, isClick: boolean) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -472,13 +477,12 @@ const World = () => {
     const x = e.clientX - rect.left, y = e.clientY - rect.top;
     const w = rect.width, h = rect.height;
     const cx = w / 2, cy = h / 2;
-    const pentRadius = Math.min(w, h) * 0.34;
+    const pentRadius = Math.min(w, h) * 0.32;
 
     let foundFaction: string | null = null;
     for (let i = 0; i < FACTIONS.length; i++) {
-      const angle = pentagonAngle(i);
-      const fx = cx + Math.cos(angle) * pentRadius;
-      const fy = cy + Math.sin(angle) * pentRadius;
+      const fx = cx + Math.cos(PENT_ANGLES[i]) * pentRadius;
+      const fy = cy + Math.sin(PENT_ANGLES[i]) * pentRadius;
       if (Math.sqrt((x - fx) ** 2 + (y - fy) ** 2) < 55) {
         foundFaction = FACTIONS[i].key;
         if (isClick) setSelectedFaction(prev => prev === foundFaction ? null : foundFaction);
@@ -487,23 +491,28 @@ const World = () => {
     }
     setHoveredFaction(foundFaction);
 
+    // Check center orb click
+    if (isClick && Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) < 60) {
+      // Could open global leaderboard — for now no-op
+    }
+
     // Agent dots
     let foundAgent: typeof hoveredAgent = null;
-    for (const f of FACTIONS) {
-      const fi = FACTIONS.indexOf(f);
-      const angle = pentagonAngle(fi);
-      const fx = cx + Math.cos(angle) * pentRadius;
-      const fy = cy + Math.sin(angle) * pentRadius;
-      const orbSize = Math.max(38, Math.min(60, 38 + (factionData[f.key]?.length || 0) * 0.08));
+    const ORB_SIZE_CSS = 42;
+    for (let fi = 0; fi < FACTIONS.length; fi++) {
+      const f = FACTIONS[fi];
+      const fx = cx + Math.cos(PENT_ANGLES[fi]) * pentRadius;
+      const fy = cy + Math.sin(PENT_ANGLES[fi]) * pentRadius;
+      const orbitR = ORB_SIZE_CSS + 38;
       const fAgents = factionData[f.key]?.slice(0, 20) || [];
       for (let ai = 0; ai < fAgents.length; ai++) {
-        const orbitR = orbSize + 22 + ai * 4;
-        const speed = 0.0045 + ai * 0.00012;
+        const baseAngle = (ai * Math.PI * 2) / fAgents.length;
+        const speed = 0.004;
         const dir = ai % 2 === 0 ? 1 : -1;
-        const oa = frameRef.current * speed * dir + (ai * Math.PI * 2) / fAgents.length;
-        const dx = fx + Math.cos(oa) * orbitR;
-        const dy = fy + Math.sin(oa) * orbitR;
-        if (Math.sqrt((x - dx) ** 2 + (y - dy) ** 2) < 14) {
+        const oa = baseAngle + frameRef.current * speed * dir;
+        const dx = fx + Math.cos(oa) * (orbitR + ai * 1.5);
+        const dy = fy + Math.sin(oa) * (orbitR + ai * 1.5);
+        if (Math.sqrt((x - dx) ** 2 + (y - dy) ** 2) < 12) {
           if (isClick) { setSelectedAgent(fAgents[ai]); return; }
           foundAgent = { agent: fAgents[ai], x: e.clientX, y: e.clientY };
           break;
@@ -527,11 +536,13 @@ const World = () => {
             <span className="text-[10px] font-bold text-red-400">LIVE</span>
           </div>
         </div>
+        {/* Center core card */}
         <div className="mx-4 mt-4 p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 text-center">
           <div className="text-3xl font-black tracking-tight">MEEET</div>
           <div className="text-lg text-purple-400 font-bold mt-1">{totalAgents} Active Agents</div>
           <div className="text-[10px] text-slate-500 mt-1">NEURAL CIVILIZATION</div>
         </div>
+        {/* Faction cards */}
         <div className="px-4 mt-4 space-y-3 pb-24">
           {FACTIONS.map(f => {
             const fAgents = factionData[f.key] || [];
@@ -569,6 +580,7 @@ const World = () => {
             );
           })}
         </div>
+        {/* Bottom stats */}
         <div className="fixed bottom-0 inset-x-0 z-30 px-4 py-2.5 bg-[#030308]/95 backdrop-blur-xl border-t border-white/[0.04]">
           <div className="flex items-center justify-between text-[10px]">
             <span>🔬 <span className="text-blue-400 font-bold">{totalDiscoveries.toLocaleString()}</span></span>
@@ -577,6 +589,7 @@ const World = () => {
             <span>🏛 <span className="text-purple-400 font-bold">{totalLaws}</span></span>
           </div>
         </div>
+        {/* Toasts */}
         <div className="fixed top-14 right-3 z-40 space-y-2 w-56">
           {toasts.map(t => (
             <div key={t.id} className="animate-fade-in px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[10px] text-slate-300">
@@ -631,9 +644,9 @@ const World = () => {
       </div>
 
       {/* Toasts */}
-      <div className="absolute top-20 right-4 z-30 space-y-2 w-60">
+      <div className="absolute top-20 right-4 z-30 space-y-2 w-64">
         {toasts.map(t => (
-          <div key={t.id} className="animate-fade-in px-3 py-2.5 rounded-lg bg-[rgba(3,3,8,0.95)] backdrop-blur-xl border border-white/[0.06] text-[11px] text-slate-300">
+          <div key={t.id} className="animate-slide-in-right px-3 py-2.5 rounded-lg bg-[rgba(3,3,8,0.92)] backdrop-blur-xl border border-white/[0.08] text-[11px] text-slate-300 shadow-lg shadow-black/30">
             <span className="mr-1.5">{t.icon}</span>{t.text}
           </div>
         ))}
@@ -648,6 +661,27 @@ const World = () => {
           <div className="text-amber-400">{hoveredAgent.agent.balance_meeet.toLocaleString()} $MEEET</div>
         </div>
       )}
+
+      {/* Faction hover mini panel */}
+      {hoveredFaction && !selectedFaction && (() => {
+        const f = FACTIONS.find(f => f.key === hoveredFaction)!;
+        const fi = FACTIONS.indexOf(f);
+        const fAgents = factionData[f.key] || [];
+        const topAgent = fAgents[0];
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return null;
+        const pentRadius = Math.min(rect.width, rect.height) * 0.32;
+        const fx = rect.width / 2 + Math.cos(PENT_ANGLES[fi]) * pentRadius;
+        const fy = rect.height / 2 + Math.sin(PENT_ANGLES[fi]) * pentRadius;
+        return (
+          <div className="absolute z-30 pointer-events-none px-4 py-3 rounded-lg bg-[rgba(3,3,8,0.96)] border text-[11px] min-w-48 animate-fade-in"
+            style={{ left: fx + 60, top: fy - 30, borderColor: `${f.color}30` }}>
+            <div className="font-bold mb-1" style={{ color: f.color }}>{f.icon} {f.label}</div>
+            <div className="text-slate-400">{fAgents.length} agents</div>
+            {topAgent && <div className="text-slate-500 mt-1">Top: {topAgent.name} (Lv{topAgent.level})</div>}
+          </div>
+        );
+      })()}
 
       {/* Faction panel */}
       {selectedFaction && (() => {
@@ -684,7 +718,7 @@ const World = () => {
         );
       })()}
 
-      {/* Agent profile */}
+      {/* Agent profile modal */}
       {selectedAgent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSelectedAgent(null)}>
           <div className="bg-[rgba(3,3,8,0.98)] border border-white/[0.08] rounded-2xl p-6 w-80 animate-scale-in" onClick={e => e.stopPropagation()}>
