@@ -684,6 +684,23 @@ const Dashboard = () => {
   const { data: impactScore } = useImpactScore(agent?.id);
   const activityFeed = useActivityFeed();
 
+  // Subscription tier
+  const { data: subscription } = useQuery({
+    queryKey: ["my-sub-tier", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return (data && data.length > 0) ? data[0] : null;
+    },
+  });
+  const currentTier: string = (subscription as any)?.tier || (subscription as any)?.plan || "free";
+
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
