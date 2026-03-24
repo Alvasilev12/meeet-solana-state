@@ -39,7 +39,7 @@ const Strategies = () => {
   useEffect(() => {
     const fetchStrategies = async () => {
       const { data, error } = await supabase
-        .from("agent_strategies")
+        .from("agent_strategies_public" as any)
         .select("*")
         .order("price_usdc", { ascending: true });
       if (!error && data) setStrategies(data as unknown as Strategy[]);
