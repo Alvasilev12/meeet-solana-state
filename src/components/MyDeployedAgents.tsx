@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, Pause, Play, Coins, Trophy, ChevronRight } from "lucide-react";
+import { Loader2, Bot, Trash2, MessageCircle, Coins, Trophy, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useState } from "react";
