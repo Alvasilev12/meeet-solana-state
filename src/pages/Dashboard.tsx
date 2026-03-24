@@ -936,6 +936,7 @@ const Dashboard = () => {
                  </Button>
                </div>
              </div>
+          ) : (
             <div className="space-y-6">
               {/* Row 1: Agent Card + Stats + Income */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
