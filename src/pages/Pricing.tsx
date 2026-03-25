@@ -208,7 +208,7 @@ function SubscriptionSection({ userId }: { userId?: string }) {
         return;
       }
       await provider.connect();
-      const priceSol = tier === "pro" ? 0.5 : 1.5;
+      const priceSol = SOL_PRICES_MAP[tier] || 0.49;
       const connection = new Connection("https://api.mainnet-beta.solana.com");
       const TREASURY = new PublicKey("3xVDo3FjRqce22fRR3Ytz9y3Bpo4oAGKsuHFkzqg2YP5");
       const tx = new Transaction().add(
