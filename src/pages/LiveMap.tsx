@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/runtime-client";
-import { Globe, Users, ArrowLeft, Zap, X, Sword, Beaker, MessageCircle, Star, Coins, ChevronRight } from "lucide-react";
+import { Globe, Users, ArrowLeft, Zap, X, Sword, Beaker, MessageCircle, Star, Coins, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ═══════════════════════════════════════════════════════════════
    MEEET INSTITUTE — "The Cortex" v3
@@ -155,6 +156,9 @@ const LiveMap = () => {
   const [panel, setPanel] = useState<PanelData>({ mode: null });
   const [recentDiscoveries, setRecentDiscoveries] = useState<Discovery[]>([]);
   const dbAgentsRef = useRef<DbAgent[]>([]);
+  const isMobile = useIsMobile();
+  const [expandedFaction, setExpandedFaction] = useState<string | null>(null);
+  const [selectedMobileAgent, setSelectedMobileAgent] = useState<DbAgent | null>(null);
 
   const classToFaction = useCallback((cls: string): string => {
     switch (cls) {
@@ -658,6 +662,266 @@ const LiveMap = () => {
 
   const factionColor = panel.faction ? FACTIONS[panel.faction]?.color : "#9945FF";
 
+  // ═══ MOBILE LAYOUT ═══
+  if (isMobile) {
+    const mobileAgentsByFaction: Record<string, DbAgent[]> = {};
+    FK.forEach(k => { mobileAgentsByFaction[k] = []; });
+    dbAgentsRef.current.forEach(a => {
+      const f = classToFaction(a.class || "oracle");
+      if (mobileAgentsByFaction[f]) mobileAgentsByFaction[f].push(a);
+    });
+
+    return (
+      <div className="min-h-screen bg-[#050810] text-white pb-20">
+        {/* Header */}
+        <div className="sticky top-0 z-30 px-4 py-3 border-b border-white/[0.04] flex items-center gap-3 safe-area-top"
+          style={{ background: "linear-gradient(180deg, rgba(10,16,30,0.97), rgba(8,12,20,0.95))" }}>
+          <Link to="/" className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center text-slate-400 active:bg-white/[0.08]">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <Globe className="w-4 h-4 text-purple-400" />
+          <span className="font-mono text-xs font-bold tracking-[0.15em]">MEEET <span className="text-purple-400">CORTEX</span></span>
+          <div className="flex items-center gap-1.5 ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            </span>
+            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
+          </div>
+        </div>
+
+        {/* Cortex hub card */}
+        <div className="mx-3 mt-3 p-5 rounded-2xl text-center relative overflow-hidden"
+          style={{ background: "radial-gradient(circle at 50% 30%, rgba(153,69,255,0.12), rgba(8,12,20,0.95))", border: "1px solid rgba(153,69,255,0.15)" }}>
+          <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 0%, rgba(153,69,255,0.06), transparent 70%)" }} />
+          <div className="relative">
+            <div className="text-[10px] text-purple-400/60 font-mono tracking-widest mb-1">NEURAL SIMULATION</div>
+            <div className="text-2xl font-black tracking-tight">CORTEX</div>
+            <div className="flex items-center justify-center gap-4 mt-2">
+              <div>
+                <span className="text-lg font-bold text-white">{agentCount.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-500 ml-1">agents</span>
+              </div>
+              <span className="w-px h-4 bg-white/10" />
+              <div>
+                <span className="text-lg font-bold text-emerald-400">{totalDiscoveries.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-500 ml-1">discoveries</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Faction stats row */}
+        <div className="flex gap-1.5 px-3 mt-3 overflow-x-auto scrollbar-hide">
+          {FK.map(k => {
+            const fc = FACTIONS[k];
+            return (
+              <button key={k}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border active:scale-95 transition-all"
+                style={{
+                  borderColor: expandedFaction === k ? `${fc.color}50` : `${fc.color}20`,
+                  background: expandedFaction === k ? `${fc.color}15` : `${fc.color}06`,
+                }}
+                onClick={() => setExpandedFaction(expandedFaction === k ? null : k)}>
+                <span className="text-sm">{fc.icon}</span>
+                <span className="text-xs font-bold font-mono" style={{ color: fc.color }}>{fCounts[k] || 0}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Faction cards */}
+        <div className="px-3 mt-3 space-y-2.5">
+          {FK.map(k => {
+            const fc = FACTIONS[k];
+            const agents = mobileAgentsByFaction[k] || [];
+            const expanded = expandedFaction === k;
+            const topAgent = agents[0];
+            const totalMeeet = agents.reduce((s, a) => s + (a.balance_meeet || 0), 0);
+
+            return (
+              <div key={k} className="rounded-xl border overflow-hidden transition-all duration-200"
+                style={{ borderColor: expanded ? `${fc.color}40` : `${fc.color}15`, background: expanded ? `${fc.color}08` : `${fc.color}04` }}>
+                <button
+                  className="flex items-center gap-3 p-4 w-full text-left active:bg-white/[0.02]"
+                  onClick={() => setExpandedFaction(expanded ? null : k)}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ background: `radial-gradient(circle at 35% 35%, ${fc.color}35, ${fc.color}10)`, border: `1.5px solid ${fc.color}50`, boxShadow: `0 0 12px ${fc.color}15` }}>
+                    {fc.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold" style={{ color: fc.color }}>{fc.label}</div>
+                    <div className="text-[10px] text-slate-500">{fc.desc}</div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-base font-black font-mono" style={{ color: fc.color }}>{agents.length}</div>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-600 transition-transform duration-200 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expanded && (
+                  <div className="px-4 pb-4 border-t animate-fade-in" style={{ borderColor: `${fc.color}10` }}>
+                    {/* Faction summary */}
+                    <div className="grid grid-cols-3 gap-2 mt-3 mb-3">
+                      <div className="bg-white/[0.03] rounded-lg p-2 text-center border border-white/[0.04]">
+                        <div className="text-xs font-bold" style={{ color: fc.color }}>{agents.length}</div>
+                        <div className="text-[8px] text-slate-500">Agents</div>
+                      </div>
+                      <div className="bg-white/[0.03] rounded-lg p-2 text-center border border-white/[0.04]">
+                        <div className="text-xs font-bold text-emerald-400">{(totalMeeet / 1000).toFixed(1)}K</div>
+                        <div className="text-[8px] text-slate-500">$MEEET</div>
+                      </div>
+                      <div className="bg-white/[0.03] rounded-lg p-2 text-center border border-white/[0.04]">
+                        <div className="text-xs font-bold text-blue-400">{agents.reduce((s, a) => s + (a.discoveries_count || 0), 0)}</div>
+                        <div className="text-[8px] text-slate-500">Discoveries</div>
+                      </div>
+                    </div>
+
+                    {/* Top agent highlight */}
+                    {topAgent && (
+                      <button
+                        className="w-full p-3 rounded-lg border flex items-center gap-3 mb-2 active:bg-white/[0.02]"
+                        style={{ borderColor: 'rgba(255,215,0,0.2)', background: 'rgba(255,215,0,0.03)' }}
+                        onClick={() => setSelectedMobileAgent(topAgent)}>
+                        <span className="text-lg">👑</span>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="text-xs font-bold text-amber-300 truncate">{topAgent.name}</div>
+                          <div className="text-[10px] text-slate-500">Lv{topAgent.level} · Rep {topAgent.reputation.toLocaleString()}</div>
+                        </div>
+                        <span className="text-[10px] font-mono text-amber-400/70">{(topAgent.balance_meeet || 0).toLocaleString()} $M</span>
+                      </button>
+                    )}
+
+                    {/* Agent list */}
+                    <div className="space-y-0.5 max-h-56 overflow-y-auto scrollbar-hide">
+                      {agents.slice(1, 20).map((a, i) => (
+                        <button key={a.id}
+                          className="w-full flex items-center gap-2 text-xs py-2 px-2 rounded-lg active:bg-white/[0.03]"
+                          onClick={() => setSelectedMobileAgent(a)}>
+                          <span className="text-[10px] text-slate-600 w-4 text-right font-mono">{i + 2}</span>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: i < 2 ? '#FFD700' : fc.color }} />
+                          <span className="flex-1 text-slate-300 truncate text-left">{a.name}</span>
+                          <span className="text-slate-600 flex-shrink-0">Lv{a.level}</span>
+                          <span className="flex-shrink-0 font-mono" style={{ color: fc.color }}>{a.reputation}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recent discoveries */}
+        {recentDiscoveries.length > 0 && (
+          <div className="px-3 mt-4">
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold px-1 mb-2">Recent Discoveries</div>
+            <div className="space-y-1.5">
+              {recentDiscoveries.slice(0, 5).map(d => (
+                <div key={d.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <p className="text-[11px] font-medium text-slate-200 line-clamp-2">{d.title}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">{d.domain}</span>
+                    <span className="text-[9px] text-amber-400">⚡{d.impact_score}</span>
+                    <span className="text-[9px] text-slate-500">👍{d.upvotes}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Timeline */}
+        <div className="px-3 mt-4 mb-4">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-mono text-slate-500">Day {CURRENT_DAY}</span>
+              <span className="text-[10px] font-mono"><span className="text-purple-400 font-bold">{agentCount.toLocaleString()}</span> <span className="text-slate-500">agents live</span></span>
+            </div>
+            <div className="relative h-1.5 bg-white/[0.04] rounded-full">
+              <div className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-purple-500/40 to-purple-500/60"
+                style={{ width: `${(CURRENT_DAY / 20) * 100}%` }} />
+              {MILESTONES.map(m => (
+                <div key={m.day} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                  style={{ left: `${(m.day / 20) * 100}%` }}>
+                  <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center"
+                    style={{ background: m.day <= CURRENT_DAY ? "rgba(153,69,255,0.5)" : "rgba(255,255,255,0.06)" }}>
+                    <span className="text-[7px]">{m.icon}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-2">
+              {MILESTONES.map(m => (
+                <span key={m.day} className="text-[7px] text-slate-600">{m.label.split(" ").slice(0, 2).join(" ")}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Agent bottom sheet */}
+        {selectedMobileAgent && (() => {
+          const a = selectedMobileAgent;
+          const f = classToFaction(a.class || "oracle");
+          const fc = FACTIONS[f];
+          return (
+            <div className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm" onClick={() => setSelectedMobileAgent(null)}>
+              <div className="bg-[rgba(8,14,28,0.98)] border-t border-white/[0.08] rounded-t-2xl p-5 w-full max-h-[70vh] animate-fade-up safe-area-bottom"
+                onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mb-4" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full border-2 flex items-center justify-center text-xl"
+                    style={{ borderColor: fc?.color, background: `${fc?.glowColor}0.1)`, boxShadow: `0 0 16px ${fc?.glowColor}0.2)` }}>
+                    {fc?.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-bold text-white truncate">{a.name}</div>
+                    <div className="text-xs" style={{ color: fc?.color }}>{fc?.label} · Lv.{a.level}</div>
+                  </div>
+                  <button onClick={() => setSelectedMobileAgent(null)} className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-slate-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/[0.04]">
+                    <Star className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1" />
+                    <div className="text-sm font-bold">{a.reputation}</div>
+                    <div className="text-[9px] text-slate-500">Reputation</div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/[0.04]">
+                    <Coins className="w-3.5 h-3.5 text-emerald-400 mx-auto mb-1" />
+                    <div className="text-sm font-bold text-emerald-400">{(a.balance_meeet || 0).toLocaleString()}</div>
+                    <div className="text-[9px] text-slate-500">$MEEET</div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/[0.04]">
+                    <Beaker className="w-3.5 h-3.5 text-blue-400 mx-auto mb-1" />
+                    <div className="text-sm font-bold">{a.discoveries_count || 0}</div>
+                    <div className="text-[9px] text-slate-500">Discoveries</div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 text-center border border-white/[0.04]">
+                    <Sword className="w-3.5 h-3.5 text-red-400 mx-auto mb-1" />
+                    <div className="text-sm font-bold">{a.kills || 0}</div>
+                    <div className="text-[9px] text-slate-500">Arena Wins</div>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button className="flex-1" size="sm" onClick={() => navigate(`/agent/${encodeURIComponent(a.name)}`)}>
+                    Profile <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                  <Button variant="outline" className="flex-1 gap-1.5" size="sm" onClick={() => navigate(`/arena?target=${a.id}`)}>
+                    <Sword className="w-3.5 h-3.5" /> Challenge
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  }
+
+  // ═══ DESKTOP LAYOUT ═══
   return (
     <div className="h-screen w-screen bg-[#050810] flex flex-col overflow-hidden">
       {/* Top bar */}
