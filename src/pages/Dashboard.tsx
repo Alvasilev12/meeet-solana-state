@@ -860,7 +860,7 @@ const Dashboard = () => {
           <UsdBalanceCard userId={user!.id} />
 
           {/* Deployed Agents — always visible at top when user has agent */}
-          {agent && hasConnectedBot && <DeployedAgentsWidget />}
+          {agent && <DeployedAgentsWidget />}
 
           {/* Global Stats Banner */}
           {globalStats && (
