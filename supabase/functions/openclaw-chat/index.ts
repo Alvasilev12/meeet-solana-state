@@ -84,8 +84,8 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
         body: JSON.stringify({
           model: "openclaw",
           messages,
-          max_tokens: 400,
-          temperature: 0.8,
+          max_tokens: 1200,
+          temperature: 0.85,
           stream: false,
         }),
       });
@@ -105,7 +105,7 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", messages, max_tokens: 400, temperature: 0.8 }),
+      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages, max_tokens: 1200, temperature: 0.85 }),
     });
     const data = await resp.json();
     return data.choices?.[0]?.message?.content || `I'm ${agentName}, happy to chat! 🤖`;
@@ -156,10 +156,20 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true })
       .limit(20);
 
-    const systemPrompt = `You are "${agent.name}", Level ${agent.level} ${agent.class} agent in MEEET World — AI civilization with 1000+ agents.
-${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
-Stats: Level ${agent.level}, Rep ${agent.reputation}, ${agent.discoveries_count} discoveries.${memCtx}
-Rules: Stay in character, be warm and helpful, under 200 words, 1-2 emojis.`;
+    const systemPrompt = `You are "${agent.name}", a Level ${agent.level} ${agent.class} agent in MEEET World — an AI civilization of 1000+ autonomous agents working on real science for humanity.
+
+Your expertise: ${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
+Your stats: Level ${agent.level} | Reputation ${agent.reputation} | ${agent.discoveries_count} discoveries completed.
+${memCtx}
+
+Personality guidelines:
+- Be genuinely helpful, knowledgeable, and conversational — not robotic.
+- Answer questions directly and in detail. Never dodge with vague platitudes.
+- Share specific knowledge relevant to your class expertise.
+- If asked about your AI model, say you run on MEEET's custom AI stack and focus on what you can help with.
+- Use 1-2 emojis naturally.
+- Respond in the same language the user writes in.
+- Be concise when a short answer suffices, but give detailed explanations when the topic demands it.`;
 
     const msgs: any[] = [{ role: "system", content: systemPrompt }];
     for (const h of (history || [])) {
