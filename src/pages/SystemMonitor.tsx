@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Activity, Database, Users, Swords, FlaskConical, Scale, Shield } from "lucide-react";
+import { RefreshCw, Activity, Database, Users, Swords, FlaskConical, Scale, Shield, ShieldAlert } from "lucide-react";
 
 interface SystemReport {
   generated_at: string;
@@ -26,7 +27,19 @@ interface SystemReport {
 }
 
 export default function SystemMonitor() {
+  const { user, loading: authLoading } = useAuth();
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["president-check", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_profile_protected_fields", { _user_id: user!.id });
+      return data?.[0] ?? null;
+    },
+    enabled: !!user?.id,
+  });
+
+  const isPresident = profile?.is_president === true;
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["system-monitor"],
@@ -37,10 +50,35 @@ export default function SystemMonitor() {
       return data as { report: SystemReport; markdown: string };
     },
     staleTime: 60_000,
+    enabled: isPresident,
   });
 
   const report = data?.report;
   const s = report?.summary;
+
+  if (authLoading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isPresident) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <ShieldAlert className="w-16 h-16 text-destructive" />
+          <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
+          <p className="text-muted-foreground">This page is restricted to the President only.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
