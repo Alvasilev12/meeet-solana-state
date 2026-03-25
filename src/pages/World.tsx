@@ -536,9 +536,9 @@ const World = () => {
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("MEEET", ccx, ccy - 8 * dpr);
 
-        // ── LIVE indicator — BIGGER ──
+        // ── LIVE indicator — above MEEET ──
         const liveX = ccx + 42 * dpr;
-        const liveY = ccy - 10 * dpr;
+        const liveY = ccy - 28 * dpr;
         const livePulse = 0.5 + Math.sin(frame * 0.06) * 0.5;
         // Outer glow ring
         ctx.beginPath(); ctx.arc(liveX, liveY, 8 * dpr, 0, Math.PI * 2);
