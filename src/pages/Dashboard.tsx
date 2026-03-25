@@ -859,6 +859,9 @@ const Dashboard = () => {
           <SubscriptionBar userId={user!.id} />
           <UsdBalanceCard userId={user!.id} />
 
+          {/* Deployed Agents — always visible at top when user has agent */}
+          {agent && hasConnectedBot && <DeployedAgentsWidget />}
+
           {/* Global Stats Banner */}
           {globalStats && (
             <div className="grid grid-cols-3 gap-3 mb-6">
