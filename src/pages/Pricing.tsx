@@ -386,10 +386,6 @@ function SubscriptionSection({ userId }: { userId?: string }) {
                 <Button variant="outline" className="w-full" disabled>
                   <Check className="w-4 h-4 mr-2" /> Current Plan
                 </Button>
-              ) : t.id === "free" ? (
-                <Button variant="outline" className="w-full" asChild>
-                  <a href="/auth"><Sparkles className="w-4 h-4 mr-2" /> Get Started Free</a>
-                </Button>
               ) : payMethod === "sol" ? (
                 <Button variant={t.highlight ? "default" : "outline"} className="w-full" onClick={() => purchaseWithSol(t.id)}>
                   <Coins className="w-4 h-4 mr-2" /> Pay {t.price}
