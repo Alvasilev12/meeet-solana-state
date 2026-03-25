@@ -19,6 +19,7 @@ const Navbar = () => {
   const NAV_LINKS = [
     { href: "/about", label: t("nav.world") === "Мир" ? "О проекте" : "About" },
     { href: "/world", label: t("nav.world") },
+    ...(user ? [{ href: "/dashboard", label: "🤖 My Agents" }] : []),
     { href: "/quests", label: t("nav.quests") },
     { href: "/oracle", label: "🔮 Oracle" },
     { href: "/warnings", label: "⚠️ Warnings" },
