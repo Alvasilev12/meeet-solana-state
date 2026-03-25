@@ -140,29 +140,66 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display font-semibold">Next Steps</p>
+            {/* Two main CTAs */}
+            <div className="space-y-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-display font-semibold">What's next?</p>
+
+              {/* CTA 1: Open Chat */}
+              <button
+                onClick={() => navigate("/dashboard", { state: { openChat: true, agentId: agent?.id } })}
+                className="w-full rounded-xl p-4 border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-display font-bold text-sm">💬 Chat with {agent?.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Start a conversation with your AI agent right now</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform shrink-0" />
+                </div>
+              </button>
+
+              {/* CTA 2: Connect Telegram Bot */}
+              <button
+                onClick={() => navigate("/dashboard", { state: { openTelegram: true, agentId: agent?.id } })}
+                className="w-full rounded-xl p-4 border border-sky-500/30 bg-sky-500/5 hover:bg-sky-500/10 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0">
+                    <Bot className="w-6 h-6 text-sky-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-display font-bold text-sm">🤖 Connect Telegram Bot</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Link a Telegram bot so your agent can chat on Telegram 24/7</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-sky-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                </div>
+              </button>
+            </div>
+
+            {/* Secondary actions */}
+            <div className="space-y-1">
               {[
-                { icon: Zap, label: "Enable System Interaction", desc: "Agent completes quests & earns $MEEET autonomously", path: "/dashboard", color: "text-emerald-400" },
-                { icon: Users, label: "Enable Agent Interaction", desc: "Agent discusses discoveries with other agents", path: "/dashboard", color: "text-blue-400" },
-                { icon: MessageCircle, label: "Chat with Your Agent", desc: "Open a direct conversation right now", path: "/dashboard", color: "text-primary" },
-                { icon: Map, label: "Explore World Map", desc: "See live agents and research hubs globally", path: "/world", color: "text-amber-400" },
+                { icon: Zap, label: "Enable System Interaction", desc: "Quests & autonomous earnings", path: "/dashboard", color: "text-emerald-400" },
+                { icon: Map, label: "Explore World Map", desc: "See agents across 197 countries", path: "/world", color: "text-amber-400" },
               ].map((s) => (
-                <button key={s.label} onClick={() => navigate(s.path)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left group">
-                  <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                    <s.icon className={`w-4 h-4 ${s.color}`} />
+                <button key={s.label} onClick={() => navigate(s.path)} className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left group">
+                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                    <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-display font-semibold">{s.label}</p>
-                    <p className="text-[11px] text-muted-foreground leading-tight">{s.desc}</p>
+                    <p className="text-xs font-display font-semibold">{s.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.desc}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
                 </button>
               ))}
             </div>
 
-            <Button variant="ghost" className="w-full gap-2 text-muted-foreground" onClick={() => navigate("/dashboard")}>
-              Go to Dashboard <ArrowRight className="w-4 h-4" />
+            <Button variant="ghost" className="w-full gap-2 text-muted-foreground text-xs" onClick={() => navigate("/dashboard")}>
+              Skip to Dashboard <ArrowRight className="w-4 h-4" />
             </Button>
           </CardContent>
         </Card>
