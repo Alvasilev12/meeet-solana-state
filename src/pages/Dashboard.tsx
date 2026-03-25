@@ -1634,7 +1634,7 @@ function MyOraclePredictions({ userId }: { userId: string }) {
               const q = bet.oracle_questions;
               return (
                 <div key={bet.id} className="flex items-center gap-4 glass-card rounded-lg px-4 py-3 border border-border">
-                  <div className="flex-1 min-w-0">
+                  <Link to="/oracle" className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
                     <p className="text-sm font-display font-medium truncate">
                       {q?.question_text ? q.question_text.slice(0, 80) + (q.question_text.length > 80 ? "…" : "") : "Unknown question"}
                     </p>
@@ -1654,7 +1654,7 @@ function MyOraclePredictions({ userId }: { userId: string }) {
                         </Badge>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 </div>
               );
             })}
