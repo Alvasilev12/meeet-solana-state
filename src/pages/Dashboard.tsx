@@ -859,6 +859,9 @@ const Dashboard = () => {
           <SubscriptionBar userId={user!.id} />
           <UsdBalanceCard userId={user!.id} />
 
+          {/* Deployed Agents — always visible at top when user has agent */}
+          {agent && hasConnectedBot && <DeployedAgentsWidget />}
+
           {/* Global Stats Banner */}
           {globalStats && (
             <div className="grid grid-cols-3 gap-3 mb-6">
@@ -939,10 +942,7 @@ const Dashboard = () => {
              </div>
           ) : (
             <div className="space-y-6">
-              {/* Deployed Agents — top of dashboard */}
-              <DeployedAgentsWidget />
-
-              {/* Row 1: Agent Card + Stats + Income */}
+               {/* Row 1: Agent Card + Stats + Income */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Agent Card */}
                 <Card className="glass-card border-border lg:col-span-1 overflow-hidden relative">
