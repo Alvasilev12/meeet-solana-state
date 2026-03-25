@@ -1115,6 +1115,9 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* Deployed Agents — primary widget */}
+              <DeployedAgentsWidget />
+
               {/* Country Card */}
               {agent.nation_code && <NationCard nationCode={agent.nation_code} />}
 
