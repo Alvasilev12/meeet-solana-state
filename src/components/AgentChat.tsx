@@ -1,14 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Bot, Send, Loader2, MessageSquare, Coins, X, Maximize2, Minimize2,
+  Bot, Send, Loader2, MessageSquare, Coins, X,
 } from "lucide-react";
 
 interface AgentChatProps {
@@ -16,7 +14,6 @@ interface AgentChatProps {
   agentName: string;
   agentClass: string;
   agentLevel?: number;
-  /** If true, render as full-page; otherwise floating widget */
   inline?: boolean;
   onClose?: () => void;
 }
@@ -32,35 +29,55 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState(!!inline);
+  const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
   const roomId = user ? `dm_${user.id}_${agentId}` : null;
 
-  // Load history
-  const { data: messages = [], isLoading } = useQuery({
+  const { data: serverMessages = [], isLoading } = useQuery({
     queryKey: ["agent-chat-messages", roomId],
     enabled: !!roomId,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chat_messages")
         .select("id, sender_type, message, created_at")
         .eq("room_id", roomId!)
         .order("created_at", { ascending: true })
         .limit(50);
+      if (error) console.error("Chat history error:", error);
       return (data as ChatMessage[]) ?? [];
     },
     refetchInterval: 5000,
   });
 
-  // Send message
+  // Merge server messages with optimistic ones, deduplicating
+  const messages = (() => {
+    const serverIds = new Set(serverMessages.map(m => m.id));
+    const pending = optimisticMessages.filter(m => !serverIds.has(m.id));
+    return [...serverMessages, ...pending];
+  })();
+
+  // Clear optimistic messages once server catches up
+  useEffect(() => {
+    if (optimisticMessages.length > 0 && serverMessages.length > 0) {
+      const serverIds = new Set(serverMessages.map(m => m.id));
+      const remaining = optimisticMessages.filter(m => !serverIds.has(m.id));
+      if (remaining.length !== optimisticMessages.length) {
+        setOptimisticMessages(remaining);
+      }
+    }
+  }, [serverMessages, optimisticMessages]);
+
   const sendMutation = useMutation({
     mutationFn: async (msg: string) => {
+      console.log("[AgentChat] Sending message to openclaw-chat:", { agent_id: agentId, room_id: roomId });
       const res = await supabase.functions.invoke("openclaw-chat", {
         body: { message: msg, agent_id: agentId, user_id: user!.id, room_id: roomId },
       });
-      if (res.error) throw new Error(res.error.message);
+      console.log("[AgentChat] Response:", { error: res.error, data: res.data });
+      if (res.error) throw new Error(res.error.message || "Edge function error");
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
@@ -68,41 +85,52 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
       qc.invalidateQueries({ queryKey: ["agent-chat-messages", roomId] });
       qc.invalidateQueries({ queryKey: ["my-balance"] });
     },
+    onError: (err) => {
+      console.error("[AgentChat] Send failed:", err);
+      // Remove the optimistic user message on failure
+      setOptimisticMessages(prev => prev.filter(m => m.sender_type !== "user" || m.id !== "opt-user-latest"));
+    },
   });
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     const msg = input.trim();
     if (!msg || sendMutation.isPending) return;
     setInput("");
-    sendMutation.mutate(msg);
-  };
 
-  // Scroll to bottom on new messages
+    // Add optimistic user message immediately
+    const optMsg: ChatMessage = {
+      id: "opt-user-latest",
+      sender_type: "user",
+      message: msg,
+      created_at: new Date().toISOString(),
+    };
+    setOptimisticMessages(prev => [...prev.filter(m => m.id !== "opt-user-latest"), optMsg]);
+
+    sendMutation.mutate(msg);
+  }, [input, sendMutation, agentId]);
+
+  // Scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, sendMutation.isPending]);
 
-  // Focus input on expand
   useEffect(() => {
     if (expanded) inputRef.current?.focus();
   }, [expanded]);
 
   if (!user) {
     return (
-      <Card className="bg-card border-border">
-        <CardContent className="p-6 text-center">
-          <Bot className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            <a href="/auth" className="text-primary underline">Sign in</a> to chat with your agent
-          </p>
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-2xl p-6 text-center">
+        <Bot className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">
+          <a href="/auth" className="text-primary underline">Sign in</a> to chat with your agent
+        </p>
+      </div>
     );
   }
 
-  // Minimized floating button
   if (!expanded && !inline) {
     return (
       <button
@@ -149,7 +177,7 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        {!isLoading && messages.length === 0 && (
+        {!isLoading && messages.length === 0 && !sendMutation.isPending && (
           <div className="text-center py-12 space-y-2">
             <Bot className="w-10 h-10 text-muted-foreground mx-auto" />
             <p className="text-sm text-muted-foreground">Start chatting with <span className="text-foreground font-medium">{agentName}</span></p>
@@ -185,13 +213,19 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
                 <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                 <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
-              <span className="text-[10px] text-muted-foreground">thinking...</span>
+              <span className="text-[10px] text-muted-foreground">{agentName} is thinking...</span>
             </div>
           </div>
         )}
         {sendMutation.isError && (
-          <div className="text-center">
-            <p className="text-xs text-destructive">{(sendMutation.error as any)?.message || "Failed to send"}</p>
+          <div className="text-center py-2">
+            <p className="text-xs text-destructive">{(sendMutation.error as Error)?.message || "Failed to send"}</p>
+            <button
+              onClick={() => sendMutation.reset()}
+              className="text-xs text-primary underline mt-1"
+            >
+              Dismiss
+            </button>
           </div>
         )}
       </div>
