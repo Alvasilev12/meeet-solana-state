@@ -25,6 +25,9 @@ interface ChatMessage {
   created_at: string;
 }
 
+const OPT_USER_ID = "opt-user-latest";
+const OPT_AGENT_ID = "opt-agent-latest";
+
 export default function AgentChat({ agentId, agentName, agentClass, agentLevel, inline, onClose }: AgentChatProps) {
   const { user } = useAuth();
   const [input, setInput] = useState("");
@@ -45,6 +48,7 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
         .select("id, sender_type, message, created_at")
         .eq("room_id", roomId!)
         .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
         .limit(50);
       if (error) console.error("Chat history error:", error);
       return (data as ChatMessage[]) ?? [];
@@ -61,14 +65,43 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
 
   // Clear optimistic messages once server catches up
   useEffect(() => {
-    if (optimisticMessages.length > 0 && serverMessages.length > 0) {
-      const serverIds = new Set(serverMessages.map(m => m.id));
-      const remaining = optimisticMessages.filter(m => !serverIds.has(m.id));
-      if (remaining.length !== optimisticMessages.length) {
-        setOptimisticMessages(remaining);
+    if (optimisticMessages.length === 0 || serverMessages.length === 0) return;
+
+    setOptimisticMessages((prev) => {
+      let changed = false;
+      let next = prev;
+
+      const optUser = next.find((m) => m.id === OPT_USER_ID);
+      if (
+        optUser &&
+        serverMessages.some(
+          (m) =>
+            m.sender_type === "user" &&
+            m.message === optUser.message &&
+            new Date(m.created_at).getTime() >= new Date(optUser.created_at).getTime() - 10000,
+        )
+      ) {
+        next = next.filter((m) => m.id !== OPT_USER_ID);
+        changed = true;
       }
-    }
-  }, [serverMessages, optimisticMessages]);
+
+      const optAgent = next.find((m) => m.id === OPT_AGENT_ID);
+      if (
+        optAgent &&
+        serverMessages.some(
+          (m) =>
+            m.sender_type === "agent" &&
+            m.message === optAgent.message &&
+            new Date(m.created_at).getTime() >= new Date(optAgent.created_at).getTime() - 10000,
+        )
+      ) {
+        next = next.filter((m) => m.id !== OPT_AGENT_ID);
+        changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [serverMessages, optimisticMessages.length]);
 
   const sendMutation = useMutation({
     mutationFn: async (msg: string) => {
@@ -81,14 +114,29 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
       if (res.data?.error) throw new Error(res.data.error);
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setOptimisticMessages((prev) => {
+        const cleared = prev.filter((m) => m.id !== OPT_USER_ID && m.id !== OPT_AGENT_ID);
+        if (!data?.answer) return cleared;
+
+        return [
+          ...cleared,
+          {
+            id: OPT_AGENT_ID,
+            sender_type: "agent",
+            message: data.answer,
+            created_at: new Date().toISOString(),
+          },
+        ];
+      });
+
       qc.invalidateQueries({ queryKey: ["agent-chat-messages", roomId] });
       qc.invalidateQueries({ queryKey: ["my-balance"] });
     },
     onError: (err) => {
       console.error("[AgentChat] Send failed:", err);
       // Remove the optimistic user message on failure
-      setOptimisticMessages(prev => prev.filter(m => m.sender_type !== "user" || m.id !== "opt-user-latest"));
+      setOptimisticMessages((prev) => prev.filter((m) => m.id !== OPT_USER_ID && m.id !== OPT_AGENT_ID));
     },
   });
 
@@ -99,12 +147,12 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
 
     // Add optimistic user message immediately
     const optMsg: ChatMessage = {
-      id: "opt-user-latest",
+      id: OPT_USER_ID,
       sender_type: "user",
       message: msg,
       created_at: new Date().toISOString(),
     };
-    setOptimisticMessages(prev => [...prev.filter(m => m.id !== "opt-user-latest"), optMsg]);
+    setOptimisticMessages((prev) => [...prev.filter((m) => m.id !== OPT_USER_ID && m.id !== OPT_AGENT_ID), optMsg]);
 
     sendMutation.mutate(msg);
   }, [input, sendMutation, agentId]);
