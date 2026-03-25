@@ -249,7 +249,7 @@ function SubscriptionSection({ userId }: { userId?: string }) {
       toast({ title: "Sign in first", variant: "destructive" });
       return;
     }
-    const needed = tier === "pro" ? 9990 : 29990;
+    const needed = MEEET_PRICES_MAP[tier] || 12250;
     if (agentMeeet < needed) {
       toast({ title: "Insufficient MEEET", description: `Need ${needed.toLocaleString()}, have ${agentMeeet.toLocaleString()}`, variant: "destructive" });
       return;
