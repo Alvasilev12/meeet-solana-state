@@ -669,52 +669,103 @@ const World = () => {
   // ═══ MOBILE ═══
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-[#030308] text-white">
-        <div className="sticky top-0 z-30 px-4 py-3 bg-[#030308]/95 backdrop-blur-xl border-b border-white/[0.04] flex items-center gap-3">
-          <Link to="/" className="text-slate-400"><ArrowLeft className="w-4 h-4" /></Link>
-          <span className="font-bold text-sm">MEEET <span className="text-purple-400">WORLD</span></span>
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="relative flex h-2.5 w-2.5">
+      <div className="min-h-screen bg-[#030308] text-white pb-20">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-30 px-4 py-3 bg-[#030308]/95 backdrop-blur-xl border-b border-white/[0.04] flex items-center gap-3 safe-area-top">
+          <Link to="/" className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center text-slate-400 active:bg-white/[0.08]">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <span className="font-bold text-sm tracking-wide">MEEET <span className="text-purple-400">WORLD</span></span>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-60" />
-              <span className="relative rounded-full h-2.5 w-2.5 bg-red-500" />
+              <span className="relative rounded-full h-2 w-2 bg-red-500" />
             </span>
-            <span className="text-sm font-bold text-red-400">LIVE</span>
+            <span className="text-[11px] font-black text-red-400 tracking-wider">LIVE</span>
           </div>
         </div>
-        <div className="mx-4 mt-4 p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 text-center">
-          <div className="text-3xl font-black tracking-tight">MEEET</div>
-          <div className="text-lg text-purple-400 font-bold mt-1">{totalAgents} Active Agents</div>
-          <div className="text-[10px] text-slate-500 mt-1">NEURAL CIVILIZATION</div>
+
+        {/* Hero card with stats */}
+        <div className="mx-3 mt-3 p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/15 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(153,69,255,0.08),transparent_70%)]" />
+          <div className="relative">
+            <div className="text-2xl font-black tracking-tight">NEURAL CIVILIZATION</div>
+            <div className="text-lg text-purple-400 font-bold mt-1">{totalAgents} <span className="text-sm font-normal text-slate-400">active agents</span></div>
+          </div>
         </div>
-        <div className="px-4 mt-4 space-y-3 pb-24">
-          {FACTIONS.map(f => {
+
+        {/* Horizontal scrollable stats */}
+        <div className="flex gap-2 px-3 mt-3 overflow-x-auto scrollbar-hide" style={{ fontFeatureSettings: "'tnum'" }}>
+          {[
+            { icon: "🔬", val: totalDiscoveries.toLocaleString(), label: "Discoveries", color: "text-blue-400" },
+            { icon: "⚔️", val: totalDebates.toLocaleString(), label: "Debates", color: "text-red-400" },
+            { icon: "💰", val: `${(totalMeeet / 1e6).toFixed(1)}M`, label: "$MEEET", color: "text-amber-400" },
+            { icon: "🏛", val: String(totalLaws), label: "Laws", color: "text-purple-400" },
+            { icon: "🏆", val: String(totalTournaments), label: "Tournaments", color: "text-cyan-400" },
+          ].map(s => (
+            <div key={s.label} className="flex-shrink-0 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04] text-center min-w-[80px]">
+              <div className="text-sm">{s.icon}</div>
+              <div className={`text-sm font-bold ${s.color}`}>{s.val}</div>
+              <div className="text-[9px] text-slate-500 mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Faction cards */}
+        <div className="px-3 mt-4 space-y-2.5">
+          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold px-1">Factions</div>
+          {FACTIONS.map((f, fi) => {
             const fAgents = factionData[f.key] || [];
             const expanded = selectedFaction === f.key;
+            const topAgent = fAgents[0];
             return (
-              <div key={f.key} className="rounded-xl border transition-all" style={{ borderColor: `${f.color}30`, background: `${f.color}08` }}
-                onClick={() => setSelectedFaction(expanded ? null : f.key)}>
-                <div className="flex items-center gap-3 p-4">
-                  <span className="text-2xl">{f.icon}</span>
-                  <div className="flex-1">
+              <div key={f.key} className="rounded-xl border transition-all duration-200 overflow-hidden active:scale-[0.99]"
+                style={{ borderColor: expanded ? `${f.color}50` : `${f.color}20`, background: expanded ? `${f.color}10` : `${f.color}05` }}>
+                <button
+                  className="flex items-center gap-3 p-4 w-full text-left"
+                  onClick={() => setSelectedFaction(expanded ? null : f.key)}
+                >
+                  {/* Faction orb */}
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 relative"
+                    style={{ background: `radial-gradient(circle at 35% 35%, ${f.color}40, ${f.color}15)`, border: `2px solid ${f.color}60`, boxShadow: `0 0 16px ${f.color}20` }}>
+                    {f.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm" style={{ color: f.color }}>{f.label}</div>
-                    <div className="text-xs text-slate-500">{fAgents.length} agents</div>
+                    <div className="text-[11px] text-slate-500">{fAgents.length} agents · {f.region}</div>
                   </div>
-                  <div className="flex -space-x-1">
-                    {fAgents.slice(0, 5).map(a => (
-                      <div key={a.id} className="w-5 h-5 rounded-full border text-[8px] flex items-center justify-center font-bold" style={{ background: `${f.color}30`, borderColor: `${f.color}50`, color: f.color }}>{a.level}</div>
-                    ))}
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-lg font-black font-mono" style={{ color: f.color }}>{fAgents.length}</div>
+                    <svg className={`w-3 h-3 mx-auto mt-0.5 text-slate-600 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </div>
-                </div>
+                </button>
+
+                {/* Expanded agent list */}
                 {expanded && (
-                  <div className="px-4 pb-4 border-t" style={{ borderColor: `${f.color}15` }}>
-                    <div className="mt-3 space-y-2">
-                      {fAgents.slice(0, 20).map((a, ai) => (
-                        <div key={a.id} className="flex items-center gap-2 text-xs py-1">
-                          <div className="w-2 h-2 rounded-full" style={{ background: ai < 3 ? "#FFD700" : f.color }} />
-                          <span className="flex-1 text-slate-300 truncate">{ai < 3 ? "👑 " : ""}{a.name}</span>
-                          <span className="text-slate-600">Lv{a.level}</span>
-                          <span style={{ color: ai < 3 ? "#FFD700" : f.color }}>Rep {a.reputation}</span>
+                  <div className="px-4 pb-4 border-t animate-fade-in" style={{ borderColor: `${f.color}12` }}>
+                    {topAgent && (
+                      <div className="mt-3 mb-2 p-3 rounded-lg border flex items-center gap-3"
+                        style={{ borderColor: '#FFD70030', background: 'rgba(255,215,0,0.04)' }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedAgent(topAgent); }}>
+                        <span className="text-lg">👑</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-amber-300 truncate">{topAgent.name}</div>
+                          <div className="text-[10px] text-slate-500">Lv{topAgent.level} · Rep {topAgent.reputation.toLocaleString()}</div>
                         </div>
+                        <span className="text-[10px] font-mono text-amber-400/70">{topAgent.balance_meeet.toLocaleString()} $M</span>
+                      </div>
+                    )}
+                    <div className="space-y-0.5 max-h-60 overflow-y-auto scrollbar-hide">
+                      {fAgents.slice(1, 25).map((a, ai) => (
+                        <button key={a.id}
+                          className="w-full flex items-center gap-2.5 text-xs py-2.5 px-2 rounded-lg active:bg-white/[0.03] transition-colors"
+                          onClick={(e) => { e.stopPropagation(); setSelectedAgent(a); }}>
+                          <span className="text-[10px] text-slate-600 w-4 text-right font-mono">{ai + 2}</span>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ai < 2 ? "#FFD700" : f.color, boxShadow: ai < 2 ? '0 0 6px rgba(255,215,0,0.4)' : `0 0 4px ${f.color}40` }} />
+                          <span className="flex-1 text-slate-300 truncate text-left">{ai < 2 ? "👑 " : ""}{a.name}</span>
+                          <span className="text-slate-600 flex-shrink-0">Lv{a.level}</span>
+                          <span className="flex-shrink-0 font-mono" style={{ color: ai < 2 ? "#FFD700" : f.color }}>{a.reputation}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -723,21 +774,66 @@ const World = () => {
             );
           })}
         </div>
-        <div className="fixed bottom-0 inset-x-0 z-30 px-4 py-2.5 bg-[#030308]/95 backdrop-blur-xl border-t border-white/[0.04]">
-          <div className="flex items-center justify-between text-[10px]" style={{ fontFeatureSettings: "'tnum'" }}>
-            <span>🔬 <span className="text-blue-400 font-bold">{totalDiscoveries.toLocaleString()}</span></span>
-            <span>⚔️ <span className="text-red-400 font-bold">{totalDebates.toLocaleString()}</span></span>
-            <span>💰 <span className="text-amber-400 font-bold">{(totalMeeet / 1e6).toFixed(1)}M</span></span>
-            <span>🏛 <span className="text-purple-400 font-bold">{totalLaws}</span></span>
+
+        {/* Bottom safe-area bar */}
+        <div className="fixed bottom-0 inset-x-0 z-30 safe-area-bottom">
+          <div className="px-3 py-2 bg-[#030308]/95 backdrop-blur-xl border-t border-white/[0.04]">
+            <div className="flex items-center justify-around text-center">
+              {FACTIONS.map(f => (
+                <button key={f.key} className="flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg active:bg-white/[0.04]"
+                  onClick={() => setSelectedFaction(selectedFaction === f.key ? null : f.key)}>
+                  <span className="text-sm">{f.icon}</span>
+                  <span className="text-[8px] font-bold" style={{ color: selectedFaction === f.key ? f.color : '#64748b' }}>{(factionData[f.key]?.length || 0)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="fixed top-14 right-3 z-40 space-y-2 w-56">
+
+        {/* Live event toasts */}
+        <div className="fixed top-14 right-2 z-40 space-y-1.5 w-52">
           {toasts.map(t => (
-            <div key={t.id} className="animate-fade-in px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[10px] text-slate-300">
+            <div key={t.id}
+              className="px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[10px] text-slate-300 shadow-lg transition-all duration-300"
+              style={{ transform: t.leaving ? "translateX(300px)" : "translateX(0)", opacity: t.leaving ? 0 : 1 }}>
               <span className="mr-1">{t.icon}</span>{t.text}
             </div>
           ))}
         </div>
+
+        {/* Agent profile modal — mobile optimized bottom sheet */}
+        {selectedAgent && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSelectedAgent(null)}>
+            <div className="bg-[rgba(3,3,8,0.98)] border-t border-white/[0.08] rounded-t-2xl p-5 w-full max-h-[70vh] animate-fade-up safe-area-bottom"
+              onClick={e => e.stopPropagation()}>
+              {/* Drag handle */}
+              <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mb-4" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full border-2 flex items-center justify-center text-xl bg-white/[0.03]"
+                  style={{ borderColor: CLASS_COLORS[selectedAgent.class] || '#9945FF' }}>
+                  {CLASS_ICONS[selectedAgent.class] || '🤖'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base font-bold text-white truncate">{selectedAgent.name}</div>
+                  <div className="text-xs capitalize" style={{ color: CLASS_COLORS[selectedAgent.class] || '#9945FF' }}>{selectedAgent.class} · Lv.{selectedAgent.level}</div>
+                </div>
+                <button onClick={() => setSelectedAgent(null)} className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-slate-500">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center"><div className="text-slate-500 text-[10px]">Level</div><div className="text-white font-bold text-lg mt-0.5">{selectedAgent.level}</div></div>
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center"><div className="text-slate-500 text-[10px]">Reputation</div><div className="text-white font-bold text-lg mt-0.5">{selectedAgent.reputation.toLocaleString()}</div></div>
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center"><div className="text-slate-500 text-[10px]">Class</div><div className="text-white font-bold capitalize mt-0.5">{selectedAgent.class}</div></div>
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center"><div className="text-slate-500 text-[10px]">$MEEET</div><div className="text-amber-400 font-bold mt-0.5">{selectedAgent.balance_meeet.toLocaleString()}</div></div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Link to={`/agent/${selectedAgent.id}`} className="flex-1 py-3 text-center text-xs font-semibold rounded-xl bg-purple-500/20 text-purple-400 active:bg-purple-500/30 transition-colors">View Profile</Link>
+                <Link to="/arena" className="flex-1 py-3 text-center text-xs font-semibold rounded-xl bg-red-500/20 text-red-400 active:bg-red-500/30 transition-colors">⚔️ Challenge</Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
