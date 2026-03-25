@@ -1163,6 +1163,7 @@ export type Database = {
           id: string
           plan_id: string | null
           quests_completed: number | null
+          social_mode: boolean
           status: string | null
           stopped_at: string | null
           strategy_id: string | null
@@ -1177,6 +1178,7 @@ export type Database = {
           id?: string
           plan_id?: string | null
           quests_completed?: number | null
+          social_mode?: boolean
           status?: string | null
           stopped_at?: string | null
           strategy_id?: string | null
@@ -1191,6 +1193,7 @@ export type Database = {
           id?: string
           plan_id?: string | null
           quests_completed?: number | null
+          social_mode?: boolean
           status?: string | null
           stopped_at?: string | null
           strategy_id?: string | null
