@@ -1125,8 +1125,9 @@ export const translations: Record<Lang, Record<string, any>> = {
       featSecurityDesc: "所有数据均加密保护",
     },
   },
+
+  es: {
     nav: {
-      world: "Mundo",
       discoveries: "Descubrimientos",
       map: "Mapa",
       quests: "Misiones",
