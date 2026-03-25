@@ -1271,9 +1271,6 @@ const Dashboard = () => {
                 <div className="lg:col-span-2">
                   <Tabs defaultValue="quests" className="w-full">
                     <TabsList className="bg-muted/50 mb-4">
-                      <TabsTrigger value="agents" className="text-xs font-display gap-1.5">
-                        <Users className="w-3.5 h-3.5" /> My Agents
-                      </TabsTrigger>
                       <TabsTrigger value="quests" className="text-xs font-display gap-1.5">
                         <Trophy className="w-3.5 h-3.5" /> My Quests
                       </TabsTrigger>
@@ -1284,10 +1281,6 @@ const Dashboard = () => {
                         <Activity className="w-3.5 h-3.5" /> Live Feed
                       </TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="agents">
-                      <DeployedAgentsWidget />
-                    </TabsContent>
 
                     <TabsContent value="quests">
                       <Card className="glass-card border-border">
