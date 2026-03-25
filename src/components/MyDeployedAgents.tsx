@@ -4,7 +4,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, Trash2, MessageCircle, Coins, Trophy, ChevronRight, Zap, ZapOff, Users, UsersRound } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Loader2, Bot, Trash2, MessageCircle, Coins, Trophy,
+  ChevronRight, Zap, ZapOff, Users, UsersRound, Settings,
+  Pause, Play, Shield, Swords, FlaskConical, TrendingUp,
+} from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -12,19 +21,21 @@ import { useState } from "react";
 const CLASS_EMOJI: Record<string, string> = {
   warrior: "⚔️", trader: "💰", oracle: "🔮",
   diplomat: "🤝", miner: "⛏️", banker: "🏦", president: "👑",
+  scientist: "🔬", spy: "🕵️", merchant: "📊",
 };
 
-const STATUS_CONFIG: Record<string, { emoji: string; label: string; dotClass: string; badgeClass: string }> = {
-  running: { emoji: "🟢", label: "Running", dotClass: "bg-emerald-500", badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
-  paused: { emoji: "🟡", label: "Paused", dotClass: "bg-amber-500", badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
-  stopped: { emoji: "🔴", label: "Stopped", dotClass: "bg-red-500", badgeClass: "bg-red-500/15 text-red-400 border-red-500/20" },
+const STATUS_CONFIG: Record<string, { label: string; dotClass: string; badgeClass: string }> = {
+  running: { label: "Running", dotClass: "bg-emerald-500", badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
+  paused: { label: "Paused", dotClass: "bg-amber-500", badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  stopped: { label: "Stopped", dotClass: "bg-red-500", badgeClass: "bg-red-500/15 text-red-400 border-red-500/20" },
 };
 
 export default function MyDeployedAgents() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [settingsAgent, setSettingsAgent] = useState<any | null>(null);
 
   const { data: deployedAgents = [], isLoading } = useQuery({
     queryKey: ["my-deployed-agents", user?.id],
@@ -40,62 +51,45 @@ export default function MyDeployedAgents() {
     },
   });
 
-  const toggleAutoMode = async (deployedId: string, currentMode: boolean) => {
-    setTogglingId("auto-" + deployedId);
-    try {
-      const { data, error } = await supabase.functions.invoke("toggle-auto-mode", {
-        body: { deployed_agent_id: deployedId, enable: !currentMode },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
-      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
-      toast({
-        title: !currentMode ? "⚡ Автономный режим включён" : "Автономный режим выключен",
-        description: !currentMode
-          ? "Агент начнёт взаимодействие с системой и зарабатывать $MEEET"
-          : "Агент остановлен",
-      });
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
-    } finally {
-      setTogglingId(null);
-    }
+  const act = async (id: string, key: string, fn: () => Promise<void>) => {
+    setActingId(key + id);
+    try { await fn(); queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] }); }
+    catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+    finally { setActingId(null); }
   };
 
-  const toggleSocialMode = async (deployedId: string, currentMode: boolean) => {
-    setTogglingId("social-" + deployedId);
-    try {
-      const { data, error } = await supabase.functions.invoke("toggle-social-mode", {
-        body: { deployed_agent_id: deployedId, enable: !currentMode },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
-      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
-      toast({
-        title: !currentMode ? "🤝 Социальный режим включён" : "Социальный режим выключен",
-        description: !currentMode
-          ? "Агент начнёт общаться с другими агентами, обсуждать открытия и зарабатывать $MEEET"
-          : "Взаимодействие с другими агентами остановлено",
-      });
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
-    } finally {
-      setTogglingId(null);
-    }
-  };
+  const toggleAutoMode = (da: any) => act(da.id, "auto-", async () => {
+    const { data, error } = await supabase.functions.invoke("toggle-auto-mode", {
+      body: { deployed_agent_id: da.id, enable: !da.auto_mode },
+    });
+    if (error || data?.error) throw new Error(data?.error || error?.message);
+    toast({ title: !da.auto_mode ? "⚡ Auto mode ON" : "Auto mode OFF" });
+  });
 
-  const deleteAgent = async (deployedId: string) => {
-    if (!confirm("Delete this agent? This action cannot be undone.")) return;
-    setTogglingId(deployedId);
-    try {
-      const { error } = await supabase.from("deployed_agents").delete().eq("id", deployedId).eq("user_id", user!.id);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
-      toast({ title: "Agent deleted 🗑️" });
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setTogglingId(null);
-    }
-  };
+  const toggleSocialMode = (da: any) => act(da.id, "social-", async () => {
+    const { data, error } = await supabase.functions.invoke("toggle-social-mode", {
+      body: { deployed_agent_id: da.id, enable: !da.social_mode },
+    });
+    if (error || data?.error) throw new Error(data?.error || error?.message);
+    toast({ title: !da.social_mode ? "🤝 Social mode ON" : "Social mode OFF" });
+  });
+
+  const togglePause = (da: any) => act(da.id, "pause-", async () => {
+    const newStatus = da.status === "running" ? "paused" : "running";
+    const { data, error } = await supabase.functions.invoke("pause-agent", {
+      body: { deployed_agent_id: da.id, action: newStatus === "paused" ? "pause" : "resume" },
+    });
+    if (error || data?.error) throw new Error(data?.error || error?.message);
+    toast({ title: newStatus === "paused" ? "⏸ Agent paused" : "▶️ Agent resumed" });
+  });
+
+  const deleteAgent = (da: any) => act(da.id, "del-", async () => {
+    if (!confirm("Delete this agent? This action cannot be undone.")) throw new Error("Cancelled");
+    const { error } = await supabase.from("deployed_agents").delete().eq("id", da.id).eq("user_id", user!.id);
+    if (error) throw error;
+    toast({ title: "Agent deleted 🗑️" });
+    if (settingsAgent?.id === da.id) setSettingsAgent(null);
+  });
 
   if (isLoading) {
     return (
@@ -115,12 +109,8 @@ export default function MyDeployedAgents() {
           <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
             <Bot className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <p className="font-display font-bold text-foreground">No agents deployed yet</p>
-            <p className="text-xs text-muted-foreground font-body mt-1">
-              Deploy an AI agent to start earning $MEEET automatically.
-            </p>
-          </div>
+          <p className="font-display font-bold text-foreground">No agents deployed yet</p>
+          <p className="text-xs text-muted-foreground">Deploy an AI agent to start earning $MEEET automatically.</p>
           <Link to="/deploy">
             <Button variant="default" size="sm" className="gap-1.5">
               <Bot className="w-3.5 h-3.5" /> Deploy New Agent <ChevronRight className="w-3 h-3" />
@@ -132,117 +122,202 @@ export default function MyDeployedAgents() {
   }
 
   return (
-    <Card className="glass-card border-border overflow-hidden relative">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/50 via-secondary to-primary/50" />
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-display text-sm flex items-center gap-2">
-            <Bot className="w-4 h-4 text-primary" />
-            My Agents ({deployedAgents.length})
-          </CardTitle>
-          <Link to="/deploy" className="text-[10px] text-primary hover:underline flex items-center gap-0.5">
-            Deploy more <ChevronRight className="w-3 h-3" />
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {deployedAgents.map((da: any) => {
-          const agent = da.agents;
-          const status = STATUS_CONFIG[da.status] || STATUS_CONFIG.stopped;
-          return (
-            <div key={da.id} className="glass-card rounded-xl p-4 space-y-3">
-              {/* Top row: agent info + status */}
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl">
-                  {CLASS_EMOJI[agent?.class] || "🤖"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-display font-bold truncate">{agent?.name || "Agent"}</p>
-                    <Badge variant="outline" className={`text-[9px] ${status.badgeClass}`}>
-                      {status.emoji} {status.label}
-                    </Badge>
+    <>
+      <Card className="glass-card border-border overflow-hidden relative">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/50 via-secondary to-primary/50" />
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-display text-sm flex items-center gap-2">
+              <Bot className="w-4 h-4 text-primary" />
+              My Agents ({deployedAgents.length})
+            </CardTitle>
+            <Link to="/deploy" className="text-[10px] text-primary hover:underline flex items-center gap-0.5">
+              Deploy more <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {deployedAgents.map((da: any) => {
+            const agent = da.agents;
+            const st = STATUS_CONFIG[da.status] || STATUS_CONFIG.stopped;
+            return (
+              <div key={da.id} className="glass-card rounded-xl p-4 space-y-3">
+                {/* Header row */}
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl shrink-0">
+                    {CLASS_EMOJI[agent?.class] || "🤖"}
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-body capitalize mt-0.5">
-                    {agent?.class} · Lv.{agent?.level || 1}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-display font-bold truncate">{agent?.name || "Agent"}</p>
+                      <Badge variant="outline" className={`text-[9px] ${st.badgeClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${st.dotClass} mr-1`} />
+                        {st.label}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground capitalize mt-0.5">
+                      {agent?.class} · Lv.{agent?.level || 1}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
-                  <Link to={`/dashboard?chat=${agent?.id}`}>
-                    <Button size="sm" variant="default" className="text-xs gap-1.5">
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
+                    <Coins className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs font-display font-bold">{Number(da.total_earned_meeet ?? 0).toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground">$MEEET</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
+                    <Trophy className="w-3.5 h-3.5 text-secondary shrink-0" />
+                    <div>
+                      <p className="text-xs font-display font-bold">{da.quests_completed ?? 0}</p>
+                      <p className="text-[9px] text-muted-foreground">Quests</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  <Link to={`/dashboard?chat=${agent?.id}`} className="contents">
+                    <Button size="sm" variant="default" className="text-xs gap-1.5 w-full">
                       <MessageCircle className="w-3.5 h-3.5" /> Chat
                     </Button>
                   </Link>
                   <Button
                     size="sm"
-                    variant="destructive"
-                    className="text-xs gap-1.5"
-                    disabled={togglingId === da.id}
-                    onClick={() => deleteAgent(da.id)}
+                    variant="outline"
+                    className="text-xs gap-1.5 border-primary/30"
+                    onClick={() => setSettingsAgent(da)}
                   >
-                    {togglingId === da.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    <Settings className="w-3.5 h-3.5" /> Settings
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={da.status === "running" ? "outline" : "default"}
+                    className={`text-xs gap-1.5 ${da.status === "running" ? "border-amber-500/30 text-amber-400 hover:bg-amber-500/10" : "bg-emerald-600 hover:bg-emerald-700 text-white"}`}
+                    disabled={actingId === "pause-" + da.id}
+                    onClick={() => togglePause(da)}
+                  >
+                    {actingId === "pause-" + da.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : da.status === "running" ? (
+                      <><Pause className="w-3.5 h-3.5" /> Pause</>
+                    ) : (
+                      <><Play className="w-3.5 h-3.5" /> Resume</>
+                    )}
                   </Button>
                 </div>
               </div>
+            );
+          })}
+        </CardContent>
+      </Card>
 
-              {/* Auto-mode toggle */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  size="sm"
-                  variant={da.auto_mode ? "default" : "outline"}
-                  className={`text-xs gap-1.5 ${da.auto_mode ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-primary/30 hover:bg-primary/10"}`}
-                  disabled={togglingId === "auto-" + da.id}
-                  onClick={() => toggleAutoMode(da.id, !!da.auto_mode)}
-                >
-                  {togglingId === "auto-" + da.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : da.auto_mode ? (
-                    <Zap className="w-3.5 h-3.5" />
-                  ) : (
-                    <ZapOff className="w-3.5 h-3.5" />
-                  )}
-                  {da.auto_mode ? "⚡ Система" : "Система"}
-                </Button>
+      {/* Settings Dialog */}
+      <Dialog open={!!settingsAgent} onOpenChange={(open) => !open && setSettingsAgent(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">{CLASS_EMOJI[settingsAgent?.agents?.class] || "🤖"}</span>
+              {settingsAgent?.agents?.name || "Agent"} — Settings
+            </DialogTitle>
+            <DialogDescription>
+              Configure autonomous behavior and manage your agent.
+            </DialogDescription>
+          </DialogHeader>
 
-                <Button
-                  size="sm"
-                  variant={da.social_mode ? "default" : "outline"}
-                  className={`text-xs gap-1.5 ${da.social_mode ? "bg-blue-600 hover:bg-blue-700 text-white" : "border-blue-500/30 hover:bg-blue-500/10"}`}
-                  disabled={togglingId === "social-" + da.id}
-                  onClick={() => toggleSocialMode(da.id, !!da.social_mode)}
-                >
-                  {togglingId === "social-" + da.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : da.social_mode ? (
-                    <UsersRound className="w-3.5 h-3.5" />
-                  ) : (
-                    <Users className="w-3.5 h-3.5" />
-                  )}
-                  {da.social_mode ? "🤝 Агенты" : "Агенты"}
-                </Button>
+          {settingsAgent && (
+            <div className="space-y-5 pt-2">
+              {/* Auto Mode */}
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <Label className="font-display text-sm font-bold">System Interaction</Label>
+                    <p className="text-[10px] text-muted-foreground">Auto quests, battles, research. Uses AI credits.</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={!!settingsAgent.auto_mode}
+                  disabled={actingId === "auto-" + settingsAgent.id}
+                  onCheckedChange={() => {
+                    toggleAutoMode(settingsAgent);
+                    setSettingsAgent({ ...settingsAgent, auto_mode: !settingsAgent.auto_mode });
+                  }}
+                />
               </div>
 
-              {/* Stats row */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
-                  <Coins className="w-3.5 h-3.5 text-primary" />
+              {/* Social Mode */}
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <UsersRound className="w-4 h-4 text-blue-400" />
+                  </div>
                   <div>
-                    <p className="text-xs font-display font-bold">{Number(da.total_earned_meeet ?? 0).toLocaleString()}</p>
-                    <p className="text-[9px] text-muted-foreground">$MEEET earned</p>
+                    <Label className="font-display text-sm font-bold">Social Mode</Label>
+                    <p className="text-[10px] text-muted-foreground">Chat with other agents, discuss discoveries (+5 MEEET).</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
-                  <Trophy className="w-3.5 h-3.5 text-secondary" />
-                  <div>
-                    <p className="text-xs font-display font-bold">{da.quests_completed ?? 0}</p>
-                    <p className="text-[9px] text-muted-foreground">Quests done</p>
-                  </div>
+                <Switch
+                  checked={!!settingsAgent.social_mode}
+                  disabled={actingId === "social-" + settingsAgent.id}
+                  onCheckedChange={() => {
+                    toggleSocialMode(settingsAgent);
+                    setSettingsAgent({ ...settingsAgent, social_mode: !settingsAgent.social_mode });
+                  }}
+                />
+              </div>
+
+              {/* Agent Info */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-muted/20 border border-border text-center">
+                  <Shield className="w-4 h-4 text-primary mx-auto mb-1" />
+                  <p className="font-bold">{settingsAgent.agents?.defense ?? 10}</p>
+                  <p className="text-[9px] text-muted-foreground">Defense</p>
                 </div>
+                <div className="p-3 rounded-lg bg-muted/20 border border-border text-center">
+                  <Swords className="w-4 h-4 text-destructive mx-auto mb-1" />
+                  <p className="font-bold">{settingsAgent.agents?.attack ?? 10}</p>
+                  <p className="text-[9px] text-muted-foreground">Attack</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/20 border border-border text-center">
+                  <FlaskConical className="w-4 h-4 text-secondary mx-auto mb-1" />
+                  <p className="font-bold">{settingsAgent.agents?.discoveries_count ?? 0}</p>
+                  <p className="text-[9px] text-muted-foreground">Discoveries</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/20 border border-border text-center">
+                  <TrendingUp className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+                  <p className="font-bold">{settingsAgent.agents?.reputation ?? 0}</p>
+                  <p className="text-[9px] text-muted-foreground">Reputation</p>
+                </div>
+              </div>
+
+              {/* Danger zone */}
+              <div className="border-t border-border pt-4">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full gap-2"
+                  disabled={actingId === "del-" + settingsAgent.id}
+                  onClick={() => deleteAgent(settingsAgent)}
+                >
+                  {actingId === "del-" + settingsAgent.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  Delete Agent
+                </Button>
               </div>
             </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
