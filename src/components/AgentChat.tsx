@@ -49,7 +49,7 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
         .eq("room_id", roomId!)
         .order("created_at", { ascending: true })
         .order("id", { ascending: true })
-        .limit(50);
+        .limit(500);
       if (error) console.error("Chat history error:", error);
       return (data as ChatMessage[]) ?? [];
     },
