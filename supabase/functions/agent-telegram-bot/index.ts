@@ -157,25 +157,16 @@ serve(async (req) => {
 
     // === WEBHOOK — incoming Telegram message ===
     const agentIdParam = new URL(req.url).searchParams.get("agent_id");
-    // Legacy support: also check bot_token param for old webhooks
-    const legacyBotToken = new URL(req.url).searchParams.get("bot_token");
 
-    if ((agentIdParam || legacyBotToken) && body.message) {
-      // Validate Telegram secret_token header if present
+    if (agentIdParam && body.message) {
+      // Validate Telegram secret_token header
       const tgSecret = req.headers.get("x-telegram-bot-api-secret-token");
 
-      let bot: any;
-      if (agentIdParam) {
-        const { data } = await supabase.from("user_bots").select("*, agents(*)").eq("agent_id", agentIdParam).eq("status", "active").single();
-        bot = data;
-        // Verify webhook_secret matches
-        if (bot?.webhook_secret && tgSecret !== bot.webhook_secret) {
-          return new Response("Forbidden", { status: 403 });
-        }
-      } else if (legacyBotToken) {
-        // Legacy: lookup by bot_token (will be phased out)
-        const { data } = await supabase.from("user_bots").select("*, agents(*)").eq("bot_token", legacyBotToken).eq("status", "active").single();
-        bot = data;
+      const { data } = await supabase.from("user_bots").select("*, agents(*)").eq("agent_id", agentIdParam).eq("status", "active").single();
+      const bot: any = data;
+      // Verify webhook_secret matches
+      if (!bot?.webhook_secret || tgSecret !== bot.webhook_secret) {
+        return new Response("Forbidden", { status: 403 });
       }
 
       const botToken = bot?.bot_token;
