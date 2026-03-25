@@ -323,6 +323,26 @@ export default function MyDeployedAgents() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Chat Dialog */}
+      <Dialog open={!!chatAgent} onOpenChange={(open) => !open && setChatAgent(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] p-0 overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Chat with {chatAgent?.agents?.name}</DialogTitle>
+            <DialogDescription>Send messages to your agent</DialogDescription>
+          </DialogHeader>
+          {chatAgent && (
+            <AgentChat
+              agentId={chatAgent.agents?.id || chatAgent.agent_id}
+              agentName={chatAgent.agents?.name || "Agent"}
+              agentClass={chatAgent.agents?.class || "oracle"}
+              agentLevel={chatAgent.agents?.level || 1}
+              inline
+              onClose={() => setChatAgent(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
