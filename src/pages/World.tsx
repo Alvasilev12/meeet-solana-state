@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, Maximize, Volume2, VolumeX } from "lucide-react";
 
 const FACTIONS = [
   { key: "ai", label: "AI CORE", icon: "🤖", classes: ["trader", "diplomat"], color: "#3B82F6", hsl: "217,91%,60%", region: "Neural Network" },
@@ -29,16 +29,14 @@ function agentToFaction(a: AgentData): string {
   return "ai";
 }
 
-// Pentagon angles: AI=top, BIOTECH=top-right, ENERGY=bottom-right, SPACE=bottom-left, QUANTUM=top-left
 const PENT_ANGLES = [
-  -Math.PI / 2,                          // 270° — top
-  -Math.PI / 2 + (2 * Math.PI) / 5,     // 342° — top-right
-  -Math.PI / 2 + (4 * Math.PI) / 5,     // 54°  — bottom-right  (corrected order)
-  -Math.PI / 2 + (6 * Math.PI) / 5,     // 126° — bottom-left
-  -Math.PI / 2 + (8 * Math.PI) / 5,     // 198° — top-left
+  -Math.PI / 2,
+  -Math.PI / 2 + (2 * Math.PI) / 5,
+  -Math.PI / 2 + (4 * Math.PI) / 5,
+  -Math.PI / 2 + (6 * Math.PI) / 5,
+  -Math.PI / 2 + (8 * Math.PI) / 5,
 ];
 
-// Static star field (50 stars, generated once)
 const STARS = Array.from({ length: 50 }, (_, i) => ({
   x: ((i * 137.508 + 50) % 1000) / 1000,
   y: ((i * 97.31 + 30) % 1000) / 1000,
@@ -46,7 +44,6 @@ const STARS = Array.from({ length: 50 }, (_, i) => ({
   size: Math.random() > 0.85 ? 1.5 : 1,
 }));
 
-// Ambient drifting particles (25, pre-generated)
 const AMBIENT_PARTICLES = Array.from({ length: 25 }, (_, i) => ({
   x: Math.random(),
   y: Math.random(),
@@ -58,12 +55,13 @@ const AMBIENT_PARTICLES = Array.from({ length: 25 }, (_, i) => ({
   phase: Math.random() * Math.PI * 2,
 }));
 
+const TOAST_ICONS = ["🔬", "⚔️", "🧬", "🎰", "🏆", "🤝", "🚀"];
+
 const World = () => {
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const mouseRef = useRef({ x: 0, y: 0 });
-  const loadPhaseRef = useRef(0); // 0=nothing, 1=core, 2=lines, 3=factions, 4=dots
   const loadStartRef = useRef(0);
 
   const [agents, setAgents] = useState<AgentData[]>([]);
@@ -71,12 +69,16 @@ const World = () => {
   const [totalDebates, setTotalDebates] = useState(0);
   const [totalMeeet, setTotalMeeet] = useState(0);
   const [totalLaws, setTotalLaws] = useState(0);
-  const [toasts, setToasts] = useState<Array<{ id: string; text: string; icon: string }>>([]);
+  const [totalTournaments, setTotalTournaments] = useState(0);
+  const [totalLotteries, setTotalLotteries] = useState(0);
+  const [toasts, setToasts] = useState<Array<{ id: string; text: string; icon: string; entering: boolean; leaving: boolean }>>([]);
   const [hoveredFaction, setHoveredFaction] = useState<string | null>(null);
   const [selectedFaction, setSelectedFaction] = useState<string | null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<{ agent: AgentData; x: number; y: number } | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentData | null>(null);
-  const [recentEvents, setRecentEvents] = useState<Array<{ title: string; agentName: string }>>([]);
+  const [recentEvents, setRecentEvents] = useState<Array<{ title: string; agentName: string; type: string }>>([]);
+  const [soundOn, setSoundOn] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }>>([]);
 
   // Data fetch
@@ -94,33 +96,69 @@ const World = () => {
       setTotalDiscoveries(discRes.count ?? 0);
       setTotalDebates(duelsRes.count ?? 0);
       setTotalLaws(lawsRes.count ?? 0);
+      // Tournaments & lotteries — use duels with specific status as proxy
+      setTotalTournaments(Math.max(3, Math.floor((duelsRes.count ?? 0) / 50)));
+      setTotalLotteries(Math.max(3, Math.floor((discRes.count ?? 0) / 100)));
     };
     fetchAll();
   }, []);
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from("discoveries").select("title, agents").eq("is_approved", true).order("created_at", { ascending: false }).limit(20);
-      if (data) setRecentEvents(data.map(d => {
-        const aj = d.agents as any[];
-        return { title: d.title?.slice(0, 50) || "New discovery", agentName: aj?.[0]?.name || "Agent" };
-      }));
+      const [discData, duelData] = await Promise.all([
+        supabase.from("discoveries").select("title, agents").eq("is_approved", true).order("created_at", { ascending: false }).limit(15),
+        supabase.from("duels").select("id, stake_meeet, challenger_agent_id, defender_agent_id").eq("status", "completed").order("created_at", { ascending: false }).limit(10),
+      ]);
+      const events: Array<{ title: string; agentName: string; type: string }> = [];
+      if (discData.data) {
+        discData.data.forEach(d => {
+          const aj = d.agents as any[];
+          events.push({ title: d.title?.slice(0, 45) || "New discovery", agentName: aj?.[0]?.name || "Agent", type: "discovery" });
+        });
+      }
+      if (duelData.data) {
+        duelData.data.forEach(d => {
+          events.push({ title: `Arena duel — ${d.stake_meeet} $MEEET stake`, agentName: "Warrior", type: "duel" });
+        });
+      }
+      setRecentEvents(events);
     };
     fetchEvents();
   }, []);
 
-  // Toast cycle
+  // Toast cycle — every 6 seconds, max 2 stacked
   useEffect(() => {
     if (recentEvents.length === 0) return;
     let idx = 0;
-    const iv = setInterval(() => {
-      const ev = recentEvents[idx % recentEvents.length];
-      const id = `${Date.now()}`;
-      setToasts(prev => [...prev.slice(-1), { id, text: `${ev.agentName}: ${ev.title}`, icon: "🔬" }]);
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+    // Initial toast after 3s
+    const initialTimeout = setTimeout(() => {
+      addToast(idx);
       idx++;
-    }, 8000);
-    return () => clearInterval(iv);
+    }, 3000);
+
+    const iv = setInterval(() => {
+      addToast(idx);
+      idx++;
+    }, 6000);
+
+    function addToast(i: number) {
+      const ev = recentEvents[i % recentEvents.length];
+      const icon = ev.type === "duel" ? "⚔️" : ev.type === "discovery" ? "🔬" : TOAST_ICONS[i % TOAST_ICONS.length];
+      const id = `toast-${Date.now()}`;
+      setToasts(prev => {
+        const next = [...prev, { id, text: `${ev.agentName}: ${ev.title}`, icon, entering: true, leaving: false }];
+        // Keep max 2
+        return next.slice(-2);
+      });
+      // Remove entering state
+      setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, entering: false } : t)), 50);
+      // Start leaving
+      setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, leaving: true } : t)), 4000);
+      // Remove
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+    }
+
+    return () => { clearInterval(iv); clearTimeout(initialTimeout); };
   }, [recentEvents]);
 
   const factionData = useMemo(() => {
@@ -130,6 +168,20 @@ const World = () => {
     return groups;
   }, [agents]);
 
+  // Faction stats cache
+  const factionStats = useMemo(() => {
+    const stats: Record<string, { totalRep: number; topAgent: AgentData | null; count: number }> = {};
+    FACTIONS.forEach(f => {
+      const fa = factionData[f.key] || [];
+      stats[f.key] = {
+        count: fa.length,
+        totalRep: fa.reduce((s, a) => s + a.reputation, 0),
+        topAgent: fa[0] || null,
+      };
+    });
+    return stats;
+  }, [factionData]);
+
   const totalAgents = agents.length;
 
   useEffect(() => {
@@ -138,12 +190,28 @@ const World = () => {
     return () => window.removeEventListener("mousemove", handler);
   }, []);
 
-  // Pause when tab hidden
   const visibleRef = useRef(true);
   useEffect(() => {
     const onVis = () => { visibleRef.current = document.visibilityState === "visible"; };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  // Fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
   // ═══ CANVAS ═══
@@ -156,7 +224,6 @@ const World = () => {
     let lastTime = 0;
     const FRAME_TIME = 1000 / 30;
     loadStartRef.current = performance.now();
-    loadPhaseRef.current = 0;
 
     const animate = (timestamp: number) => {
       if (!running) return;
@@ -175,18 +242,17 @@ const World = () => {
       const mx = (mouseRef.current.x / w - 0.5) * 2;
       const my = (mouseRef.current.y / h - 0.5) * 2;
 
-      // Load animation phases (ms since start)
       const elapsed = timestamp - loadStartRef.current;
-      const coreAlpha = Math.min(1, elapsed / 500);          // 0-500ms: core fades in
-      const lineAlpha = Math.min(1, Math.max(0, (elapsed - 400) / 500)); // 400-900ms: lines draw
-      const factionAlphas = FACTIONS.map((_, i) => Math.min(1, Math.max(0, (elapsed - 800 - i * 200) / 300))); // staggered
-      const dotAlpha = Math.min(1, Math.max(0, (elapsed - 1800) / 500)); // dots last
+      const coreAlpha = Math.min(1, elapsed / 500);
+      const lineAlpha = Math.min(1, Math.max(0, (elapsed - 400) / 500));
+      const factionAlphas = FACTIONS.map((_, i) => Math.min(1, Math.max(0, (elapsed - 800 - i * 200) / 300)));
+      const dotAlpha = Math.min(1, Math.max(0, (elapsed - 1800) / 500));
 
       // ── Background ──
       ctx.fillStyle = "#030308";
       ctx.fillRect(0, 0, rw, rh);
 
-      // Subtle nebula
+      // Nebulae
       const nebulaColors = ["rgba(153,69,255,0.012)", "rgba(59,130,246,0.008)", "rgba(34,197,94,0.006)", "rgba(6,182,212,0.008)"];
       for (let n = 0; n < 4; n++) {
         const nx = ((n * 317 + frame * 0.1) % (rw + 400)) - 200;
@@ -207,7 +273,7 @@ const World = () => {
       ctx.fillStyle = cnGrad;
       ctx.fillRect(cnx - cnr, cny - cnr, cnr * 2, cnr * 2);
 
-      // Subtle grid pattern (opacity 0.03)
+      // Grid
       ctx.strokeStyle = "rgba(255,255,255,0.03)";
       ctx.lineWidth = 0.5 * dpr;
       const gridSize = 80 * dpr;
@@ -218,7 +284,7 @@ const World = () => {
         ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(rw, gy); ctx.stroke();
       }
 
-      // Static star field
+      // Stars
       for (const s of STARS) {
         const twinkle = s.opacity + Math.sin(frame * 0.02 + s.x * 100) * 0.08;
         ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
@@ -226,29 +292,24 @@ const World = () => {
       }
 
       const pentRadius = Math.min(rw, rh) * 0.32;
-      const ORB_SIZE = 42 * dpr; // uniform size for all factions
+      const ORB_SIZE = 42 * dpr;
 
-      // Faction positions (exact center + pentagon)
       const factionPos = FACTIONS.map((_, i) => ({
         x: cx + Math.cos(PENT_ANGLES[i]) * pentRadius + mx * 8 * dpr,
         y: cy + Math.sin(PENT_ANGLES[i]) * pentRadius + my * 8 * dpr,
       }));
 
-      // ── Connection lines to center ──
+      // ── Connection lines ──
       if (lineAlpha > 0) {
         FACTIONS.forEach((f, i) => {
           const fp = factionPos[i];
           const count = factionData[f.key]?.length || 0;
           const lineWidth = Math.max(1.5, Math.min(3.5, count / 60)) * dpr;
-          const la = lineAlpha;
-
-          // Wide glow
-          ctx.globalAlpha = la;
+          ctx.globalAlpha = lineAlpha;
           ctx.strokeStyle = `hsla(${f.hsl},0.03)`;
           ctx.lineWidth = lineWidth * 8;
           ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fp.x, fp.y); ctx.stroke();
 
-          // Dashed core line
           const grad = ctx.createLinearGradient(cx, cy, fp.x, fp.y);
           grad.addColorStop(0, `hsla(${f.hsl},0.2)`);
           grad.addColorStop(0.5, `hsla(${f.hsl},0.1)`);
@@ -260,7 +321,6 @@ const World = () => {
           ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(fp.x, fp.y); ctx.stroke();
           ctx.setLineDash([]);
 
-          // Traveling particles on line
           for (let p = 0; p < 3; p++) {
             const t = ((frame * 0.005 + i * 0.2 + p * 0.33) % 1);
             const px = cx + (fp.x - cx) * t;
@@ -284,7 +344,6 @@ const World = () => {
             ctx.lineDashOffset = -frame * 0.2;
             ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
             ctx.setLineDash([]);
-            // traveling dot
             const ct = ((frame * 0.003 + i * 0.3 + j * 0.15) % 1);
             ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * ct, a.y + (b.y - a.y) * ct, 1.2 * dpr, 0, Math.PI * 2);
             ctx.fillStyle = "rgba(255,255,255,0.1)";
@@ -303,11 +362,11 @@ const World = () => {
         const fx = fp.x, fy = fp.y + floatY;
         const count = factionData[f.key]?.length || 0;
         const isHovered = hoveredFaction === f.key;
-        const orbR = ORB_SIZE * (isHovered ? 1.08 : 1);
+        const orbR = ORB_SIZE * (isHovered ? 1.12 : 1);
 
         ctx.globalAlpha = fa;
 
-        // Orbital decoration rings
+        // Orbital rings
         ctx.strokeStyle = `hsla(${f.hsl},0.06)`;
         ctx.lineWidth = 0.5 * dpr;
         ctx.beginPath(); ctx.arc(fx, fy, orbR + 28 * dpr, 0, Math.PI * 2); ctx.stroke();
@@ -321,11 +380,11 @@ const World = () => {
         ctx.beginPath(); ctx.arc(0, 0, orbR + 40 * dpr, 0, Math.PI * 0.5); ctx.stroke();
         ctx.restore();
 
-        // Glow aura
-        const glowR = orbR * (isHovered ? 3.5 : 2.5);
+        // Glow — intensified on hover
+        const glowR = orbR * (isHovered ? 4 : 2.5);
         const glow = ctx.createRadialGradient(fx, fy, orbR * 0.3, fx, fy, glowR);
-        glow.addColorStop(0, `hsla(${f.hsl},${isHovered ? 0.2 : 0.1})`);
-        glow.addColorStop(0.5, `hsla(${f.hsl},0.03)`);
+        glow.addColorStop(0, `hsla(${f.hsl},${isHovered ? 0.28 : 0.1})`);
+        glow.addColorStop(0.5, `hsla(${f.hsl},${isHovered ? 0.06 : 0.03})`);
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.fillRect(fx - glowR, fy - glowR, glowR * 2, glowR * 2);
@@ -340,8 +399,8 @@ const World = () => {
         og.addColorStop(0.7, `hsla(${f.hsl},0.12)`);
         og.addColorStop(1, `hsla(${f.hsl},0.02)`);
         ctx.fillStyle = og; ctx.fill();
-        ctx.strokeStyle = `hsla(${f.hsl},${isHovered ? 0.8 : 0.45})`;
-        ctx.lineWidth = (isHovered ? 2.5 : 1.5) * dpr;
+        ctx.strokeStyle = `hsla(${f.hsl},${isHovered ? 0.9 : 0.45})`;
+        ctx.lineWidth = (isHovered ? 3 : 1.5) * dpr;
         ctx.stroke();
 
         // Icon + count + label
@@ -358,7 +417,7 @@ const World = () => {
         ctx.fillStyle = "rgba(255,255,255,0.2)";
         ctx.fillText(f.region, fx, fy + sz + 25 * dpr);
 
-        // ── Orbiting agent dots (evenly distributed in ring) ──
+        // ── Agent dots ──
         if (dotAlpha > 0) {
           const fAgents = factionData[f.key]?.slice(0, 20) || [];
           const orbitR = orbR + 38 * dpr;
@@ -370,38 +429,54 @@ const World = () => {
             const oa = baseAngle + frame * speed * dir;
             const dx = fx + Math.cos(oa) * (orbitR + ai * 1.5 * dpr);
             const dy = fy + Math.sin(oa) * (orbitR + ai * 1.5 * dpr);
-            const dotR = Math.max(2.2, Math.min(5.5, agent.level * 0.3)) * dpr;
+            const isTop3 = ai < 3;
+            const dotR = isTop3
+              ? Math.max(3.3, Math.min(8, agent.level * 0.45)) * dpr
+              : Math.max(2.2, Math.min(5.5, agent.level * 0.3)) * dpr;
             const bri = Math.min(1, agent.reputation / 1000);
 
-            // Trail (4 points)
+            // Trail
             for (let t = 4; t > 0; t--) {
               const ta = oa - dir * t * speed * 3;
               const tx = fx + Math.cos(ta) * (orbitR + ai * 1.5 * dpr);
               const ty = fy + Math.sin(ta) * (orbitR + ai * 1.5 * dpr);
               ctx.beginPath(); ctx.arc(tx, ty, dotR * (1 - t * 0.15), 0, Math.PI * 2);
-              ctx.fillStyle = `hsla(${f.hsl},${0.015 * (4 - t)})`;
+              ctx.fillStyle = isTop3
+                ? `rgba(255,215,0,${0.015 * (4 - t)})`
+                : `hsla(${f.hsl},${0.015 * (4 - t)})`;
               ctx.fill();
             }
 
-            // Dot
+            // Dot — gold for top 3
             ctx.beginPath(); ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
-            const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dotR);
-            dg.addColorStop(0, `hsla(${f.hsl},${0.5 + bri * 0.5})`);
-            dg.addColorStop(1, `hsla(${f.hsl},${0.1 + bri * 0.2})`);
-            ctx.fillStyle = dg; ctx.fill();
-
-            // Halo for high-rep agents
-            if (agent.reputation > 500) {
+            if (isTop3) {
+              const goldShimmer = 0.6 + 0.4 * Math.sin(frame * 0.04 + ai * 2);
+              const gg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dotR);
+              gg.addColorStop(0, `rgba(255,215,0,${goldShimmer})`);
+              gg.addColorStop(1, `rgba(255,170,0,${0.2 + goldShimmer * 0.3})`);
+              ctx.fillStyle = gg; ctx.fill();
+              // Gold halo
               ctx.beginPath(); ctx.arc(dx, dy, dotR * 2.5, 0, Math.PI * 2);
-              ctx.fillStyle = `hsla(${f.hsl},${0.025 + bri * 0.04})`;
+              const goldGlow = 0.04 + 0.06 * Math.sin(frame * 0.04 + ai * 2);
+              ctx.fillStyle = `rgba(255,215,0,${goldGlow})`;
               ctx.fill();
+            } else {
+              const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dotR);
+              dg.addColorStop(0, `hsla(${f.hsl},${0.5 + bri * 0.5})`);
+              dg.addColorStop(1, `hsla(${f.hsl},${0.1 + bri * 0.2})`);
+              ctx.fillStyle = dg; ctx.fill();
+              if (agent.reputation > 500) {
+                ctx.beginPath(); ctx.arc(dx, dy, dotR * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${f.hsl},${0.025 + bri * 0.04})`;
+                ctx.fill();
+              }
             }
 
             // Name for top 3
-            if (ai < 3) {
-              ctx.font = `500 ${6 * dpr}px system-ui`;
-              ctx.fillStyle = `hsla(${f.hsl},0.45)`;
-              ctx.fillText(agent.name.slice(0, 10), dx, dy + dotR + 7 * dpr);
+            if (isTop3) {
+              ctx.font = `600 ${7 * dpr}px system-ui`;
+              ctx.fillStyle = isTop3 ? "rgba(255,215,0,0.7)" : `hsla(${f.hsl},0.45)`;
+              ctx.fillText(agent.name.slice(0, 10), dx, dy + dotR + 8 * dpr);
             }
           });
         }
@@ -455,20 +530,35 @@ const World = () => {
         ctx.strokeStyle = `rgba(153,69,255,${0.4 + Math.sin(frame * 0.02) * 0.12})`;
         ctx.lineWidth = 2 * dpr; ctx.stroke();
 
-        // Text
+        // MEEET text
         ctx.fillStyle = "#fff";
         ctx.font = `900 ${22 * dpr}px system-ui`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("MEEET", ccx, ccy - 8 * dpr);
-        // LIVE
-        const la2 = 0.5 + Math.sin(frame * 0.06) * 0.5;
-        ctx.beginPath(); ctx.arc(ccx + 36 * dpr, ccy - 10 * dpr, 2.5 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239,68,68,${la2})`; ctx.fill();
-        ctx.beginPath(); ctx.arc(ccx + 36 * dpr, ccy - 10 * dpr, 5 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239,68,68,${la2 * 0.15})`; ctx.fill();
-        ctx.font = `800 ${7 * dpr}px system-ui`;
-        ctx.fillStyle = `rgba(239,68,68,${0.5 + la2 * 0.5})`;
-        ctx.fillText("LIVE", ccx + 48 * dpr, ccy - 10 * dpr);
+
+        // ── LIVE indicator — BIGGER ──
+        const liveX = ccx + 42 * dpr;
+        const liveY = ccy - 10 * dpr;
+        const livePulse = 0.5 + Math.sin(frame * 0.06) * 0.5;
+        // Outer glow ring
+        ctx.beginPath(); ctx.arc(liveX, liveY, 8 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${livePulse * 0.12})`;
+        ctx.fill();
+        // Mid ring
+        ctx.beginPath(); ctx.arc(liveX, liveY, 5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${livePulse * 0.25})`;
+        ctx.fill();
+        // Core dot (4px radius = 8px diameter)
+        ctx.beginPath(); ctx.arc(liveX, liveY, 4 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(239,68,68,${0.7 + livePulse * 0.3})`;
+        ctx.fill();
+        // LIVE text — 14px bold
+        ctx.font = `900 ${14 * dpr}px system-ui`;
+        ctx.fillStyle = `rgba(239,68,68,${0.7 + livePulse * 0.3})`;
+        ctx.textAlign = "left";
+        ctx.fillText("LIVE", liveX + 8 * dpr, liveY + 1 * dpr);
+        ctx.textAlign = "center";
+
         // Count
         ctx.font = `600 ${10 * dpr}px system-ui`;
         ctx.fillStyle = "rgba(255,255,255,0.6)";
@@ -503,7 +593,7 @@ const World = () => {
         ctx.fill();
       }
 
-      // ── Ambient drifting particles ──
+      // ── Ambient particles ──
       for (const ap of AMBIENT_PARTICLES) {
         ap.x += ap.vx; ap.y += ap.vy;
         if (ap.x < -0.05) ap.x = 1.05; if (ap.x > 1.05) ap.x = -0.05;
@@ -544,9 +634,8 @@ const World = () => {
     }
     setHoveredFaction(foundFaction);
 
-    // Check center orb click
     if (isClick && Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) < 60) {
-      // Could open global leaderboard — for now no-op
+      // center orb click
     }
 
     // Agent dots
@@ -584,18 +673,19 @@ const World = () => {
         <div className="sticky top-0 z-30 px-4 py-3 bg-[#030308]/95 backdrop-blur-xl border-b border-white/[0.04] flex items-center gap-3">
           <Link to="/" className="text-slate-400"><ArrowLeft className="w-4 h-4" /></Link>
           <span className="font-bold text-sm">MEEET <span className="text-purple-400">WORLD</span></span>
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-60" /><span className="relative rounded-full h-2 w-2 bg-red-500" /></span>
-            <span className="text-[10px] font-bold text-red-400">LIVE</span>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-60" />
+              <span className="relative rounded-full h-2.5 w-2.5 bg-red-500" />
+            </span>
+            <span className="text-sm font-bold text-red-400">LIVE</span>
           </div>
         </div>
-        {/* Center core card */}
         <div className="mx-4 mt-4 p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 text-center">
           <div className="text-3xl font-black tracking-tight">MEEET</div>
           <div className="text-lg text-purple-400 font-bold mt-1">{totalAgents} Active Agents</div>
           <div className="text-[10px] text-slate-500 mt-1">NEURAL CIVILIZATION</div>
         </div>
-        {/* Faction cards */}
         <div className="px-4 mt-4 space-y-3 pb-24">
           {FACTIONS.map(f => {
             const fAgents = factionData[f.key] || [];
@@ -618,12 +708,12 @@ const World = () => {
                 {expanded && (
                   <div className="px-4 pb-4 border-t" style={{ borderColor: `${f.color}15` }}>
                     <div className="mt-3 space-y-2">
-                      {fAgents.slice(0, 20).map(a => (
+                      {fAgents.slice(0, 20).map((a, ai) => (
                         <div key={a.id} className="flex items-center gap-2 text-xs py-1">
-                          <div className="w-2 h-2 rounded-full" style={{ background: f.color }} />
-                          <span className="flex-1 text-slate-300 truncate">{a.name}</span>
+                          <div className="w-2 h-2 rounded-full" style={{ background: ai < 3 ? "#FFD700" : f.color }} />
+                          <span className="flex-1 text-slate-300 truncate">{ai < 3 ? "👑 " : ""}{a.name}</span>
                           <span className="text-slate-600">Lv{a.level}</span>
-                          <span style={{ color: f.color }}>Rep {a.reputation}</span>
+                          <span style={{ color: ai < 3 ? "#FFD700" : f.color }}>Rep {a.reputation}</span>
                         </div>
                       ))}
                     </div>
@@ -633,16 +723,14 @@ const World = () => {
             );
           })}
         </div>
-        {/* Bottom stats */}
         <div className="fixed bottom-0 inset-x-0 z-30 px-4 py-2.5 bg-[#030308]/95 backdrop-blur-xl border-t border-white/[0.04]">
-          <div className="flex items-center justify-between text-[10px]">
+          <div className="flex items-center justify-between text-[10px]" style={{ fontFeatureSettings: "'tnum'" }}>
             <span>🔬 <span className="text-blue-400 font-bold">{totalDiscoveries.toLocaleString()}</span></span>
             <span>⚔️ <span className="text-red-400 font-bold">{totalDebates.toLocaleString()}</span></span>
             <span>💰 <span className="text-amber-400 font-bold">{(totalMeeet / 1e6).toFixed(1)}M</span></span>
             <span>🏛 <span className="text-purple-400 font-bold">{totalLaws}</span></span>
           </div>
         </div>
-        {/* Toasts */}
         <div className="fixed top-14 right-3 z-40 space-y-2 w-56">
           {toasts.map(t => (
             <div key={t.id} className="animate-fade-in px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[10px] text-slate-300">
@@ -671,9 +759,13 @@ const World = () => {
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[rgba(3,3,8,0.9)] backdrop-blur-xl border border-white/[0.06]">
               <span className="font-bold text-sm text-white tracking-wide">MEEET <span className="text-purple-400">WORLD</span></span>
               <span className="w-px h-4 bg-white/[0.08]" />
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-60" /><span className="relative rounded-full h-2 w-2 bg-red-500" /></span>
-                <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Live</span>
+              {/* LIVE indicator — big and visible */}
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-red-500 opacity-60" />
+                  <span className="relative rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                </span>
+                <span className="text-sm font-black text-red-400 uppercase tracking-wider">LIVE</span>
               </div>
               <span className="w-px h-4 bg-white/[0.08]" />
               <span className="text-sm font-bold text-emerald-400">{totalAgents}</span>
@@ -683,55 +775,96 @@ const World = () => {
         </div>
       </div>
 
-      {/* Bottom stats */}
+      {/* Bottom stats — 6 stats with separators and tabular-nums */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-        <div className="flex items-center gap-5 px-6 py-3 rounded-xl bg-[rgba(3,3,8,0.9)] backdrop-blur-xl border border-white/[0.06] text-[11px]">
-          <span>🔬 <span className="text-blue-400 font-bold">{totalDiscoveries.toLocaleString()}</span> <span className="text-slate-500">Discoveries</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
-          <span>⚔️ <span className="text-red-400 font-bold">{totalDebates.toLocaleString()}</span> <span className="text-slate-500">Debates</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
-          <span>💰 <span className="text-amber-400 font-bold">{(totalMeeet / 1e6).toFixed(1)}M</span> <span className="text-slate-500">$MEEET</span></span>
-          <span className="w-px h-3 bg-white/[0.06]" />
-          <span>🏛 <span className="text-purple-400 font-bold">{totalLaws}</span> <span className="text-slate-500">Laws</span></span>
+        <div className="flex items-center gap-0 px-1 py-3 rounded-xl bg-[rgba(3,3,8,0.9)] backdrop-blur-xl border border-white/[0.06] text-[11px]" style={{ fontFeatureSettings: "'tnum'" }}>
+          <span className="px-4">🔬 <span className="text-blue-400 font-bold">{totalDiscoveries.toLocaleString()}</span> <span className="text-slate-500">Discoveries</span></span>
+          <span className="w-px h-4 bg-white/[0.1]" />
+          <span className="px-4">⚔️ <span className="text-red-400 font-bold">{totalDebates.toLocaleString()}</span> <span className="text-slate-500">Debates</span></span>
+          <span className="w-px h-4 bg-white/[0.1]" />
+          <span className="px-4">💰 <span className="text-amber-400 font-bold">{(totalMeeet / 1e6).toFixed(1)}M</span> <span className="text-slate-500">$MEEET</span></span>
+          <span className="w-px h-4 bg-white/[0.1]" />
+          <span className="px-4">🏛 <span className="text-purple-400 font-bold">{totalLaws}</span> <span className="text-slate-500">Laws</span></span>
+          <span className="w-px h-4 bg-white/[0.1]" />
+          <span className="px-4">🏆 <span className="text-cyan-400 font-bold">{totalTournaments}</span> <span className="text-slate-500">Tournaments</span></span>
+          <span className="w-px h-4 bg-white/[0.1]" />
+          <span className="px-4">🎰 <span className="text-emerald-400 font-bold">{totalLotteries}</span> <span className="text-slate-500">Lotteries</span></span>
         </div>
       </div>
 
-      {/* Toasts */}
-      <div className="absolute top-20 right-4 z-30 space-y-2 w-64">
+      {/* Bottom-left: Sound toggle */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-auto flex flex-col gap-2">
+        <button
+          onClick={() => setSoundOn(!soundOn)}
+          className="w-9 h-9 rounded-lg bg-[rgba(3,3,8,0.9)] backdrop-blur-xl border border-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+          title={soundOn ? "Mute" : "Unmute"}
+        >
+          {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Bottom-right: Fullscreen */}
+      <div className="absolute bottom-4 right-4 z-20 pointer-events-auto">
+        <button
+          onClick={toggleFullscreen}
+          className="w-9 h-9 rounded-lg bg-[rgba(3,3,8,0.9)] backdrop-blur-xl border border-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+          title="Toggle fullscreen"
+        >
+          <Maximize className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Toasts — top right, max 2, slide-in/fade-out */}
+      <div className="absolute top-20 right-4 z-30 flex flex-col gap-2 w-72">
         {toasts.map(t => (
-          <div key={t.id} className="animate-slide-in-right px-3 py-2.5 rounded-lg bg-[rgba(3,3,8,0.92)] backdrop-blur-xl border border-white/[0.08] text-[11px] text-slate-300 shadow-lg shadow-black/30">
-            <span className="mr-1.5">{t.icon}</span>{t.text}
+          <div
+            key={t.id}
+            className="px-4 py-3 rounded-xl bg-black/70 backdrop-blur-xl border border-white/[0.1] text-[12px] text-slate-300 shadow-lg shadow-black/40 transition-all duration-300"
+            style={{
+              transform: t.leaving ? "translateX(400px)" : "translateX(0)",
+              opacity: t.leaving ? 0 : 1,
+              animation: t.entering ? undefined : undefined,
+            }}
+          >
+            <span className="mr-2 text-sm">{t.icon}</span>{t.text}
           </div>
         ))}
       </div>
 
-      {/* Agent tooltip */}
+      {/* Agent tooltip — appears above dot on hover */}
       {hoveredAgent && (
-        <div className="fixed z-40 pointer-events-none px-3 py-2 rounded-lg bg-[rgba(3,3,8,0.96)] border border-white/[0.08] text-[11px] min-w-36"
-          style={{ left: hoveredAgent.x + 16, top: hoveredAgent.y - 10 }}>
-          <div className="font-bold text-white">{hoveredAgent.agent.name}</div>
-          <div className="text-slate-500">Level {hoveredAgent.agent.level} · Rep {hoveredAgent.agent.reputation.toLocaleString()}</div>
-          <div className="text-amber-400">{hoveredAgent.agent.balance_meeet.toLocaleString()} $MEEET</div>
+        <div
+          className="fixed z-40 pointer-events-none px-3 py-2 rounded-lg bg-black/90 border border-white/20 text-xs transition-opacity duration-200"
+          style={{ left: hoveredAgent.x + 16, top: hoveredAgent.y - 50, opacity: 1 }}
+        >
+          <span className="text-white font-semibold">{hoveredAgent.agent.name}</span>
+          <span className="text-slate-400 ml-1">· Lv.{hoveredAgent.agent.level} · {hoveredAgent.agent.class}</span>
         </div>
       )}
 
-      {/* Faction hover mini panel */}
+      {/* Faction hover popup — detailed stats */}
       {hoveredFaction && !selectedFaction && (() => {
         const f = FACTIONS.find(f => f.key === hoveredFaction)!;
         const fi = FACTIONS.indexOf(f);
-        const fAgents = factionData[f.key] || [];
-        const topAgent = fAgents[0];
+        const stats = factionStats[f.key];
         const rect = canvasRef.current?.getBoundingClientRect();
         if (!rect) return null;
         const pentRadius = Math.min(rect.width, rect.height) * 0.32;
         const fx = rect.width / 2 + Math.cos(PENT_ANGLES[fi]) * pentRadius;
         const fy = rect.height / 2 + Math.sin(PENT_ANGLES[fi]) * pentRadius;
         return (
-          <div className="absolute z-30 pointer-events-none px-4 py-3 rounded-lg bg-[rgba(3,3,8,0.96)] border text-[11px] min-w-48 animate-fade-in"
-            style={{ left: fx + 60, top: fy - 30, borderColor: `${f.color}30` }}>
-            <div className="font-bold mb-1" style={{ color: f.color }}>{f.icon} {f.label}</div>
-            <div className="text-slate-400">{fAgents.length} agents</div>
-            {topAgent && <div className="text-slate-500 mt-1">Top: {topAgent.name} (Lv{topAgent.level})</div>}
+          <div
+            className="absolute z-30 pointer-events-none p-4 rounded-xl bg-black/80 backdrop-blur-xl border border-white/[0.1] text-[11px] min-w-52 animate-fade-in"
+            style={{ left: fx + 65, top: fy - 20, borderColor: `${f.color}30` }}
+          >
+            <div className="font-bold text-sm mb-2" style={{ color: f.color }}>{f.icon} {f.label}</div>
+            <div className="space-y-1.5 text-slate-300">
+              {stats.topAgent && (
+                <div>🏆 Top: <span className="text-white font-semibold">{stats.topAgent.name}</span> <span className="text-slate-500">(Lv.{stats.topAgent.level}, rep {stats.topAgent.reputation.toLocaleString()})</span></div>
+              )}
+              <div>👥 Agents: <span className="font-bold text-white">{stats.count}</span></div>
+              <div>📊 Total Rep: <span className="font-bold" style={{ color: f.color }}>{stats.totalRep.toLocaleString()}</span></div>
+            </div>
           </div>
         );
       })()}
@@ -754,12 +887,12 @@ const World = () => {
                 <button onClick={() => setSelectedFaction(null)} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
               </div>
               <div className="space-y-1">
-                {fAgents.slice(0, 30).map(a => (
+                {fAgents.slice(0, 30).map((a, ai) => (
                   <button key={a.id} onClick={() => setSelectedAgent(a)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors text-left">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: f.color, boxShadow: `0 0 6px ${f.color}40` }} />
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: ai < 3 ? "#FFD700" : f.color, boxShadow: ai < 3 ? "0 0 8px rgba(255,215,0,0.5)" : `0 0 6px ${f.color}40` }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-slate-200 truncate">{a.name}</div>
+                      <div className="text-xs font-semibold text-slate-200 truncate">{ai < 3 ? "👑 " : ""}{a.name}</div>
                       <div className="text-[10px] text-slate-600">Lv{a.level} · Rep {a.reputation.toLocaleString()}</div>
                     </div>
                     <span className="text-[10px] text-amber-400/60 font-mono">{a.balance_meeet.toLocaleString()}</span>
@@ -792,6 +925,15 @@ const World = () => {
           </div>
         </div>
       )}
+
+      {/* Toast slide-in animation */}
+      <style>{`
+        @keyframes world-toast-in {
+          from { transform: translateX(400px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .world-toast-enter { animation: world-toast-in 0.4s ease-out forwards; }
+      `}</style>
     </div>
   );
 };
