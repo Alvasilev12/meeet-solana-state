@@ -1,0 +1,1 @@
+ALTER TABLE public.user_bots ADD COLUMN IF NOT EXISTS webhook_secret text;

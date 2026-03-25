@@ -15,6 +15,30 @@ async function hashKey(key: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+function isPrivateIP(ip: string): boolean {
+  // Check IPv4 private/reserved ranges including octal/decimal bypass vectors
+  const parts = ip.split(".");
+  if (parts.length === 4) {
+    const octets = parts.map(Number);
+    if (octets.some(o => isNaN(o) || o < 0 || o > 255)) return true; // malformed
+    const [a, b] = octets;
+    if (a === 0) return true;                           // 0.0.0.0/8
+    if (a === 10) return true;                          // 10.0.0.0/8
+    if (a === 127) return true;                         // 127.0.0.0/8
+    if (a === 169 && b === 254) return true;            // 169.254.0.0/16 (link-local + cloud metadata)
+    if (a === 172 && b >= 16 && b <= 31) return true;   // 172.16.0.0/12
+    if (a === 192 && b === 168) return true;            // 192.168.0.0/16
+  }
+  // Block IPv6 loopback and private
+  if (ip === "::1" || ip.startsWith("fe80:") || ip.startsWith("fc") || ip.startsWith("fd")) return true;
+  // Block IPv4-mapped IPv6 (::ffff:127.0.0.1)
+  if (ip.toLowerCase().startsWith("::ffff:")) {
+    const mapped = ip.slice(7);
+    return isPrivateIP(mapped);
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -66,16 +90,33 @@ Deno.serve(async (req) => {
       const { url } = body;
       if (!url) return json({ error: "url required" }, 400);
 
-      // SSRF protection: validate URL
+      // SSRF protection: validate URL with DNS resolution
       let parsed: URL;
       try { parsed = new URL(url); } catch { return json({ error: "Invalid URL" }, 400); }
       if (parsed.protocol !== "https:") return json({ error: "Only HTTPS URLs permitted" }, 400);
-      const blocked = ["localhost", "127.", "169.254.", "10.", "192.168.", "172.16.", "::1", "0.0.0.0", "[::1]"];
-      if (blocked.some(b => parsed.hostname.startsWith(b) || parsed.hostname === b))
-        return json({ error: "Private/internal addresses not permitted" }, 400);
+
+      // Resolve hostname to IP and validate against private ranges
+      try {
+        const resolvedIps = await Deno.resolveDns(parsed.hostname, "A");
+        for (const ip of resolvedIps) {
+          if (isPrivateIP(ip)) {
+            return json({ error: "Private/internal addresses not permitted" }, 400);
+          }
+        }
+      } catch {
+        return json({ error: "Could not resolve hostname" }, 400);
+      }
 
       try {
-        const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "test", timestamp: new Date().toISOString(), source: "meeet-platform" }) });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "test", timestamp: new Date().toISOString(), source: "meeet-platform" }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
         return json({ success: true, status: resp.status, message: "Webhook test sent" });
       } catch (e) { return json({ success: false, error: "Failed to reach webhook URL" }, 400); }
     }

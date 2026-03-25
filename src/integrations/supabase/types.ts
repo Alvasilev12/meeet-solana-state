@@ -3522,6 +3522,7 @@ export type Database = {
           status: string | null
           updated_at: string | null
           user_id: string
+          webhook_secret: string | null
         }
         Insert: {
           agent_id?: string | null
@@ -3533,6 +3534,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id: string
+          webhook_secret?: string | null
         }
         Update: {
           agent_id?: string | null
@@ -3544,6 +3546,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string
+          webhook_secret?: string | null
         }
         Relationships: [
           {

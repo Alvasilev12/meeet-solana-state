@@ -94,18 +94,20 @@ serve(async (req) => {
       const botUsername = meData.result.username;
       const botName = meData.result.first_name;
 
-      const webhookUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/agent-telegram-bot?bot_token=" + bot_token;
+      // Generate a unique webhook_secret instead of passing bot_token in URL
+      const webhookSecret = crypto.randomUUID();
+      const webhookUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/agent-telegram-bot?agent_id=" + agent_id;
       const whRes = await fetch("https://api.telegram.org/bot" + bot_token + "/setWebhook", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: webhookUrl }),
+        body: JSON.stringify({ url: webhookUrl, secret_token: webhookSecret }),
       });
       const whData = await whRes.json();
       if (!whData.ok) throw new Error("Failed to set webhook: " + JSON.stringify(whData));
 
       await supabase.from("user_bots").upsert({
         user_id: user.id, agent_id, bot_token, bot_username: botUsername, bot_name: botName,
-        status: "active", updated_at: new Date().toISOString(),
+        status: "active", webhook_secret: webhookSecret, updated_at: new Date().toISOString(),
       }, { onConflict: "agent_id" });
 
       return new Response(JSON.stringify({
@@ -154,18 +156,39 @@ serve(async (req) => {
     }
 
     // === WEBHOOK — incoming Telegram message ===
-    const botToken = new URL(req.url).searchParams.get("bot_token");
-    if (botToken && body.message) {
+    const agentIdParam = new URL(req.url).searchParams.get("agent_id");
+    // Legacy support: also check bot_token param for old webhooks
+    const legacyBotToken = new URL(req.url).searchParams.get("bot_token");
+
+    if ((agentIdParam || legacyBotToken) && body.message) {
+      // Validate Telegram secret_token header if present
+      const tgSecret = req.headers.get("x-telegram-bot-api-secret-token");
+
+      let bot: any;
+      if (agentIdParam) {
+        const { data } = await supabase.from("user_bots").select("*, agents(*)").eq("agent_id", agentIdParam).eq("status", "active").single();
+        bot = data;
+        // Verify webhook_secret matches
+        if (bot?.webhook_secret && tgSecret !== bot.webhook_secret) {
+          return new Response("Forbidden", { status: 403 });
+        }
+      } else if (legacyBotToken) {
+        // Legacy: lookup by bot_token (will be phased out)
+        const { data } = await supabase.from("user_bots").select("*, agents(*)").eq("bot_token", legacyBotToken).eq("status", "active").single();
+        bot = data;
+      }
+
+      const botToken = bot?.bot_token;
       const msg = body.message;
       const chatId = msg.chat.id;
       const text = msg.text || "";
       const userName = msg.from?.first_name || "User";
       const tgUserId = "tg_" + msg.from?.id;
 
-      const { data: bot } = await supabase.from("user_bots").select("*, agents(*)").eq("bot_token", botToken).eq("status", "active").single();
-
-      if (!bot || !bot.agents) {
-        await sendTg(botToken, chatId, "⚠️ This agent is not configured yet.");
+      if (!bot || !bot.agents || !botToken) {
+        if (botToken || legacyBotToken) {
+          await sendTg(botToken || legacyBotToken, chatId, "⚠️ This agent is not configured yet.");
+        }
         return new Response("ok");
       }
 
