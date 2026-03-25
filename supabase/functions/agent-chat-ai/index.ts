@@ -240,7 +240,7 @@ Rules:
 
     let answer: string;
 
-    if (agentData && LOVABLE_API_KEY) {
+    if (agentData) {
       const cls = agentData.class || effectiveClass;
       const memContext = memories.length ? "\n\nYour memories from past conversations:\n" + memories.join("\n") : "";
       const systemPrompt = `You are "${agentData.name}", a Level ${agentData.level} ${cls} agent in MEEET World.
@@ -264,13 +264,7 @@ Rules: Stay in character, be conversational, keep responses under 200 words, use
 
       msgs.push({ role: "user", content: question });
 
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", messages: msgs, max_tokens: 400, temperature: 0.8 }),
-      });
-      const aiData = await aiResp.json();
-      answer = aiData.choices?.[0]?.message?.content || generateFallback(question, cls, agentData.name);
+      answer = await callAI(msgs, 400, 0.8) || generateFallback(question, cls, agentData.name);
     } else {
       answer = generateFallback(question, effectiveClass, effectiveName);
     }
