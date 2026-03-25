@@ -60,6 +60,37 @@ Contract: EJgyptHAMdEfaFRs3GJtd3rNjLyQmGT2bEpRkpump
 
 IMPORTANT: Return ONLY valid JSON, no markdown, no explanation.`;
 
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: agentContext },
+  ];
+
+  // Try OpenClaw first
+  const OPENCLAW_URL = Deno.env.get("OPENCLAW_GATEWAY_URL")?.trim();
+  const OPENCLAW_TOKEN = Deno.env.get("OPENCLAW_GATEWAY_TOKEN")?.trim();
+
+  if (OPENCLAW_URL && OPENCLAW_TOKEN) {
+    try {
+      const url = OPENCLAW_URL.replace(/\/$/, "");
+      const resp = await fetch(`${url}/v1/chat/completions`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${OPENCLAW_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "openclaw", messages, max_tokens: 600, temperature: 0.9, stream: false }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const raw = data.choices?.[0]?.message?.content;
+        if (raw) {
+          const jsonMatch = raw.match(/\{[\s\S]*\}/);
+          if (jsonMatch) return JSON.parse(jsonMatch[0]);
+        }
+      }
+    } catch (e) {
+      console.error("OpenClaw error in agent-ai-loop, falling back:", e);
+    }
+  }
+
+  // Fallback: Lovable AI Gateway
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -68,10 +99,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no explanation.`;
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-lite",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: agentContext },
-      ],
+      messages,
       temperature: 0.9,
     }),
   });
@@ -85,7 +113,6 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no explanation.`;
   const raw = data.choices?.[0]?.message?.content ?? '{"action":"idle"}';
 
   try {
-    // Extract JSON from possible markdown wrapping
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { action: "idle" };
   } catch {
