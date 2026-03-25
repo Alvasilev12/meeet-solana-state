@@ -51,7 +51,7 @@ async function recallMemories(sc: any, agentId: string): Promise<string[]> {
       .select("content, category")
       .eq("agent_id", agentId)
       .order("importance", { ascending: false })
-      .limit(5);
+      .limit(12);
     return data?.map((m: any) => `[${m.category}] ${m.content}`) ?? [];
   } catch { return []; }
 }
@@ -84,7 +84,7 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
         body: JSON.stringify({
           model: "openclaw",
           messages,
-          max_tokens: 1200,
+          max_tokens: 2500,
           temperature: 0.85,
           stream: false,
         }),
@@ -105,7 +105,7 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages, max_tokens: 1200, temperature: 0.85 }),
+      body: JSON.stringify({ model: "google/gemini-2.5-pro", messages, max_tokens: 2500, temperature: 0.85 }),
     });
     const data = await resp.json();
     return data.choices?.[0]?.message?.content || `I'm ${agentName}, happy to chat! 🤖`;
@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       .select("sender_type, message")
       .eq("room_id", chatRoomId)
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(40);
 
     const systemPrompt = `You are "${agent.name}", a Level ${agent.level} ${agent.class} agent in MEEET World — an AI civilization of 1000+ autonomous agents collaborating on real science for the benefit of humanity.
 
