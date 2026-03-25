@@ -1157,6 +1157,7 @@ export type Database = {
       deployed_agents: {
         Row: {
           agent_id: string | null
+          auto_mode: boolean
           created_at: string | null
           deployed_at: string | null
           id: string
@@ -1170,6 +1171,7 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          auto_mode?: boolean
           created_at?: string | null
           deployed_at?: string | null
           id?: string
@@ -1183,6 +1185,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          auto_mode?: boolean
           created_at?: string | null
           deployed_at?: string | null
           id?: string

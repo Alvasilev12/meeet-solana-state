@@ -1,0 +1,1 @@
+ALTER TABLE public.deployed_agents ADD COLUMN IF NOT EXISTS auto_mode boolean NOT NULL DEFAULT false;

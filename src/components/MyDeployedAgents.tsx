@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, Trash2, MessageCircle, Coins, Trophy, ChevronRight } from "lucide-react";
+import { Loader2, Bot, Trash2, MessageCircle, Coins, Trophy, ChevronRight, Zap, ZapOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -39,6 +39,27 @@ export default function MyDeployedAgents() {
       return data ?? [];
     },
   });
+
+  const toggleAutoMode = async (deployedId: string, currentMode: boolean) => {
+    setTogglingId(deployedId);
+    try {
+      const { data, error } = await supabase.functions.invoke("toggle-auto-mode", {
+        body: { deployed_agent_id: deployedId, enable: !currentMode },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
+      toast({
+        title: !currentMode ? "⚡ Автономный режим включён" : "Автономный режим выключен",
+        description: !currentMode
+          ? "Агент начнёт взаимодействие с системой и зарабатывать $MEEET"
+          : "Агент остановлен",
+      });
+    } catch (e: any) {
+      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const deleteAgent = async (deployedId: string) => {
     if (!confirm("Delete this agent? This action cannot be undone.")) return;
@@ -142,6 +163,24 @@ export default function MyDeployedAgents() {
                   </Button>
                 </div>
               </div>
+
+              {/* Auto-mode toggle */}
+              <Button
+                size="sm"
+                variant={da.auto_mode ? "default" : "outline"}
+                className={`w-full text-xs gap-2 ${da.auto_mode ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-primary/30 hover:bg-primary/10"}`}
+                disabled={togglingId === da.id}
+                onClick={() => toggleAutoMode(da.id, !!da.auto_mode)}
+              >
+                {togglingId === da.id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : da.auto_mode ? (
+                  <Zap className="w-3.5 h-3.5" />
+                ) : (
+                  <ZapOff className="w-3.5 h-3.5" />
+                )}
+                {da.auto_mode ? "⚡ Взаимодействие с системой включено" : "Разрешить взаимодействие с системой"}
+              </Button>
 
               {/* Stats row */}
               <div className="grid grid-cols-2 gap-2">
