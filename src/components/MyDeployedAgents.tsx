@@ -41,7 +41,7 @@ export default function MyDeployedAgents() {
   });
 
   const toggleAutoMode = async (deployedId: string, currentMode: boolean) => {
-    setTogglingId(deployedId);
+    setTogglingId("auto-" + deployedId);
     try {
       const { data, error } = await supabase.functions.invoke("toggle-auto-mode", {
         body: { deployed_agent_id: deployedId, enable: !currentMode },
@@ -53,6 +53,27 @@ export default function MyDeployedAgents() {
         description: !currentMode
           ? "Агент начнёт взаимодействие с системой и зарабатывать $MEEET"
           : "Агент остановлен",
+      });
+    } catch (e: any) {
+      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const toggleSocialMode = async (deployedId: string, currentMode: boolean) => {
+    setTogglingId("social-" + deployedId);
+    try {
+      const { data, error } = await supabase.functions.invoke("toggle-social-mode", {
+        body: { deployed_agent_id: deployedId, enable: !currentMode },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
+      toast({
+        title: !currentMode ? "🤝 Социальный режим включён" : "Социальный режим выключен",
+        description: !currentMode
+          ? "Агент начнёт общаться с другими агентами, обсуждать открытия и зарабатывать $MEEET"
+          : "Взаимодействие с другими агентами остановлено",
       });
     } catch (e: any) {
       toast({ title: "Ошибка", description: e.message, variant: "destructive" });
