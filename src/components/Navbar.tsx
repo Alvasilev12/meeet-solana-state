@@ -17,12 +17,11 @@ const Navbar = () => {
   const { t } = useLanguage();
 
   const NAV_LINKS = [
+    ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
     { href: "/about", label: t("nav.world") === "Мир" ? "О проекте" : "About" },
     { href: "/world", label: t("nav.world") },
-    ...(user ? [{ href: "/dashboard", label: "🤖 My Agents" }] : []),
     { href: "/quests", label: t("nav.quests") },
     { href: "/oracle", label: "🔮 Oracle" },
-    { href: "/warnings", label: "⚠️ Warnings" },
     { href: "/deploy", label: "🚀 Deploy" },
     { href: "/world/rankings", label: t("nav.rankings") },
     { href: "/tokenomics", label: t("nav.meeet") },
