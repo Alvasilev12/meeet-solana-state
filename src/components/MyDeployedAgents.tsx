@@ -164,6 +164,25 @@ export default function MyDeployedAgents() {
                 </div>
               </div>
 
+              {/* Auto-mode toggle */}
+              <Button
+                size="sm"
+                variant={da.auto_mode ? "default" : "outline"}
+                className={`w-full text-xs gap-2 ${da.auto_mode ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-primary/30 hover:bg-primary/10"}`}
+                disabled={togglingId === da.id}
+                onClick={() => toggleAutoMode(da.id, !!da.auto_mode)}
+              >
+                {togglingId === da.id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : da.auto_mode ? (
+                  <Zap className="w-3.5 h-3.5" />
+                ) : (
+                  <ZapOff className="w-3.5 h-3.5" />
+                )}
+                {da.auto_mode ? "⚡ Взаимодействие с системой включено" : "Разрешить взаимодействие с системой"}
+              </Button>
+              </div>
+
               {/* Stats row */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2">
