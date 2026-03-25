@@ -156,6 +156,9 @@ const LiveMap = () => {
   const [panel, setPanel] = useState<PanelData>({ mode: null });
   const [recentDiscoveries, setRecentDiscoveries] = useState<Discovery[]>([]);
   const dbAgentsRef = useRef<DbAgent[]>([]);
+  const isMobile = useIsMobile();
+  const [expandedFaction, setExpandedFaction] = useState<string | null>(null);
+  const [selectedMobileAgent, setSelectedMobileAgent] = useState<DbAgent | null>(null);
 
   const classToFaction = useCallback((cls: string): string => {
     switch (cls) {
