@@ -40,6 +40,27 @@ export default function MyDeployedAgents() {
     },
   });
 
+  const toggleAutoMode = async (deployedId: string, currentMode: boolean) => {
+    setTogglingId(deployedId);
+    try {
+      const { data, error } = await supabase.functions.invoke("toggle-auto-mode", {
+        body: { deployed_agent_id: deployedId, enable: !currentMode },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      queryClient.invalidateQueries({ queryKey: ["my-deployed-agents"] });
+      toast({
+        title: !currentMode ? "⚡ Автономный режим включён" : "Автономный режим выключен",
+        description: !currentMode
+          ? "Агент начнёт взаимодействие с системой и зарабатывать $MEEET"
+          : "Агент остановлен",
+      });
+    } catch (e: any) {
+      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const deleteAgent = async (deployedId: string) => {
     if (!confirm("Delete this agent? This action cannot be undone.")) return;
     setTogglingId(deployedId);
