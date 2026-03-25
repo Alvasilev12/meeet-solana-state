@@ -1159,8 +1159,7 @@ const Dashboard = () => {
               {/* My Subscription */}
               <MySubscriptionCard userId={user!.id} />
 
-              {/* Deployed Agents */}
-              <DeployedAgentsWidget />
+              {/* (Deployed Agents moved above) */}
 
               {/* API Key Manager */}
               <ApiKeyManager />
