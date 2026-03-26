@@ -153,7 +153,7 @@ const DiscoveryCard = ({ d, myAgent, onVote, votingId }: {
           </div>
         </div>
       </div>
-    </div>
+     </Link>
   );
 };
 

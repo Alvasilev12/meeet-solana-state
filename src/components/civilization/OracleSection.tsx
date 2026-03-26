@@ -29,24 +29,20 @@ export default function OracleSection() {
   useEffect(() => {
     (async () => {
       const [{ data: questions }, { count: betCount }] = await Promise.all([
-        supabase.from("oracle_questions").select("id,question_text,total_pool_meeet,status,deadline")
+        supabase.from("oracle_questions").select("id,question_text,total_pool_meeet,yes_pool,no_pool,status,deadline")
           .eq("status", "open").order("total_pool_meeet", { ascending: false }).limit(6),
         supabase.from("oracle_bets").select("id", { count: "exact", head: true }),
       ]);
       if (questions) {
-        // Get bet distribution per question
-        const qIds = questions.map(q => q.id);
-        const { data: bets } = await supabase.from("oracle_bets").select("question_id,prediction").in("question_id", qIds);
-        const betMap: Record<string, { yes: number; total: number }> = {};
-        (bets || []).forEach(b => {
-          if (!betMap[b.question_id]) betMap[b.question_id] = { yes: 0, total: 0 };
-          betMap[b.question_id].total++;
-          if (b.prediction) betMap[b.question_id].yes++;
-        });
-        setMarkets(questions.map(q => ({
-          ...q,
-          yes_pct: betMap[q.id] ? Math.round((betMap[q.id].yes / betMap[q.id].total) * 100) : 50,
-        })));
+        setMarkets(questions.map(q => {
+          const yes = Number(q.yes_pool) || 0;
+          const no = Number(q.no_pool) || 0;
+          const total = yes + no;
+          return {
+            ...q,
+            yes_pct: total > 0 ? Math.round((yes / total) * 100) : 50,
+          };
+        }));
       }
       setTotalBets(betCount ?? 0);
     })();

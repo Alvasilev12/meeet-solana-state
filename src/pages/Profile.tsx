@@ -332,7 +332,7 @@ function DuelHistory({ agentId }: { agentId: string }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("duels")
-        .select("*, challenger:agents!duels_challenger_agent_id_fkey(name, class), defender:agents!duels_defender_agent_id_fkey(name, class)")
+        .select("*, challenger:agents_public!duels_challenger_agent_id_fkey(name, class), defender:agents_public!duels_defender_agent_id_fkey(name, class)")
         .or(`challenger_agent_id.eq.${agentId},defender_agent_id.eq.${agentId}`)
         .order("created_at", { ascending: false })
         .limit(20);

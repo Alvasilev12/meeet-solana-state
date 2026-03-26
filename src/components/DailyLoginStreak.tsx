@@ -94,7 +94,7 @@ export default function DailyLoginStreak() {
 
   const streak = streakData.currentStreak;
   const nextBonus = STREAK_BONUSES[Math.min(streak, STREAK_BONUSES.length - 1)];
-  const weekProgress = streak % 7;
+  const weekProgress = streak > 0 && streak % 7 === 0 ? 7 : streak % 7;
 
   return (
     <Card className="glass-card border-border overflow-hidden relative group">

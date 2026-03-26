@@ -143,10 +143,12 @@ const BreedingLab = () => {
   const filteredAgents = useMemo(() => {
     const search = activeSlot === "a" ? searchA : searchB;
     const excludeId = activeSlot === "a" ? parentB : parentA;
-    let list = allAgents.filter((a: any) => a.id !== excludeId);
+    // Parent A: only own agents. Parent B: all agents.
+    let list = activeSlot === "a" ? myAgents : allAgents;
+    list = list.filter((a: any) => a.id !== excludeId);
     if (search.trim()) list = list.filter((a: any) => a.name.toLowerCase().includes(search.toLowerCase()));
     return list.slice(0, 30);
-  }, [allAgents, activeSlot, searchA, searchB, parentA, parentB]);
+  }, [allAgents, myAgents, activeSlot, searchA, searchB, parentA, parentB]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">

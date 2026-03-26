@@ -48,6 +48,7 @@ const CATEGORIES = [
   { value: "ai", label: "🤖 AI" },
   { value: "meeet", label: "⚡ MEEET" },
   { value: "world", label: "🌍 World" },
+  { value: "general", label: "📋 General" },
 ];
 
 function formatMeeet(amount: number): string {
