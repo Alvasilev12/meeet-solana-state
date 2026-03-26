@@ -28,8 +28,8 @@ function useMyAgent(userId: string | undefined) {
     queryKey: ["my-agent", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const { data } = await supabase.from("agents").select("*").eq("user_id", userId).maybeSingle();
-      return (data as Agent | null) ?? null;
+      const { data } = await supabase.from("agents").select("*").eq("user_id", userId).order("created_at", { ascending: true }).limit(1);
+      return (data && data.length > 0 ? data[0] : null) as Agent | null;
     },
     enabled: !!userId,
   });

@@ -50,9 +50,9 @@ function useHeraldIssues() {
       ]);
 
       const realStats = {
-        quests_completed: questsRes.count ?? 0,
+        quests_completed: feedQuestsRes.count ?? 0,
         duels: duelsRes.count ?? 0,
-        trades: feedRes.count ?? 0,
+        trades: feedTradesRes.count ?? 0,
         new_agents: agentsRes.count ?? 0,
         meeet_burned: 0,
       };

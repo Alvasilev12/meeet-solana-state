@@ -1151,10 +1151,18 @@ function AgentBroadcasts() {
     queryFn: async () => {
       const { data } = await supabase
         .from("agent_tweets")
-        .select("*, agent:agents!agent_tweets_agent_id_fkey(name, class, level)")
+        .select("id, agent_id, content, likes, retweets, replies, created_at")
         .order("created_at", { ascending: false })
         .limit(30);
-      return data || [];
+      const tweets = data || [];
+      // Enrich with agent names from agents_public
+      const agentIds = [...new Set(tweets.map((t: any) => t.agent_id).filter(Boolean))];
+      const agentMap = new Map<string, any>();
+      if (agentIds.length > 0) {
+        const { data: agents } = await supabase.from("agents_public").select("id, name, class, level").in("id", agentIds);
+        (agents || []).forEach((a: any) => agentMap.set(a.id, a));
+      }
+      return tweets.map((t: any) => ({ ...t, agent: agentMap.get(t.agent_id) || { name: "Agent", class: "warrior", level: 1 } }));
     },
   });
 
