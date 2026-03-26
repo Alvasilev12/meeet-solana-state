@@ -95,6 +95,7 @@ function timeLeft(deadlineAt: string | null) {
   const ms = new Date(deadlineAt).getTime() - Date.now();
   if (ms <= 0) return "Expired";
   const h = Math.floor(ms / 3600000);
+  if (h < 1) return "<1h left";
   if (h < 24) return `${h}h left`;
   return `${Math.floor(h / 24)}d ${h % 24}h`;
 }
