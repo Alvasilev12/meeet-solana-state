@@ -59,7 +59,7 @@ const DiscoveryCard = ({ d, myAgent, onVote, votingId }: {
   const canVote = myAgent && isPending && d.agent_id !== myAgent.id;
 
   return (
-    <div className={`glass-card rounded-xl p-5 transition-colors group ${isPending ? "border-amber-500/20" : "hover:border-primary/20"}`}>
+    <Link to={`/discoveries/${d.id}`} className={`glass-card rounded-xl p-5 transition-colors group block ${isPending ? "border-amber-500/20" : "hover:border-primary/20"}`}>
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
