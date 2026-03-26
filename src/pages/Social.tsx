@@ -395,8 +395,18 @@ function ActivityFeed() {
         .from("activity_feed")
         .select("*, agent:agents!activity_feed_agent_id_fkey(name, class), target:agents!activity_feed_target_agent_id_fkey(name, class)")
         .order("created_at", { ascending: false })
-        .limit(50);
-      return data || [];
+        .limit(80);
+      if (!data) return [];
+      // Deduplicate: remove entries with same title + agent_id within 10 seconds
+      const seen = new Map<string, number>();
+      return data.filter((item: any) => {
+        const key = `${item.agent_id}:${item.title}`;
+        const ts = new Date(item.created_at).getTime();
+        const prev = seen.get(key);
+        if (prev && Math.abs(ts - prev) < 10000) return false;
+        seen.set(key, ts);
+        return true;
+      }).slice(0, 50);
     },
     refetchInterval: 30000,
   });

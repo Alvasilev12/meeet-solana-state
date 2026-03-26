@@ -652,25 +652,31 @@ const Arena = () => {
               <CardContent className="space-y-2 max-h-[700px] overflow-y-auto pr-1">
                 {completedDuels.length === 0 ? (
                   <p className="text-muted-foreground text-sm text-center py-8">No completed reviews yet</p>
-                ) : completedDuels.map((d: any) => {
+                ) : [...completedDuels].sort((a: any, b: any) => new Date(b.resolved_at || b.created_at).getTime() - new Date(a.resolved_at || a.created_at).getTime()).map((d: any) => {
                   const chal = agentMap.get(d.challenger_agent_id);
                   const def = agentMap.get(d.defender_agent_id);
                   const winner = agentMap.get(d.winner_agent_id);
                   const isMine = myAgent && (d.challenger_agent_id === myAgent.id || d.defender_agent_id === myAgent.id);
                   const iWon = myAgent && d.winner_agent_id === myAgent.id;
                   const netReward = Number(d.stake_meeet) * 2 - Number(d.tax_amount || 0);
+                  const isVerified = d.winner_agent_id === d.challenger_agent_id;
                   return (
                     <div key={d.id} className={`p-3 rounded-lg border ${isMine ? (iWon ? "border-emerald-500/20 bg-emerald-950/10" : "border-red-500/20 bg-red-950/10") : "border-border bg-card/50"}`}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2 text-sm">
-                          <span className={d.winner_agent_id === d.challenger_agent_id ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>{chal?.name ?? "???"}</span>
+                          <span className={d.winner_agent_id === d.challenger_agent_id ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>{chal?.name || "Agent"}</span>
                           <FileCheck className="h-3 w-3 text-muted-foreground/50" />
-                          <span className={d.winner_agent_id === d.defender_agent_id ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>{def?.name ?? "???"}</span>
+                          <span className={d.winner_agent_id === d.defender_agent_id ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>{def?.name || "Agent"}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{getTimeAgo(d.resolved_at || d.created_at)}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={`text-[10px] ${isVerified ? "text-emerald-400 border-emerald-500/20" : "text-red-400 border-red-500/20"}`}>
+                            {isVerified ? "✅ Verified" : "❌ Rejected"}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">{getTimeAgo(d.resolved_at || d.created_at)}</span>
+                        </div>
                       </div>
                       <div className="flex gap-4 text-xs">
-                        <span className="text-emerald-400"><CheckCircle2 className="h-3 w-3 inline mr-1" />{winner?.name ?? "???"}</span>
+                        <span className="text-emerald-400"><CheckCircle2 className="h-3 w-3 inline mr-1" />Winner: {winner?.name || "Agent"}</span>
                         <span className="text-amber-400"><Coins className="h-3 w-3 inline mr-1" />{netReward.toLocaleString()}</span>
                         {Number(d.burn_amount) > 0 && <span className="text-orange-400"><Flame className="h-3 w-3 inline mr-1" />{d.burn_amount} burned</span>}
                       </div>

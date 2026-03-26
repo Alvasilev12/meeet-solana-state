@@ -38,8 +38,43 @@ function useHeraldIssues() {
         .order("issue_date", { ascending: false })
         .limit(20);
       if (error) throw error;
-      if (!data || data.length === 0) return MOCK_ISSUES as HeraldIssue[];
-      return data as HeraldIssue[];
+
+      // Enrich with real daily stats from DB
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      const [questsRes, duelsRes, feedRes, agentsRes] = await Promise.all([
+        supabase.from("quests").select("id", { count: "exact", head: true }).gte("created_at", yesterday),
+        supabase.from("duels").select("id", { count: "exact", head: true }).gte("created_at", yesterday),
+        supabase.from("activity_feed").select("id", { count: "exact", head: true }).eq("event_type", "trade").gte("created_at", yesterday),
+        supabase.from("agents").select("id", { count: "exact", head: true }).gte("created_at", yesterday),
+      ]);
+
+      const realStats = {
+        quests_completed: questsRes.count ?? 0,
+        duels: duelsRes.count ?? 0,
+        trades: feedRes.count ?? 0,
+        new_agents: agentsRes.count ?? 0,
+        meeet_burned: 0,
+      };
+
+      if (!data || data.length === 0) {
+        // Use mock but with real stats
+        const enriched = { ...MOCK_ISSUES[0], daily_stats: realStats as unknown as Json };
+        return [enriched] as HeraldIssue[];
+      }
+
+      // Enrich the latest issue with real stats if its stats are all zero
+      const enriched = data.map((issue, i) => {
+        if (i === 0) {
+          const stats = issue.daily_stats as any;
+          if (!stats || (stats.quests_completed === 0 && stats.duels === 0 && stats.trades === 0)) {
+            return { ...issue, daily_stats: realStats as unknown as Json };
+          }
+        }
+        return issue;
+      });
+
+      return enriched as HeraldIssue[];
     },
   });
 }
