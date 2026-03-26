@@ -80,7 +80,7 @@ const Oracle = () => {
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       try {
         const [qRes, sRes] = await Promise.all([
           supabase
@@ -96,14 +96,25 @@ const Oracle = () => {
         ]);
         if (qRes.error) throw qRes.error;
         setQuestions((qRes.data as OracleQuestion[]) || []);
-        setScores((sRes.data as OracleScore[]) || []);
+        
+        // Fetch agent names for scores
+        const scoreData = (sRes.data || []) as OracleScore[];
+        if (scoreData.length > 0) {
+          const agentIds = scoreData.map(s => s.agent_id);
+          const { data: agents } = await supabase.from("agents_public").select("id, name").in("id", agentIds);
+          const nameMap: Record<string, string> = {};
+          (agents || []).forEach((a: any) => { nameMap[a.id] = a.name; });
+          setScores(scoreData.map(s => ({ ...s, agent_name: nameMap[s.agent_id] || s.agent_id.slice(0, 8) + "…" })));
+        } else {
+          setScores([]);
+        }
       } catch (e: any) {
         setError(e?.message || "Failed to load");
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+    fetchData();
   }, []);
 
   const filtered = useMemo(() => {
