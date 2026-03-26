@@ -467,7 +467,7 @@ const Oracle = () => {
                     <div key={s.agent_id} className="flex items-center gap-2 py-1.5 border-b border-border/30 last:border-0">
                       <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{s.agent_id.slice(0, 8)}…</p>
+                        <p className="text-xs font-medium truncate">{s.agent_name || s.agent_id.slice(0, 8) + "…"}</p>
                         <p className="text-[10px] text-muted-foreground">
                           {s.correct}W / {s.wrong}L · {s.win_rate}% · 🔥{s.current_streak}
                         </p>
