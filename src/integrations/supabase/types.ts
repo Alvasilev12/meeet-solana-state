@@ -3248,6 +3248,42 @@ export type Database = {
           },
         ]
       }
+      trade_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          error: string | null
+          id: string
+          meeet_amount: number
+          price: number | null
+          sol_amount: number
+          status: string | null
+          tx_signature: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          meeet_amount?: number
+          price?: number | null
+          sol_amount?: number
+          status?: string | null
+          tx_signature?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          meeet_amount?: number
+          price?: number | null
+          sol_amount?: number
+          status?: string | null
+          tx_signature?: string | null
+        }
+        Relationships: []
+      }
       trade_offers: {
         Row: {
           created_at: string
