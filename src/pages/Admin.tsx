@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -7,9 +7,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity, MessageSquare, Zap, Play, Square, ArrowDownUp, Send } from "lucide-react";
 import * as Recharts from "recharts";
 import AdminDialogs from "@/components/admin/AdminDialogs";
+import { toast } from "sonner";
 
 const COLORS = ["#9945FF", "#14F195", "#EF4444", "#FBBF24", "#00C2FF", "#F97316", "#6366F1"];
 const {
