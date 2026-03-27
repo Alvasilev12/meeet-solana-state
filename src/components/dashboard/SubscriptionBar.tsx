@@ -51,7 +51,7 @@ export default function SubscriptionBar({ userId }: { userId: string }) {
     ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))
     : null;
 
-  const priceLabels: Record<string, string> = { free: "Free", pro: "0.07 SOL/mo", enterprise: "0.21 SOL/mo" };
+  const priceLabels: Record<string, string> = { free: "Free", pro: "0.19 SOL/mo", enterprise: "1.49 SOL/mo" };
 
   return (
     <div className="glass-card rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 mb-6">

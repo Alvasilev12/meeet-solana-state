@@ -33,10 +33,30 @@ export default function SystemMonitor() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["president-check", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.rpc("get_profile_protected_fields", { _user_id: user!.id });
-      return data?.[0] ?? null;
+      // Try RPC first, fallback to direct profile query
+      const { data: rpcData, error: rpcError } = await supabase.rpc("get_profile_protected_fields", { _user_id: user!.id });
+      if (!rpcError && rpcData && rpcData.length > 0) return rpcData[0];
+      
+      // Fallback: check profiles table directly
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_president")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (profileData) return profileData;
+
+      // Fallback: check if user has a president-class agent
+      const { data: agentData } = await supabase
+        .from("agents")
+        .select("class")
+        .eq("user_id", user!.id)
+        .eq("class", "president")
+        .limit(1)
+        .maybeSingle();
+      return { is_president: !!agentData };
     },
     enabled: !!user?.id,
+    retry: 2,
   });
 
   const isPresident = profile?.is_president === true;

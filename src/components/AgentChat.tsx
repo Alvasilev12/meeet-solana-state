@@ -106,9 +106,30 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
   const sendMutation = useMutation({
     mutationFn: async (msg: string) => {
       console.log("[AgentChat] Sending message to openclaw-chat:", { agent_id: agentId, room_id: roomId });
-      const res = await supabase.functions.invoke("openclaw-chat", {
+      
+      // Race between AI call and 15s timeout
+      const aiCall = supabase.functions.invoke("openclaw-chat", {
         body: { message: msg, agent_id: agentId, user_id: user!.id, room_id: roomId },
       });
+      
+      const timeout = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("TIMEOUT")), 15000)
+      );
+
+      let res;
+      try {
+        res = await Promise.race([aiCall, timeout]);
+      } catch (e: any) {
+        if (e.message === "TIMEOUT") {
+          // Return fallback response instead of failing
+          return { 
+            answer: `I'm processing your request but it's taking longer than usual. Let me think about "${msg.slice(0, 50)}..." — try asking again in a moment, or rephrase your question for a faster response.`,
+            fallback: true,
+          };
+        }
+        throw e;
+      }
+      
       console.log("[AgentChat] Response:", { error: res.error, data: res.data });
       if (res.error) throw new Error(res.error.message || "Edge function error");
       if (res.data?.error) throw new Error(res.data.error);
@@ -135,7 +156,6 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
     },
     onError: (err) => {
       console.error("[AgentChat] Send failed:", err);
-      // Remove the optimistic user message on failure
       setOptimisticMessages((prev) => prev.filter((m) => m.id !== OPT_USER_ID && m.id !== OPT_AGENT_ID));
     },
   });
@@ -209,7 +229,7 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
           </p>
         </div>
         <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">
-          <Coins className="w-3 h-3 mr-0.5" /> 6 MEEET/msg
+          <Coins className="w-3 h-3 mr-0.5" /> ~$0.006/msg
         </Badge>
         {!inline && (
           <button onClick={onClose || (() => setExpanded(false))} className="text-muted-foreground hover:text-foreground">

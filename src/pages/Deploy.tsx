@@ -122,29 +122,33 @@ const Deploy = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [plansRes, countRes] = await Promise.all([
-        supabase.from("agent_plans").select("*").order("price_usdc", { ascending: true }),
-        supabase.from("agents").select("id", { count: "exact", head: true }),
-      ]);
-      if (!plansRes.error && plansRes.data) setPlans(plansRes.data as unknown as AgentPlan[]);
-      setTotalAgents(countRes.count ?? 0);
+      try {
+        const [plansRes, countRes] = await Promise.all([
+          supabase.from("agent_plans").select("*").order("price_usdc", { ascending: true }),
+          supabase.from("agents_public").select("id", { count: "exact", head: true }),
+        ]);
+        if (!plansRes.error && plansRes.data) setPlans(plansRes.data as unknown as AgentPlan[]);
+        setTotalAgents(countRes.count ?? 0);
 
-      // Check if current user already has an agent
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: myAgent } = await supabase
-          .from("agents" as any)
-          .select("id, name")
-          .eq("user_id", user.id)
-          .limit(1)
-          .maybeSingle();
-        if (myAgent) {
-          setExistingAgentName((myAgent as any).name);
-          setAlreadyClaimed(true);
+        // Check if current user already has an agent
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: myAgent } = await supabase
+            .from("agents" as any)
+            .select("id, name")
+            .eq("user_id", user.id)
+            .limit(1)
+            .maybeSingle();
+          if (myAgent) {
+            setExistingAgentName((myAgent as any).name);
+            setAlreadyClaimed(true);
+          }
         }
+      } catch (e) {
+        console.error("Deploy data fetch error:", e);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
     fetchData();
   }, []);

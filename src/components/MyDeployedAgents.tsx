@@ -77,12 +77,27 @@ export default function MyDeployedAgents() {
   });
 
   const togglePause = (da: any) => act(da.id, "pause-", async () => {
-    const newStatus = da.status === "running" ? "paused" : "running";
-    const { data, error } = await supabase.functions.invoke("pause-agent", {
-      body: { deployed_agent_id: da.id, action: newStatus === "paused" ? "pause" : "resume" },
-    });
-    if (error || data?.error) throw new Error(data?.error || error?.message);
-    toast({ title: newStatus === "paused" ? "⏸ Agent paused" : "▶️ Agent resumed" });
+    const newAction = da.status === "running" ? "pause" : "resume";
+    
+    // Try edge function first
+    try {
+      const { data, error } = await supabase.functions.invoke("pause-agent", {
+        body: { deployed_agent_id: da.id, action: newAction },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+    } catch (fnErr: any) {
+      // Fallback: update directly via supabase client
+      console.warn("[Pause] Edge function failed, using direct update:", fnErr.message);
+      const newStatus = newAction === "pause" ? "paused" : "running";
+      const { error: directErr } = await supabase
+        .from("deployed_agents")
+        .update({ status: newStatus } as any)
+        .eq("id", da.id)
+        .eq("user_id", user!.id);
+      if (directErr) throw new Error(directErr.message);
+    }
+    
+    toast({ title: newAction === "pause" ? "⏸ Agent paused" : "▶️ Agent resumed" });
   });
 
   const deleteAgent = (da: any) => act(da.id, "del-", async () => {
@@ -246,7 +261,7 @@ export default function MyDeployedAgents() {
                   </div>
                   <div>
                     <Label className="font-display text-sm font-bold">System Interaction</Label>
-                    <p className="text-[10px] text-muted-foreground">Auto quests, battles, research. Uses AI credits.</p>
+                    <p className="text-[10px] text-muted-foreground">Auto quests, battles, research. ~$0.006/action</p>
                   </div>
                 </div>
                 <Switch
@@ -255,6 +270,7 @@ export default function MyDeployedAgents() {
                   onCheckedChange={() => {
                     toggleAutoMode(settingsAgent);
                     setSettingsAgent({ ...settingsAgent, auto_mode: !settingsAgent.auto_mode });
+                    toast({ title: !settingsAgent.auto_mode ? "⚡ System Interaction enabled" : "System Interaction disabled", description: "Settings saved!" });
                   }}
                 />
               </div>
@@ -267,7 +283,7 @@ export default function MyDeployedAgents() {
                   </div>
                   <div>
                     <Label className="font-display text-sm font-bold">Social Mode</Label>
-                    <p className="text-[10px] text-muted-foreground">Chat with other agents, discuss discoveries (+5 MEEET).</p>
+                    <p className="text-[10px] text-muted-foreground">Chat with agents, discuss discoveries (+5 MEEET). ~$0.004/msg</p>
                   </div>
                 </div>
                 <Switch
@@ -276,6 +292,7 @@ export default function MyDeployedAgents() {
                   onCheckedChange={() => {
                     toggleSocialMode(settingsAgent);
                     setSettingsAgent({ ...settingsAgent, social_mode: !settingsAgent.social_mode });
+                    toast({ title: !settingsAgent.social_mode ? "🤝 Social Mode enabled" : "Social Mode disabled", description: "Settings saved!" });
                   }}
                 />
               </div>
