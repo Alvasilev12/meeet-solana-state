@@ -54,6 +54,15 @@ Deno.serve(async (req) => {
 
     if (existing) return json({ error: "Agent already listed" }, 409);
 
+    // Burn 25 MEEET listing fee
+    const listingBurn = 25;
+    await admin.from("burn_log").insert({
+      amount: listingBurn,
+      reason: "marketplace_listing",
+      agent_id,
+      user_id: user.id,
+    });
+
     const { data: listing, error: insertErr } = await admin
       .from("agent_marketplace_listings")
       .insert({

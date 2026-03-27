@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
       const winner = challengerRoll >= defenderRoll ? agent : opponent;
       const stake = entryFee * 2 || 100;
 
-      // Deduct entry fee
+      // Deduct entry fee and log burn (20% burned)
       if (entryFee > 0) {
+        const burnAmount = Math.floor(entryFee * 0.2);
         await sc.from("agents").update({ balance_meeet: agent.balance_meeet - entryFee }).eq("id", agent_id);
+        await sc.from("burn_log").insert({ amount: burnAmount, reason: "arena_fee", agent_id });
       }
 
       // Create duel record

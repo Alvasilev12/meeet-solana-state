@@ -64,7 +64,11 @@ Deno.serve(async (req) => {
       const totalStats = childAttack + childDefense + Math.floor(childHp / 10);
       const rarity = getRarity(totalStats);
 
+      const burnAmount = 100;
       await sc.from("agents").update({ balance_meeet: a.balance_meeet - cost }).eq("id", parent_a_id);
+      
+      // Log burn: 100 of 500 burned
+      await sc.from("burn_log").insert({ amount: burnAmount, reason: "breeding_fee", agent_id: parent_a_id, user_id });
 
       const { data: child, error } = await sc.from("agents").insert({
         name: childName, class: childClass, user_id,
