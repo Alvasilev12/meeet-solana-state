@@ -1,7 +1,8 @@
-import { forwardRef, useState, useEffect } from "react";
+import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 import ContractAddress from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const Footer = forwardRef<HTMLElement>((_props, ref) => {
   const { t } = useLanguage();
