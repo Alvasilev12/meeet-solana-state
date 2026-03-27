@@ -13,6 +13,7 @@ import { Users, Bot, Coins, TrendingUp, Shield, Flame, BarChart3, Activity, Mess
 import * as Recharts from "recharts";
 import AdminDialogs from "@/components/admin/AdminDialogs";
 import { toast } from "sonner";
+import { useMeeetPrice } from "@/hooks/useMeeetPrice";
 
 const COLORS = ["#9945FF", "#14F195", "#EF4444", "#FBBF24", "#00C2FF", "#F97316", "#6366F1"];
 const {
