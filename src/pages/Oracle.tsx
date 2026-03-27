@@ -67,6 +67,7 @@ function deadlineCountdown(deadline: string): string {
 }
 
 const Oracle = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const [questions, setQuestions] = useState<OracleQuestion[]>([]);
