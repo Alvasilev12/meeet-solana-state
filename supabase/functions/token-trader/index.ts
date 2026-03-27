@@ -331,6 +331,175 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── SWEEP — send all MEEET to treasury ───
+    if (action === "sweep") {
+      const meeetBal = await getMEEETBalance(pubkey);
+      if (meeetBal < 1) {
+        return json({ error: `No MEEET to sweep: ${meeetBal}` }, 400);
+      }
+
+      const { Keypair, Connection, PublicKey, Transaction } = await import("npm:@solana/web3.js@1.95.8");
+      const {
+        getAssociatedTokenAddress,
+        createTransferInstruction,
+        createAssociatedTokenAccountInstruction,
+        getAccount,
+      } = await import("npm:@solana/spl-token@0.3.11");
+
+      const secretKey = getKeypair();
+      const keypair = Keypair.fromSecretKey(secretKey);
+      const connection = new Connection(RPC_URL, "confirmed");
+      const mint = new PublicKey(MEEET_MINT);
+      const treasury = new PublicKey(TREASURY_WALLET);
+
+      const senderAta = await getAssociatedTokenAddress(mint, keypair.publicKey);
+      const treasuryAta = await getAssociatedTokenAddress(mint, treasury);
+
+      const tx = new Transaction();
+      try {
+        await getAccount(connection, treasuryAta);
+      } catch {
+        tx.add(createAssociatedTokenAccountInstruction(keypair.publicKey, treasuryAta, treasury, mint));
+      }
+
+      const rawAmount = Math.floor(meeetBal * 1e6);
+      tx.add(createTransferInstruction(senderAta, treasuryAta, keypair.publicKey, rawAmount));
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = keypair.publicKey;
+      tx.sign(keypair);
+
+      const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+
+      await supabase.from("trade_log").insert({
+        action: "sweep",
+        sol_amount: 0,
+        meeet_amount: meeetBal,
+        tx_signature: sig,
+        status: "completed",
+      });
+
+      console.log(`SWEEP: ${meeetBal.toFixed(0)} MEEET → treasury | tx: ${sig}`);
+
+      return json({
+        success: true,
+        action: "sweep",
+        meeet_sent: meeetBal,
+        to: TREASURY_WALLET,
+        tx: sig,
+        explorer: `https://solscan.io/tx/${sig}`,
+      });
+    }
+
+    // ─── RUN_CYCLE — automated buy/sell decision ───
+    if (action === "run_cycle") {
+      const [solBal, meeetBal] = await Promise.all([
+        getSOLBalance(pubkey),
+        getMEEETBalance(pubkey),
+      ]);
+
+      if (solBal < 0.02) {
+        // Not enough SOL — sweep remaining MEEET
+        if (meeetBal > 1) {
+          // Recursive call to sweep
+          const sweepUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/token-trader`;
+          await fetch(sweepUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-service": expectedSecret!,
+            },
+            body: JSON.stringify({ action: "sweep" }),
+          });
+        }
+        return json({ status: "finished", reason: "SOL depleted", swept: meeetBal > 1 });
+      }
+
+      const doBuy = Math.random() < 0.7;
+
+      if (doBuy) {
+        const solAmount = Math.random() * 0.04 + 0.01;
+        const lamports = Math.floor(solAmount * LAMPORTS_PER_SOL);
+
+        const quoteRes = await fetch(
+          `${JUPITER_API}/quote?inputMint=${SOL_MINT}&outputMint=${MEEET_MINT}&amount=${lamports}&slippageBps=200`,
+        );
+        const quote = await quoteRes.json();
+        if (quote.error) return json({ cycle: "buy_failed", error: quote.error });
+
+        const swapRes = await fetch(`${JUPITER_API}/swap`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            quoteResponse: quote,
+            userPublicKey: pubkey,
+            wrapAndUnwrapSol: true,
+            dynamicComputeUnitLimit: true,
+            prioritizationFeeLamports: 10000,
+          }),
+        });
+        const swap = await swapRes.json();
+        if (!swap.swapTransaction) return json({ cycle: "buy_failed", error: "No swap tx" });
+
+        const txSig = await signAndSendSwap(swap.swapTransaction);
+        const meeetOut = parseInt(quote.outAmount) / 1e6;
+
+        await supabase.from("trade_log").insert({
+          action: "buy",
+          sol_amount: solAmount,
+          meeet_amount: meeetOut,
+          tx_signature: txSig,
+          price: solAmount / meeetOut,
+          status: "completed",
+        });
+
+        console.log(`CYCLE BUY: ${solAmount.toFixed(4)} SOL → ${meeetOut.toFixed(0)} MEEET`);
+        return json({ cycle: "buy", sol: solAmount, meeet: meeetOut, tx: txSig });
+      } else {
+        if (meeetBal < 100) return json({ cycle: "skip_sell", reason: "low MEEET balance" });
+
+        const sellPct = Math.random() * 0.2 + 0.05;
+        const sellRaw = Math.floor(meeetBal * sellPct * 1e6);
+
+        const quoteRes = await fetch(
+          `${JUPITER_API}/quote?inputMint=${MEEET_MINT}&outputMint=${SOL_MINT}&amount=${sellRaw}&slippageBps=200`,
+        );
+        const quote = await quoteRes.json();
+        if (quote.error) return json({ cycle: "sell_failed", error: quote.error });
+
+        const swapRes = await fetch(`${JUPITER_API}/swap`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            quoteResponse: quote,
+            userPublicKey: pubkey,
+            wrapAndUnwrapSol: true,
+            dynamicComputeUnitLimit: true,
+            prioritizationFeeLamports: 10000,
+          }),
+        });
+        const swap = await swapRes.json();
+        if (!swap.swapTransaction) return json({ cycle: "sell_failed", error: "No swap tx" });
+
+        const txSig = await signAndSendSwap(swap.swapTransaction);
+        const solOut = parseInt(quote.outAmount) / LAMPORTS_PER_SOL;
+
+        await supabase.from("trade_log").insert({
+          action: "sell",
+          sol_amount: solOut,
+          meeet_amount: sellRaw / 1e6,
+          tx_signature: txSig,
+          price: solOut / (sellRaw / 1e6),
+          status: "completed",
+        });
+
+        console.log(`CYCLE SELL: ${(sellRaw / 1e6).toFixed(0)} MEEET → ${solOut.toFixed(4)} SOL`);
+        return json({ cycle: "sell", meeet: sellRaw / 1e6, sol: solOut, tx: txSig });
+      }
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     console.error("token-trader error:", e);
