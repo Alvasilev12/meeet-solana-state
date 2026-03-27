@@ -140,6 +140,7 @@ const App = () => (
                   <Route path="/partners" element={<Partners />} />
                   <Route path="/discord" element={<Discord />} />
                   <Route path="/install" element={<Install />} />
+                  <Route path="/token" element={<Token />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
