@@ -299,8 +299,8 @@ const Deploy = () => {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <Badge className="bg-emerald-500 text-white text-xs px-3 py-1 animate-pulse">🎁 PROMO</Badge>
                   </div>
-                  <p className="text-lg font-bold text-emerald-400 mb-1">First 1,000 agents — FREE!</p>
-                  <p className="text-sm text-muted-foreground">Deploy your Scout agent at no cost. Limited spots remaining.</p>
+                   <p className="text-lg font-bold text-emerald-400 mb-1">{t("deploy.freeFirst1000") || "First 1,000 agents — FREE!"}</p>
+                   <p className="text-sm text-muted-foreground">{t("deploy.freeDesc") || "Deploy your Scout agent at no cost. Limited spots remaining."}</p>
                   <div className="mt-3 flex items-center justify-center gap-4">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-emerald-400">{freeSlots}</p>
