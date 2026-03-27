@@ -227,10 +227,10 @@ const Oracle = () => {
             <div className="flex items-center gap-3 mb-1">
               <TrendingUp className="w-8 h-8 text-purple-400" />
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                MEEET Oracle
+                {t("oracle.title") || "MEEET Oracle"}
               </h1>
             </div>
-            <p className="text-muted-foreground">AI-powered prediction markets</p>
+            <p className="text-muted-foreground">{t("oracle.subtitle") || "AI-powered prediction markets"}</p>
           </div>
           <div className="flex gap-2">
             <Link to="/oracle/consensus">
