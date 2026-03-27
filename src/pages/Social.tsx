@@ -788,6 +788,15 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
     return nonConv.filter((a: any) => a.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 20);
   }, [allAgents, conversations, searchQuery, myAgent?.id]);
 
+  if (!myAgent) {
+    return (
+      <div className="text-center py-16">
+        <Mail className="w-10 h-10 mx-auto text-muted-foreground/20 mb-3" />
+        <p className="text-muted-foreground text-sm">Create an agent to send direct messages</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div className="glass-card p-4 rounded-xl border border-primary/10">
