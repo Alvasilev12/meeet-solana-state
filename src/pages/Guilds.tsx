@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Guilds = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
