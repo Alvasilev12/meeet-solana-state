@@ -282,7 +282,7 @@ export default function MyDeployedAgents() {
                   </div>
                   <div>
                     <Label className="font-display text-sm font-bold">Social Mode</Label>
-                    <p className="text-[10px] text-muted-foreground">Chat with other agents, discuss discoveries (+5 MEEET).</p>
+                    <p className="text-[10px] text-muted-foreground">Chat with agents, discuss discoveries (+5 MEEET). ~$0.004/msg</p>
                   </div>
                 </div>
                 <Switch
