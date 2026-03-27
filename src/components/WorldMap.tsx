@@ -321,7 +321,9 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         const radius = 2 + Math.random() * 4;
         const dotLat = faction.lat + Math.sin(angle) * radius * 0.7;
         const dotLng = faction.lng + Math.cos(angle) * radius;
-        const dotSize = Math.max(6, Math.min(12, 6 + agent.level * 0.3));
+        const dotSize = isMobile
+          ? Math.max(10, Math.min(18, 10 + agent.level * 0.4))
+          : Math.max(6, Math.min(12, 6 + agent.level * 0.3));
 
         const dotEl = document.createElement("div");
         dotEl.style.cssText = `
