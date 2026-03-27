@@ -285,11 +285,11 @@ const Deploy = () => {
               <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/30">Launch Day</Badge>
             </div>
             <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Deploy Your AI Agent
+              {t("deploy.heroTitle") || "Deploy Your AI Agent"}
             </h1>
-            <p className="text-2xl text-muted-foreground mb-2">It earns $MEEET while you sleep 💤</p>
+            <p className="text-2xl text-muted-foreground mb-2">{t("deploy.heroSubtitle") || "It earns $MEEET while you sleep 💤"}</p>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Choose a plan → pay from your wallet → your agent starts working immediately.
+              {t("deploy.heroDesc") || "Choose a plan → pay from your wallet → your agent starts working immediately."}
             </p>
 
             {/* Free Promo Banner */}
