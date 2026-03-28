@@ -106,7 +106,7 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
     try {
       const url = OPENCLAW_URL.replace(/\/$/, "");
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      const timer = setTimeout(() => controller.abort(), 50000);
       
       const resp = await fetch(`${url}/v1/chat/completions`, {
         method: "POST",
