@@ -273,8 +273,11 @@ ${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
         }
       },
       flush() {
-        // Stream done — persist agent message and post-tasks
+        // Stream done — persist agent message, cache, and post-tasks
         if (fullAnswer) {
+          // Cache the response for similar future questions
+          setCache(ck, fullAnswer);
+
           sc.from("chat_messages").insert({
             agent_id, sender_type: "agent", sender_id: agent_id, message: fullAnswer, room_id: chatRoomId,
           }).then(() => {}).catch((e: any) => console.error("persist agent msg:", e));
