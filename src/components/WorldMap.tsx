@@ -263,12 +263,12 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       `;
       // Count number
       const num = document.createElement("div");
-      num.style.cssText = `font-size:${size * 0.28}px;font-weight:800;color:#fff;font-family:monospace;line-height:1;text-shadow:0 0 8px ${faction.color};`;
+      num.style.cssText = `font-size:${size * 0.34}px;font-weight:800;color:#fff;font-family:monospace;line-height:1;text-shadow:0 0 8px ${faction.color};`;
       num.textContent = String(count);
       core.appendChild(num);
       // Label
       const lbl = document.createElement("div");
-      lbl.style.cssText = `font-size:${Math.max(8, size * 0.1)}px;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:0.05em;margin-top:2px;`;
+      lbl.style.cssText = `font-size:${Math.max(10, size * 0.14)}px;color:rgba(255,255,255,0.8);font-weight:700;letter-spacing:0.05em;margin-top:2px;`;
       lbl.textContent = faction.label.split(" ").slice(1).join(" ");
       core.appendChild(lbl);
       el.appendChild(core);
