@@ -467,7 +467,9 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
           const placeholderRes = await sendTg(botToken, chatId, "🧠 _Думаю..._");
           const placeholderMsgId = placeholderRes?.result?.message_id;
 
+          await acquireSemaphore();
           const MAX_RETRIES = 3;
+          try {
           for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
             try {
               const controller = new AbortController();
@@ -477,7 +479,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
                 headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                   model: "google/gemini-3-flash-preview",
-                  max_tokens: 400,
+                  max_tokens: 600,
                   temperature: 0.8,
                   stream: true,
                   messages: msgs,
