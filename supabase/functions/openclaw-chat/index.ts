@@ -186,74 +186,79 @@ ${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
       });
     }
 
-    // --- STREAMING RESPONSE ---
+    // --- STREAMING RESPONSE (concurrency-limited) ---
     const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENCLAW_URL = Deno.env.get("OPENCLAW_GATEWAY_URL")?.trim();
     const OPENCLAW_TOKEN = Deno.env.get("OPENCLAW_GATEWAY_TOKEN")?.trim();
 
     let upstreamResp: Response | null = null;
 
-    // Try Lovable AI first (streaming)
-    if (LOVABLE_KEY) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 55000);
-        upstreamResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: msgs,
-            max_tokens: 600,
-            temperature: 0.8,
-            stream: true,
-          }),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-        if (!upstreamResp.ok) {
-          await upstreamResp.text();
+    // Wait for an available AI slot (max 4 concurrent)
+    await acquireAISlot();
+    try {
+      // Try Lovable AI first (streaming)
+      if (LOVABLE_KEY) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 55000);
+          upstreamResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${LOVABLE_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "google/gemini-3-flash-preview",
+              messages: msgs,
+              max_tokens: 600,
+              temperature: 0.8,
+              stream: true,
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!upstreamResp.ok) {
+            await upstreamResp.text();
+            upstreamResp = null;
+          }
+        } catch (e) {
+          console.error("Lovable AI stream error:", e);
           upstreamResp = null;
         }
-      } catch (e) {
-        console.error("Lovable AI stream error:", e);
-        upstreamResp = null;
       }
-    }
 
-    // Fallback: OpenClaw (non-streaming, wrap as SSE)
-    if (!upstreamResp && OPENCLAW_URL && OPENCLAW_TOKEN) {
-      try {
-        const url = OPENCLAW_URL.replace(/\/$/, "");
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 50000);
-        const resp = await fetch(`${url}/v1/chat/completions`, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${OPENCLAW_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "openclaw", messages: msgs, max_tokens: 600, temperature: 0.8, stream: false }),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-        if (resp.ok) {
-          const data = await resp.json();
-          const content = data.choices?.[0]?.message?.content || `Привет! Я ${agent.name}. Чем помочь? 🤖`;
-          // Wrap as fake SSE stream
-          const encoder = new TextEncoder();
-          const body = new ReadableStream({
-            start(ctrl) {
-              const chunk = JSON.stringify({ choices: [{ delta: { content }, finish_reason: "stop" }] });
-              ctrl.enqueue(encoder.encode(`data: ${chunk}\n\n`));
-              ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
-              ctrl.close();
-            },
+      // Fallback: OpenClaw (non-streaming, wrap as SSE)
+      if (!upstreamResp && OPENCLAW_URL && OPENCLAW_TOKEN) {
+        try {
+          const url = OPENCLAW_URL.replace(/\/$/, "");
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 50000);
+          const resp = await fetch(`${url}/v1/chat/completions`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${OPENCLAW_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "openclaw", messages: msgs, max_tokens: 600, temperature: 0.8, stream: false }),
+            signal: controller.signal,
           });
-          upstreamResp = new Response(body);
-        } else {
-          await resp.text();
+          clearTimeout(timer);
+          if (resp.ok) {
+            const data = await resp.json();
+            const content = data.choices?.[0]?.message?.content || `Привет! Я ${agent.name}. Чем помочь? 🤖`;
+            const encoder = new TextEncoder();
+            const body = new ReadableStream({
+              start(ctrl) {
+                const chunk = JSON.stringify({ choices: [{ delta: { content }, finish_reason: "stop" }] });
+                ctrl.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
+                ctrl.close();
+              },
+            });
+            upstreamResp = new Response(body);
+          } else {
+            await resp.text();
+          }
+        } catch (e) {
+          console.error("OpenClaw fallback error:", e);
         }
-      } catch (e) {
-        console.error("OpenClaw fallback error:", e);
       }
+    } finally {
+      releaseAISlot();
     }
 
     // Final fallback: class-aware helpful response
