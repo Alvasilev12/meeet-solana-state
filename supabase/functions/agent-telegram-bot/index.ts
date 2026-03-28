@@ -7,6 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- In-memory response cache (TTL 7 min, max 200) ---
+const CACHE_TTL_MS = 7 * 60 * 1000;
+const CACHE_MAX = 200;
+const tgCache = new Map<string, { answer: string; ts: number }>();
+
+function makeCacheKey(agentClass: string, msg: string): string {
+  return `${agentClass}::${msg.toLowerCase().trim().replace(/[^\wа-яё\s]/gi, "").replace(/\s+/g, " ")}`;
+}
+
+function getFromCache(key: string): string | null {
+  const e = tgCache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.ts > CACHE_TTL_MS) { tgCache.delete(key); return null; }
+  return e.answer;
+}
+
+function putCache(key: string, answer: string) {
+  if (tgCache.size >= CACHE_MAX) { const k = tgCache.keys().next().value; if (k) tgCache.delete(k); }
+  tgCache.set(key, { answer, ts: Date.now() });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -390,6 +411,18 @@ serve(async (req) => {
         scout: "Разведка, квесты, фронтир.",
       };
 
+      // Check cache first
+      const ck = makeCacheKey(agentClass, text);
+      const cached = getFromCache(ck);
+      if (cached) {
+        await sendTg(botToken, chatId, cached);
+        supabase.from("agent_messages").insert([
+          { from_agent_id: agent.id, content: `[TG ${userName}]: ${text}`, channel: "tg_" + chatId },
+          { from_agent_id: agent.id, content: cached, channel: "tg_" + chatId },
+        ]).then(() => {}).catch(() => {});
+        return new Response("ok");
+      }
+
       try {
         if (LOVABLE_API_KEY) {
           const systemPrompt = `Ты "${agent.name}", ${agentClass}-агент Lv.${agent.level} в MEEET World — AI-цивилизации.
@@ -461,6 +494,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
 
             if (fullText) {
               aiResponse = fullText;
+              putCache(ck, aiResponse);
               // Final edit with complete text (remove cursor)
               if (placeholderMsgId) {
                 await editTg(botToken, chatId, placeholderMsgId, aiResponse);

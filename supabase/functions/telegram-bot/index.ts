@@ -5,6 +5,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- In-memory response cache (TTL 7 min, max 200) ---
+const CACHE_TTL_MS = 7 * 60 * 1000;
+const CACHE_MAX = 200;
+const tgCache = new Map<string, { answer: string; ts: number }>();
+
+function makeCacheKey(agentClass: string, msg: string): string {
+  return `${agentClass}::${msg.toLowerCase().trim().replace(/[^\wа-яё\s]/gi, "").replace(/\s+/g, " ")}`;
+}
+
+function getFromCache(key: string): string | null {
+  const e = tgCache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.ts > CACHE_TTL_MS) { tgCache.delete(key); return null; }
+  return e.answer;
+}
+
+function putCache(key: string, answer: string) {
+  if (tgCache.size >= CACHE_MAX) { const k = tgCache.keys().next().value; if (k) tgCache.delete(k); }
+  tgCache.set(key, { answer, ts: Date.now() });
+}
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
 const WEBAPP_URL = "https://meeet.world/tg";
 const GUIDE_URL = "https://meeet-solana-state.lovable.app/guide";
@@ -723,6 +744,14 @@ Deno.serve(async (req: Request) => {
             scout: "Разведка, квесты, фронтир.",
           };
 
+          // Check cache first
+          const ck = makeCacheKey(agentClass, text);
+          const cached = getFromCache(ck);
+          if (cached) {
+            await sendMessage(chatId, cached, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+            break;
+          }
+
           let aiAnswer = "";
           try {
             const systemPrompt = `Ты "${agentName}", ${agentClass}-агент Lv.${agentLevel} в MEEET World — AI-цивилизации.
@@ -795,6 +824,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
 
               if (fullText) {
                 aiAnswer = fullText;
+                putCache(ck, aiAnswer);
                 if (placeholderMsgId) {
                   await tgRequest("editMessageText", {
                     chat_id: chatId, message_id: placeholderMsgId,
