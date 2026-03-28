@@ -69,7 +69,7 @@ async function getAIResponse(messages: any[], agentName: string, agentClass: str
   if (LOVABLE_KEY) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
+      const timer = setTimeout(() => controller.abort(), 55000);
       
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
