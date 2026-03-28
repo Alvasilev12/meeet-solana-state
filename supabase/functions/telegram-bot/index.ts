@@ -803,10 +803,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
                 max_tokens: 400,
                 temperature: 0.8,
                 stream: true,
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: text },
-                ],
+                messages: msgs,
               }),
               signal: controller.signal,
             });
