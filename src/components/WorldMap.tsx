@@ -110,6 +110,11 @@ const POPUP_CSS = `
 @keyframes faction-pulse { 0%,100%{opacity:0.8;transform:scale(1);}50%{opacity:1;transform:scale(1.04);} }
 .faction-marker { animation: faction-pulse 3s ease-in-out infinite; cursor: pointer; transition: transform 0.15s; }
 .faction-marker:hover { transform: scale(1.15) !important; z-index: 100 !important; }
+@media (max-width: 767px) {
+  .maplibregl-popup-content { max-width: 260px !important; padding: 10px !important; font-size: 11px !important; }
+  .maplibregl-ctrl-group { display: none !important; }
+  .faction-marker { animation: none; }
+}
 `;
 
 const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", interactive = true, onEventClick, myAgent }, _ref) => {
