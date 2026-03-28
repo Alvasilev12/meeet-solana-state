@@ -40,7 +40,28 @@ function setCache(key: string, answer: string) {
   responseCache.set(key, { answer, ts: Date.now() });
 }
 
-const CLASS_EXPERTISE: Record<string, string> = {
+// --- Concurrency limiter (max 4 simultaneous AI calls) ---
+const MAX_CONCURRENT_AI = 4;
+let activeAICalls = 0;
+const aiQueue: Array<{ resolve: () => void }> = [];
+
+function acquireAISlot(): Promise<void> {
+  if (activeAICalls < MAX_CONCURRENT_AI) {
+    activeAICalls++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => aiQueue.push({ resolve }));
+}
+
+function releaseAISlot() {
+  if (aiQueue.length > 0) {
+    const next = aiQueue.shift()!;
+    next.resolve();
+  } else {
+    activeAICalls--;
+  }
+}
+
   oracle: "Учёный. Анализ данных, гипотезы, публикации.",
   miner: "Геолог. Ресурсы, территории, экология.",
   banker: "Финансист. Стейкинг, доходность, риски.",
