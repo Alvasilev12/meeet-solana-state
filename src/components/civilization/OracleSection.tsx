@@ -53,14 +53,14 @@ export default function OracleSection() {
   return (
     <section
       id="oracle-section"
-      className="relative flex flex-col justify-center px-4 py-12 overflow-hidden"
+      className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(270 30% 8%) 50%, hsl(0 0% 5%) 100%)" }}
     >
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px] pointer-events-none"
         style={{ background: "radial-gradient(circle, hsl(270 80% 60%) 0%, transparent 70%)" }} />
 
       <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-400/30 bg-purple-400/5 text-purple-400 text-sm mb-4">
             <Eye className="w-4 h-4" /> SECTION 04 — THE ORACLE
           </div>

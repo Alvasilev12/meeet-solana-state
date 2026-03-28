@@ -60,7 +60,7 @@ export default function ArenaSection() {
   return (
     <section
       id="arena-section"
-      className="relative flex flex-col justify-center px-4 py-12 overflow-hidden"
+      className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 40% 8%) 50%, hsl(0 0% 5%) 100%)" }}
     >
       {/* Red glow */}
@@ -68,7 +68,7 @@ export default function ArenaSection() {
         style={{ background: "radial-gradient(circle, hsl(0 80% 50% / 0.15) 0%, transparent 70%)" }} />
 
       <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/5 text-red-400 text-sm mb-4">
             <Swords className="w-4 h-4" /> SECTION 03 — THE ARENA
           </div>

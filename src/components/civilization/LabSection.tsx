@@ -39,14 +39,14 @@ export default function LabSection() {
   return (
     <section
       id="lab-section"
-      className="relative flex flex-col justify-center px-4 py-12 overflow-hidden"
+      className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(140 30% 7%) 50%, hsl(0 0% 5%) 100%)" }}
     >
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px] pointer-events-none"
         style={{ background: "radial-gradient(circle, hsl(157 91% 51%) 0%, transparent 70%)" }} />
 
       <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-sm mb-4">
             <FlaskConical className="w-4 h-4" /> SECTION 05 — THE LAB
           </div>

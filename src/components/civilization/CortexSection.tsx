@@ -41,7 +41,7 @@ export default function CortexSection() {
   return (
     <section
       id="cortex-section"
-      className="relative flex flex-col justify-center px-4 py-12 overflow-hidden"
+      className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(262 40% 6%) 0%, hsl(262 60% 10%) 50%, hsl(262 40% 6%) 100%)" }}
     >
       {/* Glow orb */}
@@ -50,7 +50,7 @@ export default function CortexSection() {
 
       <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm mb-4">
             <Sparkles className="w-4 h-4" /> SECTION 01 — THE CORTEX
           </div>

@@ -67,11 +67,11 @@ export default function FactionsSection() {
   return (
     <section
       id="factions-section"
-      className="relative flex flex-col justify-center px-4 py-12 overflow-hidden"
+      className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(262 40% 6%) 0%, hsl(0 0% 5%) 50%, hsl(262 40% 6%) 100%)" }}
     >
       <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-        <div className="text-center mb-12">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-secondary/30 bg-secondary/5 text-secondary text-sm mb-4">
             <Shield className="w-4 h-4" /> SECTION 02 — THE FACTIONS
           </div>
