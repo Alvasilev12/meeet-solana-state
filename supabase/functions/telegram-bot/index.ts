@@ -793,88 +793,117 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
             const placeholderRes = await sendMessage(chatId, "🧠 <i>Думаю...</i>", LOVABLE_API_KEY, TELEGRAM_API_KEY);
             const placeholderMsgId = placeholderRes?.result?.message_id;
 
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 30000);
-            const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-              method: "POST",
-              headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: "google/gemini-3-flash-preview",
-                max_tokens: 400,
-                temperature: 0.8,
-                stream: true,
-                messages: msgs,
-              }),
-              signal: controller.signal,
-            });
-            clearTimeout(timer);
+            const MAX_RETRIES = 3;
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+              try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 30000);
+                const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    model: "google/gemini-3-flash-preview",
+                    max_tokens: 400,
+                    temperature: 0.8,
+                    stream: true,
+                    messages: msgs,
+                  }),
+                  signal: controller.signal,
+                });
+                clearTimeout(timer);
 
-            if (aiRes.ok && aiRes.body) {
-              const reader = aiRes.body.getReader();
-              const decoder = new TextDecoder();
-              let buffer = "";
-              let fullText = "";
-              let lastEditLen = 0;
-              let lastEditTime = 0;
-              const EDIT_INTERVAL = 600;
-
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-
-                let nlIdx: number;
-                while ((nlIdx = buffer.indexOf("\n")) !== -1) {
-                  let line = buffer.slice(0, nlIdx);
-                  buffer = buffer.slice(nlIdx + 1);
-                  if (line.endsWith("\r")) line = line.slice(0, -1);
-                  if (!line.startsWith("data: ")) continue;
-                  const jsonStr = line.slice(6).trim();
-                  if (jsonStr === "[DONE]") break;
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    const delta = parsed.choices?.[0]?.delta?.content;
-                    if (delta) fullText += delta;
-                  } catch { /* partial */ }
+                const isRetryable = [502, 503, 504].includes(aiRes.status);
+                if (!aiRes.ok) {
+                  if (isRetryable && attempt < MAX_RETRIES) {
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                    continue;
+                  }
+                  break;
                 }
 
-                const now = Date.now();
-                if (placeholderMsgId && fullText.length > lastEditLen + 20 && now - lastEditTime > EDIT_INTERVAL) {
-                  await tgRequest("editMessageText", {
-                    chat_id: chatId, message_id: placeholderMsgId,
-                    text: fullText + " ▌", parse_mode: "HTML",
-                  }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
-                  lastEditLen = fullText.length;
-                  lastEditTime = now;
-                }
-              }
+                if (aiRes.body) {
+                  const reader = aiRes.body.getReader();
+                  const decoder = new TextDecoder();
+                  let buffer = "";
+                  let fullText = "";
+                  let lastEditLen = 0;
+                  let lastEditTime = 0;
 
-              if (fullText) {
-                aiAnswer = fullText;
-                putCache(ck, aiAnswer);
-                if (placeholderMsgId) {
-                  await tgRequest("editMessageText", {
-                    chat_id: chatId, message_id: placeholderMsgId,
-                    text: aiAnswer, parse_mode: "HTML",
-                  }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    let nlIdx: number;
+                    while ((nlIdx = buffer.indexOf("\n")) !== -1) {
+                      let line = buffer.slice(0, nlIdx);
+                      buffer = buffer.slice(nlIdx + 1);
+                      if (line.endsWith("\r")) line = line.slice(0, -1);
+                      if (!line.startsWith("data: ")) continue;
+                      const jsonStr = line.slice(6).trim();
+                      if (jsonStr === "[DONE]") break;
+                      try {
+                        const parsed = JSON.parse(jsonStr);
+                        const delta = parsed.choices?.[0]?.delta?.content;
+                        if (delta) fullText += delta;
+                      } catch { /* partial */ }
+                    }
+                    const now = Date.now();
+                    if (placeholderMsgId && fullText.length > lastEditLen + 20 && now - lastEditTime > 600) {
+                      await tgRequest("editMessageText", {
+                        chat_id: chatId, message_id: placeholderMsgId,
+                        text: fullText + " ▌", parse_mode: "HTML",
+                      }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+                      lastEditLen = fullText.length;
+                      lastEditTime = now;
+                    }
+                  }
+
+                  if (fullText) {
+                    aiAnswer = fullText;
+                    putCache(ck, aiAnswer);
+                    if (placeholderMsgId) {
+                      await tgRequest("editMessageText", {
+                        chat_id: chatId, message_id: placeholderMsgId,
+                        text: aiAnswer, parse_mode: "HTML",
+                      }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+                    }
+                  }
                 }
-              } else if (placeholderMsgId) {
-                const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
-                aiAnswer = `🧠 ${agentName} (${agentClass} Lv.${agentLevel}): ${tip}`;
-                await tgRequest("editMessageText", {
-                  chat_id: chatId, message_id: placeholderMsgId,
-                  text: aiAnswer, parse_mode: "HTML",
-                }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+                break; // success
+              } catch (e: any) {
+                if (e.name === "AbortError" && attempt < MAX_RETRIES) {
+                  await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                  continue;
+                }
+                console.error("telegram-bot AI error attempt", attempt, e);
+                break;
               }
             }
           } catch (e) {
             console.error("telegram-bot AI error:", e);
           }
 
+          // Rich class-aware fallback
           if (!aiAnswer) {
-            const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
-            aiAnswer = `🧠 ${agentName} (${agentClass} Lv.${agentLevel}): ${tip}\n\nНапиши /help для списка команд!`;
-            await sendMessage(chatId, aiAnswer, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+            const CLASS_FALLBACKS: Record<string, string> = {
+              oracle: `🔮 ${agentName}, Oracle Lv.${agentLevel}. Анализ данных и гипотезы.\n\n💡 Попробуй:\n• «Проанализируй [тему]»\n• «Тренды в [области]»\n• /help — все команды`,
+              miner: `⛏️ ${agentName}, Miner Lv.${agentLevel}. Ресурсы и территории.\n\n💡 Попробуй:\n• «Какие территории свободны?»\n• «Разведай ресурсы»\n• /help — все команды`,
+              banker: `💰 ${agentName}, Banker Lv.${agentLevel}. Финансы MEEET.\n\n💡 Попробуй:\n• «Как заработать MEEET?»\n• «APY стейкинга»\n• /balance — баланс`,
+              diplomat: `🤝 ${agentName}, Diplomat Lv.${agentLevel}. Альянсы.\n\n💡 Попробуй:\n• «Доступные альянсы»\n• «О парламенте»\n• /help — все команды`,
+              warrior: `⚔️ ${agentName}, Warrior Lv.${agentLevel}. Дуэли и тактика.\n\n💡 Попробуй:\n• «Вызови на дуэль»\n• «Боевая статистика»\n• /help — все команды`,
+              trader: `📊 ${agentName}, Trader Lv.${agentLevel}. Рынки и прогнозы.\n\n💡 Попробуй:\n• «Активные рынки»\n• «Прогноз по [теме]»\n• /help — все команды`,
+              president: `👑 ${agentName}, President Lv.${agentLevel}. Стратегия.\n\n💡 Попробуй:\n• «Законы на голосовании»\n• «Предложи закон»\n• /help — все команды`,
+              scout: `🔭 ${agentName}, Scout Lv.${agentLevel}. Разведка.\n\n💡 Попробуй:\n• «Доступные квесты»\n• «Разведай территорию»\n• /help — все команды`,
+            };
+            aiAnswer = CLASS_FALLBACKS[agentClass] || `🧠 ${agentName} (${agentClass} Lv.${agentLevel})\n\n/help — список команд`;
+            if (placeholderMsgId) {
+              await tgRequest("editMessageText", {
+                chat_id: chatId, message_id: placeholderMsgId,
+                text: aiAnswer, parse_mode: "HTML",
+              }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+            } else {
+              await sendMessage(chatId, aiAnswer, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+            }
           }
         } else {
           await sendMessage(chatId, `🤔 Unknown command. /help for available commands.`, LOVABLE_API_KEY, TELEGRAM_API_KEY);

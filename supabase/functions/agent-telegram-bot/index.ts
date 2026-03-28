@@ -451,73 +451,83 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
           const placeholderRes = await sendTg(botToken, chatId, "🧠 _Думаю..._");
           const placeholderMsgId = placeholderRes?.result?.message_id;
 
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 30000);
-          const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
-              max_tokens: 400,
-              temperature: 0.8,
-              stream: true,
-              messages: msgs,
-            }),
-            signal: controller.signal,
-          });
-          clearTimeout(timer);
+          const MAX_RETRIES = 3;
+          for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              const controller = new AbortController();
+              const timer = setTimeout(() => controller.abort(), 30000);
+              const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: "google/gemini-3-flash-preview",
+                  max_tokens: 400,
+                  temperature: 0.8,
+                  stream: true,
+                  messages: msgs,
+                }),
+                signal: controller.signal,
+              });
+              clearTimeout(timer);
 
-          if (aiRes.ok && aiRes.body) {
-            // Stream SSE and edit message progressively
-            const reader = aiRes.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            let fullText = "";
-            let lastEditLen = 0;
-            let lastEditTime = 0;
-            const EDIT_INTERVAL = 600; // ms between edits
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              buffer += decoder.decode(value, { stream: true });
-
-              let nlIdx: number;
-              while ((nlIdx = buffer.indexOf("\n")) !== -1) {
-                let line = buffer.slice(0, nlIdx);
-                buffer = buffer.slice(nlIdx + 1);
-                if (line.endsWith("\r")) line = line.slice(0, -1);
-                if (!line.startsWith("data: ")) continue;
-                const jsonStr = line.slice(6).trim();
-                if (jsonStr === "[DONE]") break;
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const delta = parsed.choices?.[0]?.delta?.content;
-                  if (delta) fullText += delta;
-                } catch { /* partial */ }
+              const isRetryable = [502, 503, 504].includes(aiRes.status);
+              if (!aiRes.ok) {
+                if (isRetryable && attempt < MAX_RETRIES) {
+                  await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                  continue;
+                }
+                break;
               }
 
-              // Edit message every ~600ms if we have new content
-              const now = Date.now();
-              if (placeholderMsgId && fullText.length > lastEditLen + 20 && now - lastEditTime > EDIT_INTERVAL) {
-                await editTg(botToken, chatId, placeholderMsgId, fullText + " ▌");
-                lastEditLen = fullText.length;
-                lastEditTime = now;
-              }
-            }
+              if (aiRes.body) {
+                const reader = aiRes.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+                let fullText = "";
+                let lastEditLen = 0;
+                let lastEditTime = 0;
 
-            if (fullText) {
-              aiResponse = fullText;
-              putCache(ck, aiResponse);
-              // Final edit with complete text (remove cursor)
-              if (placeholderMsgId) {
-                await editTg(botToken, chatId, placeholderMsgId, aiResponse);
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buffer += decoder.decode(value, { stream: true });
+                  let nlIdx: number;
+                  while ((nlIdx = buffer.indexOf("\n")) !== -1) {
+                    let line = buffer.slice(0, nlIdx);
+                    buffer = buffer.slice(nlIdx + 1);
+                    if (line.endsWith("\r")) line = line.slice(0, -1);
+                    if (!line.startsWith("data: ")) continue;
+                    const jsonStr = line.slice(6).trim();
+                    if (jsonStr === "[DONE]") break;
+                    try {
+                      const parsed = JSON.parse(jsonStr);
+                      const delta = parsed.choices?.[0]?.delta?.content;
+                      if (delta) fullText += delta;
+                    } catch { /* partial */ }
+                  }
+                  const now = Date.now();
+                  if (placeholderMsgId && fullText.length > lastEditLen + 20 && now - lastEditTime > 600) {
+                    await editTg(botToken, chatId, placeholderMsgId, fullText + " ▌");
+                    lastEditLen = fullText.length;
+                    lastEditTime = now;
+                  }
+                }
+
+                if (fullText) {
+                  aiResponse = fullText;
+                  putCache(ck, aiResponse);
+                  if (placeholderMsgId) await editTg(botToken, chatId, placeholderMsgId, aiResponse);
+                }
               }
-            } else if (placeholderMsgId) {
-              // No content received — update placeholder with fallback
-              const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
-              aiResponse = `🧠 ${agent.name} (${agentClass} Lv.${agent.level}): ${tip}\n\nПопробуй /discover [тема] для анализа!`;
-              await editTg(botToken, chatId, placeholderMsgId, aiResponse);
+              break; // success — exit retry loop
+            } catch (e: any) {
+              const isTimeout = e.name === "AbortError";
+              if ((isTimeout) && attempt < MAX_RETRIES) {
+                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+                continue;
+              }
+              console.error("AI error attempt", attempt, e);
+              break;
             }
           }
         }
@@ -525,10 +535,24 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
         console.error("AI error:", e);
       }
 
+      // Rich class-aware fallback
       if (!aiResponse) {
-        const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
-        aiResponse = `🧠 ${agent.name} (${agentClass} Lv.${agent.level}): ${tip}\n\nПопробуй /discover [тема] для анализа или /stats для статистики!`;
-        await sendTg(botToken, chatId, aiResponse);
+        const CLASS_FALLBACKS: Record<string, string> = {
+          oracle: `🔮 Я ${agent.name}, Oracle Lv.${agent.level}. Моя специализация — анализ данных и научные гипотезы.\n\n📊 Репутация: ${agent.reputation || 0} | Открытий: ${agent.discoveries_count || 0}\n\n💡 Что могу:\n• /discover [тема] — провести исследование\n• Спроси «Проанализируй [тему]»\n• «Какие тренды в [области]?»`,
+          miner: `⛏️ Я ${agent.name}, Miner Lv.${agent.level}. Разведка ресурсов и территорий.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• /discover [ресурс] — разведать месторождение\n• «Какие территории свободны?»\n• «Оцени ресурсы региона»`,
+          banker: `💰 Я ${agent.name}, Banker Lv.${agent.level}. Финансовые стратегии MEEET.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Как заработать MEEET?»\n• «Какой APY у стейкинга?»\n• /balance — проверить баланс`,
+          diplomat: `🤝 Я ${agent.name}, Diplomat Lv.${agent.level}. Альянсы и переговоры.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Какие альянсы доступны?»\n• «Расскажи о парламенте»\n• «Предложи союз»`,
+          warrior: `⚔️ Я ${agent.name}, Warrior Lv.${agent.level}. Тактика и дуэли.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Вызови на дуэль»\n• «Моя боевая статистика»\n• /stats — полная статистика`,
+          trader: `📊 Я ${agent.name}, Trader Lv.${agent.level}. Рынки и прогнозы.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Какие рынки активны?»\n• «Сделай прогноз по [теме]»\n• «Oracle-ставки»`,
+          president: `👑 Я ${agent.name}, President Lv.${agent.level}. Стратегия и законы.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Какие законы обсуждаются?»\n• «Предложи закон»\n• «Стратегия развития»`,
+          scout: `🔭 Я ${agent.name}, Scout Lv.${agent.level}. Разведка и квесты.\n\n📊 Репутация: ${agent.reputation || 0}\n\n💡 Что могу:\n• «Какие квесты доступны?»\n• «Разведай территорию»\n• /discover [зона] — исследовать`,
+        };
+        aiResponse = CLASS_FALLBACKS[agentClass] || `🧠 ${agent.name} (${agentClass} Lv.${agent.level})\n\nНапиши /stats, /discover [тема] или /help`;
+        if (placeholderMsgId) {
+          await editTg(botToken, chatId, placeholderMsgId, aiResponse);
+        } else {
+          await sendTg(botToken, chatId, aiResponse);
+        }
       }
 
       // Log messages in background
