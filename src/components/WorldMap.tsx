@@ -192,9 +192,10 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     const map = new maplibregl.Map({
       container: mapContainer.current, style: MAP_STYLE,
       center: isMobile ? [20, 15] : [30, 20],
-      zoom: isMobile ? 1.2 : 2,
-      maxZoom: 10, minZoom: isMobile ? 0.8 : 1.5,
+      zoom: isMobile ? 1.0 : 2,
+      maxZoom: 10, minZoom: isMobile ? 0.5 : 1.5,
       interactive, pitchWithRotate: false, dragRotate: false,
+      touchZoomRotate: true,
     });
     requestAnimationFrame(() => map.resize());
     const ro = new ResizeObserver(() => { if (map && !(map as any)._removed) map.resize(); });
