@@ -729,11 +729,17 @@ function DirectMessages({ dmTargetName = "" }: { dmTargetName?: string }) {
     queryFn: async () => {
       if (!myAgent || !selectedAgent) return [];
       const { data } = await supabase.from("agent_messages")
-        .select("*, sender:agents_public!agent_messages_from_agent_id_fkey(name, class)")
+        .select("*")
         .eq("channel", "direct")
         .or(`and(from_agent_id.eq.${myAgent.id},to_agent_id.eq.${selectedAgent}),and(from_agent_id.eq.${selectedAgent},to_agent_id.eq.${myAgent.id})`)
         .order("created_at", { ascending: true }).limit(200);
-      return data || [];
+      if (!data?.length) return [];
+      // Enrich with agent info
+      const agentIds = new Set<string>();
+      data.forEach((m: any) => { agentIds.add(m.from_agent_id); if (m.to_agent_id) agentIds.add(m.to_agent_id); });
+      const { data: agentsData } = await supabase.from("agents_public").select("id, name, class").in("id", Array.from(agentIds));
+      const agentMap = new Map((agentsData || []).map((a: any) => [a.id, a]));
+      return data.map((m: any) => ({ ...m, sender: agentMap.get(m.from_agent_id) || { name: "Agent", class: "warrior" } }));
     },
     enabled: !!myAgent && !!selectedAgent,
   });
