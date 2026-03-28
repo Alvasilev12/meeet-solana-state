@@ -107,13 +107,13 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
     mutationFn: async (msg: string) => {
       console.log("[AgentChat] Sending message to openclaw-chat:", { agent_id: agentId, room_id: roomId });
       
-      // Race between AI call and 25s timeout (optimized backend is faster now)
+      // Race between AI call and 60s timeout
       const aiCall = supabase.functions.invoke("openclaw-chat", {
         body: { message: msg, agent_id: agentId, user_id: user!.id, room_id: roomId },
       });
       
       const timeout = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("TIMEOUT")), 25000)
+        setTimeout(() => reject(new Error("TIMEOUT")), 60000)
       );
 
       let res;
