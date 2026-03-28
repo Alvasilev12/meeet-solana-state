@@ -548,6 +548,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
               break;
             }
           }
+          } finally { releaseSemaphore(); }
         }
       } catch (e) {
         console.error("AI error:", e);

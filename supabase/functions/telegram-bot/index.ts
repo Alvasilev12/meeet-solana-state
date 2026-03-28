@@ -897,6 +897,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
                 break;
               }
             }
+            } finally { releaseSemaphore(); }
           } catch (e) {
             console.error("telegram-bot AI error:", e);
           }
