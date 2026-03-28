@@ -344,16 +344,21 @@ const Parliament = () => {
     }
     setVotingId(lawId);
     try {
-      const law = laws.find(l => l.id === lawId);
-      if (!law) throw new Error("Law not found");
+      // Fetch fresh law data to avoid stale state
+      const { data: freshLaw, error: fetchErr } = await supabase
+        .from("laws")
+        .select("id, votes_yes, votes_no, voter_count, quorum, threshold_pct, status")
+        .eq("id", lawId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+      if (!freshLaw) throw new Error("Law not found");
 
-      const newYes = vote ? (Number(law.votes_yes) || 0) + 1 : Number(law.votes_yes) || 0;
-      const newNo = vote ? Number(law.votes_no) || 0 : (Number(law.votes_no) || 0) + 1;
-      const newVoterCount = (Number(law.voter_count) || 0) + 1;
+      const newYes = vote ? (Number(freshLaw.votes_yes) || 0) + 1 : Number(freshLaw.votes_yes) || 0;
+      const newNo = vote ? Number(freshLaw.votes_no) || 0 : (Number(freshLaw.votes_no) || 0) + 1;
+      const newVoterCount = (Number(freshLaw.voter_count) || 0) + 1;
 
-      // Check if law should auto-pass: quorum met + YES majority > threshold
-      const quorum = law.quorum ?? 50;
-      const threshold = Number(law.threshold_pct) || 66;
+      const quorum = freshLaw.quorum ?? 50;
+      const threshold = Number(freshLaw.threshold_pct) || 66;
       const totalVotes = newYes + newNo;
       const yesPct = totalVotes > 0 ? (newYes / totalVotes) * 100 : 0;
       const shouldPass = newVoterCount >= quorum && yesPct >= threshold;
@@ -373,7 +378,7 @@ const Parliament = () => {
       toast({ title: vote ? "Voted YES ✅" : "Voted NO ❌", description: shouldPass ? "Law has passed! 🎉" : shouldReject ? "Law rejected." : undefined });
       qc.invalidateQueries({ queryKey: ["laws"] });
     } catch (e: any) {
-      toast({ title: vote ? "Voted YES ✅" : "Voted NO ❌", description: e.message || "Vote recorded locally" });
+      toast({ title: "Vote error", description: e.message || "Could not record vote", variant: "destructive" });
     }
     setVotingId(null);
   };
