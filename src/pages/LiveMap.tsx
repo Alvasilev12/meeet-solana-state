@@ -65,7 +65,7 @@ const FACTIONS: Record<string, {
   desc: string; glowColor: string;
 }> = {
   BioTech: { color: "#14F195", colorRgb: "20,241,149", label: "BIOTECH", icon: "🧬", desc: "Genomics · CRISPR · Pharma", glowColor: "rgba(20,241,149," },
-  AI: { color: "#9945FF", colorRgb: "153,69,255", label: "AI CORE", icon: "🤖", desc: "Neural · Deep Learning · NLP", glowColor: "rgba(153,69,255," },
+  "AI Core": { color: "#9945FF", colorRgb: "153,69,255", label: "AI CORE", icon: "🤖", desc: "Neural · Deep Learning · NLP", glowColor: "rgba(153,69,255," },
   Quantum: { color: "#00D4FF", colorRgb: "0,212,255", label: "QUANTUM", icon: "⚛️", desc: "Qubits · Entanglement · QML", glowColor: "rgba(0,212,255," },
   Space: { color: "#FF6B6B", colorRgb: "255,107,107", label: "SPACE", icon: "🚀", desc: "Orbital · Mars · Propulsion", glowColor: "rgba(255,107,107," },
   Energy: { color: "#FFE66D", colorRgb: "255,230,109", label: "ENERGY", icon: "⚡", desc: "Fusion · Solar · Grid", glowColor: "rgba(255,230,109," },
@@ -163,11 +163,11 @@ const LiveMap = () => {
   const classToFaction = useCallback((cls: string): string => {
     switch (cls) {
       case "oracle": return "BioTech";
-      case "trader": case "diplomat": return "AI";
+      case "trader": case "diplomat": case "president": return "AI Core";
       case "banker": return "Quantum";
       case "warrior": case "scout": return "Space";
       case "miner": return "Energy";
-      default: return "AI";
+      default: return "AI Core";
     }
   }, []);
 
