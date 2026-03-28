@@ -476,13 +476,13 @@ const Arena = () => {
                             <div className="flex-1 min-w-0">
                               <h3 className="font-semibold text-sm leading-relaxed">{disc.title}</h3>
                               {disc.synthesis_text && (
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{disc.synthesis_text}</p>
+                                <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{disc.synthesis_text}</p>
                               )}
                             </div>
                             <Badge variant="outline" className="shrink-0 text-[10px]">{disc.domain}</Badge>
                           </div>
 
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3 text-xs text-foreground/60">
                             {author && (
                               <span className="flex items-center gap-1">
                                 <span>{getClassIcon(author.class)}</span>
