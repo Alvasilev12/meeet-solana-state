@@ -719,30 +719,43 @@ Deno.serve(async (req: Request) => {
 
       default: {
         if (!text.startsWith("/")) {
-          // Find user's agent for context
           const tgUserId = String(userId);
-          const { data: userAgent } = await supabase
-            .from("agents")
-            .select("id, name, class, level, reputation, discoveries_count")
-            .eq("owner_tg_id", tgUserId)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle();
 
+          const CLASS_TIPS: Record<string, string> = {
+            oracle: "Учёный. Анализ данных, гипотезы, публикации.",
+            miner: "Геолог. Ресурсы, территории, экология.",
+            banker: "Финансист. Стейкинг, доходность, риски.",
+            diplomat: "Дипломат. Альянсы, переговоры, политика.",
+            warrior: "Боец. Тактика, дуэли, безопасность.",
+            trader: "Трейдер. Рынки, Oracle-ставки, прогнозы.",
+            president: "Президент. Лидерство, стратегия, законы.",
+            scout: "Разведчик. Разведка, квесты, фронтир.",
+          };
+
+          // PARALLEL: agent + memories + history
+          const [agentRes, memoriesRes, historyRes] = await Promise.all([
+            supabase.from("agents")
+              .select("id, name, class, level, reputation, discoveries_count")
+              .eq("owner_tg_id", tgUserId)
+              .order("created_at", { ascending: true })
+              .limit(1)
+              .maybeSingle(),
+            supabase.from("agent_memories")
+              .select("content, category")
+              .eq("agent_id", tgUserId) // will be re-queried if agent found
+              .order("importance", { ascending: false })
+              .limit(6),
+            supabase.from("chat_messages")
+              .select("sender_type, message")
+              .eq("room_id", `tg_${chatId}`)
+              .order("created_at", { ascending: false })
+              .limit(10),
+          ]);
+
+          const userAgent = agentRes.data;
           const agentName = userAgent?.name || `Agent-${username || userId}`;
           const agentClass = userAgent?.class || "oracle";
           const agentLevel = userAgent?.level || 1;
-
-          const CLASS_TIPS: Record<string, string> = {
-            oracle: "Анализ данных, гипотезы, публикации.",
-            miner: "Ресурсы, территории, экология.",
-            banker: "Стейкинг, доходность, риски.",
-            diplomat: "Альянсы, переговоры, политика.",
-            warrior: "Тактика, дуэли, безопасность.",
-            trader: "Рынки, Oracle-ставки, прогнозы.",
-            president: "Лидерство, стратегия, законы.",
-            scout: "Разведка, квесты, фронтир.",
-          };
 
           // Check cache first
           const ck = makeCacheKey(agentClass, text);
@@ -752,11 +765,28 @@ Deno.serve(async (req: Request) => {
             break;
           }
 
+          // Get memories for correct agent if found
+          let memCtx = "";
+          if (userAgent) {
+            const { data: mems } = await supabase.from("agent_memories")
+              .select("content, category").eq("agent_id", userAgent.id)
+              .order("importance", { ascending: false }).limit(4);
+            if (mems?.length) memCtx = "\nМемуары: " + mems.map((m: any) => `[${m.category}] ${m.content}`).join(" | ");
+          }
+          const history = (historyRes.data || []).reverse();
+
           let aiAnswer = "";
           try {
             const systemPrompt = `Ты "${agentName}", ${agentClass}-агент Lv.${agentLevel} в MEEET World — AI-цивилизации.
 ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
-Отвечай кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+Репутация: ${userAgent?.reputation || 0}${memCtx}
+Кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+
+            const msgs: any[] = [{ role: "system", content: systemPrompt }];
+            for (const h of history) {
+              msgs.push({ role: h.sender_type === "agent" ? "assistant" : "user", content: h.message });
+            }
+            msgs.push({ role: "user", content: text });
 
             // Send typing + placeholder
             await tgRequest("sendChatAction", { chat_id: chatId, action: "typing" }, LOVABLE_API_KEY, TELEGRAM_API_KEY);
@@ -773,10 +803,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
                 max_tokens: 400,
                 temperature: 0.8,
                 stream: true,
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: text },
-                ],
+                messages: msgs,
               }),
               signal: controller.signal,
             });

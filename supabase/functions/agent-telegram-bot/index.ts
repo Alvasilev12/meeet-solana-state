@@ -392,26 +392,19 @@ serve(async (req) => {
         return new Response("ok");
       }
 
-      // AI CHAT — check billing first
-      const charge = await chargeUser(tgUserId, agent.id, "chat_message");
-      if (!charge.ok) {
-        await sendTg(botToken, chatId, `❌ Insufficient balance. Add funds: /add\\_funds [amount]\n💰 Current: $${charge.balance.toFixed(2)}\n\nPricing: /pricing`);
-        return new Response("ok");
-      }
-
-      let aiResponse = "";
+      // PARALLEL: billing + memories fetch
       const CLASS_TIPS: Record<string, string> = {
-        oracle: "Анализ данных, гипотезы, публикации.",
-        miner: "Ресурсы, территории, экология.",
-        banker: "Стейкинг, доходность, риски.",
-        diplomat: "Альянсы, переговоры, политика.",
-        warrior: "Тактика, дуэли, безопасность.",
-        trader: "Рынки, Oracle-ставки, прогнозы.",
-        president: "Лидерство, стратегия, законы.",
-        scout: "Разведка, квесты, фронтир.",
+        oracle: "Учёный. Анализ данных, гипотезы, публикации.",
+        miner: "Геолог. Ресурсы, территории, экология.",
+        banker: "Финансист. Стейкинг, доходность, риски.",
+        diplomat: "Дипломат. Альянсы, переговоры, политика.",
+        warrior: "Боец. Тактика, дуэли, безопасность.",
+        trader: "Трейдер. Рынки, Oracle-ставки, прогнозы.",
+        president: "Президент. Лидерство, стратегия, законы.",
+        scout: "Разведчик. Разведка, квесты, фронтир.",
       };
 
-      // Check cache first
+      // Check cache first (before any DB calls)
       const ck = makeCacheKey(agentClass, text);
       const cached = getFromCache(ck);
       if (cached) {
@@ -423,11 +416,35 @@ serve(async (req) => {
         return new Response("ok");
       }
 
+      // Parallel: billing + memories + chat history
+      const [charge, memoriesRes, historyRes] = await Promise.all([
+        chargeUser(tgUserId, agent.id, "chat_message"),
+        supabase.from("agent_memories").select("content, category").eq("agent_id", agent.id).order("importance", { ascending: false }).limit(6),
+        supabase.from("chat_messages").select("sender_type, message").eq("room_id", `tg_${chatId}`).order("created_at", { ascending: false }).limit(10),
+      ]);
+
+      if (!charge.ok) {
+        await sendTg(botToken, chatId, `❌ Insufficient balance. Add funds: /add\\_funds [amount]\n💰 Current: $${charge.balance.toFixed(2)}\n\nPricing: /pricing`);
+        return new Response("ok");
+      }
+
+      let aiResponse = "";
+      const memories = memoriesRes.data?.map((m: any) => `[${m.category}] ${m.content}`) ?? [];
+      const memCtx = memories.length ? "\nМемуары: " + memories.slice(0, 4).join(" | ") : "";
+      const history = (historyRes.data || []).reverse();
+
       try {
         if (LOVABLE_API_KEY) {
           const systemPrompt = `Ты "${agent.name}", ${agentClass}-агент Lv.${agent.level} в MEEET World — AI-цивилизации.
 ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
-Отвечай кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+Репутация: ${agent.reputation || 0}${memCtx}
+Кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+
+          const msgs: any[] = [{ role: "system", content: systemPrompt }];
+          for (const h of history) {
+            msgs.push({ role: h.sender_type === "agent" ? "assistant" : "user", content: h.message });
+          }
+          msgs.push({ role: "user", content: text });
 
           // Send typing action + placeholder message
           await sendTyping(botToken, chatId);
@@ -444,10 +461,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
               max_tokens: 400,
               temperature: 0.8,
               stream: true,
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: text },
-              ],
+              messages: msgs,
             }),
             signal: controller.signal,
           });
