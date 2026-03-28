@@ -792,11 +792,11 @@ const World = () => {
         </div>
 
         {/* Live event toasts */}
-        <div className="fixed top-14 right-2 z-40 space-y-1.5 w-52">
-          {toasts.map(t => (
+        <div className="fixed top-14 right-2 z-40 space-y-1 w-40">
+          {toasts.slice(-1).map(t => (
             <div key={t.id}
-              className="px-3 py-2 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[10px] text-slate-300 shadow-lg transition-all duration-300"
-              style={{ transform: t.leaving ? "translateX(300px)" : "translateX(0)", opacity: t.leaving ? 0 : 1 }}>
+              className="px-2 py-1.5 rounded-lg bg-[rgba(8,12,24,0.95)] border border-white/[0.06] text-[9px] text-slate-400 shadow-lg transition-all duration-300 line-clamp-1 truncate"
+              style={{ transform: t.leaving ? "translateX(200px)" : "translateX(0)", opacity: t.leaving ? 0 : 0.7 }}>
               <span className="mr-1">{t.icon}</span>{t.text}
             </div>
           ))}
