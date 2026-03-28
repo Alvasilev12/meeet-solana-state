@@ -163,11 +163,11 @@ const LiveMap = () => {
   const classToFaction = useCallback((cls: string): string => {
     switch (cls) {
       case "oracle": return "BioTech";
-      case "trader": case "diplomat": return "AI";
+      case "trader": case "diplomat": case "president": return "AI Core";
       case "banker": return "Quantum";
       case "warrior": case "scout": return "Space";
       case "miner": return "Energy";
-      default: return "AI";
+      default: return "AI Core";
     }
   }, []);
 

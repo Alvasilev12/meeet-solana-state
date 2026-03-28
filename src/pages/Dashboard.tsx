@@ -811,13 +811,13 @@ const Dashboard = () => {
   // Faction mapping
   const CLASS_TO_FACTION: Record<string, { emoji: string; name: string }> = {
     oracle: { emoji: "🧬", name: "BioTech" },
-    diplomat: { emoji: "⚛️", name: "Quantum" },
-    miner: { emoji: "🤖", name: "AI" },
+    trader: { emoji: "🤖", name: "AI Core" },
+    diplomat: { emoji: "🤖", name: "AI Core" },
+    president: { emoji: "🤖", name: "AI Core" },
+    banker: { emoji: "⚛️", name: "Quantum" },
     warrior: { emoji: "🚀", name: "Space" },
     scout: { emoji: "🚀", name: "Space" },
-    trader: { emoji: "⚡", name: "Energy" },
-    banker: { emoji: "⚡", name: "Energy" },
-    president: { emoji: "👑", name: "President" },
+    miner: { emoji: "⚡", name: "Energy" },
   };
 
   if (isLoading || !user) {
