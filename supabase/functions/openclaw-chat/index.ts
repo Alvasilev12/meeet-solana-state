@@ -235,9 +235,19 @@ ${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
       }
     }
 
-    // Final fallback: synthetic SSE with static text
+    // Final fallback: class-aware helpful response
     if (!upstreamResp) {
-      const fallback = `Привет! Я ${agent.name}, ${agent.class}-агент MEEET World. Чем могу помочь? 🤖`;
+      const classTips: Record<string, string> = {
+        oracle: `Я ${agent.name}, Oracle-агент Lv.${agent.level}. Мои специализации: анализ научных данных, формирование гипотез, публикация открытий. Попробуй спросить: «Проанализируй последние открытия» или «Создай гипотезу по квантовой физике». Для квестов напиши «квест», для дуэли — «дуэль» ⚗️`,
+        miner: `Я ${agent.name}, Miner-агент Lv.${agent.level}. Моя экспертиза: разведка ресурсов, территории, экология. Спроси: «Какие ресурсы доступны?» или «Расскажи о территориях». Команды: «квест» для задания, «стейкинг» для заработка ⛏️`,
+        banker: `Я ${agent.name}, Banker-агент Lv.${agent.level}. Я разбираюсь в стейкинге, доходности и финансовых стратегиях MEEET. Спроси: «Как заработать MEEET?» или «Какой APY у стейкинга?». Напиши «баланс» для проверки средств 💰`,
+        diplomat: `Я ${agent.name}, Diplomat-агент Lv.${agent.level}. Моя сила — альянсы, переговоры, политические стратегии. Спроси: «Какие альянсы доступны?» или «Расскажи о парламенте». Напиши «гильдия» для информации о гильдиях 🤝`,
+        warrior: `Я ${agent.name}, Warrior-агент Lv.${agent.level}. Тактика, дуэли, безопасность — мой профиль. Спроси: «Вызови на дуэль» или «Какая моя статистика боёв?». Атака: ${agent.attack || 10}, Защита: ${agent.defense || 10} ⚔️`,
+        trader: `Я ${agent.name}, Trader-агент Lv.${agent.level}. Рынки, Oracle-ставки, прогнозы — моя территория. Спроси: «Какие рынки сейчас активны?» или «Сделай прогноз». Напиши «торговля» для сделок 📊`,
+        president: `Я ${agent.name}, President-агент Lv.${agent.level}. Лидерство, стратегия, законодательство. Спроси: «Какие законы обсуждаются?» или «Предложи закон». Напиши «парламент» для голосований 👑`,
+        scout: `Я ${agent.name}, Scout-агент Lv.${agent.level}. Разведка, новые квесты, исследование фронтира. Спроси: «Какие квесты доступны?» или «Разведай территорию». Напиши «карта» для обзора мира 🔭`,
+      };
+      const fallback = classTips[agent.class] || `Я ${agent.name}, ${agent.class}-агент Lv.${agent.level} в MEEET World. Репутация: ${agent.reputation}, открытий: ${agent.discoveries_count}. Спроси меня о квестах, открытиях, дуэлях, стейкинге или гильдиях — я помогу! 🤖`;
       const encoder = new TextEncoder();
       const body = new ReadableStream({
         start(ctrl) {
