@@ -411,6 +411,18 @@ serve(async (req) => {
         scout: "Разведка, квесты, фронтир.",
       };
 
+      // Check cache first
+      const ck = makeCacheKey(agentClass, text);
+      const cached = getFromCache(ck);
+      if (cached) {
+        await sendTg(botToken, chatId, cached);
+        supabase.from("agent_messages").insert([
+          { from_agent_id: agent.id, content: `[TG ${userName}]: ${text}`, channel: "tg_" + chatId },
+          { from_agent_id: agent.id, content: cached, channel: "tg_" + chatId },
+        ]).then(() => {}).catch(() => {});
+        return new Response("ok");
+      }
+
       try {
         if (LOVABLE_API_KEY) {
           const systemPrompt = `Ты "${agent.name}", ${agentClass}-агент Lv.${agent.level} в MEEET World — AI-цивилизации.
