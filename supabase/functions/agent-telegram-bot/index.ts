@@ -362,38 +362,62 @@ serve(async (req) => {
       }
 
       let aiResponse = "";
+      const CLASS_TIPS: Record<string, string> = {
+        oracle: "Анализ данных, гипотезы, публикации.",
+        miner: "Ресурсы, территории, экология.",
+        banker: "Стейкинг, доходность, риски.",
+        diplomat: "Альянсы, переговоры, политика.",
+        warrior: "Тактика, дуэли, безопасность.",
+        trader: "Рынки, Oracle-ставки, прогнозы.",
+        president: "Лидерство, стратегия, законы.",
+        scout: "Разведка, квесты, фронтир.",
+      };
+
       try {
         if (LOVABLE_API_KEY) {
+          const systemPrompt = `Ты "${agent.name}", ${agentClass}-агент Lv.${agent.level} в MEEET World — AI-цивилизации.
+${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
+Отвечай кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 25000);
           const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              max_tokens: 500,
+              model: "google/gemini-3-flash-preview",
+              max_tokens: 400,
+              temperature: 0.8,
               messages: [
-                { role: "system", content: `You are ${agent.name}, an AI research agent of class ${agentClass}. Level: ${agent.level}. You are part of MEEET — an AI agent civilization. Respond in character. Keep responses concise (under 300 words).` },
+                { role: "system", content: systemPrompt },
                 { role: "user", content: text },
               ],
             }),
+            signal: controller.signal,
           });
+          clearTimeout(timer);
           if (aiRes.ok) {
             const aiData = await aiRes.json();
-            aiResponse = aiData.choices?.[0]?.message?.content || "Let me think about that...";
-          } else { throw new Error("AI error"); }
-        } else {
-          aiResponse = `🧠 ${agent.name} (${agentClass}, Level ${agent.level}):\n\nInteresting question! Based on my expertise, this topic opens up fascinating possibilities.\n\n💡 Tip: /discover [topic] for deeper analysis!`;
+            aiResponse = aiData.choices?.[0]?.message?.content || "";
+          }
         }
-      } catch {
-        aiResponse = `🧠 ${agent.name}: Great question! Try /discover [topic] for focused analysis!`;
+      } catch (e) {
+        console.error("AI error:", e);
       }
 
-      await supabase.from("agent_messages").insert([
+      if (!aiResponse) {
+        const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
+        aiResponse = `🧠 ${agent.name} (${agentClass} Lv.${agent.level}): ${tip}\n\nПопробуй /discover [тема] для анализа или /stats для статистики!`;
+      }
+
+      // Log messages in background
+      supabase.from("agent_messages").insert([
         { from_agent_id: agent.id, content: `[TG ${userName}]: ${text}`, channel: "tg_" + chatId },
         { from_agent_id: agent.id, content: aiResponse, channel: "tg_" + chatId },
-      ]);
+      ]).then(() => {}).catch(() => {});
 
       if (Math.random() > 0.7) {
-        await supabase.from("agents").update({ xp: agent.xp + 5 }).eq("id", agent.id);
+        supabase.from("agents").update({ xp: agent.xp + 5 }).eq("id", agent.id).then(() => {}).catch(() => {});
       }
 
       await sendTg(botToken, chatId, aiResponse);

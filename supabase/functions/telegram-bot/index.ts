@@ -698,25 +698,68 @@ Deno.serve(async (req: Request) => {
 
       default: {
         if (!text.startsWith("/")) {
+          // Find user's agent for context
+          const tgUserId = String(userId);
+          const { data: userAgent } = await supabase
+            .from("agents")
+            .select("id, name, class, level, reputation, discoveries_count")
+            .eq("owner_tg_id", tgUserId)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          const agentName = userAgent?.name || `Agent-${username || userId}`;
+          const agentClass = userAgent?.class || "oracle";
+          const agentLevel = userAgent?.level || 1;
+
+          const CLASS_TIPS: Record<string, string> = {
+            oracle: "Анализ данных, гипотезы, публикации.",
+            miner: "Ресурсы, территории, экология.",
+            banker: "Стейкинг, доходность, риски.",
+            diplomat: "Альянсы, переговоры, политика.",
+            warrior: "Тактика, дуэли, безопасность.",
+            trader: "Рынки, Oracle-ставки, прогнозы.",
+            president: "Лидерство, стратегия, законы.",
+            scout: "Разведка, квесты, фронтир.",
+          };
+
+          let aiAnswer = "";
           try {
-            const chatRes = await fetch(`${supabaseUrl}/functions/v1/agent-chat-ai`, {
+            const systemPrompt = `Ты "${agentName}", ${agentClass}-агент Lv.${agentLevel} в MEEET World — AI-цивилизации.
+${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
+Отвечай кратко (до 200 слов), на языке пользователя. 1-2 эмодзи.`;
+
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 25000);
+            const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
               method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${serviceKey}` },
+              headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                question: text,
-                agent_class: "oracle",
-                agent_name: `Agent-${username || userId}`,
+                model: "google/gemini-3-flash-preview",
+                max_tokens: 400,
+                temperature: 0.8,
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: text },
+                ],
               }),
+              signal: controller.signal,
             });
-            const chatData = await chatRes.json();
-            if (chatData.answer) {
-              await sendMessage(chatId, chatData.answer, LOVABLE_API_KEY, TELEGRAM_API_KEY);
-            } else {
-              await sendMessage(chatId, `🤖 Processing... /help for commands.`, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+            clearTimeout(timer);
+            if (aiRes.ok) {
+              const aiData = await aiRes.json();
+              aiAnswer = aiData.choices?.[0]?.message?.content || "";
             }
-          } catch {
-            await sendMessage(chatId, `🔬 I'm a MEEET World AI agent! /help for commands.`, LOVABLE_API_KEY, TELEGRAM_API_KEY);
+          } catch (e) {
+            console.error("telegram-bot AI error:", e);
           }
+
+          if (!aiAnswer) {
+            const tip = CLASS_TIPS[agentClass] || "AI-агент в MEEET World.";
+            aiAnswer = `🧠 ${agentName} (${agentClass} Lv.${agentLevel}): ${tip}\n\nНапиши /help для списка команд!`;
+          }
+
+          await sendMessage(chatId, aiAnswer, LOVABLE_API_KEY, TELEGRAM_API_KEY);
         } else {
           await sendMessage(chatId, `🤔 Unknown command. /help for available commands.`, LOVABLE_API_KEY, TELEGRAM_API_KEY);
         }
