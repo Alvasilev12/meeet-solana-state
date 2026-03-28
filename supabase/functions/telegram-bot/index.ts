@@ -824,6 +824,7 @@ ${CLASS_TIPS[agentClass] || CLASS_TIPS.oracle}
 
               if (fullText) {
                 aiAnswer = fullText;
+                putCache(ck, aiAnswer);
                 if (placeholderMsgId) {
                   await tgRequest("editMessageText", {
                     chat_id: chatId, message_id: placeholderMsgId,
