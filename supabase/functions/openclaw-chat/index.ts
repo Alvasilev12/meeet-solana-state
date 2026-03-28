@@ -142,6 +142,29 @@ ${CLASS_EXPERTISE[agent.class] || CLASS_EXPERTISE.oracle}
       agent_id, sender_type: "user", sender_id: user_id, message, room_id: chatRoomId,
     }).then(() => {}).catch(() => {});
 
+    // --- CHECK CACHE for common questions ---
+    const ck = cacheKey(agent.class, message);
+    const cached = getCached(ck);
+    if (cached) {
+      // Return cached answer as SSE stream + persist
+      const encoder = new TextEncoder();
+      const body = new ReadableStream({
+        start(ctrl) {
+          const chunk = JSON.stringify({ choices: [{ delta: { content: cached }, finish_reason: "stop" }] });
+          ctrl.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+          ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
+          ctrl.close();
+        },
+      });
+      sc.from("chat_messages").insert({
+        agent_id, sender_type: "agent", sender_id: agent_id, message: cached, room_id: chatRoomId,
+      }).then(() => {}).catch(() => {});
+      schedulePostTasks(sc, agent_id, user_id, message, cached, chatRoomId);
+      return new Response(body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive", "X-Agent-Name": encodeURIComponent(agent.name), "X-Agent-Class": agent.class, "X-Room-Id": chatRoomId, "X-Cache": "hit" },
+      });
+    }
+
     // --- STREAMING RESPONSE ---
     const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENCLAW_URL = Deno.env.get("OPENCLAW_GATEWAY_URL")?.trim();
