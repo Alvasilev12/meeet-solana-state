@@ -26,6 +26,22 @@ function putCache(key: string, answer: string) {
   tgCache.set(key, { answer, ts: Date.now() });
 }
 
+// --- Semaphore: max 4 concurrent AI calls ---
+const MAX_CONCURRENT = 4;
+let activeCalls = 0;
+const waitQueue: (() => void)[] = [];
+
+async function acquireSemaphore(): Promise<void> {
+  if (activeCalls < MAX_CONCURRENT) { activeCalls++; return; }
+  await new Promise<void>(resolve => waitQueue.push(resolve));
+  activeCalls++;
+}
+
+function releaseSemaphore() {
+  activeCalls--;
+  if (waitQueue.length > 0) { const next = waitQueue.shift(); next?.(); }
+}
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
 const WEBAPP_URL = "https://meeet.world/tg";
 const GUIDE_URL = "https://meeet-solana-state.lovable.app/guide";
