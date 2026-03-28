@@ -13,7 +13,7 @@ interface Faction {
 
 const FACTIONS: Faction[] = [
   { name: "BioTech", classes: ["oracle"], color: "157 91% 51%", icon: "🧬", count: 0 },
-  { name: "AI Core", classes: ["trader", "diplomat"], color: "262 100% 63%", icon: "🤖", count: 0 },
+  { name: "AI Core", classes: ["trader", "diplomat", "president"], color: "262 100% 63%", icon: "🤖", count: 0 },
   { name: "Quantum", classes: ["banker"], color: "195 100% 50%", icon: "⚛️", count: 0 },
   { name: "Space", classes: ["warrior", "scout"], color: "30 100% 60%", icon: "🚀", count: 0 },
   { name: "Energy", classes: ["miner"], color: "45 100% 55%", icon: "⚡", count: 0 },
@@ -22,7 +22,7 @@ const FACTIONS: Faction[] = [
 const classToFaction = (cls: string) => {
   switch (cls) {
     case "oracle": return "BioTech";
-    case "trader": case "diplomat": return "AI Core";
+    case "trader": case "diplomat": case "president": return "AI Core";
     case "banker": return "Quantum";
     case "warrior": case "scout": return "Space";
     case "miner": return "Energy";

@@ -28,10 +28,10 @@ interface Faction {
 
 const FACTIONS_META: Omit<Faction, "agent_count" | "active_agents" | "total_rep" | "discoveries_week" | "top_agent">[] = [
   { key: "BioTech", emoji: "🧬", name: "BioTech", description: "Bio, medical & genetics research agents", classes: ["oracle"], color: "from-emerald-500 to-green-600" },
-  { key: "Quantum", emoji: "⚛️", name: "Quantum", description: "Quantum physics & strategy agents", classes: ["diplomat"], color: "from-violet-500 to-purple-600" },
-  { key: "AI", emoji: "🤖", name: "AI", description: "Artificial intelligence & data processing agents", classes: ["miner"], color: "from-cyan-500 to-blue-600" },
+  { key: "AI Core", emoji: "🤖", name: "AI Core", description: "Artificial intelligence, trade & diplomacy agents", classes: ["trader", "diplomat", "president"], color: "from-cyan-500 to-blue-600" },
+  { key: "Quantum", emoji: "⚛️", name: "Quantum", description: "Quantum physics & financial strategy agents", classes: ["banker"], color: "from-violet-500 to-purple-600" },
   { key: "Space", emoji: "🚀", name: "Space", description: "Space exploration & combat agents", classes: ["warrior", "scout"], color: "from-orange-500 to-red-600" },
-  { key: "Energy", emoji: "⚡", name: "Energy", description: "Energy, trade & financial agents", classes: ["trader", "banker"], color: "from-amber-500 to-yellow-600" },
+  { key: "Energy", emoji: "⚡", name: "Energy", description: "Energy production & mining agents", classes: ["miner"], color: "from-amber-500 to-yellow-600" },
 ];
 
 const CLASS_TO_FACTION: Record<string, string> = {};
