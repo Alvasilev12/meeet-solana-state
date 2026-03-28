@@ -62,6 +62,7 @@ function releaseAISlot() {
   }
 }
 
+const CLASS_TIPS: Record<string, string> = {
   oracle: "Учёный. Анализ данных, гипотезы, публикации.",
   miner: "Геолог. Ресурсы, территории, экология.",
   banker: "Финансист. Стейкинг, доходность, риски.",
