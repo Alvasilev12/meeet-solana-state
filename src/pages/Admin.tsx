@@ -317,6 +317,8 @@ function TradingPanel() {
   const [cycles, setCycles] = useState(0);
   const [totalSol, setTotalSol] = useState(0);
   const [totalMeeet, setTotalMeeet] = useState(0);
+  const [burnCycleLoading, setBurnCycleLoading] = useState(false);
+  const [burnCycleResult, setBurnCycleResult] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: tradeLogs, refetch: refetchLogs } = useQuery({
@@ -437,6 +439,54 @@ function TradingPanel() {
                   <p className="text-sm font-mono font-bold text-foreground">{s.v}</p>
                 </div>
               ))}
+            </div>
+          )}
+      </CardContent>
+      </Card>
+      <Card className="glass-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-display flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-400" /> Burn Scheduler
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">Manually trigger the auto-burn cycle. Burns 20% of all unprocessed agent action fees and logs to burn_log.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-orange-400 border-orange-500/30 hover:bg-orange-500/10"
+            disabled={burnCycleLoading}
+            onClick={async () => {
+              setBurnCycleLoading(true);
+              setBurnCycleResult(null);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error("Not authenticated");
+                const pid = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                const res = await fetch(`https://${pid}.supabase.co/functions/v1/auto-burn-scheduler`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+                  body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Burn cycle failed");
+                setBurnCycleResult(data);
+                toast.success(`🔥 Burn cycle: ${data.processed} actions, ${data.total_burned_usd?.toFixed(4)} USD burned`);
+              } catch (e: any) {
+                toast.error(e.message);
+              } finally {
+                setBurnCycleLoading(false);
+              }
+            }}
+          >
+            <Flame className="w-4 h-4 mr-1" /> {burnCycleLoading ? "Burning..." : "Execute Burn Cycle"}
+          </Button>
+          {burnCycleResult && (
+            <div className="glass-card p-3 rounded-lg border border-orange-500/30 bg-orange-500/5 text-xs font-mono space-y-1">
+              <p>✅ Processed: <span className="text-orange-400">{burnCycleResult.processed}</span> actions</p>
+              <p>🔥 Burned: <span className="text-orange-400">${burnCycleResult.total_burned_usd?.toFixed(6)}</span></p>
+              <p>🏛️ Treasury: <span className="text-primary">{burnCycleResult.treasury_balance?.toLocaleString()}</span> MEEET</p>
+              <p>📊 Total burned: <span className="text-orange-400">{burnCycleResult.treasury_total_burned?.toLocaleString()}</span></p>
             </div>
           )}
         </CardContent>
