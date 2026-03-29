@@ -73,6 +73,91 @@ function AnimatedCounter({ target, prefix = "", suffix = "" }: { target: number;
   return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 }
 
+function LiveBurnFeed() {
+  const [burns, setBurns] = useState<any[]>([]);
+  const [flashId, setFlashId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase
+        .from("burn_log")
+        .select("id, amount, reason, created_at, agent_id, details")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setBurns(data ?? []);
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-burn-feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "burn_log" },
+        (payload) => {
+          const newBurn = payload.new as any;
+          setFlashId(newBurn.id);
+          setBurns((prev) => [newBurn, ...prev].slice(0, 10));
+          setTimeout(() => setFlashId(null), 2000);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const formatReason = (r: string) => r?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Burn";
+  const timeAgo = (ts: string) => {
+    const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  if (burns.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-8">No burns recorded yet</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {burns.map((b, i) => {
+        const isNew = b.id === flashId;
+        const actionType = b.details?.action_type || b.reason;
+        return (
+          <div
+            key={b.id || i}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-500 ${
+              isNew
+                ? "border-orange-400/60 bg-orange-500/10 shadow-lg shadow-orange-500/20 animate-fade-in"
+                : "border-border/50 bg-muted/20 hover:bg-muted/40"
+            }`}
+          >
+            <div className={`relative flex-shrink-0 ${isNew ? "animate-bounce" : ""}`}>
+              <Flame className={`w-5 h-5 ${isNew ? "text-orange-300" : "text-orange-400/60"}`} />
+              {isNew && <Flame className="w-5 h-5 text-orange-400 absolute inset-0 animate-ping opacity-40" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-orange-400 font-mono">
+                  {Number(b.amount).toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                </span>
+                <span className="text-xs text-muted-foreground">MEEET</span>
+                <Badge variant="outline" className="text-[9px] border-border/50 text-muted-foreground">
+                  {formatReason(actionType)}
+                </Badge>
+              </div>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono flex-shrink-0">
+              {timeAgo(b.created_at)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const Token = () => {
   const { price, isLoading: priceLoading } = useMeeetPrice();
   const [stakeAmount, setStakeAmount] = useState(1000);
@@ -377,6 +462,23 @@ const Token = () => {
                 </Button>
               </div>
             </div>
+          </section>
+
+          {/* Live Burn Feed */}
+          <section className="glass-card p-6 rounded-2xl border border-orange-500/20">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative">
+                <Flame className="w-6 h-6 text-orange-400" />
+                <Flame className="w-6 h-6 text-orange-400 absolute inset-0 animate-ping opacity-30" />
+              </div>
+              <h2 className="text-2xl font-display font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                Live Burn Feed
+              </h2>
+              <Badge variant="outline" className="border-orange-500/30 text-orange-400 text-[10px] animate-pulse">
+                LIVE
+              </Badge>
+            </div>
+            <LiveBurnFeed />
           </section>
         </div>
       </main>
