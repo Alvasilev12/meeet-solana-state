@@ -2,6 +2,7 @@ import { forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Sword, Handshake, Mail, Star, Coins, MapPin, User } from "lucide-react";
 import { CLASS_COLORS, CLASS_ICONS, type Agent } from "../WorldMap";
+import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 import { Button } from "../ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
