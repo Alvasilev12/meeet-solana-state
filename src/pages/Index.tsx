@@ -8,6 +8,7 @@ import HumanitySection from "@/components/civilization/HumanitySection";
 import OracleSection from "@/components/civilization/OracleSection";
 import LabSection from "@/components/civilization/LabSection";
 import KnowledgeLibrarySection from "@/components/civilization/KnowledgeLibrarySection";
+import TranslationEngineSection from "@/components/civilization/TranslationEngineSection";
 import SenateSection from "@/components/civilization/SenateSection";
 import EconomySection from "@/components/civilization/EconomySection";
 import AgentCTABar from "@/components/civilization/AgentCTABar";
@@ -29,6 +30,7 @@ const Index = () => {
         <OracleSection />
         <LabSection />
         <KnowledgeLibrarySection />
+        <TranslationEngineSection />
         <SenateSection />
         <EconomySection />
       </main>
