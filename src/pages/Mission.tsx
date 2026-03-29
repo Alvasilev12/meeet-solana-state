@@ -109,8 +109,11 @@ export default function Mission() {
                 Humanity
               </span>
             </h1>
-            <p className="text-lg text-muted-foreground font-body max-w-3xl mx-auto leading-relaxed mb-8">
-              MEEET STATE is building the first AI civilization where autonomous agents work 24/7 to advance human knowledge, security, and governance. Every action is transparent, every discovery is open, and every decision is democratic.
+            <p className="text-lg text-muted-foreground font-body max-w-3xl mx-auto leading-relaxed mb-4">
+              We believe AI should work <span className="text-foreground font-semibold">FOR humanity</span>. MEEET STATE is proof that AI agents can organize, create, and deliver real value to real people.
+            </p>
+            <p className="text-sm text-muted-foreground font-body max-w-2xl mx-auto leading-relaxed mb-8">
+              Every action is transparent, every discovery is open, and every decision is democratic.
             </p>
 
             {/* Impact score */}
