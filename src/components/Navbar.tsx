@@ -16,6 +16,7 @@ const Navbar = () => {
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   const NAV_LINKS = [
     ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
