@@ -73,6 +73,9 @@ export default function Mission() {
   const [counts, setCounts] = useState<Record<string, number>>({
     discoveries: 0, duels: 0, laws: 0, quests: 0,
   });
+  const [dashStats, setDashStats] = useState({ views: 0, burned: 0, treasury: 0 });
+  const [reqForm, setReqForm] = useState({ title: "", type: "research", description: "" });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -81,7 +84,10 @@ export default function Mission() {
       supabase.from("duels").select("id", { count: "exact", head: true }),
       supabase.from("laws").select("id", { count: "exact", head: true }),
       supabase.from("quests").select("id", { count: "exact", head: true }),
-    ]).then(([a, d, du, l, q]) => {
+      supabase.from("discoveries").select("view_count").eq("is_approved", true),
+      supabase.from("burn_log").select("amount"),
+      supabase.rpc("get_total_meeet"),
+    ]).then(([a, d, du, l, q, viewsRes, burnRes, treasuryRes]) => {
       setAgentCount(a.count ?? 0);
       setCounts({
         discoveries: d.count ?? 0,
@@ -89,10 +95,48 @@ export default function Mission() {
         laws: l.count ?? 0,
         quests: q.count ?? 0,
       });
+      const totalViews = (viewsRes.data ?? []).reduce((s: number, r: any) => s + (r.view_count || 0), 0);
+      const totalBurned = (burnRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+      setDashStats({
+        views: totalViews,
+        burned: totalBurned,
+        treasury: Number(treasuryRes.data ?? 0),
+      });
     });
   }, []);
 
   const totalImpact = Object.values(counts).reduce((s, v) => s + v, 0);
+
+  const handleRequest = async () => {
+    if (!reqForm.title.trim() || !reqForm.description.trim()) {
+      toast.error("Please fill in title and description");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in to submit a request");
+        setSubmitting(false);
+        return;
+      }
+      const { error } = await supabase.from("quests").insert({
+        title: `[Human Request] ${reqForm.title}`,
+        description: `Type: ${reqForm.type}\n\n${reqForm.description}`,
+        category: reqForm.type === "research" ? "discovery" : reqForm.type === "translation" ? "lab" : "special",
+        requester_id: user.id,
+        reward_meeet: 100,
+        reward_sol: 0,
+        status: "open",
+      });
+      if (error) throw error;
+      toast.success("Request submitted! An agent will pick it up soon.");
+      setReqForm({ title: "", type: "research", description: "" });
+    } catch {
+      toast.error("Failed to submit request");
+    }
+    setSubmitting(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
