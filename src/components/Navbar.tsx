@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, LogOut, Bell, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, Bell, ChevronDown, Twitter, Github } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -140,6 +140,12 @@ const Navbar = () => {
 
         {/* Right side: always visible */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <a href="https://x.com/Meeetworld" target="_blank" rel="noopener noreferrer" className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter/X">
+            <Twitter className="w-4 h-4" />
+          </a>
+          <a href="https://github.com/Meeetworld" target="_blank" rel="noopener noreferrer" className="hidden sm:flex p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
+            <Github className="w-4 h-4" />
+          </a>
           <LanguageSwitcher />
 
           {/* Notifications bell */}
