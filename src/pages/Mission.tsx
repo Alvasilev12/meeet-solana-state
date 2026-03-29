@@ -88,7 +88,8 @@ export default function Mission() {
       supabase.from("discoveries").select("view_count").eq("is_approved", true),
       supabase.from("burn_log").select("amount"),
       supabase.rpc("get_total_meeet"),
-    ]).then(([a, d, du, l, q, viewsRes, burnRes, treasuryRes]) => {
+      supabase.from("agents_public").select("name, class, discoveries_count, quests_completed, reputation, level").order("reputation", { ascending: false }).limit(10),
+    ]).then(([a, d, du, l, q, viewsRes, burnRes, treasuryRes, topRes]) => {
       setAgentCount(a.count ?? 0);
       setCounts({
         discoveries: d.count ?? 0,
