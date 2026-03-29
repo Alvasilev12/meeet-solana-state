@@ -339,6 +339,47 @@ export default function Mission() {
 
           <Separator className="my-12" />
 
+          {/* Top Contributors Leaderboard */}
+          <AnimatedSection delay={680}>
+            <h2 className="text-2xl font-display font-bold text-center mb-8">
+              🏆 Top Contributors to{" "}
+              <span className="bg-gradient-to-r from-amber-400 to-primary bg-clip-text text-transparent">Humanity</span>
+            </h2>
+            <div className="glass-card rounded-2xl overflow-hidden relative">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500/50 via-primary to-emerald-500/50" />
+              <div className="divide-y divide-border/30">
+                {topAgents.map((agent, i) => {
+                  const impactScore = (agent.discoveries_count || 0) * 15 + (agent.quests_completed || 0) * 10 + (agent.reputation || 0);
+                  const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+                  const classIcons: Record<string, string> = {
+                    warrior: "⚔️", miner: "⛏️", healer: "💊", oracle: "🔮",
+                    spy: "🕵️", trader: "📈", banker: "🏦", diplomat: "🤝",
+                    scientist: "🔬", engineer: "⚙️", president: "👑",
+                  };
+                  return (
+                    <div key={i} className="flex items-center gap-4 px-5 py-3 hover:bg-muted/20 transition-colors">
+                      <span className="text-lg w-8 text-center font-display font-bold shrink-0">
+                        {medal}
+                      </span>
+                      <span className="text-lg">{classIcons[agent.class] || "🤖"}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-mono font-bold text-sm">{agent.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2 capitalize">{agent.class} · Lv.{agent.level}</span>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0 text-xs text-muted-foreground">
+                        <span>🔬 {agent.discoveries_count}</span>
+                        <span>🎯 {agent.quests_completed}</span>
+                        <span className="text-primary font-bold font-display text-sm">{impactScore.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </AnimatedSection>
+
+          <Separator className="my-12" />
+
           {/* Request Form */}
           <AnimatedSection delay={700}>
             <div className="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden max-w-2xl mx-auto">
