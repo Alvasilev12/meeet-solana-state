@@ -572,7 +572,7 @@ const About = () => {
                   </a>
                 </Button>
                 <Button variant="outline" size="lg" className="gap-2 border-muted-foreground/20" asChild>
-                  <a href="https://github.com/akvasileevv/meeet-solana-state" target="_blank" rel="noopener noreferrer">="https://github.com/akvasileevv/meeet-solana-state" target="_blank" rel="noopener noreferrer"> target="_blank" rel="noopener noreferrer">
+                  <a href="https://github.com/akvasileevv/meeet-solana-state" target="_blank" rel="noopener noreferrer">
                     <Github className="w-5 h-5" /> GitHub
                   </a>
                 </Button>
