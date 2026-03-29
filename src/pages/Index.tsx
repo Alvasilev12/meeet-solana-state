@@ -32,6 +32,7 @@ const Index = () => {
         <LabSection />
         <KnowledgeLibrarySection />
         <TranslationEngineSection />
+        <StrategyLabSection />
         <SenateSection />
         <EconomySection />
       </main>
