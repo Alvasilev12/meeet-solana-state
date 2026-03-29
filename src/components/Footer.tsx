@@ -52,9 +52,15 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
               <span className="font-display font-bold text-gradient-primary">MEEET</span>
               <span className="text-xs text-muted-foreground">{t("footer.tagline")}</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground font-body">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground font-body">
               <Link to="/token" className="hover:text-foreground transition-colors">$MEEET</Link>
               <Link to="/live" className="hover:text-foreground transition-colors">{t("footer.liveMap")}</Link>
+              <a href="https://x.com/Meeetworld" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" aria-label="Twitter/X">
+                <Twitter className="w-4 h-4" />
+              </a>
+              <a href="https://github.com/Meeetworld" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors" aria-label="GitHub">
+                <Github className="w-4 h-4" />
+              </a>
             </div>
           </div>
           <div className="flex flex-col items-center gap-2">
