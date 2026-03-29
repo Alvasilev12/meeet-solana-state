@@ -142,8 +142,19 @@ Deno.serve(async (req) => {
         description: `Claim tax (5%) from ${agent.name}: ${taxAmount} $MEEET (${burnAmount} burned)`,
       });
     }
+    
+    // 4a. Record burn in burn_log
+    if (burnAmount > 0) {
+      await serviceClient.from("burn_log").insert({
+        amount: burnAmount,
+        reason: "claim_tax_burn",
+        agent_id,
+        user_id: user.id,
+        details: { gross: claimAmount, tax: taxAmount, burn_pct: BURN_RATE * 100, net: netAmount },
+      });
+    }
 
-    // 4. Update treasury
+    // 5. Update treasury
     if (treasuryAmount > 0 || burnAmount > 0) {
       const { data: treasury } = await serviceClient
         .from("state_treasury")
