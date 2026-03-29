@@ -19,6 +19,7 @@ import AgentChat from "@/components/AgentChat";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 
 const CLASS_EMOJI: Record<string, string> = {
   warrior: "⚔️", trader: "💰", oracle: "🔮",
