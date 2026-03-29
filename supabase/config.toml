@@ -291,3 +291,6 @@ verify_jwt = false
 [functions.auto-burn-scheduler]
 verify_jwt = false
 schedule = "0 */6 * * *"
+
+[functions.get-meeet-price]
+verify_jwt = false
