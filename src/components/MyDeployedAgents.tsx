@@ -165,9 +165,11 @@ export default function MyDeployedAgents() {
               <div key={da.id} className="glass-card rounded-xl p-4 space-y-3">
                 {/* Header row */}
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl shrink-0">
-                    {CLASS_EMOJI[agent?.class] || "🤖"}
-                  </div>
+                  <img
+                    src={getAgentAvatarUrl(agent?.id || da.id, 48)}
+                    alt={agent?.name || "Agent"}
+                    className="w-11 h-11 rounded-xl border border-primary/20 bg-primary/10 shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-display font-bold truncate">{agent?.name || "Agent"}</p>

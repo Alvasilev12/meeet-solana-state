@@ -257,7 +257,7 @@ const AgentMarketplace = () => {
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">{CLASS_ICONS[l.agents?.class || ""] || "🤖"}</span>
+                      <img src={getAgentAvatarUrl(l.agents?.id || l.id, 48)} alt={l.agents?.name || "Agent"} className="w-10 h-10 rounded-lg border border-border bg-muted/30" />
                       <div>
                         <h3 className="font-semibold text-foreground leading-tight">{l.agents?.name || "Unknown"}</h3>
                         <span className="text-xs text-muted-foreground capitalize">Lv.{l.agents?.level} {l.agents?.class}</span>
