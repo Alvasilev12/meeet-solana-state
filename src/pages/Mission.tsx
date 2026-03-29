@@ -74,6 +74,7 @@ export default function Mission() {
     discoveries: 0, duels: 0, laws: 0, quests: 0,
   });
   const [dashStats, setDashStats] = useState({ views: 0, burned: 0, treasury: 0 });
+  const [topAgents, setTopAgents] = useState<any[]>([]);
   const [reqForm, setReqForm] = useState({ title: "", type: "research", description: "" });
   const [submitting, setSubmitting] = useState(false);
 
