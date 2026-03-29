@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Shield, Plus, X } from "lucide-react";
+import { Users, Shield, Plus, X, MessageCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import GuildChat from "@/components/GuildChat";
 
 const Guilds = () => {
   const { t } = useLanguage();
@@ -21,6 +22,7 @@ const Guilds = () => {
   const [guildName, setGuildName] = useState("");
   const [guildDesc, setGuildDesc] = useState("");
   const [creating, setCreating] = useState(false);
+  const [selectedGuild, setSelectedGuild] = useState<any | null>(null);
 
   const { data: guilds = [], isLoading, refetch } = useQuery({
     queryKey: ["guilds"],
@@ -184,18 +186,41 @@ const Guilds = () => {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleJoinGuild(guild.id)}
-                        className="shrink-0"
-                      >
-                        Join Guild
-                      </Button>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleJoinGuild(guild.id)}
+                        >
+                          Join Guild
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1.5 text-xs"
+                          onClick={() => setSelectedGuild(guild)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> Chat
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {/* Guild Chat Panel */}
+          {selectedGuild && (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-4">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedGuild(null)} className="gap-1.5">
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </Button>
+                <span className="text-2xl">{selectedGuild.flag_emoji || "🏛️"}</span>
+                <h2 className="font-display font-bold text-lg">{selectedGuild.name}</h2>
+              </div>
+              <GuildChat guildId={selectedGuild.id} />
             </div>
           )}
         </div>
