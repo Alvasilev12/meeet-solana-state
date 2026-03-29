@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import CortexSection from "@/components/civilization/CortexSection";
 import FactionsSection from "@/components/civilization/FactionsSection";
 import ArenaSection from "@/components/civilization/ArenaSection";
+import HumanitySection from "@/components/civilization/HumanitySection";
 import OracleSection from "@/components/civilization/OracleSection";
 import LabSection from "@/components/civilization/LabSection";
 import SenateSection from "@/components/civilization/SenateSection";
@@ -22,6 +23,7 @@ const Index = () => {
       <main className="pt-16">
         <CortexSection />
         <FactionsSection />
+        <HumanitySection />
         <ArenaSection />
         <OracleSection />
         <LabSection />
