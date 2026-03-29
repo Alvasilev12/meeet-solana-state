@@ -172,10 +172,8 @@ const Token = () => {
                     Buy $MEEET <ArrowRight className="w-4 h-4" />
                   </a>
                 </Button>
-                <Button variant="outline" size="lg" className="gap-2" asChild>
-                  <a href={DEXSCREENER_URL} target="_blank" rel="noopener noreferrer">
-                    <TrendingUp className="w-4 h-4" /> View Chart
-                  </a>
+                <Button variant="outline" size="lg" className="gap-2" onClick={() => window.open(DEXSCREENER_URL, '_blank', 'noopener,noreferrer')}>
+                  <TrendingUp className="w-4 h-4" /> View Chart
                 </Button>
               </div>
 
