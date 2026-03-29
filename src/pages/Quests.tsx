@@ -94,10 +94,32 @@ function timeLeft(deadlineAt: string | null) {
   if (!deadlineAt) return "No deadline";
   const ms = new Date(deadlineAt).getTime() - Date.now();
   if (ms <= 0) return "Expired";
-  const h = Math.floor(ms / 3600000);
-  if (h < 1) return "<1h left";
-  if (h < 24) return `${h}h left`;
-  return `${Math.floor(h / 24)}d ${h % 24}h`;
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function QuestCountdown({ deadlineAt }: { deadlineAt: string | null }) {
+  const [label, setLabel] = useState(() => timeLeft(deadlineAt));
+
+  useEffect(() => {
+    if (!deadlineAt) return;
+    const tick = () => setLabel(timeLeft(deadlineAt));
+    tick();
+    const id = setInterval(tick, 30_000); // update every 30s
+    return () => clearInterval(id);
+  }, [deadlineAt]);
+
+  const isExpired = label === "Expired";
+
+  return (
+    <span className={`flex items-center gap-1 ${isExpired ? "text-destructive font-semibold" : ""}`}>
+      <Clock className="w-3 h-3" /> {label}
+    </span>
+  );
 }
 
 // ── Lifecycle hook ───────────────────────────────────────────────
