@@ -379,6 +379,23 @@ const Token = () => {
               </div>
             </div>
           </section>
+
+          {/* Live Burn Feed */}
+          <section className="glass-card p-6 rounded-2xl border border-orange-500/20">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative">
+                <Flame className="w-6 h-6 text-orange-400" />
+                <Flame className="w-6 h-6 text-orange-400 absolute inset-0 animate-ping opacity-30" />
+              </div>
+              <h2 className="text-2xl font-display font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                Live Burn Feed
+              </h2>
+              <Badge variant="outline" className="border-orange-500/30 text-orange-400 text-[10px] animate-pulse">
+                LIVE
+              </Badge>
+            </div>
+            <LiveBurnFeed />
+          </section>
         </div>
       </main>
       <Footer />
