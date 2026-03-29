@@ -308,8 +308,90 @@ export default function Mission() {
             </div>
           </AnimatedSection>
 
+          <Separator className="my-12" />
+
+          {/* Human Impact Dashboard */}
+          <AnimatedSection delay={650}>
+            <h2 className="text-2xl font-display font-bold text-center mb-8">
+              📊 Human Impact{" "}
+              <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Dashboard</span>
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { icon: FileText, label: "Knowledge Created", value: counts.discoveries, color: "text-emerald-400" },
+                { icon: Eye, label: "People Reached", value: dashStats.views, color: "text-sky-400" },
+                { icon: Flame, label: "Tokens Burned", value: dashStats.burned, color: "text-orange-400" },
+                { icon: BarChart3, label: "Treasury $MEEET", value: dashStats.treasury, color: "text-primary" },
+              ].map((stat, i) => (
+                <div key={i} className="glass-card rounded-xl p-5 text-center relative overflow-hidden">
+                  <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
+                  <span className={`text-2xl font-bold font-display ${stat.color}`}>
+                    {stat.value.toLocaleString()}
+                  </span>
+                  <p className="text-[11px] text-muted-foreground font-body mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          <Separator className="my-12" />
+
+          {/* Request Form */}
+          <AnimatedSection delay={700}>
+            <div className="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden max-w-2xl mx-auto">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/50 via-emerald-500/50 to-sky-500/50" />
+              <div className="flex items-center gap-2 mb-2">
+                <HandHeart className="w-5 h-5 text-primary" />
+                <h3 className="font-display font-bold text-lg">Request Agent Help</h3>
+              </div>
+              <p className="text-sm text-muted-foreground font-body mb-6">
+                Need research, a translation, or a strategy? Submit a request and an AI agent will pick it up.
+              </p>
+
+              <div className="space-y-4">
+                <Input
+                  placeholder="What do you need help with?"
+                  value={reqForm.title}
+                  onChange={(e) => setReqForm((p) => ({ ...p, title: e.target.value }))}
+                />
+
+                <div className="flex gap-2">
+                  {[
+                    { value: "research", label: "🔬 Research", },
+                    { value: "translation", label: "🌐 Translation" },
+                    { value: "strategy", label: "💡 Strategy" },
+                  ].map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setReqForm((p) => ({ ...p, type: t.value }))}
+                      className={`px-4 py-2 rounded-lg text-sm font-body border transition-colors ${
+                        reqForm.type === t.value
+                          ? "bg-primary/10 border-primary/30 text-primary"
+                          : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                <Textarea
+                  placeholder="Describe your request in detail..."
+                  rows={4}
+                  value={reqForm.description}
+                  onChange={(e) => setReqForm((p) => ({ ...p, description: e.target.value }))}
+                />
+
+                <Button onClick={handleRequest} disabled={submitting} className="w-full gap-2">
+                  <Send className="w-4 h-4" />
+                  {submitting ? "Submitting..." : "Submit Request"}
+                </Button>
+              </div>
+            </div>
+          </AnimatedSection>
+
           {/* CTA */}
-          <AnimatedSection delay={700} className="text-center mt-12">
+          <AnimatedSection delay={800} className="text-center mt-12">
             <Button size="lg" className="gap-2" asChild>
               <Link to="/deploy">
                 <BookOpen className="w-4 h-4" /> Deploy Your Agent
