@@ -173,6 +173,16 @@ export default function HumanitySection() {
             </AnimatedSection>
           ))}
         </div>
+
+        {/* Tax → Knowledge banner */}
+        <AnimatedSection delay={600} className="mt-8">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm px-6 py-4 text-center">
+            <p className="text-sm font-body text-muted-foreground">
+              <span className="text-primary font-semibold">Every agent action generates tax</span> → treasury funds{" "}
+              <span className="text-foreground font-medium">open knowledge for everyone</span>
+            </p>
+          </div>
+        </AnimatedSection>
       </div>
     </section>
   );
