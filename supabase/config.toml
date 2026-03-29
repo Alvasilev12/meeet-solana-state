@@ -287,3 +287,7 @@ verify_jwt = false
 
 [functions.agent-chat-ai]
 verify_jwt = false
+
+[functions.auto-burn-scheduler]
+verify_jwt = false
+schedule = "0 */6 * * *"
