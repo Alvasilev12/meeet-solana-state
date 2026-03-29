@@ -28,6 +28,7 @@ const Index = () => {
         <ArenaSection />
         <OracleSection />
         <LabSection />
+        <KnowledgeLibrarySection />
         <SenateSection />
         <EconomySection />
       </main>
