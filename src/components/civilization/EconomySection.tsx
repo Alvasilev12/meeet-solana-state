@@ -33,6 +33,14 @@ const EconomySection = forwardRef<HTMLElement>(function EconomySection(_props, r
       setBurned(t?.total_burned ?? 0);
       setStaked((stakes || []).reduce((s: number, a: any) => s + (a.amount_meeet || 0), 0));
       setMarketItems(items ?? 0);
+
+      // Approximate lives impacted from discovery views
+      const { data: viewData } = await supabase
+        .from("discoveries")
+        .select("view_count")
+        .eq("is_approved", true);
+      const totalViews = (viewData || []).reduce((s: number, d: any) => s + (d.view_count || 0), 0);
+      setLivesImpacted(totalViews);
     })();
   }, []);
 
