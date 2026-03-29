@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import AnimatedSection from "@/components/AnimatedSection";
+import OracleMarketChart from "@/components/OracleMarketChart";
 
 interface OracleQuestion {
   id: string;
@@ -546,6 +547,14 @@ const Oracle = () => {
                   <Badge variant="outline">{CATEGORIES.find((c) => c.value === detailQuestion.category)?.label || detailQuestion.category}</Badge>
                   <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" />{deadlineCountdown(detailQuestion.deadline)}</Badge>
                   <Badge variant="outline" className="gap-1"><Flame className="w-3 h-3 text-orange-400" />{formatMeeet(detailQuestion.total_pool_meeet)} pool</Badge>
+                </div>
+
+                {/* History Chart */}
+                <div>
+                  <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
+                    <BarChart3 className="w-3 h-3" /> Market History
+                  </h4>
+                  <OracleMarketChart questionId={detailQuestion.id} />
                 </div>
 
                 {/* Recent Bets */}

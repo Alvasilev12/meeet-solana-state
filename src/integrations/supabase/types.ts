@@ -4224,6 +4224,14 @@ export type Database = {
           votes_yes: number
         }[]
       }
+      get_oracle_bet_history: {
+        Args: { p_question_id: string }
+        Returns: {
+          bet_date: string
+          no_total: number
+          yes_total: number
+        }[]
+      }
       get_profile_protected_fields: {
         Args: { _user_id: string }
         Returns: {
