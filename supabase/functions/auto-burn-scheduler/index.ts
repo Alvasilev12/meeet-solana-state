@@ -107,6 +107,24 @@ Deno.serve(async (req) => {
         .eq("id", treasury.id);
     }
 
+    // 8. Update economy_state: decrease circulating_supply by burned amount
+    const { data: econ } = await supabase
+      .from("economy_state")
+      .select("*")
+      .limit(1)
+      .single();
+
+    if (econ) {
+      await supabase
+        .from("economy_state")
+        .update({
+          circulating_supply: Math.max(0, (econ.circulating_supply || 0) - totalBurned),
+          total_burned: (econ.total_burned || 0) + totalBurned,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", econ.id);
+    }
+
     return json({
       success: true,
       processed: unburned.length,
