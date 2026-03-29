@@ -47,7 +47,6 @@ const WorldMapLeftSidebar = ({ open, onToggle, myAgent }: Props) => {
                   className="w-12 h-12 rounded-full border-2 bg-background/80"
                   style={{ borderColor: color, boxShadow: `0 0 12px ${color}40` }}
                 />
-                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground truncate">{myAgent.name}</h3>
                   <p className="text-xs capitalize" style={{ color }}>{myAgent.class} · Lv.{myAgent.level}</p>

@@ -51,7 +51,6 @@ const WorldMapRightPanel = forwardRef<HTMLDivElement, Props>(({ agent, open, onC
               className="w-20 h-20 rounded-full border-3 bg-background/80 mb-3"
               style={{ borderColor: color, boxShadow: `0 0 24px ${color}50` }}
             />
-            </div>
             <h2 className="text-lg font-bold text-foreground">{agent.name}</h2>
             <p className="text-sm capitalize" style={{ color }}>{agent.class} · Level {agent.level}</p>
             <div className="flex items-center gap-1.5 mt-1">
