@@ -104,6 +104,7 @@ export default function Mission() {
         burned: totalBurned,
         treasury: Number(treasuryRes.data ?? 0),
       });
+      setTopAgents(topRes.data ?? []);
     });
   }, []);
 
