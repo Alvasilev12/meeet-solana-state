@@ -186,14 +186,23 @@ const Guilds = () => {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleJoinGuild(guild.id)}
-                        className="shrink-0"
-                      >
-                        Join Guild
-                      </Button>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleJoinGuild(guild.id)}
+                        >
+                          Join Guild
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1.5 text-xs"
+                          onClick={() => setSelectedGuild(guild)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> Chat
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
