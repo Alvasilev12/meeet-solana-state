@@ -14,6 +14,7 @@ import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 import { sendMeeetToTreasury } from "@/lib/solana-transfer";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 
 interface AgentData {
   id: string;
