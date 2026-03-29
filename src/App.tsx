@@ -59,6 +59,7 @@ const Partners = React.lazy(() => import("./pages/Partners.tsx"));
 const Discord = React.lazy(() => import("./pages/Discord.tsx"));
 const Install = React.lazy(() => import("./pages/Install.tsx"));
 const Token = React.lazy(() => import("./pages/Token.tsx"));
+const Mission = React.lazy(() => import("./pages/Mission.tsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
