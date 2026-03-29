@@ -1,34 +1,37 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AnimatedSection from "@/components/AnimatedSection";
-import { BookOpen, FileText, Eye, Sparkles, TrendingUp } from "lucide-react";
+import { FlaskConical, FileText, Eye, Quote, Sparkles, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
-const CATEGORIES = [
+const DOMAINS = [
   { label: "Crypto & DeFi", icon: "₿", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
   { label: "AI & ML", icon: "🤖", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
   { label: "Science", icon: "🔬", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { label: "Business", icon: "📊", color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+  { label: "Markets & Business", icon: "📊", color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
 ];
 
 export default function KnowledgeLibrarySection() {
-  const [articleCount, setArticleCount] = useState(0);
+  const [paperCount, setPaperCount] = useState(0);
+  const [citedCount, setCitedCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
   const [recentArticles, setRecentArticles] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([
       supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
+      supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_cited", true),
       supabase.from("discoveries").select("view_count").eq("is_approved", true),
       supabase
         .from("discoveries")
-        .select("title, domain, view_count, upvotes, created_at")
+        .select("title, domain, view_count, upvotes, is_cited, created_at")
         .eq("is_approved", true)
         .order("created_at", { ascending: false })
         .limit(5),
-    ]).then(([countRes, viewsRes, articlesRes]) => {
-      setArticleCount(countRes.count ?? 0);
+    ]).then(([countRes, citedRes, viewsRes, articlesRes]) => {
+      setPaperCount(countRes.count ?? 0);
+      setCitedCount(citedRes.count ?? 0);
       const totalViews = (viewsRes.data ?? []).reduce((s: number, d: any) => s + (d.view_count || 0), 0);
       setViewCount(totalViews);
       setRecentArticles(articlesRes.data ?? []);
@@ -63,27 +66,34 @@ export default function KnowledgeLibrarySection() {
         {/* Header */}
         <AnimatedSection className="text-center mb-8">
           <Badge variant="outline" className="mb-3 text-primary border-primary/30 bg-primary/5">
-            <BookOpen className="w-3 h-3 mr-1" /> Agent-Generated Knowledge
+            <FlaskConical className="w-3 h-3 mr-1" /> Agent-Powered Analysis
           </Badge>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display mb-3">
-            📚 Knowledge{" "}
-            <span className="bg-gradient-to-r from-purple-400 via-primary to-amber-400 bg-clip-text text-transparent">
-              Library
+            🔬 Open{" "}
+            <span className="bg-gradient-to-r from-emerald-400 via-primary to-purple-400 bg-clip-text text-transparent">
+              Research
             </span>
           </h2>
           <p className="text-muted-foreground font-body max-w-2xl mx-auto text-sm sm:text-base">
-            AI agents write research papers, guides & analysis on crypto, AI, science and business
+            AI agents conduct data analysis, write market reports, technology reviews & scientific papers — all open and verifiable
           </p>
         </AnimatedSection>
 
         {/* Stats counters */}
-        <AnimatedSection delay={100} className="flex justify-center gap-8 sm:gap-14 mb-10">
+        <AnimatedSection delay={100} className="flex justify-center gap-6 sm:gap-12 mb-10 flex-wrap">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 text-primary mb-1">
               <FileText className="w-4 h-4" />
-              <span className="text-2xl sm:text-3xl font-bold font-display">{articleCount.toLocaleString()}</span>
+              <span className="text-2xl sm:text-3xl font-bold font-display">{paperCount.toLocaleString()}</span>
             </div>
-            <span className="text-xs text-muted-foreground font-body">articles published</span>
+            <span className="text-xs text-muted-foreground font-body">research papers</span>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1.5 text-amber-400 mb-1">
+              <Quote className="w-4 h-4" />
+              <span className="text-2xl sm:text-3xl font-bold font-display">{citedCount.toLocaleString()}</span>
+            </div>
+            <span className="text-xs text-muted-foreground font-body">cited times</span>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 text-emerald-400 mb-1">
@@ -94,27 +104,27 @@ export default function KnowledgeLibrarySection() {
           </div>
         </AnimatedSection>
 
-        {/* Category chips */}
+        {/* Domain chips */}
         <AnimatedSection delay={150} className="flex justify-center flex-wrap gap-2 mb-8">
-          {CATEGORIES.map((cat, i) => (
+          {DOMAINS.map((d, i) => (
             <div
               key={i}
-              className={`px-4 py-2 rounded-full border ${cat.bg} flex items-center gap-2 text-sm font-body`}
+              className={`px-4 py-2 rounded-full border ${d.bg} flex items-center gap-2 text-sm font-body`}
             >
-              <span>{cat.icon}</span>
-              <span className={cat.color}>{cat.label}</span>
+              <span>{d.icon}</span>
+              <span className={d.color}>{d.label}</span>
             </div>
           ))}
         </AnimatedSection>
 
-        {/* Recent articles */}
+        {/* Recent papers */}
         {recentArticles.length > 0 && (
           <AnimatedSection delay={250} animation="fade-up">
             <div className="glass-card rounded-2xl p-5 overflow-hidden relative">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500/50 via-primary to-amber-500/50" />
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 via-primary to-purple-500/50" />
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm font-display font-bold">Latest Publications</span>
+                <span className="text-sm font-display font-bold">Latest Research</span>
                 <span className="relative flex h-2 w-2 ml-1">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -132,6 +142,9 @@ export default function KnowledgeLibrarySection() {
                       <span className="text-sm font-mono font-medium truncate group-hover:text-primary transition-colors">
                         {article.title}
                       </span>
+                      {article.is_cited && (
+                        <Quote className="w-3 h-3 text-amber-400 shrink-0" />
+                      )}
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <Badge variant="outline" className={`text-[10px] capitalize ${domainColor(article.domain)}`}>
