@@ -317,6 +317,8 @@ function TradingPanel() {
   const [cycles, setCycles] = useState(0);
   const [totalSol, setTotalSol] = useState(0);
   const [totalMeeet, setTotalMeeet] = useState(0);
+  const [burnCycleLoading, setBurnCycleLoading] = useState(false);
+  const [burnCycleResult, setBurnCycleResult] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: tradeLogs, refetch: refetchLogs } = useQuery({
