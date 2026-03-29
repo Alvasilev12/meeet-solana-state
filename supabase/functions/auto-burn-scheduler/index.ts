@@ -131,6 +131,8 @@ Deno.serve(async (req) => {
       total_burned_usd: totalBurned,
       treasury_balance: treasury?.balance_meeet ?? 0,
       treasury_total_burned: (treasury?.total_burned ?? 0) + totalBurned,
+      circulating_supply: econ ? Math.max(0, (econ.circulating_supply || 0) - totalBurned) : null,
+      economy_total_burned: econ ? (econ.total_burned || 0) + totalBurned : null,
       message: `Burned ${BURN_PCT * 100}% from ${unburned.length} actions`,
     });
   } catch (error) {
