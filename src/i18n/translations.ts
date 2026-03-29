@@ -1341,6 +1341,7 @@ export const translations: Record<Lang, Record<string, any>> = {
       description: "描述",
       create: "创建",
     },
+  },
 
   es: {
     nav: {
