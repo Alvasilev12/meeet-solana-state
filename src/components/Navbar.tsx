@@ -228,62 +228,10 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* Hamburger — visible below md */}
-          <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setOpen(!open)}
-            aria-label="Toggle menu"
-          >
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Hamburger — hidden; bottom tab bar used on mobile instead */}
         </div>
       </div>
 
-      {/* Mobile fullscreen menu */}
-      {open && (
-        <div className="md:hidden fixed inset-x-0 top-14 bottom-0 bg-background/95 backdrop-blur-xl z-40 overflow-y-auto animate-fade-up">
-          <div className="container max-w-lg mx-auto px-4 py-4 flex flex-col gap-1">
-            {ALL_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                to={l.href}
-                onClick={() => setOpen(false)}
-                className="font-body text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors py-3 px-3 rounded-lg"
-              >
-                {l.label}
-              </Link>
-            ))}
-
-            <div className="border-t border-border mt-3 pt-3 flex flex-col gap-2">
-              {user ? (
-                <>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setOpen(false)}
-                    className="w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
-                  >
-                    {t("nav.dashboard")}
-                  </Link>
-                  <button
-                    onClick={() => { signOut(); setOpen(false); }}
-                    className="w-full px-4 py-2.5 text-sm font-display font-semibold border border-border text-muted-foreground rounded-lg hover:text-foreground transition-colors duration-150"
-                  >
-                    {t("nav.signOut")}
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/auth"
-                  onClick={() => setOpen(false)}
-                  className="w-full px-4 py-2.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150 text-center block"
-                >
-                  {t("nav.signIn")}
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </nav>
   );
 };
