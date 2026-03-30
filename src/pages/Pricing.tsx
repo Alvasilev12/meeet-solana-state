@@ -419,8 +419,9 @@ function SubscriptionSection({ userId }: { userId?: string }) {
                 <Mail className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h4 className="font-display font-bold">Email Only</h4>
-                <p className="text-lg font-bold text-primary">Free <span className="text-xs text-muted-foreground font-normal">sandbox</span></p>
+                <h4 className="font-display font-bold">📧 Email Only</h4>
+                <p className="text-[10px] text-muted-foreground mb-0.5">Spix Sandbox</p>
+                <p className="text-lg font-bold text-primary">Free</p>
               </div>
             </div>
             <div className="flex-1 space-y-2 mb-4">
