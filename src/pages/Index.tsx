@@ -29,6 +29,7 @@ const Index = () => {
       <main className="pt-16 pb-16">
         <CortexSection />
         <EarlyAdopterBanner />
+        <WhyJoinSection />
         <FactionsSection />
         <HumanitySection />
         <ArenaSection />
