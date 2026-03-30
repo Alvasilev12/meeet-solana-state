@@ -25,6 +25,14 @@
  *  POST /v1/sms         — Send an SMS message  (scope: sms:write)
  *    Body: { to, message }
  *
+ *  GET  /v1/calls/{id}/transcript — Get call transcript  (scope: calls:read)
+ *  GET  /v1/calls/{id}/summary   — Get AI summary of a call  (scope: calls:read)
+ *
+ *  POST /v1/email/threads/{id}/reply — Reply in an email thread  (scope: email:write)
+ *    Body: { body, from_name }
+ *
+ *  GET  /v1/email/threads/{id}   — Get full email thread  (scope: email:read)
+ *
  *  All requests require header: Authorization: Bearer <SPIX_API_KEY>
  */
 
@@ -56,6 +64,11 @@ export interface SpixSmsPayload {
   message: string;
 }
 
+export interface SpixThreadReplyPayload {
+  thread_id: string;
+  body: string;
+}
+
 export interface SpixResult<T = Record<string, unknown>> {
   success: boolean;
   error?: string;
@@ -63,6 +76,9 @@ export interface SpixResult<T = Record<string, unknown>> {
   email?: T;
   sms?: T;
   bulk?: T;
+  transcript?: T;
+  summary?: T;
+  thread?: T;
   actions?: T[];
 }
 
@@ -132,4 +148,24 @@ export function sendSms(userId: string, agentId: string, payload: SpixSmsPayload
 /** Fetch recent action history for the user. */
 export function getActionHistory(userId: string, agentId: string) {
   return invoke<SpixActionRecord>("action_history", userId, agentId);
+}
+
+/** Get call transcript. */
+export function getCallTranscript(userId: string, agentId: string, callId: string) {
+  return invoke("call_transcript", userId, agentId, { call_id: callId });
+}
+
+/** Get AI summary of a call. */
+export function getCallSummary(userId: string, agentId: string, callId: string) {
+  return invoke("call_summary", userId, agentId, { call_id: callId });
+}
+
+/** Reply in an email thread. */
+export function replyToThread(userId: string, agentId: string, payload: SpixThreadReplyPayload) {
+  return invoke("thread_reply", userId, agentId, { ...payload });
+}
+
+/** Get full email thread. */
+export function getThread(userId: string, agentId: string, threadId: string) {
+  return invoke("get_thread", userId, agentId, { thread_id: threadId });
 }

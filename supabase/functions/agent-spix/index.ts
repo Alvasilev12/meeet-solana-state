@@ -28,6 +28,15 @@ async function spixFetch(path: string, apiKey: string, body: Record<string, unkn
   return { status: res.status, ok: res.ok, data };
 }
 
+async function spixGet(path: string, apiKey: string) {
+  const res = await fetch(`${SPIX_BASE}${path}`, {
+    method: "GET",
+    headers: { "Authorization": `Bearer ${apiKey}` },
+  });
+  const data = await res.json();
+  return { status: res.status, ok: res.ok, data };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -185,6 +194,58 @@ Deno.serve(async (req) => {
       });
 
       return json({ success: true, sms: smsResult });
+    }
+
+    // ── CALL TRANSCRIPT ───────────────────────────────────────────
+    if (action === "call_transcript") {
+      const { call_id } = body;
+      if (!call_id) throw new Error("call_id required");
+      if (!SPIX_API_KEY) return json({ success: true, transcript: { status: "simulated" } });
+      const r = await spixGet(`/calls/${call_id}/transcript`, SPIX_API_KEY);
+      return json({ success: r.ok, transcript: r.data });
+    }
+
+    // ── CALL SUMMARY ───────────────────────────────────────────────
+    if (action === "call_summary") {
+      const { call_id } = body;
+      if (!call_id) throw new Error("call_id required");
+      if (!SPIX_API_KEY) return json({ success: true, summary: { status: "simulated" } });
+      const r = await spixGet(`/calls/${call_id}/summary`, SPIX_API_KEY);
+      return json({ success: r.ok, summary: r.data });
+    }
+
+    // ── THREAD REPLY ────────────────────────────────────────────────
+    if (action === "thread_reply") {
+      const { thread_id, body: replyBody } = body;
+      if (!thread_id || !replyBody) throw new Error("thread_id and body required");
+      await chargeUser("email_send");
+
+      let replyResult: Record<string, unknown>;
+      if (SPIX_API_KEY) {
+        const r = await spixFetch(`/email/threads/${thread_id}/reply`, SPIX_API_KEY, {
+          body: replyBody,
+          from_name: `${agent.name} (MEEET Agent)`,
+        });
+        replyResult = r.ok ? r.data : { status: "error", error: r.data };
+      } else {
+        replyResult = { status: "simulated", message: "SPIX_API_KEY not configured" };
+      }
+
+      await supabase.from("agent_actions").insert({
+        agent_id, user_id, action_type: "thread_reply", cost_usd: 0.02,
+        details: { thread_id, result: replyResult },
+      });
+
+      return json({ success: true, email: replyResult });
+    }
+
+    // ── GET THREAD ──────────────────────────────────────────────────
+    if (action === "get_thread") {
+      const { thread_id } = body;
+      if (!thread_id) throw new Error("thread_id required");
+      if (!SPIX_API_KEY) return json({ success: true, thread: { status: "simulated" } });
+      const r = await spixGet(`/email/threads/${thread_id}`, SPIX_API_KEY);
+      return json({ success: r.ok, thread: r.data });
     }
 
     // ── ACTION HISTORY ──────────────────────────────────────────────
