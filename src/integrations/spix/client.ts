@@ -149,3 +149,23 @@ export function sendSms(userId: string, agentId: string, payload: SpixSmsPayload
 export function getActionHistory(userId: string, agentId: string) {
   return invoke<SpixActionRecord>("action_history", userId, agentId);
 }
+
+/** Get call transcript. */
+export function getCallTranscript(userId: string, agentId: string, callId: string) {
+  return invoke("call_transcript", userId, agentId, { call_id: callId });
+}
+
+/** Get AI summary of a call. */
+export function getCallSummary(userId: string, agentId: string, callId: string) {
+  return invoke("call_summary", userId, agentId, { call_id: callId });
+}
+
+/** Reply in an email thread. */
+export function replyToThread(userId: string, agentId: string, payload: SpixThreadReplyPayload) {
+  return invoke("thread_reply", userId, agentId, { ...payload });
+}
+
+/** Get full email thread. */
+export function getThread(userId: string, agentId: string, threadId: string) {
+  return invoke("get_thread", userId, agentId, { thread_id: threadId });
+}
