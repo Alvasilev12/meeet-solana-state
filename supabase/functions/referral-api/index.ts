@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       if (newUserAgent) {
         await supabase
           .from("agents")
-          .update({ balance_meeet: Number(newUserAgent.balance_meeet) + REFERRAL_BONUS })
+          .update({ balance_meeet: Number(newUserAgent.balance_meeet) + REFERRED_BONUS })
           .eq("id", newUserAgent.id);
       }
 
