@@ -52,6 +52,7 @@ export default function Referrals() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [copiedAgentId, setCopiedAgentId] = useState<string | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile-referral", user?.id],
@@ -75,6 +76,19 @@ export default function Referrals() {
         .select("*")
         .eq("referrer_user_id", user!.id)
         .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const { data: agents = [] } = useQuery({
+    queryKey: ["my-agents-referral", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agents")
+        .select("id, name, class, level")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: true });
       return data ?? [];
     },
   });
@@ -293,6 +307,55 @@ export default function Referrals() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Agent Referral Links */}
+              {agents.length > 0 && (
+                <Card className="glass-card border-border">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-display text-sm flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-emerald-400" /> Agent Referral Links
+                    </CardTitle>
+                    <CardDescription className="text-xs font-body">
+                      Each agent has a unique referral link. Share to recruit under that agent.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {agents.map((agent: any) => {
+                      const agentRefLink = `${window.location.origin}/join?ref=${agent.id}`;
+                      const isCopied = copiedAgentId === agent.id;
+                      return (
+                        <div key={agent.id} className="flex items-center gap-3 glass-card rounded-lg px-3 py-2.5">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500/30 to-emerald-500/30 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-foreground">
+                              {agent.name?.charAt(0) || "A"}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-display font-bold text-foreground truncate">{agent.name}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono truncate">{agentRefLink}</p>
+                          </div>
+                          <Badge variant="outline" className="text-[9px] text-muted-foreground shrink-0">
+                            Lv.{agent.level} {agent.class}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-1 text-[10px] h-7 border-purple-500/30 hover:bg-purple-500/10"
+                            onClick={() => {
+                              navigator.clipboard.writeText(agentRefLink);
+                              setCopiedAgentId(agent.id);
+                              setTimeout(() => setCopiedAgentId(null), 2000);
+                            }}
+                          >
+                            {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            {isCopied ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Outreach History table */}
               <Card className="glass-card border-border">
