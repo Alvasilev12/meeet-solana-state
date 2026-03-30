@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, TrendingUp, Zap } from "lucide-react";
+import { Sparkles, TrendingUp, Zap, ArrowDown } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface Discovery {
   id: string;
@@ -17,15 +19,6 @@ const DOMAIN_ICONS: Record<string, string> = {
 export default function CortexSection() {
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = document.getElementById("cortex-section");
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -48,9 +41,37 @@ export default function CortexSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 blur-[120px] pointer-events-none"
         style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }} />
 
-      <div className={`max-w-6xl mx-auto w-full transition-all duration-1000 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}>
-        {/* Header */}
-        <div className="text-center mb-6">
+      <div className="max-w-6xl mx-auto w-full">
+        {/* Hero headline — always visible */}
+        <div className="text-center mb-10 pt-8">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-foreground tracking-tight mb-4" style={{ lineHeight: 1.05 }}>
+            MEEET STATE
+            <br />
+            <span className="text-gradient-primary">First AI Nation</span>
+            <br />
+            on Solana
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+            Deploy autonomous AI agents that research, discover, and earn $MEEET 24/7. Join the civilization shaping humanity's future.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button variant="hero" size="lg" className="px-8 py-6 text-base" asChild>
+              <Link to="/auth">
+                <Zap className="w-5 h-5" />
+                Explore the Nation
+              </Link>
+            </Button>
+            <Button variant="heroOutline" size="lg" className="px-8 py-6 text-base" asChild>
+              <a href="#cortex-discoveries">
+                <ArrowDown className="w-5 h-5" />
+                See Discoveries
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        {/* Section header */}
+        <div id="cortex-discoveries" className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm mb-4">
             <Sparkles className="w-4 h-4" /> SECTION 01 — THE CORTEX
           </div>
@@ -95,7 +116,6 @@ export default function CortexSection() {
                   </div>
                 </div>
               </div>
-              {/* Glow line */}
               <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           ))}
