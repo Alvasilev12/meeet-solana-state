@@ -12,6 +12,7 @@ import TranslationEngineSection from "@/components/civilization/TranslationEngin
 import StrategyLabSection from "@/components/civilization/StrategyLabSection";
 import SenateSection from "@/components/civilization/SenateSection";
 import EconomySection from "@/components/civilization/EconomySection";
+import CommunicationsSection from "@/components/civilization/CommunicationsSection";
 import AgentCTABar from "@/components/civilization/AgentCTABar";
 
 const Index = () => {
@@ -33,6 +34,7 @@ const Index = () => {
         <KnowledgeLibrarySection />
         <TranslationEngineSection />
         <StrategyLabSection />
+        <CommunicationsSection />
         <SenateSection />
         <EconomySection />
       </main>
