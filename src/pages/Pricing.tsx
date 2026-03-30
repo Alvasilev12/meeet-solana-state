@@ -402,7 +402,108 @@ function SubscriptionSection({ userId }: { userId?: string }) {
         })}
       </div>
 
-      {/* Promo Code */}
+      {/* ── Spix Communication Add-ons ── */}
+      <div className="mb-10">
+        <div className="text-center mb-6">
+          <Badge className="bg-primary/10 text-primary border-primary/20 mb-2">Spix Integration</Badge>
+          <h3 className="text-xl md:text-2xl font-display font-bold mb-1">Communication Add-ons</h3>
+          <p className="text-sm text-muted-foreground">Give your agent the power to call, email, and text</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
+          {/* Email Sandbox */}
+          <div className="relative bg-card border border-primary/30 rounded-2xl p-5 flex flex-col">
+            <Badge className="absolute -top-2.5 left-4 bg-accent text-accent-foreground text-[10px] px-2">Sandbox</Badge>
+            <div className="flex items-center gap-3 mb-4 pt-1">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold">Email Only</h4>
+                <p className="text-lg font-bold text-primary">Free <span className="text-xs text-muted-foreground font-normal">sandbox</span></p>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2 mb-4">
+              {["100 emails/month", "Spix sandbox API", "Single inbox", "Basic templates", "Email drafts"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="text-foreground">{f}</span>
+                </div>
+              ))}
+              {["Phone calls", "SMS", "Bulk email", "Custom domain"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{f}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => navigate(userId ? "/dashboard" : "/auth")}>
+              <Mail className="w-4 h-4 mr-2" /> {userId ? "Activate Sandbox" : "Sign in to start"}
+            </Button>
+          </div>
+
+          {/* Comms Pro */}
+          <div className="relative bg-card border border-border rounded-2xl p-5 flex flex-col">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold">Comms Pro</h4>
+                <p className="text-lg font-bold text-primary">
+                  {payMethod === "sol" ? "0.29 SOL" : "7,250 MEEET"}
+                  <span className="text-xs text-muted-foreground font-normal">/mo</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2 mb-4">
+              {["1,000 emails/month", "100 SMS/month", "30 min calls/month", "3 inboxes", "Thread replies", "Call transcripts"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="text-foreground">{f}</span>
+                </div>
+              ))}
+              {["Bulk email", "AI call summary"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{f}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full">
+              <Phone className="w-4 h-4 mr-2" /> Coming soon
+            </Button>
+          </div>
+
+          {/* Comms Enterprise */}
+          <div className="relative bg-card border border-border rounded-2xl p-5 flex flex-col">
+            <Badge className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-[10px] px-2">Unlimited</Badge>
+            <div className="flex items-center gap-3 mb-4 pt-1">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold">Comms Enterprise</h4>
+                <p className="text-lg font-bold text-primary">
+                  {payMethod === "sol" ? "1.99 SOL" : "49,750 MEEET"}
+                  <span className="text-xs text-muted-foreground font-normal">/mo</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2 mb-4">
+              {["Unlimited emails", "Unlimited SMS", "Unlimited calls", "10 inboxes", "Bulk email (10k)", "AI call summaries", "Thread management", "Custom sender domain", "Priority Spix routing"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm">
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="text-foreground">{f}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full">
+              <Zap className="w-4 h-4 mr-2" /> Coming soon
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-md mx-auto">
         <Card className="bg-card border-border">
           <CardContent className="p-5">
