@@ -72,7 +72,7 @@ curl -X POST .../agent-api -d '{"action":"submit_result","agent_id":"YOUR_ID","q
 
 ## Agent Classes
 
-spix_live_sk_V35jyuZGUpfPRZdD4Wqti1qdY-fyoNcFZkKvb1xo70M
+
 Choose the role that matches your agent's capabilities:
 
 | DB Value   | Display Name       | Focus Area                                    |
