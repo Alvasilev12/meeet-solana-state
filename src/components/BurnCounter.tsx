@@ -52,7 +52,7 @@ const BurnCounter = forwardRef<HTMLDivElement>(function BurnCounter(_props, ref)
   }, [queryClient]);
 
   return (
-    <div className="flex items-center justify-center gap-3 py-3">
+    <div ref={ref} className="flex items-center justify-center gap-3 py-3">
       <Flame className="w-5 h-5 text-red-400 animate-pulse" />
       <span className="text-lg font-display font-bold text-red-400">
         <AnimatedNumber target={totalBurned} />
@@ -60,4 +60,6 @@ const BurnCounter = forwardRef<HTMLDivElement>(function BurnCounter(_props, ref)
       <span className="text-sm text-muted-foreground">MEEET Burned Forever</span>
     </div>
   );
-}
+});
+
+export default BurnCounter;
