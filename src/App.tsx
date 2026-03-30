@@ -114,6 +114,7 @@ const App = () => (
                   <Route path="/join" element={<Join />} />
                   <Route path="/tools/badge" element={<BadgeGenerator />} />
                   <Route path="/dashboard/referrals" element={<Referrals />} />
+                  <Route path="/referrals" element={<Referrals />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/world" element={<World />} />
                   <Route path="/world/rankings" element={<WorldRankings />} />
