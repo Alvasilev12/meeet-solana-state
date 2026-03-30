@@ -106,7 +106,7 @@ function useEconomyStats() {
   return useQuery({
     queryKey: ["admin-economy-stats"],
     queryFn: async () => {
-      const { data: treasury } = await supabase.from("state_treasury").select("*").limit(1).single();
+      const { data: treasury } = await supabase.from("state_treasury").select("*").limit(1).maybeSingle();
       const { data: txs } = await supabase.from("transactions").select("type, amount_meeet, tax_amount, burn_amount, created_at").order("created_at", { ascending: false }).limit(1000);
       
       const txByType: Record<string, { count: number; volume: number }> = {};
