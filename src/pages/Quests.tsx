@@ -201,11 +201,37 @@ const Quests = () => {
   const { data: myAgents = [] } = useMyAgents(user?.id);
   const questAction = useQuestAction();
 
-  const filtered = quests.filter((q) => {
-    const matchCat = activeCategory === "all" || q.category === activeCategory;
-    const matchSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCat && matchSearch;
+  // Outreach stats for referral quests
+  const { data: outreachStats } = useQuery({
+    queryKey: ["outreach-stats", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: referrals } = await supabase
+        .from("deployed_agents")
+        .select("status")
+        .eq("user_id", user!.id);
+      const total = referrals?.length ?? 0;
+      const deployed = referrals?.filter((r: any) => r.status === "running").length ?? 0;
+      // Count agent_actions with type 'invite_sent' for this user
+      const { count: invitesSent } = await supabase
+        .from("agent_actions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("action_type", "invite_sent");
+      return {
+        invites_sent: invitesSent ?? 0,
+        referrals_registered: total,
+        referrals_deployed: deployed,
+      };
+    },
   });
+
+  const getOutreachProgress = (metric: string) => {
+    if (!outreachStats) return 0;
+    return (outreachStats as any)[metric] ?? 0;
+  };
+
+  const showOutreach = activeCategory === "all" || activeCategory === ("outreach" as any);
 
          const openCount = quests.filter((q) => q.status === "open").length;
   const totalMeeetReward = quests
