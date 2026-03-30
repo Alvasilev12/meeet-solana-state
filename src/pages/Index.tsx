@@ -14,6 +14,7 @@ import SenateSection from "@/components/civilization/SenateSection";
 import EconomySection from "@/components/civilization/EconomySection";
 import CommunicationsSection from "@/components/civilization/CommunicationsSection";
 import AgentCTABar from "@/components/civilization/AgentCTABar";
+import EarlyAdopterBanner from "@/components/civilization/EarlyAdopterBanner";
 
 const Index = () => {
   return (
@@ -26,6 +27,7 @@ const Index = () => {
       <Navbar />
       <main className="pt-16 pb-16">
         <CortexSection />
+        <EarlyAdopterBanner />
         <FactionsSection />
         <HumanitySection />
         <ArenaSection />
