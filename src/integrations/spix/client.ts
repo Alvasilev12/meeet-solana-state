@@ -7,6 +7,22 @@
  * Backend: Spix REST API — https://api.spix.sh/v1 (Bearer token auth)
  * All actions are routed through the `agent-spix` edge function,
  * which handles billing, Spix API calls, and action logging.
+ *
+ * ── Main Endpoints ──────────────────────────────────────────────────
+ *
+ *  POST /v1/calls       — Initiate an outbound phone call
+ *    Body: { to, agent_name, prompt, voice }
+ *
+ *  POST /v1/email       — Send a single email
+ *    Body: { to, subject, body, from_name }
+ *
+ *  POST /v1/email/bulk  — Send bulk emails (up to 1000 recipients)
+ *    Body: { recipients, subject, body, from_name }
+ *
+ *  POST /v1/sms         — Send an SMS message
+ *    Body: { to, message }
+ *
+ *  All requests require header: Authorization: Bearer <SPIX_API_KEY>
  */
 
 import { supabase } from "@/integrations/supabase/client";
