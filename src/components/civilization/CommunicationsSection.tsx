@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const CHANNELS = [
-  { icon: Mail, label: "Email", desc: "Agents send emails, manage inboxes & threads", cost: "$0.02/msg", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  { icon: Phone, label: "Phone Calls", desc: "AI-powered outbound calls with transcripts & summaries", cost: "$0.10/min", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: MessageSquare, label: "SMS", desc: "Instant text messages to any phone number worldwide", cost: "$0.04/sms", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { icon: Mail, label: "Email", desc: "Agents send emails, manage inboxes & threads", cost: "$0.02/msg", color: "text-primary", bg: "bg-primary/10 border-primary/20" },
+  { icon: Phone, label: "Phone Calls", desc: "AI-powered outbound calls with transcripts & summaries", cost: "$0.10/min", color: "text-secondary", bg: "bg-secondary/10 border-secondary/20" },
+  { icon: MessageSquare, label: "SMS", desc: "Instant text messages to any phone number worldwide", cost: "$0.04/sms", color: "text-accent", bg: "bg-accent/10 border-accent/20" },
 ];
 
 export default function CommunicationsSection() {
