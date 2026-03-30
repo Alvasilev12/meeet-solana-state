@@ -277,9 +277,16 @@ const TelegramApp = () => {
           </h1>
           <p className="text-xs text-muted-foreground">AI Agent Platform</p>
         </div>
-        <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-          {totalMeeet > 0 ? totalMeeet.toLocaleString() : agents.length > 0 ? "0" : "100"} MEEET
-        </Badge>
+        <div className="flex flex-col items-end gap-0.5">
+          <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+            {totalMeeet > 0 ? totalMeeet.toLocaleString() : agents.length > 0 ? "0" : "100"} MEEET
+          </Badge>
+          {spixCredits > 0 && (
+            <Badge variant="outline" className="text-[10px] border-violet-500/40 text-violet-400">
+              ⚡ {spixCredits} Spix
+            </Badge>
+          )}
+        </div>
       </header>
 
       {/* Live Stats Ticker */}
