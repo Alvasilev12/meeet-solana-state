@@ -5,8 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import {
   Bot, Send, Loader2, MessageSquare, Coins, X,
+  Phone, Mail, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 interface AgentChatProps {
@@ -57,7 +59,6 @@ async function streamAgentChat({
       signal,
     });
 
-    // Non-streaming error responses (JSON)
     if (!resp.ok || !resp.body) {
       const contentType = resp.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
@@ -109,7 +110,6 @@ async function streamAgentChat({
       }
     }
 
-    // Final flush
     if (textBuffer.trim()) {
       for (let raw of textBuffer.split("\n")) {
         if (!raw) continue;
@@ -135,6 +135,152 @@ async function streamAgentChat({
     onError(e instanceof Error ? e : new Error(String(e)));
   }
 }
+
+// ── Spix Actions Panel ──────────────────────────────────────────────
+
+type SpixTab = "call" | "email" | "sms" | null;
+
+function SpixActionsPanel({ agentId, agentName, userId }: { agentId: string; agentName: string; userId: string }) {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<SpixTab>(null);
+
+  // Call fields
+  const [callPhone, setCallPhone] = useState("");
+  const [callPlaybook, setCallPlaybook] = useState("");
+  const [callSource, setCallSource] = useState("");
+
+  // Email fields
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+
+  // SMS fields
+  const [smsPhone, setSmsPhone] = useState("");
+  const [smsMsg, setSmsMsg] = useState("");
+
+  const spixAction = useMutation({
+    mutationFn: async ({ action, payload }: { action: string; payload: Record<string, unknown> }) => {
+      const res = await supabase.functions.invoke("spix-proxy", {
+        body: { action, ...payload },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (!res.data?.success) throw new Error(res.data?.error || "Spix error");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: "✅ Sent", description: `Action completed via ${agentName}` });
+      setActiveTab(null);
+      setCallPhone(""); setCallPlaybook(""); setCallSource("");
+      setEmailTo(""); setEmailSubject(""); setEmailBody("");
+      setSmsPhone(""); setSmsMsg("");
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleTab = (tab: SpixTab) => setActiveTab(prev => prev === tab ? null : tab);
+
+  return (
+    <div className="border-t border-border bg-muted/20">
+      {/* Action buttons row */}
+      <div className="flex items-center gap-1 px-3 py-1.5">
+        <span className="text-[9px] text-muted-foreground font-medium mr-1 uppercase tracking-wider">Spix</span>
+        <button
+          onClick={() => toggleTab("call")}
+          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
+            activeTab === "call" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <Phone className="w-3 h-3" /> Call
+        </button>
+        <button
+          onClick={() => toggleTab("email")}
+          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
+            activeTab === "email" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <Mail className="w-3 h-3" /> Email
+        </button>
+        <button
+          onClick={() => toggleTab("sms")}
+          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
+            activeTab === "sms" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <MessageSquare className="w-3 h-3" /> SMS
+        </button>
+        {activeTab && (
+          <button onClick={() => setActiveTab(null)} className="ml-auto text-muted-foreground hover:text-foreground">
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Expanded form */}
+      {activeTab === "call" && (
+        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
+          <Input placeholder="Playbook ID" value={callPlaybook} onChange={e => setCallPlaybook(e.target.value)} className="h-7 text-xs" />
+          <Input placeholder="Source number" value={callSource} onChange={e => setCallSource(e.target.value)} className="h-7 text-xs" />
+          <Input placeholder="Destination number" value={callPhone} onChange={e => setCallPhone(e.target.value)} className="h-7 text-xs" />
+          <Button
+            size="sm" className="w-full h-7 text-xs gap-1"
+            disabled={!callPlaybook || !callSource || !callPhone || spixAction.isPending}
+            onClick={() => spixAction.mutate({
+              action: "create-call",
+              payload: { playbook_id: callPlaybook, source_number: callSource, destination_number: callPhone },
+            })}
+          >
+            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+            Call · $0.10/min
+          </Button>
+        </div>
+      )}
+
+      {activeTab === "email" && (
+        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
+          <Input placeholder="recipient@example.com" value={emailTo} onChange={e => setEmailTo(e.target.value)} className="h-7 text-xs" />
+          <Input placeholder="Subject" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="h-7 text-xs" />
+          <textarea
+            placeholder="Email body..."
+            value={emailBody}
+            onChange={e => setEmailBody(e.target.value)}
+            className="w-full h-16 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <Button
+            size="sm" className="w-full h-7 text-xs gap-1"
+            disabled={!emailTo || !emailSubject || !emailBody || spixAction.isPending}
+            onClick={() => spixAction.mutate({
+              action: "send-email",
+              payload: { to: emailTo, subject: emailSubject, body: emailBody, from_name: `${agentName} (MEEET)` },
+            })}
+          >
+            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+            Send Email · $0.02
+          </Button>
+        </div>
+      )}
+
+      {activeTab === "sms" && (
+        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
+          <Input placeholder="+1 555 123 4567" value={smsPhone} onChange={e => setSmsPhone(e.target.value)} className="h-7 text-xs" />
+          <Input placeholder="SMS message" value={smsMsg} onChange={e => setSmsMsg(e.target.value)} className="h-7 text-xs" />
+          <Button
+            size="sm" className="w-full h-7 text-xs gap-1"
+            disabled={!smsPhone || !smsMsg || spixAction.isPending}
+            onClick={() => spixAction.mutate({
+              action: "send-sms",
+              payload: { to: smsPhone, message: smsMsg },
+            })}
+          >
+            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
+            Send SMS · $0.04
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Chat Component ─────────────────────────────────────────────
 
 export default function AgentChat({ agentId, agentName, agentClass, agentLevel, inline, onClose }: AgentChatProps) {
   const { user } = useAuth();
@@ -175,7 +321,6 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
     setIsStreaming(true);
     setStreamingText("");
 
-    // Optimistic user message
     qc.setQueryData<ChatMessage[]>(["agent-chat-messages", roomId], (old = []) => [
       ...old,
       { id: `opt-user-${Date.now()}`, sender_type: "user", message: msg, created_at: new Date().toISOString() },
@@ -186,8 +331,7 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
     const attempt = (retry: number) => {
       const controller = new AbortController();
       abortRef.current = controller;
-      const timeoutMs = 60000;
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       let accumulated = "";
 
@@ -231,12 +375,10 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
     attempt(0);
   }, [input, isStreaming, user, roomId, agentId, qc]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
   }, []);
 
-  // Scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -333,7 +475,6 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
           </div>
         ))}
 
-        {/* Streaming agent response */}
         {isStreaming && streamingText && (
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-2xl rounded-bl-md px-3.5 py-2 text-sm bg-muted/60 text-foreground whitespace-pre-wrap">
@@ -343,7 +484,6 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
           </div>
         )}
 
-        {/* Thinking indicator (before first token) */}
         {isStreaming && !streamingText && (
           <div className="flex justify-start">
             <div className="bg-muted/60 rounded-2xl rounded-bl-md px-4 py-2.5 flex items-center gap-2">
@@ -365,7 +505,10 @@ export default function AgentChat({ agentId, agentName, agentClass, agentLevel, 
         )}
       </div>
 
-      {/* Input */}
+      {/* Spix Actions Panel */}
+      {user && <SpixActionsPanel agentId={agentId} agentName={agentName} userId={user.id} />}
+
+      {/* Chat Input */}
       <div className="p-3 border-t border-border bg-muted/20">
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
