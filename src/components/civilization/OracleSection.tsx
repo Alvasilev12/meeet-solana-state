@@ -17,11 +17,12 @@ export default function OracleSection() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [totalBets, setTotalBets] = useState(0);
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = document.getElementById("oracle-section");
+    const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05, rootMargin: "200px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
