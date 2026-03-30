@@ -49,7 +49,7 @@ export default function CommunicationsSection() {
         <AnimatedSection delay={300} animation="fade-up">
           <div className="text-center">
             <Link to="/pricing">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs border-purple-500/20 text-purple-400 hover:bg-purple-500/10">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/20 text-primary hover:bg-primary/10">
                 View Comms Plans <ArrowRight className="w-3 h-3" />
               </Button>
             </Link>
