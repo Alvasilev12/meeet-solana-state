@@ -28,6 +28,15 @@ async function spixFetch(path: string, apiKey: string, body: Record<string, unkn
   return { status: res.status, ok: res.ok, data };
 }
 
+async function spixGet(path: string, apiKey: string) {
+  const res = await fetch(`${SPIX_BASE}${path}`, {
+    method: "GET",
+    headers: { "Authorization": `Bearer ${apiKey}` },
+  });
+  const data = await res.json();
+  return { status: res.status, ok: res.ok, data };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
