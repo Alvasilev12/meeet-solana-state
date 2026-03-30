@@ -20,7 +20,7 @@ import {
 import {
   TrendingUp, Shield, Search, Coins, Plus, Clock, Users, Zap,
   Loader2, Code, Brain, Paintbrush, Lock, HelpCircle,
-  CheckCircle, XCircle, Send, AlertTriangle, Eye,
+  CheckCircle, XCircle, Send, AlertTriangle, Eye, Mail,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -40,6 +40,7 @@ function formatMeeet(amount: number): string {
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = {
   all:           { label: "All",        icon: <Zap className="w-4 h-4" /> },
+  outreach:      { label: "Outreach",   icon: <Mail className="w-4 h-4" /> },
   data_analysis: { label: "Data",       icon: <Brain className="w-4 h-4" /> },
   twitter_raid:  { label: "Twitter",    icon: <TrendingUp className="w-4 h-4" /> },
   code:          { label: "Code",       icon: <Code className="w-4 h-4" /> },
@@ -49,6 +50,36 @@ const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = 
   security:      { label: "Security",   icon: <Lock className="w-4 h-4" /> },
   other:         { label: "Other",      icon: <HelpCircle className="w-4 h-4" /> },
 };
+
+const OUTREACH_QUESTS = [
+  {
+    id: "outreach-first-contact",
+    title: "First Contact",
+    description: "Send your first invite email to a potential new citizen. Start building your outreach network.",
+    reward: 50,
+    goal: 1,
+    metric: "invites_sent",
+    icon: "✉️",
+  },
+  {
+    id: "outreach-ambassador",
+    title: "Ambassador",
+    description: "Attract 3 new users who register through your referral link. Prove your influence.",
+    reward: 500,
+    goal: 3,
+    metric: "referrals_registered",
+    icon: "🤝",
+  },
+  {
+    id: "outreach-civilization-builder",
+    title: "Civilization Builder",
+    description: "Recruit 10 users who deploy their own agents. You're building the future of MEEET.",
+    reward: 2000,
+    goal: 10,
+    metric: "referrals_deployed",
+    icon: "🏛️",
+  },
+];
 
 const STATUS_STYLE: Record<string, string> = {
   open:        "bg-blue-500/15 text-blue-400 border-blue-500/20",
@@ -170,7 +201,40 @@ const Quests = () => {
   const { data: myAgents = [] } = useMyAgents(user?.id);
   const questAction = useQuestAction();
 
+  // Outreach stats for referral quests
+  const { data: outreachStats } = useQuery({
+    queryKey: ["outreach-stats", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: referrals } = await supabase
+        .from("deployed_agents")
+        .select("status")
+        .eq("user_id", user!.id);
+      const total = referrals?.length ?? 0;
+      const deployed = referrals?.filter((r: any) => r.status === "running").length ?? 0;
+      // Count agent_actions with type 'invite_sent' for this user
+      const { count: invitesSent } = await supabase
+        .from("agent_actions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("action_type", "invite_sent");
+      return {
+        invites_sent: invitesSent ?? 0,
+        referrals_registered: total,
+        referrals_deployed: deployed,
+      };
+    },
+  });
+
+  const getOutreachProgress = (metric: string) => {
+    if (!outreachStats) return 0;
+    return (outreachStats as any)[metric] ?? 0;
+  };
+
+  const showOutreach = activeCategory === "all" || activeCategory === ("outreach" as any);
+
   const filtered = quests.filter((q) => {
+    if (activeCategory === ("outreach" as any)) return false; // outreach shows only static cards
     const matchCat = activeCategory === "all" || q.category === activeCategory;
     const matchSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchSearch;
@@ -242,15 +306,84 @@ const Quests = () => {
               </div>
             </div>
 
+            {/* Outreach Quests */}
+            {showOutreach && (
+              <div className="mb-8">
+                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2 mb-4">
+                  <Mail className="w-4 h-4 text-purple-400" /> Outreach Quests
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {OUTREACH_QUESTS.map((oq) => {
+                    const progress = getOutreachProgress(oq.metric);
+                    const completed = progress >= oq.goal;
+                    const pct = Math.min(100, Math.round((progress / oq.goal) * 100));
+                    return (
+                      <Card key={oq.id} className={`glass-card border-border flex flex-col ${completed ? "border-emerald-500/30" : ""}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{oq.icon}</span>
+                              <Badge variant="outline" className="text-[10px] text-purple-400 border-purple-500/20">
+                                Outreach
+                              </Badge>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${
+                              completed
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                                : "bg-blue-500/15 text-blue-400 border-blue-500/20"
+                            }`}>
+                              {completed ? "Completed" : "Active"}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-base font-display leading-snug mt-2">{oq.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 flex-1 flex flex-col">
+                          <p className="text-xs text-muted-foreground font-body">{oq.description}</p>
+                          <div className="flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-secondary" />
+                            <span className="text-sm font-display font-semibold text-secondary">
+                              {formatMeeet(oq.reward)} $MEEET
+                            </span>
+                          </div>
+                          <div className="mt-auto space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                              <span>{progress} / {oq.goal}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${completed ? "bg-emerald-500" : "bg-purple-500"}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                          {!completed && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5 border-purple-500/30 hover:bg-purple-500/10 mt-2"
+                              onClick={() => window.location.href = "/referrals"}
+                            >
+                              <Send className="w-3 h-3" /> Go to Referrals
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && !showOutreach ? (
               <div className="text-center py-20 text-muted-foreground font-body">
                 No quests found. {user ? "Create one!" : "Sign in to create quests."}
               </div>
-            ) : (
+            ) : filtered.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filtered.map((quest) => (
                   <QuestCard
@@ -262,7 +395,7 @@ const Quests = () => {
                   />
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </section>
       </main>
