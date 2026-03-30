@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { AGENT_CLASSES } from "@/data/agent-classes";
 import {
   Copy, Check, Users, Gift, TrendingUp, Link2, Loader2,
   Trophy, Send, ExternalLink, Mail, Shield, Zap, Star,
@@ -53,6 +58,60 @@ export default function Referrals() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [copiedAgentId, setCopiedAgentId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteAgent, setInviteAgent] = useState<any>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [generatingMsg, setGeneratingMsg] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
+
+  const openInviteDialog = async (agent: any) => {
+    setInviteAgent(agent);
+    setInviteEmail("");
+    setInviteMessage("");
+    setInviteOpen(true);
+    // AI-generate the invite message
+    setGeneratingMsg(true);
+    try {
+      const cls = AGENT_CLASSES[agent.class];
+      const agentRefLink = `${window.location.origin}/join?ref=${agent.id}`;
+      const resp = await supabase.functions.invoke("agent-chat-ai", {
+        body: {
+          prompt: `Write a short, compelling invitation email (3-4 sentences) from an AI agent named "${agent.name}" who is a Level ${agent.level} ${cls?.name || agent.class} in the MEEET civilization. The agent invites someone to join MEEET World — a civilization of AI agents doing scientific research. Mention the agent's specialty: "${cls?.description || "AI research"}". End with the referral link: ${agentRefLink}. Keep it friendly and professional. No subject line, just the body text.`,
+        },
+      });
+      if (resp.data?.reply || resp.data?.response) {
+        setInviteMessage(resp.data.reply || resp.data.response);
+      } else {
+        setInviteMessage(
+          `Hey! I'm ${agent.name}, a ${cls?.name || agent.class} agent in MEEET World — a civilization where AI agents conduct real scientific research.\n\nJoin me and get 200 $MEEET welcome bonus! My specialty is ${cls?.description || "AI research"}.\n\n${agentRefLink}`
+        );
+      }
+    } catch {
+      const cls = AGENT_CLASSES[inviteAgent?.class];
+      const agentRefLink = `${window.location.origin}/join?ref=${agent.id}`;
+      setInviteMessage(
+        `Hey! I'm ${agent.name}, a ${cls?.name || agent.class} agent in MEEET World.\n\nJoin me and get 200 $MEEET welcome bonus!\n\n${agentRefLink}`
+      );
+    } finally {
+      setGeneratingMsg(false);
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteEmail || !inviteMessage || !inviteAgent) return;
+    setSendingInvite(true);
+    try {
+      window.open(
+        `mailto:${encodeURIComponent(inviteEmail)}?subject=${encodeURIComponent(`${inviteAgent.name} invites you to MEEET World`)}&body=${encodeURIComponent(inviteMessage)}`,
+        "_blank"
+      );
+      toast.success("Invite opened in your email client!");
+      setInviteOpen(false);
+    } finally {
+      setSendingInvite(false);
+    }
+  };
 
   const { data: profile } = useQuery({
     queryKey: ["profile-referral", user?.id],
@@ -350,6 +409,14 @@ export default function Referrals() {
                             {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                             {isCopied ? "Copied" : "Copy"}
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-1 text-[10px] h-7 border-emerald-500/30 hover:bg-emerald-500/10"
+                            onClick={() => openInviteDialog(agent)}
+                          >
+                            <Send className="w-3 h-3" /> Invite
+                          </Button>
                         </div>
                       );
                     })}
@@ -489,6 +556,61 @@ export default function Referrals() {
       </section>
 
       <Footer />
+
+      {/* Send Invite Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="glass-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-sm flex items-center gap-2">
+              <Send className="w-4 h-4 text-emerald-400" />
+              Send Invite from {inviteAgent?.name}
+            </DialogTitle>
+            <DialogDescription className="text-xs font-body">
+              AI-generated invitation from your agent. Edit if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div>
+              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">
+                Recipient Email
+              </label>
+              <Input
+                type="email"
+                placeholder="friend@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="h-9 text-sm bg-background/50 border-border"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-1 block">
+                Invitation Message
+              </label>
+              {generatingMsg ? (
+                <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-xs font-body">AI is writing invite...</span>
+                </div>
+              ) : (
+                <Textarea
+                  value={inviteMessage}
+                  onChange={(e) => setInviteMessage(e.target.value)}
+                  rows={6}
+                  className="text-xs bg-background/50 border-border resize-none font-body leading-relaxed"
+                />
+              )}
+            </div>
+            <Button
+              className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white"
+              disabled={!inviteEmail || !inviteMessage || generatingMsg || sendingInvite}
+              onClick={handleSendInvite}
+            >
+              {sendingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              Send Invite
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
