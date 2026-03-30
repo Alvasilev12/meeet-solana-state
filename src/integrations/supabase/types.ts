@@ -3556,6 +3556,92 @@ export type Database = {
           },
         ]
       }
+      twitter_accounts: {
+        Row: {
+          access_token: string
+          access_token_secret: string
+          consumer_key: string
+          consumer_secret: string
+          created_at: string
+          id: string
+          last_posted_at: string | null
+          role: string
+          status: string
+          username: string
+        }
+        Insert: {
+          access_token: string
+          access_token_secret: string
+          consumer_key: string
+          consumer_secret: string
+          created_at?: string
+          id?: string
+          last_posted_at?: string | null
+          role?: string
+          status?: string
+          username: string
+        }
+        Update: {
+          access_token?: string
+          access_token_secret?: string
+          consumer_key?: string
+          consumer_secret?: string
+          created_at?: string
+          id?: string
+          last_posted_at?: string | null
+          role?: string
+          status?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      twitter_queue: {
+        Row: {
+          account_id: string
+          content: string
+          created_at: string
+          error: string | null
+          id: string
+          media_urls: string[] | null
+          posted_at: string | null
+          scheduled_at: string | null
+          status: string
+          tweet_id: string | null
+        }
+        Insert: {
+          account_id: string
+          content: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          media_urls?: string[] | null
+          posted_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tweet_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          content?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          media_urls?: string[] | null
+          posted_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tweet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twitter_queue_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "twitter_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_logs: {
         Row: {
           action_type: string
