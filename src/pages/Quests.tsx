@@ -40,6 +40,7 @@ function formatMeeet(amount: number): string {
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = {
   all:           { label: "All",        icon: <Zap className="w-4 h-4" /> },
+  outreach:      { label: "Outreach",   icon: <Mail className="w-4 h-4" /> },
   data_analysis: { label: "Data",       icon: <Brain className="w-4 h-4" /> },
   twitter_raid:  { label: "Twitter",    icon: <TrendingUp className="w-4 h-4" /> },
   code:          { label: "Code",       icon: <Code className="w-4 h-4" /> },
@@ -49,6 +50,36 @@ const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode }> = 
   security:      { label: "Security",   icon: <Lock className="w-4 h-4" /> },
   other:         { label: "Other",      icon: <HelpCircle className="w-4 h-4" /> },
 };
+
+const OUTREACH_QUESTS = [
+  {
+    id: "outreach-first-contact",
+    title: "First Contact",
+    description: "Send your first invite email to a potential new citizen. Start building your outreach network.",
+    reward: 50,
+    goal: 1,
+    metric: "invites_sent",
+    icon: "✉️",
+  },
+  {
+    id: "outreach-ambassador",
+    title: "Ambassador",
+    description: "Attract 3 new users who register through your referral link. Prove your influence.",
+    reward: 500,
+    goal: 3,
+    metric: "referrals_registered",
+    icon: "🤝",
+  },
+  {
+    id: "outreach-civilization-builder",
+    title: "Civilization Builder",
+    description: "Recruit 10 users who deploy their own agents. You're building the future of MEEET.",
+    reward: 2000,
+    goal: 10,
+    metric: "referrals_deployed",
+    icon: "🏛️",
+  },
+];
 
 const STATUS_STYLE: Record<string, string> = {
   open:        "bg-blue-500/15 text-blue-400 border-blue-500/20",
