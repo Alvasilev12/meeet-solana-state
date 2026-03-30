@@ -639,6 +639,7 @@ const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, free
 /* ── Spix Communication Dialog ── */
 const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call" | "email" | "sms" | null; onClose: () => void }) => {
   const [phone, setPhone] = useState("");
+  const [callMsg, setCallMsg] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
