@@ -10,16 +10,16 @@
  *
  * ── Main Endpoints ──────────────────────────────────────────────────
  *
- *  POST /v1/calls       — Initiate an outbound phone call
+ *  POST /v1/calls       — Initiate an outbound phone call  (scope: calls:write)
  *    Body: { to, agent_name, prompt, voice }
  *
- *  POST /v1/email       — Send a single email
+ *  POST /v1/email       — Send a single email  (scope: email:write)
  *    Body: { to, subject, body, from_name }
  *
- *  POST /v1/email/bulk  — Send bulk emails (up to 1000 recipients)
+ *  POST /v1/email/bulk  — Send bulk emails (up to 1000 recipients)  (scope: email:write)
  *    Body: { recipients, subject, body, from_name }
  *
- *  POST /v1/sms         — Send an SMS message
+ *  POST /v1/sms         — Send an SMS message  (scope: sms:write)
  *    Body: { to, message }
  *
  *  All requests require header: Authorization: Bearer <SPIX_API_KEY>
