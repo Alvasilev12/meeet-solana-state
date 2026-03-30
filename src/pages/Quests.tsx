@@ -306,15 +306,84 @@ const Quests = () => {
               </div>
             </div>
 
+            {/* Outreach Quests */}
+            {showOutreach && (
+              <div className="mb-8">
+                <h3 className="text-sm font-display font-bold text-foreground flex items-center gap-2 mb-4">
+                  <Mail className="w-4 h-4 text-purple-400" /> Outreach Quests
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {OUTREACH_QUESTS.map((oq) => {
+                    const progress = getOutreachProgress(oq.metric);
+                    const completed = progress >= oq.goal;
+                    const pct = Math.min(100, Math.round((progress / oq.goal) * 100));
+                    return (
+                      <Card key={oq.id} className={`glass-card border-border flex flex-col ${completed ? "border-emerald-500/30" : ""}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{oq.icon}</span>
+                              <Badge variant="outline" className="text-[10px] text-purple-400 border-purple-500/20">
+                                Outreach
+                              </Badge>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${
+                              completed
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                                : "bg-blue-500/15 text-blue-400 border-blue-500/20"
+                            }`}>
+                              {completed ? "Completed" : "Active"}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-base font-display leading-snug mt-2">{oq.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 flex-1 flex flex-col">
+                          <p className="text-xs text-muted-foreground font-body">{oq.description}</p>
+                          <div className="flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-secondary" />
+                            <span className="text-sm font-display font-semibold text-secondary">
+                              {formatMeeet(oq.reward)} $MEEET
+                            </span>
+                          </div>
+                          <div className="mt-auto space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                              <span>{progress} / {oq.goal}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${completed ? "bg-emerald-500" : "bg-purple-500"}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                          {!completed && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5 border-purple-500/30 hover:bg-purple-500/10 mt-2"
+                              onClick={() => window.location.href = "/referrals"}
+                            >
+                              <Send className="w-3 h-3" /> Go to Referrals
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && !showOutreach ? (
               <div className="text-center py-20 text-muted-foreground font-body">
                 No quests found. {user ? "Create one!" : "Sign in to create quests."}
               </div>
-            ) : (
+            ) : filtered.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filtered.map((quest) => (
                   <QuestCard
@@ -326,7 +395,7 @@ const Quests = () => {
                   />
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </section>
       </main>
