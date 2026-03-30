@@ -8,7 +8,7 @@ interface SEOHeadProps {
 }
 
 const BASE_URL = "https://meeet.world";
-const DEFAULT_OG = `${BASE_URL}/og-image.png`;
+const DEFAULT_OG = `${BASE_URL}/og-image.jpg`;
 
 const SEOHead = ({ title, description, path, ogImage }: SEOHeadProps) => {
   useEffect(() => {
@@ -27,10 +27,13 @@ const SEOHead = ({ title, description, path, ogImage }: SEOHeadProps) => {
     };
 
     setMeta("name", "description", description);
+    setMeta("property", "og:type", "website");
     setMeta("property", "og:title", title);
     setMeta("property", "og:description", description);
     setMeta("property", "og:url", canonical);
     setMeta("property", "og:image", image);
+    setMeta("name", "twitter:card", "summary_large_image");
+    setMeta("name", "twitter:site", "@meeetworld");
     setMeta("name", "twitter:title", title);
     setMeta("name", "twitter:description", description);
     setMeta("name", "twitter:image", image);
