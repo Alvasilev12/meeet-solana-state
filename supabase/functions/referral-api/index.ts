@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true, message: "Referral complete",
         new_agent: agentResult?.agent?.name || null,
-        bonus: REFERRAL_BONUS,
+        bonus: REFERRER_BONUS,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
