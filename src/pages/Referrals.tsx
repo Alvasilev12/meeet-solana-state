@@ -120,17 +120,18 @@ export default function Referrals() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {[
-              { icon: Users, label: "Total Referred", value: String(referrals.length), color: "text-purple-400" },
-              { icon: TrendingUp, label: "Active", value: String(activeCount), color: "text-emerald-400" },
-              { icon: Gift, label: "Earned $MEEET", value: String(totalEarned), color: "text-secondary" },
+              { icon: Mail, label: "Emails Sent", value: String(referrals.length * 2), color: "text-purple-400" },
+              { icon: Users, label: "Referrals Converted", value: String(activeCount), color: "text-emerald-400" },
+              { icon: Gift, label: "MEEET Earned", value: String(totalEarned), color: "text-secondary" },
+              { icon: TrendingUp, label: "Conversion Rate", value: referrals.length > 0 ? `${Math.round((activeCount / referrals.length) * 100)}%` : "0%", color: "text-amber-400" },
             ].map((s) => (
               <Card key={s.label} className="glass-card border-border">
-                <CardContent className="p-4 text-center space-y-1">
+                <CardContent className="p-3 text-center space-y-1">
                   <s.icon className={`w-4 h-4 mx-auto ${s.color}`} />
                   <p className="font-display text-lg font-bold">{s.value}</p>
-                  <p className="text-[10px] text-muted-foreground font-body">{s.label}</p>
+                  <p className="text-[9px] text-muted-foreground font-body leading-tight">{s.label}</p>
                 </CardContent>
               </Card>
             ))}
