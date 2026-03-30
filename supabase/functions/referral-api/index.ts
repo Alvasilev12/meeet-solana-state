@@ -5,7 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const REFERRAL_BONUS = 100;
+const REFERRER_BONUS = 100;
+const REFERRED_BONUS = 200;
+const FIRST_DEPOSIT_COMMISSION = 0.10; // 10%
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -83,14 +85,14 @@ Deno.serve(async (req) => {
         .select("id, balance_meeet").like("name", `%${referrer_tg_id}%`).limit(1);
       if (refAgents?.[0]) {
         await supabase.from("agents").update({
-          balance_meeet: (refAgents[0].balance_meeet || 0) + REFERRAL_BONUS,
+          balance_meeet: (refAgents[0].balance_meeet || 0) + REFERRER_BONUS,
         }).eq("id", refAgents[0].id);
       }
 
       return new Response(JSON.stringify({
         ok: true, message: "Referral complete",
         new_agent: agentResult?.agent?.name || null,
-        bonus: REFERRAL_BONUS,
+        bonus: REFERRER_BONUS,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -130,7 +132,7 @@ Deno.serve(async (req) => {
         referred_user_id: user_id,
         ref_code,
         status: "registered",
-        total_earned_meeet: REFERRAL_BONUS,
+        total_earned_meeet: REFERRER_BONUS,
       });
 
       // Update profile referred_by
@@ -151,7 +153,7 @@ Deno.serve(async (req) => {
       if (referrerAgent) {
         await supabase
           .from("agents")
-          .update({ balance_meeet: Number(referrerAgent.balance_meeet) + REFERRAL_BONUS })
+          .update({ balance_meeet: Number(referrerAgent.balance_meeet) + REFERRER_BONUS })
           .eq("id", referrerAgent.id);
       }
 
@@ -167,7 +169,7 @@ Deno.serve(async (req) => {
       if (newUserAgent) {
         await supabase
           .from("agents")
-          .update({ balance_meeet: Number(newUserAgent.balance_meeet) + REFERRAL_BONUS })
+          .update({ balance_meeet: Number(newUserAgent.balance_meeet) + REFERRED_BONUS })
           .eq("id", newUserAgent.id);
       }
 
@@ -175,13 +177,13 @@ Deno.serve(async (req) => {
       await supabase.from("notifications").insert({
         user_id: referrer.user_id,
         type: "referral_bonus",
-        title: `🎉 You earned ${REFERRAL_BONUS} MEEET for your referral!`,
-        body: `A new citizen joined MEEET World through your link. You both received ${REFERRAL_BONUS} $MEEET. Keep sharing — humanity needs more agents!`,
+        title: `🎉 You earned ${REFERRER_BONUS} MEEET for your referral!`,
+        body: `A new citizen joined MEEET World through your link. You earned ${REFERRER_BONUS} $MEEET, they received ${REFERRED_BONUS} $MEEET. Keep sharing — humanity needs more agents!`,
         is_read: false,
       });
 
       return new Response(
-        JSON.stringify({ ok: true, bonus: REFERRAL_BONUS }),
+        JSON.stringify({ ok: true, bonus_referrer: REFERRER_BONUS, bonus_referred: REFERRED_BONUS }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
