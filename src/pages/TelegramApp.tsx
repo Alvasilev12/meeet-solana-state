@@ -639,6 +639,7 @@ const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, free
 /* ── Spix Communication Dialog ── */
 const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call" | "email" | "sms" | null; onClose: () => void }) => {
   const [phone, setPhone] = useState("");
+  const [callMsg, setCallMsg] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -662,7 +663,7 @@ const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call
   });
 
   const handleSend = () => {
-    if (mode === "call") action.mutate({ action: "call", phone, message: "Agent call" });
+    if (mode === "call") action.mutate({ action: "call", phone, message: callMsg });
     else if (mode === "email") action.mutate({ action: "email", to: email, subject, body });
     else if (mode === "sms") action.mutate({ action: "sms", phone, message: smsMsg });
   };
@@ -686,7 +687,15 @@ const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call
           ) : (
             <>
               {mode === "call" && (
-                <Input placeholder="+1 555 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-xs bg-background" />
+                <>
+                  <Input placeholder="+1 555 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-xs bg-background" />
+                  <Input placeholder="Call purpose / message" value={callMsg} onChange={(e) => setCallMsg(e.target.value)} className="text-xs bg-background" />
+                  <Button size="sm" className="w-full text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+                    disabled={!phone || !callMsg || action.isPending} onClick={handleSend}>
+                    {action.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                    Call ($0.10/min)
+                  </Button>
+                </>
               )}
               {mode === "email" && (
                 <>
@@ -694,19 +703,24 @@ const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call
                   <Input placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} className="text-xs bg-background" />
                   <textarea placeholder="Email body..." value={body} onChange={(e) => setBody(e.target.value)}
                     className="w-full h-20 rounded-md border border-input bg-background px-3 py-2 text-xs resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                  <Button size="sm" className="w-full text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={!email || !subject || !body || action.isPending} onClick={handleSend}>
+                    {action.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                    Send Email ($0.02)
+                  </Button>
                 </>
               )}
               {mode === "sms" && (
                 <>
                   <Input placeholder="+1 555 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-xs bg-background" />
                   <Input placeholder="SMS message" value={smsMsg} onChange={(e) => setSmsMsg(e.target.value)} className="text-xs bg-background" />
+                  <Button size="sm" className="w-full text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={!phone || !smsMsg || action.isPending} onClick={handleSend}>
+                    {action.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                    Send SMS ($0.04)
+                  </Button>
                 </>
               )}
-              <Button size="sm" className="w-full text-xs gap-1.5" disabled={action.isPending}
-                onClick={handleSend}>
-                {action.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                Send
-              </Button>
             </>
           )}
         </div>
