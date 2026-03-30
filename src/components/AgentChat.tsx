@@ -180,100 +180,112 @@ function SpixActionsPanel({ agentId, agentName, userId }: { agentId: string; age
   const toggleTab = (tab: SpixTab) => setActiveTab(prev => prev === tab ? null : tab);
 
   return (
-    <div className="border-t border-border bg-muted/20">
+    <div className="border-t border-primary/20 bg-card/80 backdrop-blur-sm">
       {/* Action buttons row */}
-      <div className="flex items-center gap-1 px-3 py-1.5">
-        <span className="text-[9px] text-muted-foreground font-medium mr-1 uppercase tracking-wider">Spix</span>
+      <div className="flex items-center gap-1.5 px-3 py-2">
+        <span className="text-[9px] text-primary/60 font-bold mr-1 uppercase tracking-widest font-display">Spix</span>
         <button
           onClick={() => toggleTab("call")}
-          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
-            activeTab === "call" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all duration-200 ${
+            activeTab === "call"
+              ? "bg-accent/20 text-accent border border-accent/30 shadow-[0_0_8px_hsl(var(--accent)/0.15)]"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
           }`}
         >
-          <Phone className="w-3 h-3" /> Call
+          <Phone className="w-3 h-3" /> 📞 Call
         </button>
         <button
           onClick={() => toggleTab("email")}
-          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
-            activeTab === "email" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all duration-200 ${
+            activeTab === "email"
+              ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
           }`}
         >
-          <Mail className="w-3 h-3" /> Email
+          <Mail className="w-3 h-3" /> 📧 Email
         </button>
         <button
           onClick={() => toggleTab("sms")}
-          className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors ${
-            activeTab === "sms" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-all duration-200 ${
+            activeTab === "sms"
+              ? "bg-accent/20 text-accent border border-accent/30 shadow-[0_0_8px_hsl(var(--accent)/0.15)]"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
           }`}
         >
-          <MessageSquare className="w-3 h-3" /> SMS
+          <MessageSquare className="w-3 h-3" /> 💬 SMS
         </button>
         {activeTab && (
-          <button onClick={() => setActiveTab(null)} className="ml-auto text-muted-foreground hover:text-foreground">
+          <button onClick={() => setActiveTab(null)} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      {/* Expanded form */}
+      {/* Expanded forms */}
       {activeTab === "call" && (
-        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
-          <Input placeholder="Playbook ID" value={callPlaybook} onChange={e => setCallPlaybook(e.target.value)} className="h-7 text-xs" />
-          <Input placeholder="Source number" value={callSource} onChange={e => setCallSource(e.target.value)} className="h-7 text-xs" />
-          <Input placeholder="Destination number" value={callPhone} onChange={e => setCallPhone(e.target.value)} className="h-7 text-xs" />
-          <Button
-            size="sm" className="w-full h-7 text-xs gap-1"
-            disabled={!callPlaybook || !callSource || !callPhone || spixAction.isPending}
-            onClick={() => spixAction.mutate({
-              action: "create-call",
-              payload: { playbook_id: callPlaybook, source_number: callSource, destination_number: callPhone },
-            })}
-          >
-            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
-            Call · $0.10/min
-          </Button>
+        <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="rounded-lg border border-accent/20 bg-accent/5 p-2.5 space-y-2">
+            <Input placeholder="Playbook ID" value={callPlaybook} onChange={e => setCallPlaybook(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Input placeholder="Source number" value={callSource} onChange={e => setCallSource(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Input placeholder="+1 555 123 4567" value={callPhone} onChange={e => setCallPhone(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Button
+              size="sm" className="w-full h-8 text-xs gap-1.5 bg-accent hover:bg-accent/90 text-accent-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]"
+              disabled={!callPlaybook || !callSource || !callPhone || spixAction.isPending}
+              onClick={() => spixAction.mutate({
+                action: "create-call",
+                payload: { playbook_id: callPlaybook, source_number: callSource, destination_number: callPhone },
+              })}
+            >
+              {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+              📞 Call · $0.10/min
+            </Button>
+          </div>
         </div>
       )}
 
       {activeTab === "email" && (
-        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
-          <Input placeholder="recipient@example.com" value={emailTo} onChange={e => setEmailTo(e.target.value)} className="h-7 text-xs" />
-          <Input placeholder="Subject" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="h-7 text-xs" />
-          <textarea
-            placeholder="Email body..."
-            value={emailBody}
-            onChange={e => setEmailBody(e.target.value)}
-            className="w-full h-16 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-          <Button
-            size="sm" className="w-full h-7 text-xs gap-1"
-            disabled={!emailTo || !emailSubject || !emailBody || spixAction.isPending}
-            onClick={() => spixAction.mutate({
-              action: "send-email",
-              payload: { to: emailTo, subject: emailSubject, body: emailBody, from_name: `${agentName} (MEEET)` },
-            })}
-          >
-            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-            Send Email · $0.02
-          </Button>
+        <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+            <Input placeholder="recipient@example.com" value={emailTo} onChange={e => setEmailTo(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Input placeholder="Subject" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <textarea
+              placeholder="Email body..."
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              className="w-full h-20 rounded-md border border-border/50 bg-background/60 px-3 py-2 text-xs resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 placeholder:text-muted-foreground"
+            />
+            <Button
+              size="sm" className="w-full h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.2)]"
+              disabled={!emailTo || !emailSubject || !emailBody || spixAction.isPending}
+              onClick={() => spixAction.mutate({
+                action: "send-email",
+                payload: { to: emailTo, subject: emailSubject, body: emailBody, from_name: `${agentName} (MEEET)` },
+              })}
+            >
+              {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+              📧 Send Email · $0.02
+            </Button>
+          </div>
         </div>
       )}
 
       {activeTab === "sms" && (
-        <div className="px-3 pb-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
-          <Input placeholder="+1 555 123 4567" value={smsPhone} onChange={e => setSmsPhone(e.target.value)} className="h-7 text-xs" />
-          <Input placeholder="SMS message" value={smsMsg} onChange={e => setSmsMsg(e.target.value)} className="h-7 text-xs" />
-          <Button
-            size="sm" className="w-full h-7 text-xs gap-1"
-            disabled={!smsPhone || !smsMsg || spixAction.isPending}
-            onClick={() => spixAction.mutate({
-              action: "send-sms",
-              payload: { to: smsPhone, message: smsMsg },
-            })}
-          >
-            {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
-            Send SMS · $0.04
-          </Button>
+        <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="rounded-lg border border-accent/20 bg-accent/5 p-2.5 space-y-2">
+            <Input placeholder="+1 555 123 4567" value={smsPhone} onChange={e => setSmsPhone(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Input placeholder="SMS message..." value={smsMsg} onChange={e => setSmsMsg(e.target.value)} className="h-8 text-xs bg-background/60 border-border/50" />
+            <Button
+              size="sm" className="w-full h-8 text-xs gap-1.5 bg-accent hover:bg-accent/90 text-accent-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]"
+              disabled={!smsPhone || !smsMsg || spixAction.isPending}
+              onClick={() => spixAction.mutate({
+                action: "send-sms",
+                payload: { to: smsPhone, message: smsMsg },
+              })}
+            >
+              {spixAction.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
+              💬 Send SMS · $0.04
+            </Button>
+          </div>
         </div>
       )}
     </div>
