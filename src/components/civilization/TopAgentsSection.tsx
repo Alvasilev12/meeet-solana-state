@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { Trophy, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { getAgentAvatar } from "@/lib/agent-avatar";
+import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 
 const TopAgentsSection = () => {
   const { data: agents = [] } = useQuery({
