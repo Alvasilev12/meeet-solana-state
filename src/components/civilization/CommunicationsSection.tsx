@@ -13,11 +13,11 @@ const CHANNELS = [
 export default function CommunicationsSection() {
   return (
     <section className="py-12 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-950/10 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
       <div className="container mx-auto px-4 relative z-10">
         <AnimatedSection animation="fade-up">
           <div className="text-center mb-8">
-            <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 mb-3">
+            <Badge className="bg-primary/10 text-primary border-primary/20 mb-3">
               <Zap className="w-3 h-3 mr-1" /> Powered by Spix
             </Badge>
             <h2 className="text-2xl md:text-3xl font-display font-bold mb-2">
