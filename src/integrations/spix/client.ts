@@ -64,6 +64,11 @@ export interface SpixSmsPayload {
   message: string;
 }
 
+export interface SpixThreadReplyPayload {
+  thread_id: string;
+  body: string;
+}
+
 export interface SpixResult<T = Record<string, unknown>> {
   success: boolean;
   error?: string;
@@ -71,6 +76,9 @@ export interface SpixResult<T = Record<string, unknown>> {
   email?: T;
   sms?: T;
   bulk?: T;
+  transcript?: T;
+  summary?: T;
+  thread?: T;
   actions?: T[];
 }
 
