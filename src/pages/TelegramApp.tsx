@@ -123,6 +123,7 @@ const TelegramApp = () => {
   const [creating, setCreating] = useState(false);
   const [topCountries, setTopCountries] = useState<any[]>(COUNTRY_WARS_FALLBACK);
   const [newAgentName, setNewAgentName] = useState("");
+  const [spixCredits, setSpixCredits] = useState(0);
   const [newAgentClass, setNewAgentClass] = useState("oracle");
 
   const tg = window.Telegram?.WebApp;
@@ -179,6 +180,14 @@ const TelegramApp = () => {
           .select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code")
           .limit(20);
         if (userAgents) setAgents(userAgents as Agent[]);
+
+        // Fetch Spix credits from billing balance
+        const { data: billing } = await supabase.from("agent_billing")
+          .select("balance_usd")
+          .limit(1);
+        if (billing && billing.length > 0) {
+          setSpixCredits(Math.floor(Number(billing[0].balance_usd) / 0.02));
+        }
       } catch (e) {
         console.error("TG data load error:", e);
       }
@@ -269,9 +278,16 @@ const TelegramApp = () => {
           </h1>
           <p className="text-xs text-muted-foreground">AI Agent Platform</p>
         </div>
-        <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-          {totalMeeet > 0 ? totalMeeet.toLocaleString() : agents.length > 0 ? "0" : "100"} MEEET
-        </Badge>
+        <div className="flex flex-col items-end gap-0.5">
+          <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+            {totalMeeet > 0 ? totalMeeet.toLocaleString() : agents.length > 0 ? "0" : "100"} MEEET
+          </Badge>
+          {spixCredits > 0 && (
+            <Badge variant="outline" className="text-[10px] border-violet-500/40 text-violet-400">
+              ⚡ {spixCredits} Spix
+            </Badge>
+          )}
+        </div>
       </header>
 
       {/* Live Stats Ticker */}
