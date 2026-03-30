@@ -10,7 +10,7 @@
  *
  * ── Main Endpoints ──────────────────────────────────────────────────
  *
- *  POST /v1/calls       — Initiate an outbound phone call
+ *  POST /v1/calls       — Initiate an outbound phone call  (scope: calls:write)
  *    Body: { to, agent_name, prompt, voice }
  *
  *  POST /v1/email       — Send a single email  (scope: email:write)
