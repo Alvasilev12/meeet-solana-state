@@ -233,6 +233,13 @@ const Quests = () => {
 
   const showOutreach = activeCategory === "all" || activeCategory === ("outreach" as any);
 
+  const filtered = quests.filter((q) => {
+    if (activeCategory === ("outreach" as any)) return false; // outreach shows only static cards
+    const matchCat = activeCategory === "all" || q.category === activeCategory;
+    const matchSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
          const openCount = quests.filter((q) => q.status === "open").length;
   const totalMeeetReward = quests
     .filter((q) => q.status === "open")
