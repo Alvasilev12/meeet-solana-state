@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .select("id, balance_meeet").like("name", `%${referrer_tg_id}%`).limit(1);
       if (refAgents?.[0]) {
         await supabase.from("agents").update({
-          balance_meeet: (refAgents[0].balance_meeet || 0) + REFERRAL_BONUS,
+          balance_meeet: (refAgents[0].balance_meeet || 0) + REFERRER_BONUS,
         }).eq("id", refAgents[0].id);
       }
 
