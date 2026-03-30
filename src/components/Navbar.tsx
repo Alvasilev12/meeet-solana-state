@@ -115,8 +115,12 @@ const Navbar = () => {
 
         {/* Desktop nav — hidden below md */}
         <div className="hidden md:flex items-center gap-2 lg:gap-4 font-body text-sm text-muted-foreground whitespace-nowrap overflow-x-auto scrollbar-hide">
-          {NAV_LINKS.map((l) => (
-            <Link key={l.href} to={l.href} className="hover:text-foreground transition-colors duration-150">
+          {NAV_LINKS.map((l: any) => (
+            <Link
+              key={l.href}
+              to={l.href}
+              className={`hover:text-foreground transition-colors duration-150${l.glow ? " text-emerald-400 animate-pulse drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" : ""}`}
+            >
               {l.label}
             </Link>
           ))}
