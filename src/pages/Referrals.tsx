@@ -409,6 +409,14 @@ export default function Referrals() {
                             {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                             {isCopied ? "Copied" : "Copy"}
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-1 text-[10px] h-7 border-emerald-500/30 hover:bg-emerald-500/10"
+                            onClick={() => openInviteDialog(agent)}
+                          >
+                            <Send className="w-3 h-3" /> Invite
+                          </Button>
                         </div>
                       );
                     })}
