@@ -123,7 +123,7 @@ const TelegramApp = () => {
   const [creating, setCreating] = useState(false);
   const [topCountries, setTopCountries] = useState<any[]>(COUNTRY_WARS_FALLBACK);
   const [newAgentName, setNewAgentName] = useState("");
-  const [newAgentClass, setNewAgentClass] = useState("oracle");
+  const [spixCredits, setSpixCredits] = useState(0);
 
   const tg = window.Telegram?.WebApp;
   const tgUser = tg?.initDataUnsafe?.user;
