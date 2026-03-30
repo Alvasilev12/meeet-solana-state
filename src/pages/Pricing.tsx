@@ -520,6 +520,8 @@ function SubscriptionSection({ userId }: { userId?: string }) {
               <Zap className="w-4 h-4 mr-2" /> Coming soon
             </Button>
           </div>
+        </div>
+      </div>
 
       <div className="max-w-md mx-auto">
         <Card className="bg-card border-border">
