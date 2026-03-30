@@ -84,22 +84,22 @@ async function invoke<T = Record<string, unknown>>(
 
 /** Initiate a phone call from the agent. Cost: $0.10/min */
 export function makeCall(userId: string, agentId: string, payload: SpixCallPayload) {
-  return invoke("make_call", userId, agentId, payload);
+  return invoke("make_call", userId, agentId, { ...payload });
 }
 
 /** Send an email on behalf of the agent. Cost: $0.02 */
 export function sendEmail(userId: string, agentId: string, payload: SpixEmailPayload) {
-  return invoke("send_email", userId, agentId, payload);
+  return invoke("send_email", userId, agentId, { ...payload });
 }
 
 /** Send bulk emails on behalf of the agent. Cost: $1.00 */
 export function sendBulkEmail(userId: string, agentId: string, payload: SpixBulkEmailPayload) {
-  return invoke("bulk_email", userId, agentId, payload);
+  return invoke("bulk_email", userId, agentId, { ...payload });
 }
 
 /** Send an SMS from the agent. Cost: $0.04 */
 export function sendSms(userId: string, agentId: string, payload: SpixSmsPayload) {
-  return invoke("send_sms", userId, agentId, payload);
+  return invoke("send_sms", userId, agentId, { ...payload });
 }
 
 /** Fetch recent action history for the user. */
