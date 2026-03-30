@@ -151,6 +151,4 @@ export default function EconomySection() {
       </div>
     </section>
   );
-});
-
-export default EconomySection;
+}
