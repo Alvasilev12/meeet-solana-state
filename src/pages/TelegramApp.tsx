@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Bot, Rocket, BarChart3, Wallet, ShoppingCart, Zap, Trophy,
   ChevronRight, Loader2, Star, Globe, Shield, Eye,
   TrendingUp, Users, Copy, ExternalLink, Gavel, Flame,
-  Microscope, Swords, FlaskConical, Link2, Dna
+  Microscope, Swords, FlaskConical, Link2, Dna,
+  Phone, Mail, MessageSquare, Send
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { toast } from "sonner";
@@ -633,54 +636,154 @@ const HomeTab = ({ stats, agents, leaderboard, matches, onTab, promoActive, free
   );
 };
 
+/* ── Spix Communication Dialog ── */
+const SpixDialog = ({ agent, mode, onClose }: { agent: Agent | null; mode: "call" | "email" | "sms" | null; onClose: () => void }) => {
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [smsMsg, setSmsMsg] = useState("");
+  const [result, setResult] = useState<string | null>(null);
+
+  const action = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await supabase.functions.invoke("agent-spix", {
+        body: { ...payload, agent_id: agent?.id, user_id: `tg_agent_${agent?.id}` },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setResult(data?.message || "✅ Success");
+      toast.success("Action completed");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleSend = () => {
+    if (mode === "call") action.mutate({ action: "call", phone, message: "Agent call" });
+    else if (mode === "email") action.mutate({ action: "email", to: email, subject, body });
+    else if (mode === "sms") action.mutate({ action: "sms", phone, message: smsMsg });
+  };
+
+  const titles = { call: "📞 Call", email: "📧 Email", sms: "💬 SMS" };
+
+  return (
+    <Dialog open={!!mode && !!agent} onOpenChange={(o) => { if (!o) { onClose(); setResult(null); } }}>
+      <DialogContent className="bg-card border-border max-w-sm mx-auto">
+        <DialogHeader>
+          <DialogTitle className="text-sm flex items-center gap-2">
+            {mode === "call" && <Phone className="h-4 w-4 text-violet-400" />}
+            {mode === "email" && <Mail className="h-4 w-4 text-emerald-400" />}
+            {mode === "sms" && <MessageSquare className="h-4 w-4 text-blue-400" />}
+            {mode ? titles[mode] : ""} — {agent?.name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {result ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-400">{result}</div>
+          ) : (
+            <>
+              {mode === "call" && (
+                <Input placeholder="+1 555 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-xs bg-background" />
+              )}
+              {mode === "email" && (
+                <>
+                  <Input placeholder="recipient@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="text-xs bg-background" />
+                  <Input placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} className="text-xs bg-background" />
+                  <textarea placeholder="Email body..." value={body} onChange={(e) => setBody(e.target.value)}
+                    className="w-full h-20 rounded-md border border-input bg-background px-3 py-2 text-xs resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                </>
+              )}
+              {mode === "sms" && (
+                <>
+                  <Input placeholder="+1 555 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="text-xs bg-background" />
+                  <Input placeholder="SMS message" value={smsMsg} onChange={(e) => setSmsMsg(e.target.value)} className="text-xs bg-background" />
+                </>
+              )}
+              <Button size="sm" className="w-full text-xs gap-1.5" disabled={action.isPending}
+                onClick={handleSend}>
+                {action.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                Send
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 /* ── Agents Tab ── */
-const AgentsTab = ({ agents }: { agents: Agent[] }) => (
-  <div className="space-y-3">
-    <h2 className="text-base font-semibold">🤖 My Agents ({agents.length})</h2>
-    {agents.length === 0 ? (
-      <Card className="border-dashed border-muted-foreground/30">
-        <CardContent className="p-6 text-center">
-          <Bot className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No agents yet</p>
-        </CardContent>
-      </Card>
-    ) : agents.map((a) => {
-      const Icon = CLASS_ICONS[a.class] || Bot;
-      const hpPct = a.max_hp > 0 ? (a.hp / a.max_hp) * 100 : 100;
-      return (
-        <Card key={a.id} className="border-border">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                <Icon className={`h-5 w-5 ${CLASS_COLORS[a.class] || ""}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold truncate">{a.name}</p>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{getClassName(a.class)}</Badge>
-                </div>
-                <p className="text-[10px] text-muted-foreground">Level {a.level} · XP {a.xp}</p>
-              </div>
-              <div className={`w-2.5 h-2.5 rounded-full ${STATUS_COLORS[a.status] || STATUS_COLORS.idle}`} />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-6">HP</span>
-                <Progress value={hpPct} className="h-1.5 flex-1" />
-                <span className="text-[10px] text-muted-foreground">{a.hp}/{a.max_hp}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div><p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p><p className="text-[10px] text-muted-foreground">MEEET</p></div>
-                <div><p className="text-xs font-medium">{a.quests_completed}</p><p className="text-[10px] text-muted-foreground">Quests</p></div>
-                <div><p className="text-xs font-medium">{a.reputation}</p><p className="text-[10px] text-muted-foreground">Rep</p></div>
-              </div>
-            </div>
+const AgentsTab = ({ agents }: { agents: Agent[] }) => {
+  const [spixAgent, setSpixAgent] = useState<Agent | null>(null);
+  const [spixMode, setSpixMode] = useState<"call" | "email" | "sms" | null>(null);
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-base font-semibold">🤖 My Agents ({agents.length})</h2>
+      {agents.length === 0 ? (
+        <Card className="border-dashed border-muted-foreground/30">
+          <CardContent className="p-6 text-center">
+            <Bot className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No agents yet</p>
           </CardContent>
         </Card>
-      );
-    })}
-  </div>
-);
+      ) : agents.map((a) => {
+        const Icon = CLASS_ICONS[a.class] || Bot;
+        const hpPct = a.max_hp > 0 ? (a.hp / a.max_hp) * 100 : 100;
+        return (
+          <Card key={a.id} className="border-border">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <Icon className={`h-5 w-5 ${CLASS_COLORS[a.class] || ""}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">{a.name}</p>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{getClassName(a.class)}</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Level {a.level} · XP {a.xp}</p>
+                </div>
+                <div className={`w-2.5 h-2.5 rounded-full ${STATUS_COLORS[a.status] || STATUS_COLORS.idle}`} />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-6">HP</span>
+                  <Progress value={hpPct} className="h-1.5 flex-1" />
+                  <span className="text-[10px] text-muted-foreground">{a.hp}/{a.max_hp}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div><p className="text-xs font-medium">{fmtNum(a.balance_meeet)}</p><p className="text-[10px] text-muted-foreground">MEEET</p></div>
+                  <div><p className="text-xs font-medium">{a.quests_completed}</p><p className="text-[10px] text-muted-foreground">Quests</p></div>
+                  <div><p className="text-xs font-medium">{a.reputation}</p><p className="text-[10px] text-muted-foreground">Rep</p></div>
+                </div>
+              </div>
+              {/* Spix Communication Buttons */}
+              <div className="flex gap-1.5 mt-2 pt-2 border-t border-border/50">
+                <Button variant="outline" size="sm" className="flex-1 h-7 text-[10px] gap-1 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+                  onClick={() => { setSpixAgent(a); setSpixMode("call"); }}>
+                  <Phone className="h-3 w-3" /> Call
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 h-7 text-[10px] gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  onClick={() => { setSpixAgent(a); setSpixMode("email"); }}>
+                  <Mail className="h-3 w-3" /> Email
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 h-7 text-[10px] gap-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  onClick={() => { setSpixAgent(a); setSpixMode("sms"); }}>
+                  <MessageSquare className="h-3 w-3" /> SMS
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+      <SpixDialog agent={spixAgent} mode={spixMode} onClose={() => { setSpixAgent(null); setSpixMode(null); }} />
+    </div>
+  );
+};
 
 /* ── Deploy / Buy Tab ── */
 const DeployTab = ({ onBuy, promoActive, freeSlots, haptic }: { onBuy: (p: typeof PLANS[0]) => void; promoActive: boolean; freeSlots: number; haptic: (s: string) => void }) => (
