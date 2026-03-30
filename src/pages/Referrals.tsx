@@ -48,6 +48,7 @@ function getOutreachStatus(status: string) {
   }
 }
 
+export default function Referrals() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
