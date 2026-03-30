@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Swords, Trophy, Flame } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,11 +20,12 @@ export default function ArenaSection() {
   const [duels, setDuels] = useState<Duel[]>([]);
   const [totalDuels, setTotalDuels] = useState(0);
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = document.getElementById("arena-section");
+    const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05, rootMargin: "200px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -59,6 +60,7 @@ export default function ArenaSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="arena-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 40% 8%) 50%, hsl(0 0% 5%) 100%)" }}

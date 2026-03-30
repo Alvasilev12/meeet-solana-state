@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield } from "lucide-react";
 
@@ -33,11 +33,12 @@ const classToFaction = (cls: string) => {
 export default function FactionsSection() {
   const [factions, setFactions] = useState(FACTIONS);
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = document.getElementById("factions-section");
+    const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05, rootMargin: "200px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -80,6 +81,7 @@ export default function FactionsSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="factions-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(262 40% 6%) 0%, hsl(0 0% 5%) 50%, hsl(262 40% 6%) 100%)" }}

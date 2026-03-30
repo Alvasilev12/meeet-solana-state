@@ -1,22 +1,23 @@
-import { useEffect, useState, forwardRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Coins, ArrowDown, ArrowUp, Flame, Heart, Landmark, BookOpen, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import TokenPriceWidget from "@/components/TokenPriceWidget";
 import BurnCounter from "@/components/BurnCounter";
 
-const EconomySection = forwardRef<HTMLElement>(function EconomySection(_props, ref) {
+export default function EconomySection() {
   const [supply, setSupply] = useState(0);
   const [burned, setBurned] = useState(0);
   const [staked, setStaked] = useState(0);
   const [marketItems, setMarketItems] = useState(0);
   const [livesImpacted, setLivesImpacted] = useState(0);
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = document.getElementById("economy-section");
+    const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05, rootMargin: "200px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -55,6 +56,7 @@ const EconomySection = forwardRef<HTMLElement>(function EconomySection(_props, r
 
   return (
     <section
+      ref={sectionRef}
       id="economy-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(40 30% 7%) 50%, hsl(0 0% 5%) 100%)" }}
@@ -149,6 +151,4 @@ const EconomySection = forwardRef<HTMLElement>(function EconomySection(_props, r
       </div>
     </section>
   );
-});
-
-export default EconomySection;
+}

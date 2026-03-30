@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Landmark, Users, Scroll } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,16 +13,17 @@ interface Law {
   voter_count: number;
 }
 
-const SenateSection = forwardRef<HTMLElement>(function SenateSection(_props, ref) {
+export default function SenateSection() {
   const [laws, setLaws] = useState<Law[]>([]);
   const [guildCount, setGuildCount] = useState(0);
   const [guildMembers, setGuildMembers] = useState(0);
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = document.getElementById("senate-section");
+    const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.2 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.05, rootMargin: "200px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -45,6 +46,7 @@ const SenateSection = forwardRef<HTMLElement>(function SenateSection(_props, ref
 
   return (
     <section
+      ref={sectionRef}
       id="senate-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(30 10% 7%) 50%, hsl(0 0% 5%) 100%)" }}
@@ -114,6 +116,4 @@ const SenateSection = forwardRef<HTMLElement>(function SenateSection(_props, ref
       </div>
     </section>
   );
-});
-
-export default SenateSection;
+}
