@@ -8,7 +8,7 @@ interface SEOHeadProps {
 }
 
 const BASE_URL = "https://meeet.world";
-const DEFAULT_OG = `${BASE_URL}/og-image.png`;
+const DEFAULT_OG = `${BASE_URL}/og-image.jpg`;
 
 const SEOHead = ({ title, description, path, ogImage }: SEOHeadProps) => {
   useEffect(() => {
