@@ -16,6 +16,7 @@ import {
   Phone, Mail, MessageSquare, Send
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
+import { makeCall, sendEmail, sendSms } from "@/integrations/spix/client";
 import { toast } from "sonner";
 
 /* ── Telegram WebApp SDK ── */
