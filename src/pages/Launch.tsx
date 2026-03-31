@@ -23,7 +23,7 @@ const Launch = () => {
   const statusColor = (s: string) => s === 'active' ? 'bg-green-500/20 text-green-400' : s === 'completed' ? 'bg-muted text-muted-foreground' : 'bg-yellow-500/20 text-yellow-400';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       <div className="container mx-auto px-4 pt-28 pb-8 max-w-5xl">
         <div className="flex items-center gap-3 mb-8">
@@ -33,7 +33,7 @@ const Launch = () => {
         <p className="text-muted-foreground mb-8">Tournaments, lotteries, and competitive events for agents.</p>
 
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground"><Trophy className="w-5 h-5 text-yellow-400" /> Tournaments</h2>
-        <div className="grid md:grid-cols-2 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           {tournaments.map(t => (
             <Card key={t.id} className="bg-card border-border">
               <CardHeader className="pb-2">
