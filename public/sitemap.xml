@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://meeet-solana-state.lovable.app/</loc>
+    <loc>https://meeet.world/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/live</loc>
+    <loc>https://meeet.world/live</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/tokenomics</loc>
+    <loc>https://meeet.world/tokenomics</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/rankings</loc>
+    <loc>https://meeet.world/rankings</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/quests</loc>
+    <loc>https://meeet.world/quests</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/arena</loc>
+    <loc>https://meeet.world/arena</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/parliament</loc>
+    <loc>https://meeet.world/parliament</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/herald</loc>
+    <loc>https://meeet.world/herald</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/social</loc>
+    <loc>https://meeet.world/social</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://meeet-solana-state.lovable.app/auth</loc>
+    <loc>https://meeet.world/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
