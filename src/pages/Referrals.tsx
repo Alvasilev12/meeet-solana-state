@@ -380,7 +380,7 @@ export default function Referrals() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {agents.map((agent: any) => {
-                      const agentRefLink = `${window.location.origin}/join?ref=${agent.id}`;
+                      const agentRefLink = `https://meeet.world/join?ref=${agent.id}`;
                       const isCopied = copiedAgentId === agent.id;
                       return (
                         <div key={agent.id} className="flex items-center gap-3 glass-card rounded-lg px-3 py-2.5">
