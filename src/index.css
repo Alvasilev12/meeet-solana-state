@@ -162,6 +162,11 @@
     pointer-events: none;
   }
 
+  .discovery-card:hover {
+    border-color: var(--glow-color, hsl(var(--primary)));
+    box-shadow: 0 0 16px -4px var(--glow-color, hsl(var(--primary) / 0.4));
+  }
+
 
   .scrollbar-hide {
     -ms-overflow-style: none;
