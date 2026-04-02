@@ -86,14 +86,19 @@ export default function CortexSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const [weekCount, setWeekCount] = useState(0);
+
   useEffect(() => {
     (async () => {
-      const [{ data }, { count }] = await Promise.all([
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [{ data }, { count }, { count: wCount }] = await Promise.all([
         supabase.from("discoveries").select("id,title,domain,impact_score,created_at").eq("is_approved", true).order("created_at", { ascending: false }).limit(8),
         supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
+        supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true).gte("created_at", weekAgo),
       ]);
       setDiscoveries(data || []);
       setTotalCount(count ?? 0);
+      setWeekCount(wCount ?? 0);
     })();
   }, []);
 
