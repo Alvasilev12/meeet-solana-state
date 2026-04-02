@@ -601,6 +601,65 @@ const Oracle = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Recent Predictions */}
+        {recentPredictions.length > 0 && (
+          <AnimatedSection delay={200} animation="fade-up" className="mt-10">
+            <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-primary" /> Recent Predictions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recentPredictions.map((p: any, idx: number) => {
+                const odds = (() => {
+                  const yes = Number(p.yes_pool) || 0;
+                  const no = Number(p.no_pool) || 0;
+                  const total = yes + no;
+                  return total > 0 ? Math.round((yes / total) * 100) : 50;
+                })();
+                const outcome = p.status === "resolved"
+                  ? (p.resolved_value === true ? "correct" : p.resolved_value === false ? "incorrect" : "pending")
+                  : "pending";
+                return (
+                  <AnimatedSection key={p.id} delay={idx * 80} animation="fade-up">
+                    <Card className="bg-card/60 border-border/40 hover:border-primary/30 transition-all">
+                      <CardContent className="py-4 px-5 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-medium text-foreground leading-snug flex-1">{p.question_text}</h3>
+                          {outcome === "correct" && (
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shrink-0 gap-1">
+                              <CheckCircle className="w-3 h-3" /> Correct
+                            </Badge>
+                          )}
+                          {outcome === "incorrect" && (
+                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 shrink-0 gap-1">
+                              <XCircle className="w-3 h-3" /> Incorrect
+                            </Badge>
+                          )}
+                          {outcome === "pending" && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 shrink-0 gap-1">
+                              <HelpCircle className="w-3 h-3" /> Pending
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{new Date(p.deadline).toLocaleDateString()}</span>
+                          <span>{formatMeeet(p.total_pool_meeet || 0)} MEEET pool</span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Confidence (YES)</span>
+                            <span className="font-semibold text-foreground">{odds}%</span>
+                          </div>
+                          <Progress value={odds} className="h-2" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AnimatedSection>
+                );
+              })}
+            </div>
+          </AnimatedSection>
+        )}
       </main>
       <Footer />
     </div>
