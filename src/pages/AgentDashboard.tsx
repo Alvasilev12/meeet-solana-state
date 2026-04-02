@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,8 +17,21 @@ interface DeployedAgent {
   quests_completed: number | null;
   total_earned_meeet: number | null;
   deployed_at: string | null;
-  agent: { name: string; class: string } | null;
+  agent: { name: string; class: string; id: string } | null;
+  sparkline?: number[];
 }
+
+/* Tiny inline sparkline */
+const Sparkline = ({ data }: { data: number[] }) => {
+  const max = Math.max(...data, 1);
+  const w = 80, h = 24;
+  const points = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - (v / max) * h}`).join(" ");
+  return (
+    <svg width={w} height={h} className="inline-block ml-2 opacity-80">
+      <polyline points={points} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+};
 
 const statusColor: Record<string, string> = {
   running: "bg-green-500",
