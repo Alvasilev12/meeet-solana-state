@@ -120,7 +120,7 @@ export default function HumanitySection() {
         </AnimatedSection>
 
         {/* Total Impact Score */}
-        <AnimatedSection delay={50} className="flex justify-center mb-10">
+        <AnimatedSection delay={50} className="flex justify-center mb-6">
           <div className="glass-card rounded-2xl px-8 py-5 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 via-primary to-sky-500/50" />
             <div className="flex items-center gap-3">

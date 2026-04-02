@@ -9,7 +9,7 @@ const SOCIALS = [
 ];
 
 const FinalCTASection = () => (
-  <section className="py-20 relative overflow-hidden">
+  <section className="py-8 relative overflow-hidden">
     <div className="absolute inset-0 bg-gradient-to-t from-primary/[0.06] via-transparent to-transparent pointer-events-none" />
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
