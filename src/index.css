@@ -489,3 +489,13 @@ canvas {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+@property --cta-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes cta-spin {
+  to { --cta-angle: 360deg; }
+}
