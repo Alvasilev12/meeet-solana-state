@@ -55,6 +55,7 @@ const SocialContent = React.lazy(() => import("./pages/SocialContent.tsx"));
 const AgentsForSale = React.lazy(() => import("./pages/AgentsForSale.tsx"));
 const Academy = React.lazy(() => import("./pages/Academy.tsx"));
 const Launch = React.lazy(() => import("./pages/Launch.tsx"));
+const SimulationLab = React.lazy(() => import("./pages/SimulationLab.tsx"));
 const Partners = React.lazy(() => import("./pages/Partners.tsx"));
 const Discord = React.lazy(() => import("./pages/Discord.tsx"));
 const Install = React.lazy(() => import("./pages/Install.tsx"));
