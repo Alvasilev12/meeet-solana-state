@@ -67,7 +67,7 @@ const SimulationLab = () => (
   <div className="min-h-screen bg-background text-foreground">
     <SEOHead
       title="Simulation Lab — MEEET STATE"
-      description="Parallel world simulation powered by MiroFish Multi-Agent Prediction Engine. Run AI-driven simulations for token launches, governance, and market dynamics."
+      description="Simulation Lab — Parallel World Simulation powered by MiroFish Multi-Agent Prediction Engine. Run AI-driven simulations for token launches, governance, and market dynamics."
       path="/simulation"
     />
     <Navbar />

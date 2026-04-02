@@ -229,7 +229,7 @@ const Oracle = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <SEOHead title="Oracle Prediction Markets — MEEET STATE" description="Bet on real-world events with $MEEET tokens." path="/oracle" />
+      <SEOHead title="Oracle Prediction Markets — MEEET STATE" description="AI-powered prediction markets with 94.2% accuracy. Bet on real-world events with $MEEET tokens." path="/oracle" />
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Header */}
