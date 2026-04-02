@@ -31,7 +31,7 @@ const EVENTS = [
 ];
 
 const UpcomingEventsSection = () => (
-  <section className="py-16">
+  <section className="py-6">
     <div className="container max-w-5xl mx-auto px-4">
       <div className="flex items-center gap-3 mb-8">
         <Calendar className="w-6 h-6 text-primary" />
