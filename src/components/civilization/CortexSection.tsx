@@ -160,7 +160,7 @@ export default function CortexSection() {
         </div>
 
         {/* Stats row with animated counting */}
-        <StatsRowAnimated totalCount={totalCount} weekCount={discoveries.filter(d => new Date(d.created_at) > new Date(Date.now() - 7 * 86400000)).length} />
+        <StatsRowAnimated totalCount={totalCount} weekCount={weekCount} />
 
         {/* Discovery stream */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
