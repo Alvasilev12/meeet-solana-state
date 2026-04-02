@@ -84,6 +84,7 @@ const Oracle = () => {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailBets, setDetailBets] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [recentPredictions, setRecentPredictions] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
