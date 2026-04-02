@@ -42,13 +42,20 @@ export default function CortexSection() {
 
   return (
     <section
+      ref={sectionRef}
       id="cortex-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(262 40% 6%) 0%, hsl(262 60% 10%) 50%, hsl(262 40% 6%) 100%)" }}
     >
-      {/* Glow orb */}
+      {/* Floating particles */}
+      <ParticleCanvas />
+
+      {/* Glow orb with parallax */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 blur-[120px] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }} />
+        style={{
+          background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)",
+          transform: `translate(-50%, calc(-50% + ${scrollY * 0.15}px))`,
+        }} />
 
       <div className="max-w-6xl mx-auto w-full">
         {/* Hero headline — always visible */}
