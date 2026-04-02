@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Flame, ArrowRight } from "lucide-react";
 
-export default function AgentCTABar() {
+const AgentCTABar = forwardRef<HTMLDivElement>(function AgentCTABar(_props, ref) {
   const [slots, setSlots] = useState(0);
 
   useEffect(() => {
