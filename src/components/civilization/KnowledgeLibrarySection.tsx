@@ -1,58 +1,91 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AnimatedSection from "@/components/AnimatedSection";
-import { FlaskConical, FileText, Eye, Quote, Sparkles, TrendingUp } from "lucide-react";
+import { FlaskConical, FileText, Eye, Quote, Sparkles, TrendingUp, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const DOMAINS = [
-  { label: "Crypto & DeFi", icon: "₿", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { label: "AI & ML", icon: "🤖", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  { label: "Science", icon: "🔬", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { label: "Markets & Business", icon: "📊", color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+const DOMAIN_META: Record<string, { label: string; glow: string; border: string; text: string }> = {
+  crypto:   { label: "Crypto",   glow: "shadow-amber-500/30",   border: "border-amber-500/40",   text: "text-amber-400" },
+  ai:       { label: "AI",       glow: "shadow-purple-500/30",  border: "border-purple-500/40",  text: "text-purple-400" },
+  science:  { label: "Science",  glow: "shadow-emerald-500/30", border: "border-emerald-500/40", text: "text-emerald-400" },
+  business: { label: "Business", glow: "shadow-sky-500/30",     border: "border-sky-500/40",     text: "text-sky-400" },
+  biotech:  { label: "BioTech",  glow: "shadow-green-500/30",   border: "border-green-500/40",   text: "text-green-400" },
+  quantum:  { label: "Quantum",  glow: "shadow-cyan-500/30",    border: "border-cyan-500/40",    text: "text-cyan-400" },
+  energy:   { label: "Energy",   glow: "shadow-yellow-500/30",  border: "border-yellow-500/40",  text: "text-yellow-400" },
+  security: { label: "Security", glow: "shadow-red-500/30",     border: "border-red-500/40",     text: "text-red-400" },
+  other:    { label: "Research", glow: "shadow-muted/30",       border: "border-muted/40",       text: "text-muted-foreground" },
+};
+
+const FILTER_CHIPS = [
+  { key: "all", label: "All", icon: "✦" },
+  { key: "crypto", label: "Crypto & DeFi", icon: "₿" },
+  { key: "ai", label: "AI & ML", icon: "🤖" },
+  { key: "science", label: "Science", icon: "🔬" },
+  { key: "business", label: "Markets", icon: "📊" },
+  { key: "biotech", label: "BioTech", icon: "🧬" },
+  { key: "quantum", label: "Quantum", icon: "⚛️" },
+  { key: "energy", label: "Energy", icon: "⚡" },
+  { key: "security", label: "Security", icon: "🛡️" },
 ];
+
+const PAGE_SIZE = 5;
+
+const meta = (d: string) => DOMAIN_META[d] || DOMAIN_META.other;
 
 export default function KnowledgeLibrarySection() {
   const [paperCount, setPaperCount] = useState(0);
   const [citedCount, setCitedCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
-  const [recentArticles, setRecentArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
+  // Initial stats
   useEffect(() => {
     Promise.all([
       supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
       supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_cited", true),
       supabase.from("discoveries").select("view_count").eq("is_approved", true),
-      supabase
-        .from("discoveries")
-        .select("title, domain, view_count, upvotes, is_cited, created_at")
-        .eq("is_approved", true)
-        .order("created_at", { ascending: false })
-        .limit(5),
-    ]).then(([countRes, citedRes, viewsRes, articlesRes]) => {
+    ]).then(([countRes, citedRes, viewsRes]) => {
       setPaperCount(countRes.count ?? 0);
       setCitedCount(citedRes.count ?? 0);
       const totalViews = (viewsRes.data ?? []).reduce((s: number, d: any) => s + (d.view_count || 0), 0);
       setViewCount(totalViews);
-      setRecentArticles(articlesRes.data ?? []);
     });
   }, []);
 
-  const domainLabel = (d: string) => {
-    const map: Record<string, string> = {
-      crypto: "Crypto", ai: "AI", science: "Science", business: "Business",
-      biotech: "BioTech", quantum: "Quantum", energy: "Energy", other: "Research",
-    };
-    return map[d] || "Research";
-  };
+  const fetchArticles = useCallback(async (domain: string, pageNum: number, append: boolean) => {
+    setLoadingMore(true);
+    let q = supabase
+      .from("discoveries")
+      .select("title, domain, view_count, upvotes, is_cited, created_at")
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false })
+      .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
-  const domainColor = (d: string) => {
-    const map: Record<string, string> = {
-      crypto: "text-amber-400", ai: "text-purple-400", science: "text-emerald-400",
-      business: "text-sky-400", biotech: "text-emerald-400", quantum: "text-cyan-400",
-      energy: "text-yellow-400",
-    };
-    return map[d] || "text-muted-foreground";
+    if (domain !== "all") q = q.eq("domain", domain);
+
+    const { data } = await q;
+    const rows = data ?? [];
+    setHasMore(rows.length === PAGE_SIZE);
+    setArticles((prev) => (append ? [...prev, ...rows] : rows));
+    setLoadingMore(false);
+  }, []);
+
+  // Reset on filter change
+  useEffect(() => {
+    setPage(0);
+    fetchArticles(filter, 0, false);
+  }, [filter, fetchArticles]);
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchArticles(filter, next, true);
   };
 
   return (
@@ -104,38 +137,49 @@ export default function KnowledgeLibrarySection() {
           </div>
         </AnimatedSection>
 
-        {/* Domain chips */}
+        {/* Domain filter chips */}
         <AnimatedSection delay={150} className="flex justify-center flex-wrap gap-2 mb-8">
-          {DOMAINS.map((d, i) => (
-            <div
-              key={i}
-              className={`px-4 py-2 rounded-full border ${d.bg} flex items-center gap-2 text-sm font-body`}
+          {FILTER_CHIPS.map((chip) => (
+            <button
+              key={chip.key}
+              onClick={() => setFilter(chip.key)}
+              className={`px-4 py-2 rounded-full border text-sm font-body flex items-center gap-2 transition-all duration-200 ${
+                filter === chip.key
+                  ? "bg-primary/20 border-primary/50 text-primary shadow-md shadow-primary/20"
+                  : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/40 hover:border-border"
+              }`}
             >
-              <span>{d.icon}</span>
-              <span className={d.color}>{d.label}</span>
-            </div>
+              <span>{chip.icon}</span>
+              <span>{chip.label}</span>
+            </button>
           ))}
         </AnimatedSection>
 
         {/* Recent papers */}
-        {recentArticles.length > 0 && (
-          <AnimatedSection delay={250} animation="fade-up">
-            <div className="glass-card rounded-2xl p-5 overflow-hidden relative">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 via-primary to-purple-500/50" />
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-sm font-display font-bold">Latest Research</span>
-                <span className="relative flex h-2 w-2 ml-1">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-              </div>
-              <div className="space-y-2.5">
-                {recentArticles.map((article, i) => (
+        <AnimatedSection delay={250} animation="fade-up">
+          <div className="glass-card rounded-2xl p-5 overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500/50 via-primary to-purple-500/50" />
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-display font-bold">Latest Research</span>
+              <span className="relative flex h-2 w-2 ml-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+            </div>
+
+            {articles.length === 0 && !loadingMore && (
+              <p className="text-center text-muted-foreground text-sm py-6">No discoveries found for this domain</p>
+            )}
+
+            <div className="space-y-2.5">
+              {articles.map((article, i) => {
+                const m = meta(article.domain);
+                return (
                   <Link
-                    key={i}
+                    key={`${article.title}-${i}`}
                     to="/discoveries"
-                    className="flex items-center justify-between gap-3 bg-muted/30 rounded-lg px-4 py-2.5 hover:bg-muted/50 transition-colors group"
+                    className={`flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 transition-all duration-300 group border border-transparent bg-muted/30 hover:bg-muted/50 hover:${m.border} hover:shadow-lg hover:${m.glow}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -147,8 +191,8 @@ export default function KnowledgeLibrarySection() {
                       )}
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <Badge variant="outline" className={`text-[10px] capitalize ${domainColor(article.domain)}`}>
-                        {domainLabel(article.domain)}
+                      <Badge variant="outline" className={`text-[10px] capitalize ${m.text}`}>
+                        {m.label}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Eye className="w-3 h-3" /> {article.view_count || 0}
@@ -158,11 +202,27 @@ export default function KnowledgeLibrarySection() {
                       </span>
                     </div>
                   </Link>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </AnimatedSection>
-        )}
+
+            {/* Load More */}
+            {hasMore && articles.length > 0 && (
+              <div className="flex justify-center mt-5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  {loadingMore ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Load More
+                </Button>
+              </div>
+            )}
+          </div>
+        </AnimatedSection>
       </div>
     </section>
   );
