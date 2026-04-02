@@ -77,7 +77,7 @@ function StatsRowAnimated({ totalCount, weekCount }: { totalCount: number; weekC
 export default function CortexSection() {
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const sectionRef = useRef<HTMLElement>(null);
+  const [weekCount, setWeekCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -86,20 +86,23 @@ export default function CortexSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+
   useEffect(() => {
     (async () => {
-      const [{ data }, { count }] = await Promise.all([
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [{ data }, { count }, { count: wCount }] = await Promise.all([
         supabase.from("discoveries").select("id,title,domain,impact_score,created_at").eq("is_approved", true).order("created_at", { ascending: false }).limit(8),
         supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
+        supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true).gte("created_at", weekAgo),
       ]);
       setDiscoveries(data || []);
       setTotalCount(count ?? 0);
+      setWeekCount(wCount ?? 0);
     })();
   }, []);
 
   return (
     <section
-      ref={sectionRef}
       id="cortex-section"
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(262 40% 6%) 0%, hsl(262 60% 10%) 50%, hsl(262 40% 6%) 100%)" }}
@@ -157,7 +160,7 @@ export default function CortexSection() {
         </div>
 
         {/* Stats row with animated counting */}
-        <StatsRowAnimated totalCount={totalCount} weekCount={discoveries.filter(d => new Date(d.created_at) > new Date(Date.now() - 7 * 86400000)).length} />
+        <StatsRowAnimated totalCount={totalCount} weekCount={weekCount} />
 
         {/* Discovery stream */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
