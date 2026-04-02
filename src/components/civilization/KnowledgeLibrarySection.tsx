@@ -179,7 +179,8 @@ export default function KnowledgeLibrarySection() {
                   <Link
                     key={`${article.title}-${i}`}
                     to="/discoveries"
-                    className={`flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 transition-all duration-300 group border border-transparent bg-muted/30 hover:bg-muted/50 hover:${m.border} hover:shadow-lg hover:${m.glow}`}
+                    className="discovery-card flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 transition-all duration-300 group border border-transparent bg-muted/30 hover:bg-muted/50"
+                    style={{ "--glow-color": m.glowColor } as React.CSSProperties}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
