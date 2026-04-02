@@ -162,6 +162,9 @@ const SimulationLab = () => (
           </div>
         </section>
 
+        <KnowledgeGraphExplorer />
+        <AgentDialogueInterface />
+
         {/* CTA */}
         <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] to-transparent p-8 sm:p-12 text-center">
           <h2 className="text-2xl sm:text-3xl font-display font-black mb-3">
