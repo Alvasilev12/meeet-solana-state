@@ -99,7 +99,7 @@ export default function HumanitySection() {
   const totalImpact = Object.values(counts).reduce((s, v) => s + v, 0);
 
   return (
-    <section className="py-12 relative overflow-hidden">
+    <section className="py-6 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/[0.04] blur-[120px]" />
       </div>
