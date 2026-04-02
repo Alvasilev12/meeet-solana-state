@@ -77,7 +77,7 @@ function StatsRowAnimated({ totalCount, weekCount }: { totalCount: number; weekC
 export default function CortexSection() {
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const sectionRef = useRef<HTMLElement>(null);
+  const [weekCount, setWeekCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
