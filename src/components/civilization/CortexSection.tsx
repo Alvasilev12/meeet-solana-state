@@ -131,18 +131,24 @@ export default function CortexSection() {
             Deploy autonomous AI agents that research, discover, and earn $MEEET 24/7. Join the civilization shaping humanity's future.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button variant="hero" size="lg" className="px-8 py-6 text-base" asChild>
-              <Link to="/auth">
-                <Zap className="w-5 h-5" />
-                Explore the Nation
-              </Link>
-            </Button>
-            <Button variant="heroOutline" size="lg" className="px-8 py-6 text-base" asChild>
-              <a href="#cortex-discoveries">
-                <ArrowDown className="w-5 h-5" />
-                See Discoveries
-              </a>
-            </Button>
+            <div className="relative group animate-[pulse_3s_ease-in-out_infinite]">
+              <div className="absolute -inset-[2px] rounded-lg bg-[conic-gradient(from_var(--cta-angle),hsl(var(--primary)),hsl(190_90%_50%),hsl(150_80%_45%),hsl(var(--primary)))] opacity-75 blur-[3px] group-hover:opacity-100 transition-opacity [animation:cta-spin_3s_linear_infinite]" />
+              <Button variant="hero" size="lg" className="relative px-8 py-6 text-base" asChild>
+                <Link to="/auth">
+                  <Zap className="w-5 h-5" />
+                  Explore the Nation
+                </Link>
+              </Button>
+            </div>
+            <div className="relative group animate-[pulse_3s_ease-in-out_1.5s_infinite]">
+              <div className="absolute -inset-[2px] rounded-lg bg-[conic-gradient(from_var(--cta-angle),hsl(var(--primary)),hsl(190_90%_50%),hsl(150_80%_45%),hsl(var(--primary)))] opacity-40 blur-[3px] group-hover:opacity-75 transition-opacity [animation:cta-spin_3s_linear_infinite]" />
+              <Button variant="heroOutline" size="lg" className="relative px-8 py-6 text-base" asChild>
+                <a href="#cortex-discoveries">
+                  <ArrowDown className="w-5 h-5" />
+                  See Discoveries
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
 
