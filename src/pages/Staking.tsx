@@ -54,7 +54,26 @@ const purposeColor: Record<string, string> = {
 };
 
 /* ── component ── */
-const Staking = () => (
+const Staking = () => {
+  const { address: walletAddress } = useSolanaWallet();
+  const [stakeInput, setStakeInput] = useState("");
+  const [walletMeeet, setWalletMeeet] = useState<number | null>(null);
+
+  const fetchMeeet = useCallback(async (addr: string) => {
+    try {
+      const { Connection, PublicKey } = await import("@solana/web3.js");
+      const { getAssociatedTokenAddress, getAccount } = await import("@solana/spl-token");
+      const conn = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      const pk = new PublicKey(addr);
+      const MEEET_MINT = new PublicKey("EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump");
+      const ata = await getAssociatedTokenAddress(MEEET_MINT, pk);
+      try { const acc = await getAccount(conn, ata); setWalletMeeet(Number(acc.amount)); } catch { setWalletMeeet(0); }
+    } catch { setWalletMeeet(null); }
+  }, []);
+
+  useEffect(() => { if (walletAddress) fetchMeeet(walletAddress); }, [walletAddress, fetchMeeet]);
+
+  return (
   <>
     <SEOHead title="Staking & Burn Dashboard — MEEET STATE" description="Live staking analytics, burn metrics, and deflation tracking for $MEEET token economy." path="/staking" />
     <Navbar />
@@ -65,6 +84,39 @@ const Staking = () => (
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">Staking & Burn Dashboard</h1>
           <p className="text-muted-foreground text-lg">Real-time $MEEET deflation & staking analytics</p>
         </div>
+
+        {/* Wallet Stake Card */}
+        {walletAddress && (
+          <div className="bg-card/60 border border-primary/30 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Your Wallet Balance</p>
+                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString() : "—"} MEEET</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <Input
+                  type="number"
+                  placeholder="Amount to stake"
+                  value={stakeInput}
+                  onChange={(e) => setStakeInput(e.target.value)}
+                  className="w-40 h-10"
+                />
+                <Button size="sm" className="bg-primary hover:bg-primary/90">Stake</Button>
+                <Button size="sm" variant="outline">Unstake</Button>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
+              <span>Your Stake: <strong className="text-foreground">0 MEEET</strong></span>
+              <span>Earned Rewards: <strong className="text-emerald-400">0 MEEET</strong></span>
+              <span>Cooldown: <strong className="text-foreground">None</strong></span>
+            </div>
+          </div>
+        )}
 
         {/* ── Top Stats ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
