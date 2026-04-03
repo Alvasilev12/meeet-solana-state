@@ -7,18 +7,18 @@ import { Search } from "lucide-react";
 const CATEGORIES = ["All", "Research", "Trading", "Social", "Analytics", "Creative", "Security", "DeFi", "Governance"];
 
 const SKILLS = [
-  { emoji: "📡", name: "Solana DEX Scanner", author: "SolLabs", installs: 2340, category: "DeFi", description: "Real-time monitoring of Solana DEX trades, liquidity pools, and price movements across Raydium, Orca, and Jupiter." },
-  { emoji: "🔬", name: "Research Paper Analyzer", author: "ArxivBot", installs: 1870, category: "Research", description: "Automatically parse, summarize, and extract key findings from scientific papers on arXiv and PubMed." },
-  { emoji: "📊", name: "Token Sentiment Tracker", author: "SentiAI", installs: 3120, category: "Analytics", description: "Aggregate sentiment signals from Twitter, Reddit, and Telegram for any token in real-time." },
-  { emoji: "🗳️", name: "Governance Vote Bot", author: "DaoTools", installs: 980, category: "Governance", description: "Auto-analyze DAO proposals, simulate outcomes, and cast informed votes based on agent strategy." },
-  { emoji: "🎨", name: "NFT Metadata Parser", author: "MetaLens", installs: 1540, category: "Creative", description: "Extract, validate, and enrich NFT metadata across Solana and EVM chains with rarity scoring." },
-  { emoji: "💰", name: "DeFi Yield Optimizer", author: "YieldMax", installs: 4210, category: "DeFi", description: "Find optimal yield farming strategies across protocols with auto-compounding and risk assessment." },
-  { emoji: "🌉", name: "Cross-chain Bridge Monitor", author: "BridgeWatch", installs: 760, category: "Security", description: "Monitor bridge transactions for anomalies, track TVL changes, and alert on security events." },
-  { emoji: "📝", name: "AI Paper Summarizer", author: "CortexRead", installs: 2890, category: "Research", description: "Generate concise summaries of research papers with key takeaways and citation graphs." },
-  { emoji: "💬", name: "Social Sentiment Analyzer", author: "BuzzLens", installs: 1650, category: "Social", description: "Deep analysis of social media trends, influencer impact, and narrative shifts in crypto communities." },
-  { emoji: "🐋", name: "Whale Wallet Tracker", author: "DeepSea", installs: 5430, category: "Trading", description: "Track large wallet movements, identify accumulation patterns, and get alerts on whale activity." },
-  { emoji: "🔒", name: "Smart Contract Auditor", author: "AuditShield", installs: 1230, category: "Security", description: "Automated security analysis of smart contracts with vulnerability detection and risk scoring." },
-  { emoji: "📈", name: "Market Alpha Finder", author: "AlphaBot", installs: 3780, category: "Trading", description: "Discover market inefficiencies, arbitrage opportunities, and emerging trends before the crowd." },
+  { emoji: "📡", name: "Solana DEX Scanner", author: "NexusLab", installs: 2300, category: "DeFi", description: "Real-time monitoring of Solana DEX trades, liquidity pools, and price movements across Raydium, Orca, and Jupiter." },
+  { emoji: "🔬", name: "Research Paper Analyzer", author: "SciBot", installs: 1800, category: "Research", description: "Automatically parse, summarize, and extract key findings from scientific papers on arXiv and PubMed." },
+  { emoji: "📊", name: "Token Sentiment Tracker", author: "AlphaAI", installs: 3100, category: "Analytics", description: "Aggregate sentiment signals from Twitter, Reddit, and Telegram for any token in real-time." },
+  { emoji: "🗳️", name: "Governance Vote Bot", author: "DaoForge", installs: 956, category: "Governance", description: "Auto-analyze DAO proposals, simulate outcomes, and cast informed votes based on agent strategy." },
+  { emoji: "🎨", name: "NFT Metadata Parser", author: "MetaVault", installs: 1200, category: "Creative", description: "Extract, validate, and enrich NFT metadata across Solana and EVM chains with rarity scoring." },
+  { emoji: "💰", name: "DeFi Yield Optimizer", author: "YieldMax", installs: 4700, category: "DeFi", description: "Find optimal yield farming strategies across protocols with auto-compounding and risk assessment." },
+  { emoji: "🌉", name: "Cross-chain Bridge Monitor", author: "BridgeWatch", installs: 890, category: "Security", description: "Monitor bridge transactions for anomalies, track TVL changes, and alert on security events." },
+  { emoji: "📝", name: "AI Paper Summarizer", author: "DeepRead", installs: 2600, category: "Research", description: "Generate concise summaries of research papers with key takeaways and citation graphs." },
+  { emoji: "💬", name: "Social Sentiment Analyzer", author: "SocialPulse", installs: 1500, category: "Social", description: "Deep analysis of social media trends, influencer impact, and narrative shifts in crypto communities." },
+  { emoji: "🐋", name: "Whale Wallet Tracker", author: "ChainEye", installs: 5200, category: "Trading", description: "Track large wallet movements, identify accumulation patterns, and get alerts on whale activity." },
+  { emoji: "🔒", name: "Smart Contract Auditor", author: "SecureAI", installs: 3800, category: "Security", description: "Automated security analysis of smart contracts with vulnerability detection and risk scoring." },
+  { emoji: "📈", name: "Market Alpha Finder", author: "TradeBot", installs: 2100, category: "Trading", description: "Discover market inefficiencies, arbitrage opportunities, and emerging trends before the crowd." },
 ];
 
 const Skills = () => {
