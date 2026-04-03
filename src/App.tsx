@@ -156,8 +156,8 @@ const App = () => (
                   <Route path="/install" element={<Install />} />
                   <Route path="/token" element={<Token />} />
                   <Route path="/mission" element={<Mission />} />
-                  <Route path="/passport/:agentId" element={<Passport />} />
-                  <Route path="/did/:agentId" element={<DIDDocument />} />
+                  <Route path="/passport/:agentId?" element={<Passport />} />
+                  <Route path="/did/:agentId?" element={<DIDDocument />} />
                   <Route path="/staking" element={<Staking />} />
                   <Route path="/governance" element={<GovernancePage />} />
                   <Route path="/attestations" element={<Attestations />} />
