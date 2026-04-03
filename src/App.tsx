@@ -65,6 +65,8 @@ const Mission = React.lazy(() => import("./pages/Mission.tsx"));
 const Passport = React.lazy(() => import("./pages/Passport.tsx"));
 const DIDDocument = React.lazy(() => import("./pages/DIDDocument.tsx"));
 const Staking = React.lazy(() => import("./pages/Staking.tsx"));
+const GovernancePage = React.lazy(() => import("./pages/Governance.tsx"));
+const Attestations = React.lazy(() => import("./pages/Attestations.tsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
@@ -154,6 +156,8 @@ const App = () => (
                   <Route path="/passport/:agentId" element={<Passport />} />
                   <Route path="/did/:agentId" element={<DIDDocument />} />
                   <Route path="/staking" element={<Staking />} />
+                  <Route path="/governance" element={<GovernancePage />} />
+                  <Route path="/attestations" element={<Attestations />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
