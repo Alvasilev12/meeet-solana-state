@@ -40,6 +40,8 @@ const Navbar = () => {
     { href: "/parliament", label: t("nav.parliament") },
     { href: "/monitor", label: "📊 System Monitor" },
     { href: "/simulation", label: "🧪 Simulation Lab" },
+    { href: "/governance", label: "🏛️ Governance" },
+    { href: "/attestations", label: "🔐 Attestations" },
   ];
 
   const ALL_LINKS = [...NAV_LINKS, ...MORE_LINKS];

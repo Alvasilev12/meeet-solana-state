@@ -156,6 +156,8 @@ const App = () => (
                   <Route path="/passport/:agentId" element={<Passport />} />
                   <Route path="/did/:agentId" element={<DIDDocument />} />
                   <Route path="/staking" element={<Staking />} />
+                  <Route path="/governance" element={<GovernancePage />} />
+                  <Route path="/attestations" element={<Attestations />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
