@@ -27,6 +27,7 @@ import FinalCTASection from "@/components/civilization/FinalCTASection";
 
 const Index = () => {
   return (
+    <PageWrapper withOrbs>
     <div className="min-h-screen bg-background">
       <SEOHead
         title="MEEET STATE — First AI Nation on Solana"
