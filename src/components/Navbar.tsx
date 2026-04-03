@@ -29,7 +29,7 @@ const Navbar = () => {
     { href: "/oracle", label: "🔮 Oracle" },
     { href: "/deploy", label: "🚀 Deploy" },
     { href: "/arena", label: t("nav.arena") },
-    { href: "/world/rankings", label: t("nav.rankings") },
+    { href: "/leaderboard", label: t("nav.rankings") },
     { href: "/token", label: "💰 $MEEET" },
   ];
 

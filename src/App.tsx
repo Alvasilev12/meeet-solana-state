@@ -165,6 +165,7 @@ const App = () => (
                   <Route path="/did/:agentId" element={<DIDDocument />} />
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/chat" element={<Chat />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/staking" element={<Staking />} />
                   <Route path="/governance" element={<GovernancePage />} />
                   <Route path="/attestations" element={<Attestations />} />
