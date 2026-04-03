@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -160,6 +162,25 @@ function LiveBurnFeed() {
 
 const Token = () => {
   const { price, isLoading: priceLoading, isUnavailable } = useMeeetPrice();
+  const { address: walletAddress } = useSolanaWallet();
+  const [walletMeeet, setWalletMeeet] = useState<number | null>(null);
+  const [walletSol, setWalletSol] = useState<number | null>(null);
+
+  const fetchWalletBalances = useCallback(async (addr: string) => {
+    try {
+      const { Connection, PublicKey } = await import("@solana/web3.js");
+      const { getAssociatedTokenAddress, getAccount } = await import("@solana/spl-token");
+      const conn = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      const pk = new PublicKey(addr);
+      const MEEET_MINT = new PublicKey("EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump");
+      const [lamports, ata] = await Promise.all([conn.getBalance(pk), getAssociatedTokenAddress(MEEET_MINT, pk)]);
+      setWalletSol(lamports / 1e9);
+      try { const acc = await getAccount(conn, ata); setWalletMeeet(Number(acc.amount)); } catch { setWalletMeeet(0); }
+    } catch { setWalletSol(null); setWalletMeeet(null); }
+  }, []);
+
+  useEffect(() => { if (walletAddress) fetchWalletBalances(walletAddress); }, [walletAddress, fetchWalletBalances]);
+
   const [stakeAmount, setStakeAmount] = useState(1000);
   const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS>("flex");
 
@@ -285,6 +306,41 @@ const Token = () => {
             </div>
           </div>
         </section>
+
+        {/* Wallet Balance Card */}
+        {walletAddress && (
+          <div className="container max-w-5xl mx-auto px-4 pt-8">
+            <div className="bg-card/60 border border-primary/30 rounded-2xl p-6 backdrop-blur-xl flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Your Wallet</p>
+                  <p className="font-mono text-sm text-foreground">{walletAddress.slice(0, 6)}…{walletAddress.slice(-4)}</p>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{walletSol !== null ? walletSol.toFixed(4) : "—"}</p>
+                  <p className="text-xs text-muted-foreground">SOL</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString() : "—"}</p>
+                  <p className="text-xs text-muted-foreground">$MEEET</p>
+                </div>
+              </div>
+              <div className="flex gap-2 sm:ml-auto">
+                <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90" asChild>
+                  <a href={PUMP_FUN_URL} target="_blank" rel="noopener noreferrer">Buy $MEEET</a>
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                  <Link to="/staking">Stake $MEEET</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="container max-w-5xl mx-auto px-4 py-12 space-y-16">
           {/* TOKENOMICS */}

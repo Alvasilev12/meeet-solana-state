@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import NavWalletButton from "@/components/NavWalletButton";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -224,12 +225,13 @@ const Navbar = () => {
             </Popover>
           )}
 
-          {/* Desktop auth buttons */}
+          {/* Wallet + Auth */}
+          <NavWalletButton />
           {user ? (
             <>
               <Link
                 to="/dashboard"
-                className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
+                className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors duration-150"
               >
                 {t("nav.dashboard")}
               </Link>
@@ -243,7 +245,7 @@ const Navbar = () => {
           ) : (
             <Link
               to="/auth"
-              className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors duration-150"
+              className="hidden md:block px-3 py-1.5 text-sm font-display font-semibold bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors duration-150"
             >
               {t("nav.signIn")}
             </Link>
