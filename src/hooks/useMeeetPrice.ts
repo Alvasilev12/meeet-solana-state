@@ -11,10 +11,14 @@ export interface MeeetPrice {
   fetchedAt: number;
   cached?: boolean;
   fallback?: boolean;
+  unavailable?: boolean;
+  bondingCurveProgress?: number;
+  bondingCurveSol?: number;
+  source?: string;
 }
 
 const FALLBACK: MeeetPrice = {
-  priceUsd: 0.001,
+  priceUsd: 0,
   priceSOL: 0,
   marketCap: 0,
   volume24h: 0,
@@ -22,11 +26,13 @@ const FALLBACK: MeeetPrice = {
   liquidity: 0,
   fetchedAt: Date.now(),
   fallback: true,
+  unavailable: true,
 };
 
 async function fetchMeeetPrice(): Promise<MeeetPrice> {
   const { data, error } = await supabase.functions.invoke("get-meeet-price");
-  if (error || !data?.priceUsd) return FALLBACK;
+  if (error || !data) return FALLBACK;
+  if (data.unavailable) return { ...FALLBACK, ...data };
   return data as MeeetPrice;
 }
 
@@ -34,21 +40,20 @@ export function useMeeetPrice() {
   const query = useQuery({
     queryKey: ["meeet-price"],
     queryFn: fetchMeeetPrice,
-    staleTime: 30_000, // 30s
-    refetchInterval: 60_000, // auto-refresh every 60s
+    staleTime: 30_000,
+    refetchInterval: 60_000,
     placeholderData: FALLBACK,
   });
 
   const price = query.data ?? FALLBACK;
+  const isUnavailable = price.unavailable || (price.priceUsd === 0 && !query.isLoading);
 
   return {
     ...query,
     price,
-    /** Convert USD amount to MEEET at live rate */
+    isUnavailable,
     usdToMeeet: (usd: number) => price.priceUsd > 0 ? Math.round(usd / price.priceUsd) : 0,
-    /** Convert MEEET to USD at live rate */
     meeetToUsd: (meeet: number) => meeet * price.priceUsd,
-    /** Convert SOL to MEEET */
     solToMeeet: (sol: number) => price.priceSOL > 0 ? Math.round(sol / price.priceSOL) : 0,
   };
 }

@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from "recharts";
 
-const DEXSCREENER_URL = `https://dexscreener.com/solana/${MEEET_CONTRACT_ADDRESS}`;
+const CHART_URL = PUMP_FUN_URL;
 
 const STAKING_TIERS = {
   flex: { min: 100, apy: 5, lock_days: 0, label: "Flex", bonus: "None" },
