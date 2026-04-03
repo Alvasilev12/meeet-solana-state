@@ -17,6 +17,7 @@ const Navbar = () => {
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  const location = useLocation();
   const { resolvedTheme, toggleTheme } = useTheme();
 
   const NAV_LINKS = [
