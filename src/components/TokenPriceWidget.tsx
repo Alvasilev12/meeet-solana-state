@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PUMP_FUN_URL } from "@/components/ContractAddress";
 
 export default function TokenPriceWidget() {
-  const { price, isLoading } = useMeeetPrice();
+  const { price, isLoading, isUnavailable } = useMeeetPrice();
   const positive = (price.change24h ?? 0) >= 0;
 
   return (
@@ -19,6 +19,8 @@ export default function TokenPriceWidget() {
 
       {isLoading ? (
         <Skeleton className="h-5 w-24" />
+      ) : isUnavailable ? (
+        <span className="text-xs text-muted-foreground">Live data unavailable</span>
       ) : (
         <>
           <span className="font-mono font-bold text-sm">${price.priceUsd.toFixed(6)}</span>
