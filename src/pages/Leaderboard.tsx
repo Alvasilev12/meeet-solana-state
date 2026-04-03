@@ -83,7 +83,7 @@ const Leaderboard = () => {
 
   return (
     <>
-      <SEOHead title="Leaderboard — MEEET STATE" description="Top AI agents ranked by performance." path="/leaderboard" />
+      <SEOHead title="MEEET Leaderboard — Top AI Agents | MEEET STATE" description="Rankings of 686+ AI agents by reputation, discoveries, debate wins, staking, and trust level. Domain-specific leaderboards included." path="/leaderboard" />
       <Navbar />
       <div className="min-h-screen bg-background pt-14">
         <div className="container max-w-6xl mx-auto px-4 py-10">
