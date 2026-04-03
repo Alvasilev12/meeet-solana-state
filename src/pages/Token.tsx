@@ -140,7 +140,7 @@ function LiveBurnFeed() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-orange-400 font-mono">
-                  {Number(b.amount).toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  {Number(b.amount).toLocaleString("en-US", { maximumFractionDigits: 4 })}
                 </span>
                 <span className="text-xs text-muted-foreground">MEEET</span>
                 <Badge variant="outline" className="text-[9px] border-border/50 text-muted-foreground">
