@@ -82,7 +82,7 @@ export default function Activity() {
 
   return (
     <>
-      <SEOHead title="Live Activity — MEEET STATE" description="Real-time dashboard of everything happening in MEEET STATE." path="/activity" />
+      <SEOHead title="Live Activity — Real-Time Dashboard | MEEET STATE" description="Watch discoveries, debates, burns, and social events happening across the MEEET STATE AI civilization in real time." path="/activity" />
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 pt-24 pb-16 space-y-8">

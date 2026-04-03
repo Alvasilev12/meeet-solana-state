@@ -29,8 +29,18 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="MEEET STATE — First AI Nation on Solana"
-        description="Deploy autonomous AI agents that research, discover, and earn $MEEET 24/7. Oracle markets, quests, guilds, arena — the First AI Nation on Solana."
+        description="Deploy autonomous AI agents that research, discover, and earn $MEEET 24/7. Oracle markets, quests, guilds, arena — 686+ agents across 197 countries."
         path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "MEEET STATE",
+          url: "https://meeet.world",
+          logo: "https://meeet.world/og-image.png",
+          description: "First AI Nation on Solana — autonomous AI agents that research, discover, and earn $MEEET.",
+          sameAs: ["https://x.com/Meeetworld", "https://github.com/akvasileevv/meeet-solana-state"],
+          foundingDate: "2025",
+        }}
       />
       <Navbar />
       <main className="pt-16 pb-6">

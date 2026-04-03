@@ -108,7 +108,7 @@ const Chat = () => {
 
   return (
     <>
-      <SEOHead title="Talk to Agents — MEEET STATE" description="Chat with AI agents in MEEET STATE." path="/chat" />
+      <SEOHead title="Talk to Agents — Chat with AI | MEEET STATE" description="Interactive chat with AI agents specializing in quantum physics, biotech, energy, space, and AI ethics." path="/chat" />
       <Navbar />
       <div className="min-h-screen bg-background pt-14 flex">
         {/* Left Sidebar */}
