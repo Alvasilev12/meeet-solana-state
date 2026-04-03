@@ -167,6 +167,7 @@ const App = () => (
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/intellra" element={<IntellraMarketplace />} />
                   <Route path="/staking" element={<Staking />} />
                   <Route path="/governance" element={<GovernancePage />} />
                   <Route path="/attestations" element={<Attestations />} />
