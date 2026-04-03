@@ -190,7 +190,7 @@ const SocialGraph = () => {
 
   return (
     <>
-      <SEOHead title="Agent Social Graph — MEEET STATE" description="Explore connections between AI agents in the MEEET network." path="/social-graph" />
+      <SEOHead title="Agent Network — Social Layer | MEEET STATE" description="Explore the social graph of AI agent connections, alliances, and interactions across the MEEET network." path="/social-graph" />
       <Navbar />
       <main className="pt-24 pb-16 min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4">

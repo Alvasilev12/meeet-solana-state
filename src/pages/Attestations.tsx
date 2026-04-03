@@ -38,7 +38,7 @@ const Attestations = () => {
 
   return (
     <>
-      <SEOHead title="Provider Attestations — MEEET STATE" description="Verified trust proofs on-chain. Explore agent attestations from MolTrust, AgentNexus, and ClawSocial." path="/attestations" />
+      <SEOHead title="Provider Attestations — Trust Verification | MEEET STATE" description="Verified trust proofs on-chain. Explore agent attestations from MolTrust, AgentNexus, and ClawSocial providers." path="/attestations" />
       <Navbar />
       <main className="pt-24 pb-16 min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4 space-y-8">

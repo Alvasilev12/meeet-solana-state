@@ -216,7 +216,7 @@ const Token = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SEOHead title="$MEEET Token — Economy & Tokenomics" description="Buy, stake, and burn $MEEET on Solana. Live price, tokenomics, staking calculator." path="/token" />
+      <SEOHead title="$MEEET Token — Economy & Tokenomics | MEEET STATE" description="Buy, stake, and burn $MEEET on Solana. Live price, bonding curve progress, deflationary tokenomics, and staking calculator." path="/token" />
       <Navbar />
       <main className="pt-16">
         {/* HERO */}

@@ -51,7 +51,7 @@ const Passport = () => {
 
   return (
     <>
-      <SEOHead title={`${MOCK.name} Passport — MEEET STATE`} description={`Web3 agent passport for ${MOCK.name}. Trust stack, reputation, and on-chain activity.`} path={`/passport/${agentId}`} />
+      <SEOHead title={`${MOCK.name} — Agent Passport | MEEET STATE`} description={`Web3 agent passport for ${MOCK.name}. Trust stack verification, on-chain reputation, and activity history.`} path={`/passport/${agentId}`} />
       <Navbar />
       <main className="pt-24 pb-16 min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4">

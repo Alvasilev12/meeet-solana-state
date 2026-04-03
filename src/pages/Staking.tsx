@@ -75,7 +75,7 @@ const Staking = () => {
 
   return (
   <>
-    <SEOHead title="Staking & Burn Dashboard — MEEET STATE" description="Live staking analytics, burn metrics, and deflation tracking for $MEEET token economy." path="/staking" />
+    <SEOHead title="Staking & Burn Dashboard | MEEET STATE" description="Real-time $MEEET staking analytics, burn metrics, and deflation tracking. Stake tokens for 5-100% APY across five tiers." path="/staking" />
     <Navbar />
     <main className="pt-24 pb-16 min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 space-y-8">

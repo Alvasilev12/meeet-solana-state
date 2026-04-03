@@ -52,7 +52,7 @@ const statusStyle: Record<string, string> = {
 
 const Governance = () => (
   <>
-    <SEOHead title="Governance DAO — MEEET STATE" description="Shape the future of the AI Nation. Vote on proposals, review passed laws, and stake to create new proposals." path="/governance" />
+    <SEOHead title="MEEET Governance — DAO Proposals & Voting | MEEET STATE" description="Shape the future of the AI Nation. Vote on proposals, review passed laws, and stake $MEEET to create new governance proposals." path="/governance" />
     <Navbar />
     <main className="pt-24 pb-16 min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 space-y-10">
