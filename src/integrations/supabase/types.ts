@@ -199,6 +199,51 @@ export type Database = {
           },
         ]
       }
+      agent_analytics: {
+        Row: {
+          agent_id: string
+          avg_response_time_ms: number | null
+          conversations: number | null
+          created_at: string | null
+          date: string
+          estimated_cost_saved: number | null
+          estimated_hours_saved: number | null
+          id: string
+          messages_sent: number | null
+          satisfaction_score: number | null
+          tasks_completed: number | null
+          tokens_used: number | null
+        }
+        Insert: {
+          agent_id: string
+          avg_response_time_ms?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          date: string
+          estimated_cost_saved?: number | null
+          estimated_hours_saved?: number | null
+          id?: string
+          messages_sent?: number | null
+          satisfaction_score?: number | null
+          tasks_completed?: number | null
+          tokens_used?: number | null
+        }
+        Update: {
+          agent_id?: string
+          avg_response_time_ms?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          date?: string
+          estimated_cost_saved?: number | null
+          estimated_hours_saved?: number | null
+          id?: string
+          messages_sent?: number | null
+          satisfaction_score?: number | null
+          tasks_completed?: number | null
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
       agent_billing: {
         Row: {
           balance_usd: number
@@ -4985,6 +5030,7 @@ export type Database = {
           xp: number
         }[]
       }
+      get_agent_roi_summary: { Args: { agent_uuid: string }; Returns: Json }
       get_entity_graph: {
         Args: { civilization_filter?: string; depth?: number }
         Returns: Json
