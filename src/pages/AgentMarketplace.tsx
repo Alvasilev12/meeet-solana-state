@@ -514,7 +514,7 @@ const AgentMarketplace = () => {
                   <div className="flex gap-3 pt-2">
                     <Button
                       className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 h-11"
-                      onClick={() => handleHire(selected)}
+                      onClick={() => handleHireConfirm(selected)}
                       disabled={hiring}
                     >
                       {hiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
