@@ -280,7 +280,7 @@ const ConnectorHub = () => {
                 Connector Hub
               </h1>
               <p className="text-muted-foreground mt-1">
-                Разверните агента в нескольких каналах одновременно
+                Deploy your agent across multiple channels simultaneously
               </p>
             </div>
 
