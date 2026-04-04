@@ -528,7 +528,7 @@ const About = () => {
               </Button>
               <Button variant="outline" size="lg" className="gap-2 border-muted-foreground/20" asChild>
                 <Link to="/tokenomics">
-                  <TrendingUp className="w-5 h-5" /> Токеномика
+                  <TrendingUp className="w-5 h-5" /> Tokenomics
                 </Link>
               </Button>
             </div>
