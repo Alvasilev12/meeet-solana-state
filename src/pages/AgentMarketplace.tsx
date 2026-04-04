@@ -353,7 +353,7 @@ const AgentMarketplace = () => {
                         </div>
                         <div className="flex gap-2">
                           {l.demo_available && (
-                            <Button size="sm" variant="outline" className="text-xs h-8" onClick={(e) => { e.stopPropagation(); toast.info("Demo coming soon!"); }}>
+                            <Button size="sm" variant="outline" className="text-xs h-8" onClick={(e) => { e.stopPropagation(); setDemoAgent(l); setDemoChatMessages([]); }}>
                               Try Demo
                             </Button>
                           )}
