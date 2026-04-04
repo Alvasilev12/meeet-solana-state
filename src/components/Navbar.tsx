@@ -208,7 +208,7 @@ const Navbar = () => {
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                  <span className="text-sm font-display font-bold">{t("nav.notifications")}</span>
+                  <span className="text-sm font-display font-bold">Notifications</span>
                   {unreadCount > 0 && (
                     <button onClick={markAllRead} className="text-[10px] text-primary hover:underline font-body">
                       {t("nav.markAllRead")}
