@@ -98,17 +98,17 @@ const AgentProfile = () => {
     enabled: !!agent?.id,
   });
 
-  // Personality data (from agents table directly)
+  // Personality data (from agents table directly — columns added via migration, not yet in generated types)
   const { data: personality } = useQuery({
     queryKey: ["agent-personality", agent?.id],
     queryFn: async () => {
       if (!agent?.id) return null;
       const { data } = await supabase
-        .from("agents" as any)
+        .from("agents")
         .select("personality_openness, personality_conscientiousness, personality_extraversion, personality_agreeableness, personality_neuroticism")
         .eq("id", agent.id)
         .maybeSingle();
-      return data;
+      return data as { personality_openness: number; personality_conscientiousness: number; personality_extraversion: number; personality_agreeableness: number; personality_neuroticism: number } | null;
     },
     enabled: !!agent?.id,
   });
