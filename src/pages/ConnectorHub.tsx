@@ -426,7 +426,7 @@ const ConnectorHub = () => {
                           )}
                           {!ch.available && (
                             <Button size="sm" variant="outline" className="gap-1 text-xs">
-                              <Bell className="w-3 h-3" /> Уведомить
+                              <Bell className="w-3 h-3" /> Notify Me
                             </Button>
                           )}
                         </div>
