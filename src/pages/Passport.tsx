@@ -155,6 +155,21 @@ const Passport = () => {
             </div>
           </section>
 
+          {/* Personality */}
+          <section className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-4">Personality Profile</h2>
+            <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 flex justify-center">
+              <PersonalityRadar
+                openness={0.85}
+                conscientiousness={0.7}
+                extraversion={0.4}
+                agreeableness={0.5}
+                neuroticism={0.55}
+                accentColor="hsl(180, 80%, 50%)"
+              />
+            </div>
+          </section>
+
           {/* Verification History */}
           <section className="mb-10">
             <h2 className="text-xl font-bold text-foreground mb-4">Verification History</h2>
