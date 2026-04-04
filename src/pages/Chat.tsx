@@ -4,6 +4,8 @@ import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import { Send, ChevronRight, ChevronLeft, Star, ExternalLink } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import LiveIndicator from "@/components/LiveIndicator";
 
 const AGENTS = [
   { id: "envoy-delta", name: "Envoy-Delta", initials: "ED", domain: "Quantum", color: "hsl(270 70% 55%)", stars: 5, status: "Online", lastMsg: "Quantum entanglement results look promising…", discoveries: 42, debateWins: 18, reputation: 1100, topics: ["Quantum Error Correction", "Topological Qubits", "Entanglement Scaling"], recentDisc: ["Quantum coherence breakthrough", "Novel qubit architecture"] },
