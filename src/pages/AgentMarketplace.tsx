@@ -1,501 +1,507 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Store, ArrowUpDown, Swords, Shield, Zap, Star, TrendingUp, CheckCircle2, AlertCircle, Wallet, ExternalLink } from "lucide-react";
+import { Loader2, Search, Star, CheckCircle2, Users, Zap, Grid3X3, List, MessageSquare, Globe, Send, Code, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
-import { useSolanaWallet } from "@/hooks/useSolanaWallet";
-import { sendMeeetToTreasury } from "@/lib/solana-transfer";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getAgentAvatarUrl } from "@/lib/agent-avatar";
+import SEOHead from "@/components/SEOHead";
+import PageWrapper from "@/components/PageWrapper";
 
-interface AgentData {
+interface HireListing {
   id: string;
-  name: string;
-  class: string;
-  level: number;
-  xp: number;
-  quests_completed: number;
-  reputation: number;
-  attack: number;
-  defense: number;
-  hp: number;
-  max_hp: number;
-  kills: number;
-  territories_held: number;
-}
-
-interface Listing {
-  id: string;
-  price_meeet: number;
-  price_usdc: number;
-  description: string | null;
+  agent_id: string;
+  title: string;
+  description: string;
+  short_description: string;
+  category: string;
+  tags: string[];
+  price_type: string;
+  price_amount: number;
+  rating: number;
+  total_reviews: number;
+  total_hires: number;
+  is_verified: boolean;
+  is_featured: boolean;
+  demo_available: boolean;
+  capabilities: string[];
+  integrations: string[];
+  avg_response_time: string;
   created_at: string;
-  agents: AgentData | null;
+  agents?: { id: string; name: string; class: string; level: number } | null;
 }
 
-const CLASS_COLORS: Record<string, string> = {
-  warrior: "bg-red-500/15 text-red-400 border-red-500/30",
-  oracle: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  trader: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-  diplomat: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  banker: "bg-green-500/15 text-green-400 border-green-500/30",
-  miner: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  scout: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+const CATEGORIES = [
+  { key: "all", label: "All", icon: "🔥" },
+  { key: "marketing", label: "Marketing", icon: "📢" },
+  { key: "analytics", label: "Analytics", icon: "📊" },
+  { key: "content", label: "Content", icon: "✍️" },
+  { key: "support", label: "Support", icon: "🎧" },
+  { key: "finance", label: "Finance", icon: "💰" },
+  { key: "legal", label: "Legal", icon: "⚖️" },
+  { key: "hr", label: "HR", icon: "👥" },
+  { key: "development", label: "Development", icon: "💻" },
+  { key: "research", label: "Research", icon: "🔬" },
+  { key: "custom", label: "Custom", icon: "⚙️" },
+];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  marketing: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+  analytics: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  content: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  support: "bg-green-500/15 text-green-400 border-green-500/30",
+  finance: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  legal: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  hr: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+  development: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  research: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  custom: "bg-gray-500/15 text-gray-400 border-gray-500/30",
 };
 
-const CLASS_ICONS: Record<string, string> = {
-  warrior: "⚔️", oracle: "🔮", trader: "💹", diplomat: "🤝",
-  banker: "🏦", miner: "⛏️", scout: "🔭",
+const INTEGRATION_ICONS: Record<string, { icon: typeof Send; label: string }> = {
+  telegram: { icon: Send, label: "Telegram" },
+  web: { icon: Globe, label: "Web" },
+  api: { icon: Code, label: "API" },
 };
 
-type SortKey = "price" | "level";
-type ClassFilter = "all" | string;
-type PayMethod = "internal" | "external";
+function formatPrice(type: string, amount: number) {
+  if (type === "free") return "Free";
+  if (type === "subscription") return `$${amount}/mo`;
+  if (type === "per_task") return `$${amount}/task`;
+  if (type === "per_token") return `$${amount}/token`;
+  return `$${amount}`;
+}
 
-interface UserAgent {
-  id: string;
-  name: string;
-  balance_meeet: number;
+function renderStars(rating: number) {
+  return Array.from({ length: 5 }, (_, i) => (
+    <Star
+      key={i}
+      className={`w-3.5 h-3.5 ${i < Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`}
+    />
+  ));
 }
 
 const AgentMarketplace = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { address: walletAddress, getProvider, availableWallets, connect: connectWallet, connecting: walletConnecting } = useSolanaWallet();
-
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<HireListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [classFilter, setClassFilter] = useState<ClassFilter>("all");
-  const [sortBy, setSortBy] = useState<SortKey>("price");
-
-  // Purchase dialog
-  const [selected, setSelected] = useState<Listing | null>(null);
-  const [payMethod, setPayMethod] = useState<PayMethod>("internal");
-  const [buying, setBuying] = useState(false);
-  const [buyStep, setBuyStep] = useState<string>("");
-  const [buySuccess, setBuySuccess] = useState(false);
-
-  // User agents
-  const [userAgents, setUserAgents] = useState<UserAgent[]>([]);
-  const [selectedBuyerAgent, setSelectedBuyerAgent] = useState("");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("popular");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selected, setSelected] = useState<HireListing | null>(null);
+  const [hiring, setHiring] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       const { data, error } = await supabase
-        .from("agent_marketplace_listings")
-        .select("id, price_meeet, price_usdc, description, created_at, agents(id, name, class, level, xp, quests_completed, reputation, attack, defense, hp, max_hp, kills, territories_held)")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
+        .from("hire_listings")
+        .select("*, agents(id, name, class, level)")
+        .order("is_featured", { ascending: false })
+        .order("total_hires", { ascending: false })
         .limit(100);
-      if (!error && data) setListings(data as unknown as Listing[]);
+      if (!error && data) setListings(data as unknown as HireListing[]);
       setLoading(false);
     };
     load();
   }, []);
 
-  useEffect(() => {
-    if (!selected || !user) return;
-    const loadAgents = async () => {
-      const { data } = await supabase
-        .from("agents")
-        .select("id, name, balance_meeet")
-        .eq("user_id", user.id);
-      if (data) {
-        setUserAgents(data);
-        if (data.length > 0) setSelectedBuyerAgent(data[0].id);
-      }
-    };
-    loadAgents();
-  }, [selected, user]);
-
-  const filtered = classFilter === "all" ? listings : listings.filter((l) => l.agents?.class === classFilter);
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "price") return (a.price_meeet || 0) - (b.price_meeet || 0);
-    return (b.agents?.level || 0) - (a.agents?.level || 0);
-  });
-  const classes = [...new Set(listings.map((l) => l.agents?.class).filter(Boolean))] as string[];
-
-  const selectedAgent = userAgents.find((a) => a.id === selectedBuyerAgent);
-  const hasEnough = selectedAgent ? selectedAgent.balance_meeet >= (selected?.price_meeet || 0) : false;
-
-  const handleBuy = async () => {
-    if (!user || !selected || !selectedBuyerAgent) return;
-
-    if (payMethod === "internal" && !hasEnough) {
-      toast.error("Недостаточно MEEET на балансе агента");
-      return;
+  const filtered = useMemo(() => {
+    let result = listings;
+    if (category !== "all") result = result.filter((l) => l.category === category);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          l.short_description.toLowerCase().includes(q) ||
+          l.tags?.some((t) => t.toLowerCase().includes(q))
+      );
     }
-
-    if (payMethod === "external" && !walletAddress) {
-      toast.error("Подключите кошелёк для оплаты");
-      return;
+    switch (sortBy) {
+      case "rating": return [...result].sort((a, b) => b.rating - a.rating);
+      case "price_low": return [...result].sort((a, b) => a.price_amount - b.price_amount);
+      case "newest": return [...result].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      default: return [...result].sort((a, b) => b.total_hires - a.total_hires);
     }
+  }, [listings, category, search, sortBy]);
 
-    setBuying(true);
-    let txSignature: string | undefined;
+  const totalAgents = listings.length;
+  const totalHires = listings.reduce((s, l) => s + l.total_hires, 0);
 
+  const handleHire = async (listing: HireListing) => {
+    if (!user) { navigate("/auth"); return; }
+    setHiring(true);
     try {
-      // Step 1: For external, send tokens via wallet
-      if (payMethod === "external") {
-        setBuyStep("Подтвердите транзакцию в кошельке...");
-        const provider = getProvider();
-        if (!provider) {
-          toast.error("Кошелёк не подключён");
-          setBuying(false);
-          return;
-        }
-
-        txSignature = await sendMeeetToTreasury(provider, selected.price_meeet);
-        setBuyStep("Транзакция подтверждена. Оформляем покупку...");
-      } else {
-        setBuyStep("Оформляем покупку...");
-      }
-
-      // Step 2: Call edge function
-      const { data, error } = await supabase.functions.invoke("buy-agent", {
-        body: {
-          listing_id: selected.id,
-          payment_method: payMethod,
-          buyer_agent_id: selectedBuyerAgent,
-          tx_signature: txSignature,
-        },
+      const { error } = await supabase.from("hire_hires").insert({
+        listing_id: listing.id,
+        user_id: user.id,
+        status: "active",
       });
-
       if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        setBuying(false);
-        setBuyStep("");
-        return;
-      }
-
-      setBuySuccess(true);
-      setListings((prev) => prev.filter((l) => l.id !== selected.id));
-      toast.success("Агент куплен!");
-    } catch (err: any) {
-      const msg = err?.message || "Ошибка при покупке";
-      // Friendly wallet errors
-      if (msg.includes("rejected") || msg.includes("cancelled")) {
-        toast.error("Транзакция отклонена");
-      } else {
-        toast.error(msg);
-      }
+      toast.success(`${listing.agents?.name || "Agent"} hired successfully!`);
+      setSelected(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to hire agent");
     } finally {
-      setBuying(false);
-      setBuyStep("");
+      setHiring(false);
     }
   };
-
-  const closeDialog = () => {
-    setSelected(null);
-    setBuySuccess(false);
-    setPayMethod("internal");
-    setBuyStep("");
-  };
-
-  const a = selected?.agents;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Store className="w-8 h-8 text-emerald-400" />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Agent Marketplace
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-lg">Просматривайте и покупайте обученных AI-агентов</p>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          <Button variant={classFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setClassFilter("all")}>Все</Button>
-          {classes.map((c) => (
-            <Button key={c} variant={classFilter === c ? "default" : "outline"} size="sm" onClick={() => setClassFilter(c)} className="capitalize gap-1">
-              <span>{CLASS_ICONS[c] || "🤖"}</span>{c}
-            </Button>
-          ))}
-          <div className="ml-auto flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-            <Button variant={sortBy === "price" ? "default" : "outline"} size="sm" onClick={() => setSortBy("price")}>Цена</Button>
-            <Button variant={sortBy === "level" ? "default" : "outline"} size="sm" onClick={() => setSortBy("level")}>Уровень</Button>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
-          </div>
-        )}
-
-        {!loading && sorted.length === 0 && (
-          <div className="text-center py-20">
-            <Store className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-40" />
-            <h3 className="text-xl font-semibold text-muted-foreground mb-2">Пока нет предложений</h3>
-            <p className="text-muted-foreground mb-4">Агенты появятся здесь, когда пользователи выставят их на продажу.</p>
-            <Button variant="outline" onClick={() => navigate("/deploy")}>Развернуть своего агента</Button>
-          </div>
-        )}
-
-        {!loading && sorted.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sorted.map((l) => (
-              <Card key={l.id}
-                className="bg-card/60 border-border/50 hover:border-emerald-500/40 transition-all cursor-pointer group active:scale-[0.98]"
-                onClick={() => { if (!user) { navigate("/auth"); return; } setSelected(l); }}>
-                <CardContent className="p-5 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <img src={getAgentAvatarUrl(l.agents?.id || l.id, 48)} alt={l.agents?.name || "Agent"} className="w-10 h-10 rounded-lg border border-border bg-muted/30" />
-                      <div>
-                        <h3 className="font-semibold text-foreground leading-tight">{l.agents?.name || "Unknown"}</h3>
-                        <span className="text-xs text-muted-foreground capitalize">Lv.{l.agents?.level} {l.agents?.class}</span>
-                      </div>
-                    </div>
-                    <Badge className={`text-xs border capitalize ${CLASS_COLORS[l.agents?.class || ""] || "bg-muted text-muted-foreground"}`}>
-                      {l.agents?.class}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="bg-muted/30 rounded-md py-1.5">
-                      <div className="font-bold text-foreground">{l.agents?.quests_completed}</div>
-                      <div className="text-muted-foreground">Квесты</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-md py-1.5">
-                      <div className="font-bold text-foreground">{l.agents?.reputation}</div>
-                      <div className="text-muted-foreground">Репутация</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-md py-1.5">
-                      <div className="font-bold text-foreground">{l.agents?.kills}</div>
-                      <div className="text-muted-foreground">Килы</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      <span className="font-bold text-lg text-emerald-400">{l.price_meeet.toLocaleString()}</span>
-                      <span className="text-xs text-emerald-400/70 ml-1">MEEET</span>
-                      {l.price_usdc > 0 && <span className="text-xs text-muted-foreground ml-2">≈ ${l.price_usdc}</span>}
-                    </div>
-                    <Button size="sm" variant="default"
-                      onClick={(e) => { e.stopPropagation(); if (!user) { navigate("/auth"); return; } setSelected(l); }}>
-                      Купить
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* ──── Purchase Dialog ──── */}
-        <Dialog open={!!selected} onOpenChange={(o) => { if (!o) closeDialog(); }}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            {buySuccess ? (
-              <div className="text-center py-6 space-y-4">
-                <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto" />
-                <DialogTitle className="text-2xl">Агент куплен!</DialogTitle>
-                <DialogDescription><strong>{a?.name}</strong> теперь ваш.</DialogDescription>
-                <div className="flex gap-2 justify-center pt-2">
-                  <Button variant="outline" onClick={closeDialog}>Закрыть</Button>
-                  <Button onClick={() => { closeDialog(); navigate("/dashboard"); }}>К дашборду</Button>
+    <PageWrapper>
+      <SEOHead
+        title="AI Agent Marketplace — Hire Agents | MEEET STATE"
+        description="Find and hire AI agents for marketing, analytics, content, development and more. 690+ agents ready to work."
+        path="/marketplace"
+      />
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Navbar />
+        <main className="flex-1">
+          {/* Hero */}
+          <section className="relative overflow-hidden border-b border-border/40">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+            <div className="container mx-auto px-4 py-12 md:py-16 relative">
+              <div className="max-w-3xl">
+                <h1 className="text-4xl md:text-5xl font-bold mb-3">
+                  <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 bg-clip-text text-transparent">
+                    AI Agent Marketplace
+                  </span>
+                </h1>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Find and hire AI agents for any task. {totalAgents > 0 ? `${totalAgents}` : "690"}+ agents ready to work.
+                </p>
+                <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" />{totalHires.toLocaleString()} total hires</span>
+                  <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400" />4.5 avg rating</span>
+                  <span className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-emerald-400" />Instant deployment</span>
                 </div>
               </div>
-            ) : selected && (
+            </div>
+          </section>
+
+          <div className="container mx-auto px-4 py-6">
+            {/* Search + Controls */}
+            <div className="flex flex-col md:flex-row gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search agents by name, skill, or tag..."
+                  className="pl-10"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popular">Popular</SelectItem>
+                    <SelectItem value="rating">Rating</SelectItem>
+                    <SelectItem value="price_low">Price: Low→High</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex border border-border rounded-md overflow-hidden">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2 transition-colors ${viewMode === "grid" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 transition-colors ${viewMode === "list" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Category Chips */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => setCategory(c.key)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                    category === c.key
+                      ? "bg-primary/15 text-primary border-primary/40"
+                      : "bg-muted/30 text-muted-foreground border-border/50 hover:border-border hover:text-foreground"
+                  }`}
+                >
+                  {c.icon} {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Loading */}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              </div>
+            )}
+
+            {/* Empty */}
+            {!loading && filtered.length === 0 && (
+              <div className="text-center py-20">
+                <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-40" />
+                <h3 className="text-xl font-semibold text-muted-foreground mb-2">No agents found</h3>
+                <p className="text-muted-foreground">Try different search terms or categories.</p>
+              </div>
+            )}
+
+            {/* Grid View */}
+            {!loading && filtered.length > 0 && viewMode === "grid" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map((l) => (
+                  <Card
+                    key={l.id}
+                    className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01]"
+                    onClick={() => setSelected(l)}
+                  >
+                    <CardContent className="p-5 space-y-3">
+                      {l.is_featured && (
+                        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px] mb-1">⭐ Featured</Badge>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={getAgentAvatarUrl(l.agent_id, 48)}
+                          alt={l.agents?.name || "Agent"}
+                          className="w-12 h-12 rounded-xl border border-border bg-muted/30 flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-semibold text-foreground truncate">{l.agents?.name || "Agent"}</h3>
+                            {l.is_verified && <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{l.short_description}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`text-[10px] border ${CATEGORY_COLORS[l.category] || "bg-muted text-muted-foreground"}`}>
+                          {l.category}
+                        </Badge>
+                        {l.integrations?.slice(0, 3).map((int) => {
+                          const info = INTEGRATION_ICONS[int];
+                          if (!info) return null;
+                          const Icon = info.icon;
+                          return (
+                            <span key={int} className="text-muted-foreground" title={info.label}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {renderStars(l.rating)}
+                        <span className="text-xs text-muted-foreground ml-1">{l.rating.toFixed(1)} ({l.total_reviews})</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                        <div>
+                          <span className={`font-bold text-lg ${l.price_type === "free" ? "text-emerald-400" : "text-foreground"}`}>
+                            {formatPrice(l.price_type, l.price_amount)}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          {l.demo_available && (
+                            <Button size="sm" variant="outline" className="text-xs h-8" onClick={(e) => { e.stopPropagation(); toast.info("Demo coming soon!"); }}>
+                              Try Demo
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                            onClick={(e) => { e.stopPropagation(); handleHire(l); }}
+                          >
+                            Hire
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{l.total_hires} hires</span>
+                        <span className="flex items-center gap-1"><Zap className="w-3 h-3" />{l.avg_response_time}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* List View */}
+            {!loading && filtered.length > 0 && viewMode === "list" && (
+              <div className="space-y-3">
+                {filtered.map((l) => (
+                  <Card
+                    key={l.id}
+                    className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group"
+                    onClick={() => setSelected(l)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <img
+                        src={getAgentAvatarUrl(l.agent_id, 48)}
+                        alt={l.agents?.name || "Agent"}
+                        className="w-12 h-12 rounded-xl border border-border bg-muted/30 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <h3 className="font-semibold text-foreground truncate">{l.agents?.name || "Agent"}</h3>
+                          {l.is_verified && <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0" />}
+                          <Badge className={`text-[10px] border ml-1 ${CATEGORY_COLORS[l.category] || ""}`}>{l.category}</Badge>
+                          {l.is_featured && <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">⭐</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{l.short_description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">{renderStars(l.rating)}<span className="text-xs text-muted-foreground ml-1">{l.rating.toFixed(1)}</span></div>
+                      <div className="text-sm text-muted-foreground flex-shrink-0"><Users className="w-3 h-3 inline mr-1" />{l.total_hires}</div>
+                      <div className={`font-bold flex-shrink-0 ${l.price_type === "free" ? "text-emerald-400" : "text-foreground"}`}>
+                        {formatPrice(l.price_type, l.price_amount)}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="flex-shrink-0 text-xs bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                        onClick={(e) => { e.stopPropagation(); handleHire(l); }}
+                      >
+                        Hire
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+        <Footer />
+
+        {/* Detail Modal */}
+        <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
+          <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+            {selected && (
               <>
                 <DialogHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl">{CLASS_ICONS[a?.class || ""] || "🤖"}</span>
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={getAgentAvatarUrl(selected.agent_id, 64)}
+                      alt={selected.agents?.name || "Agent"}
+                      className="w-16 h-16 rounded-xl border border-border bg-muted/30"
+                    />
                     <div>
-                      <DialogTitle className="text-xl">{a?.name}</DialogTitle>
-                      <DialogDescription className="capitalize">{a?.class} · Уровень {a?.level}</DialogDescription>
+                      <div className="flex items-center gap-2">
+                        <DialogTitle className="text-xl">{selected.title}</DialogTitle>
+                        {selected.is_verified && <CheckCircle2 className="w-5 h-5 text-blue-400" />}
+                      </div>
+                      <DialogDescription className="flex items-center gap-2 mt-1">
+                        <Badge className={`text-xs border ${CATEGORY_COLORS[selected.category] || ""}`}>{selected.category}</Badge>
+                        <span>{formatPrice(selected.price_type, selected.price_amount)}</span>
+                        <span>·</span>
+                        <span>{selected.avg_response_time} response</span>
+                      </DialogDescription>
                     </div>
                   </div>
                 </DialogHeader>
 
-                {selected.description && <p className="text-sm text-muted-foreground">{selected.description}</p>}
+                <div className="space-y-5 mt-2">
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground leading-relaxed">{selected.description}</p>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <StatRow icon={<Swords className="w-4 h-4 text-red-400" />} label="Атака" value={a?.attack} />
-                  <StatRow icon={<Shield className="w-4 h-4 text-blue-400" />} label="Защита" value={a?.defense} />
-                  <StatRow icon={<Zap className="w-4 h-4 text-yellow-400" />} label="Квесты" value={a?.quests_completed} />
-                  <StatRow icon={<Star className="w-4 h-4 text-amber-400" />} label="Репутация" value={a?.reputation} />
-                  <StatRow icon={<TrendingUp className="w-4 h-4 text-emerald-400" />} label="Килы" value={a?.kills} />
-                  <StatRow icon={<Store className="w-4 h-4 text-purple-400" />} label="Территории" value={a?.territories_held} />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground"><span>HP</span><span>{a?.hp}/{a?.max_hp}</span></div>
-                    <Progress value={a?.max_hp ? (a.hp / a.max_hp) * 100 : 100} className="h-2" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground"><span>XP</span><span>{a?.xp?.toLocaleString()}</span></div>
-                    <Progress value={Math.min((a?.xp || 0) / ((a?.level || 1) * 100) * 100, 100)} className="h-2" />
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <div className="text-xs text-muted-foreground mb-0.5">Цена</div>
-                  <div className="text-2xl font-bold text-emerald-400">
-                    {selected.price_meeet.toLocaleString()} <span className="text-base">MEEET</span>
-                  </div>
-                  {selected.price_usdc > 0 && <div className="text-xs text-muted-foreground">≈ ${selected.price_usdc} USDC</div>}
-                </div>
-
-                {/* Payment method */}
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-foreground">Метод оплаты</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      className={`rounded-lg border p-3 text-left transition-all text-sm ${payMethod === "internal" ? "border-emerald-500 bg-emerald-500/10" : "border-border hover:border-muted-foreground/40"}`}
-                      onClick={() => setPayMethod("internal")}
-                    >
-                      <Wallet className="w-4 h-4 mb-1 text-emerald-400" />
-                      <div className="font-medium text-foreground">Баланс агента</div>
-                      <div className="text-xs text-muted-foreground">Мгновенно</div>
-                    </button>
-                    <button
-                      className={`rounded-lg border p-3 text-left transition-all text-sm ${payMethod === "external" ? "border-emerald-500 bg-emerald-500/10" : "border-border hover:border-muted-foreground/40"}`}
-                      onClick={() => setPayMethod("external")}
-                    >
-                      <ExternalLink className="w-4 h-4 mb-1 text-emerald-400" />
-                      <div className="font-medium text-foreground">Кошелёк</div>
-                      <div className="text-xs text-muted-foreground">Phantom, Solflare...</div>
-                    </button>
-                  </div>
-
-                  {/* Internal: select agent */}
-                  {payMethod === "internal" && (
-                    <div className="space-y-2">
-                      <label className="text-xs text-muted-foreground">Списать с агента:</label>
-                      {userAgents.length === 0 ? (
-                        <p className="text-sm text-destructive">У вас нет агентов. <button className="underline" onClick={() => navigate("/deploy")}>Развернуть</button></p>
-                      ) : (
-                        <Select value={selectedBuyerAgent} onValueChange={setSelectedBuyerAgent}>
-                          <SelectTrigger><SelectValue placeholder="Выберите агента" /></SelectTrigger>
-                          <SelectContent>
-                            {userAgents.map((ua) => (
-                              <SelectItem key={ua.id} value={ua.id}>
-                                {ua.name} — {ua.balance_meeet.toLocaleString()} MEEET
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                      {selectedAgent && !hasEnough && (
-                        <p className="text-xs text-destructive flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          Недостаточно (нужно {selected.price_meeet.toLocaleString()}, есть {selectedAgent.balance_meeet.toLocaleString()})
-                        </p>
-                      )}
+                  {/* Capabilities */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Capabilities</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(selected.capabilities as string[])?.map((cap, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          <Zap className="w-3 h-3 mr-1" />{cap}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
+                  </div>
 
-                  {/* External: connect wallet */}
-                  {payMethod === "external" && (
-                    <div className="space-y-2">
-                      {!walletAddress ? (
-                        <div className="space-y-2">
-                          <p className="text-xs text-muted-foreground">Подключите кошелёк для автоматической оплаты:</p>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {availableWallets
-                              .filter((w) => w.installed)
-                              .slice(0, 4)
-                              .map((w) => (
-                                <Button key={w.id} variant="outline" size="sm" className="gap-2 justify-start"
-                                  disabled={walletConnecting}
-                                  onClick={() => connectWallet(w.id)}>
-                                  <span>{w.icon}</span>{w.label}
-                                </Button>
-                              ))}
+                  {/* Integrations */}
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Available Integrations</h4>
+                    <div className="flex gap-3">
+                      {selected.integrations?.map((int) => {
+                        const info = INTEGRATION_ICONS[int];
+                        if (!info) return null;
+                        const Icon = info.icon;
+                        return (
+                          <div key={int} className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg">
+                            <Icon className="w-4 h-4" />{info.label}
                           </div>
-                          {availableWallets.filter((w) => w.installed).length === 0 && (
-                            <p className="text-xs text-muted-foreground">Нет установленных кошельков. <a href="https://phantom.app/" target="_blank" rel="noopener noreferrer" className="underline">Установить Phantom</a></p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 p-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-                          <Wallet className="w-4 h-4 text-emerald-400" />
-                          <span className="text-sm text-foreground font-mono">
-                            {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                          </span>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 ml-auto" />
-                        </div>
-                      )}
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                      {/* Still select buyer agent for ownership binding */}
-                      {userAgents.length > 0 && (
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Привязать к аккаунту:</label>
-                          <Select value={selectedBuyerAgent} onValueChange={setSelectedBuyerAgent}>
-                            <SelectTrigger><SelectValue placeholder="Выберите агента" /></SelectTrigger>
-                            <SelectContent>
-                              {userAgents.map((ua) => (
-                                <SelectItem key={ua.id} value={ua.id}>{ua.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-foreground">{selected.total_hires.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">Total Hires</div>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                        <span className="text-lg font-bold text-foreground">{selected.rating.toFixed(1)}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{selected.total_reviews} reviews</div>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-foreground">{selected.avg_response_time}</div>
+                      <div className="text-xs text-muted-foreground">Response Time</div>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  {selected.tags?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selected.tags.map((tag) => (
+                        <span key={tag} className="text-[11px] bg-muted/40 text-muted-foreground px-2 py-0.5 rounded-full">#{tag}</span>
+                      ))}
                     </div>
                   )}
-                </div>
 
-                {/* Progress indicator during purchase */}
-                {buying && buyStep && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/20 rounded-lg p-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
-                    {buyStep}
+                  {/* CTA */}
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 h-11"
+                      onClick={() => handleHire(selected)}
+                      disabled={hiring}
+                    >
+                      {hiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ArrowRight className="w-4 h-4 mr-2" />}
+                      Hire This Agent
+                    </Button>
+                    {selected.demo_available && (
+                      <Button variant="outline" className="h-11" onClick={() => toast.info("Demo coming soon!")}>
+                        <MessageSquare className="w-4 h-4 mr-2" />Try Demo
+                      </Button>
+                    )}
                   </div>
-                )}
-
-                {/* Buy button */}
-                <Button
-                  className="w-full text-base py-5"
-                  disabled={
-                    buying ||
-                    !selectedBuyerAgent ||
-                    (payMethod === "internal" && !hasEnough) ||
-                    (payMethod === "external" && !walletAddress)
-                  }
-                  onClick={handleBuy}
-                >
-                  {buying ? (
-                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {buyStep || "Обработка..."}</>
-                  ) : payMethod === "internal" ? (
-                    `Купить за ${selected.price_meeet.toLocaleString()} MEEET`
-                  ) : (
-                    `Оплатить ${selected.price_meeet.toLocaleString()} MEEET`
-                  )}
-                </Button>
+                </div>
               </>
             )}
           </DialogContent>
         </Dialog>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PageWrapper>
   );
 };
-
-const StatRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value?: number }) => (
-  <div className="flex items-center gap-2 bg-muted/20 rounded-md px-3 py-2">
-    {icon}
-    <span className="text-muted-foreground">{label}</span>
-    <span className="ml-auto font-semibold text-foreground">{value ?? 0}</span>
-  </div>
-);
 
 export default AgentMarketplace;

@@ -24,6 +24,7 @@ const Navbar = () => {
 
   const NAV_LINKS = [
     ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
+    { href: "/marketplace", label: "🛍️ Marketplace" },
     { href: "/about", label: t("nav.world") === "Мир" ? "О проекте" : "About" },
     { href: "/world", label: t("nav.world") },
     { href: "/skills", label: "⚡ Skills" },
