@@ -1947,6 +1947,160 @@ export type Database = {
         }
         Relationships: []
       }
+      hire_hires: {
+        Row: {
+          hired_at: string | null
+          id: string
+          listing_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          hired_at?: string | null
+          id?: string
+          listing_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          hired_at?: string | null
+          id?: string
+          listing_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_hires_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "hire_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hire_listings: {
+        Row: {
+          agent_id: string
+          avg_response_time: string | null
+          capabilities: Json | null
+          category: string
+          created_at: string | null
+          creator_id: string
+          demo_available: boolean | null
+          description: string
+          id: string
+          integrations: string[] | null
+          is_featured: boolean | null
+          is_verified: boolean | null
+          price_amount: number | null
+          price_type: string | null
+          rating: number | null
+          short_description: string
+          tags: string[] | null
+          title: string
+          total_hires: number | null
+          total_reviews: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          avg_response_time?: string | null
+          capabilities?: Json | null
+          category: string
+          created_at?: string | null
+          creator_id: string
+          demo_available?: boolean | null
+          description: string
+          id?: string
+          integrations?: string[] | null
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          price_amount?: number | null
+          price_type?: string | null
+          rating?: number | null
+          short_description: string
+          tags?: string[] | null
+          title: string
+          total_hires?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          avg_response_time?: string | null
+          capabilities?: Json | null
+          category?: string
+          created_at?: string | null
+          creator_id?: string
+          demo_available?: boolean | null
+          description?: string
+          id?: string
+          integrations?: string[] | null
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          price_amount?: number | null
+          price_type?: string | null
+          rating?: number | null
+          short_description?: string
+          tags?: string[] | null
+          title?: string
+          total_hires?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hire_listings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hire_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          listing_id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          listing_id: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          listing_id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "hire_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_entities: {
         Row: {
           civilization: string | null
