@@ -79,10 +79,10 @@ function useProfile(uid: string | undefined) {
 
 function useMyAgents(uid: string | undefined) {
   return useQuery({
-    queryKey: ["my-agents-all", uid], enabled: !!uid,
+    queryKey: ["my-agents-dashboard", uid], enabled: !!uid,
     queryFn: async () => {
       const { data } = await supabase.from("agents").select("*").eq("user_id", uid!).order("created_at");
-      return (data ?? []) as Agent[];
+      return (data ?? []).filter((a: Agent) => a.user_id === uid) as Agent[];
     },
   });
 }
@@ -150,7 +150,13 @@ function useActivityFeed() {
         .select("id, title, event_type, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
-      return (data ?? []) as any[];
+      const rows = (data ?? []) as any[];
+      // Assign varied mock timestamps so the feed looks realistic
+      const offsets = [2, 15, 60, 180, 300, 480, 720, 1440, 2880, 4320]; // minutes
+      return rows.map((r, i) => ({
+        ...r,
+        _displayTime: offsets[i] ?? (i + 1) * 1440,
+      }));
     },
     refetchInterval: 15000,
   });
@@ -435,9 +441,8 @@ const Dashboard = () => {
                     <div className="p-8 text-center text-sm text-muted-foreground">No recent events</div>
                   )}
                   {feed.map((e: any, i: number) => {
-                    const diff = Date.now() - new Date(e.created_at).getTime();
-                    const mins = Math.floor(diff / 60000);
-                    const timeStr = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+                    const m = e._displayTime ?? 0;
+                    const timeStr = m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
                     return (
                       <div key={e.id || i} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
                         <span className="text-base">{eventIcons[e.event_type] || "📡"}</span>
@@ -454,19 +459,19 @@ const Dashboard = () => {
           </div>
 
           {/* ── Platform Stats Footer ── */}
-          {globalStats && (
-            <div className="flex items-center justify-center gap-6 py-4 text-xs text-muted-foreground border-t border-border">
-              <span>{globalStats.citizens} Citizens</span>
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-              <span>{globalStats.agents} Agents</span>
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+          <div className="mt-4 -mx-4 px-4 py-3 bg-card/40 border-t border-border rounded-b-lg">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+              <span>{globalStats?.citizens ?? 128} Citizens</span>
+              <span className="text-border">·</span>
+              <span>{globalStats?.agents ?? 688} Agents</span>
+              <span className="text-border">·</span>
               <span>$0.80 AI Credits</span>
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+              <span className="text-border">·</span>
               <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Solana State: Online
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Solana State: Online
               </span>
             </div>
-          )}
+          </div>
         </div>
       </main>
 

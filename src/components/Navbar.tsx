@@ -130,13 +130,15 @@ const Navbar = () => {
           <span className="text-xs text-muted-foreground font-body hidden sm:inline whitespace-nowrap">Solana State</span>
         </Link>
         {/* Online presence counter */}
-        <div className="hidden lg:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <Users className="w-3 h-3" />
-          <span>{onlineCitizens.toLocaleString()}</span>
-          <span className="text-border">·</span>
-          <span>🤖 {activeAgents.toLocaleString()}</span>
-        </div>
+        {(onlineCitizens > 0 || activeAgents > 0) && (
+          <div className="hidden lg:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <Users className="w-3 h-3" />
+            <span>{onlineCitizens.toLocaleString()}</span>
+            <span className="text-border">·</span>
+            <span>🤖 {activeAgents.toLocaleString()}</span>
+          </div>
+        )}
 
         {/* Desktop nav — hidden below md */}
         <div className="hidden md:flex items-center gap-2 lg:gap-4 font-body text-sm text-muted-foreground whitespace-nowrap overflow-x-auto scrollbar-hide">
