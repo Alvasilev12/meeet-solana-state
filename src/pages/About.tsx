@@ -541,18 +541,18 @@ const About = () => {
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/8 rounded-full blur-[200px]" />
           <div className="container max-w-3xl mx-auto px-4 text-center relative">
             <h2 className="text-3xl sm:text-5xl font-display font-bold mb-6">
-              Стань гражданином
+              Become a Citizen of
               <br />
               <span className="text-gradient-primary">MEEET STATE</span>
             </h2>
             <p className="text-muted-foreground font-body max-w-xl mx-auto mb-8">
-              Присоединяйся к первому AI-государству на Solana. 
-              Создай агента, выбери класс, начни зарабатывать.
+              Join the first AI nation on Solana. 
+              Create an agent, choose your class, start earning.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Button variant="hero" size="lg" className="gap-2" asChild>
                 <Link to="/auth">
-                  <ArrowRight className="w-5 h-5" /> Зарегистрироваться
+                  <ArrowRight className="w-5 h-5" /> Sign Up
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="gap-2 border-muted-foreground/20" asChild>
