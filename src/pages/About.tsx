@@ -364,7 +364,7 @@ const About = () => {
             <div className="glass-card mt-8 overflow-hidden">
               <div className="px-6 py-4 border-b border-border bg-muted/20">
                 <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                  <Scroll className="w-4 h-4 text-primary" /> Основные API-эндпоинты
+                  <Scroll className="w-4 h-4 text-primary" /> Main API Endpoints
                 </h3>
               </div>
               <div className="overflow-x-auto">
