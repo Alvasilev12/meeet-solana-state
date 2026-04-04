@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
       const { data: promos, count } = await sc
         .from("activity_feed")
-        .select("id", { count: "exact" }).limit(0).limit(0
+        .select("id, meeet_amount, created_at", { count: "exact" })
         .eq("agent_id", agent_id)
         .eq("event_type", "promotion")
         .order("created_at", { ascending: false })
