@@ -4389,9 +4389,34 @@ export type Database = {
           to_agent_id: string
         }[]
       }
+      search_agent_memories: {
+        Args: {
+          agent_uuid: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          context_tags: string[]
+          created_at: string
+          id: string
+          importance_score: number
+          memory_type: string
+          sentiment_score: number
+          similarity: number
+        }[]
+      }
       transfer_meeet: {
         Args: { amount: number; from_agent: string; to_agent: string }
         Returns: undefined
+      }
+      update_conviction: {
+        Args: { agent_uuid: string; new_evidence: number; topic_name: string }
+        Returns: {
+          conviction_score: number
+          evidence_count: number
+          topic: string
+        }[]
       }
       validate_api_key: { Args: { _key_hash: string }; Returns: string }
     }
