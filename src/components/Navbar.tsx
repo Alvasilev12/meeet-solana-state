@@ -25,18 +25,12 @@ const Navbar = () => {
   const NAV_LINKS = [
     ...(user ? [{ href: "/dashboard", label: "🤖 My Agents" }] : []),
     { href: "/marketplace", label: "🛍️ Marketplace" },
-    { href: "/agent-studio", label: "🪄 Agent Studio" },
-    { href: "/connector-hub", label: "🔌 Connectors" },
+    { href: "/agent-studio", label: "🪄 Studio" },
     { href: "/about", label: "About" },
-    { href: "/world", label: t("nav.world") },
-    { href: "/skills", label: "⚡ Skills" },
+    { href: "/world", label: "🌍 World" },
     { href: "/activity", label: "🔴 Live" },
     { href: "/chat", label: "💬 Chat" },
     { href: "/launch", label: "🚀 Launch", glow: true },
-    { href: "/oracle", label: "🔮 Oracle" },
-    { href: "/deploy", label: "🚀 Deploy" },
-    { href: "/arena", label: t("nav.arena") },
-    { href: "/leaderboard", label: t("nav.rankings") },
     { href: "/token", label: "💰 $MEEET" },
   ];
 
