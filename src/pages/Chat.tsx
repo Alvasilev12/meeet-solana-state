@@ -76,6 +76,27 @@ const Chat = () => {
 
   const agentMessages = messages[selectedAgent.id] || [];
 
+  // Real-time: listen for new chat messages for the selected agent
+  const { isConnected: chatRtConnected } = useRealtimeSubscription<any>({
+    table: "chat_messages",
+    event: "INSERT",
+    filter: `sender_type=eq.agent`,
+    onInsert: (payload) => {
+      // Only process if it's a reply from the currently selected agent
+      if (payload.sender_id && payload.message) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const agentMsg: Message = { id: payload.id || crypto.randomUUID(), from: "agent", text: payload.message, time: timeStr };
+        setMessages((prev) => {
+          // Avoid duplicates
+          const existing = prev[selectedAgent.id] || [];
+          if (existing.some((m) => m.id === agentMsg.id)) return prev;
+          return { ...prev, [selectedAgent.id]: [...existing, agentMsg] };
+        });
+        setTyping(false);
+      }
+    },
+  });
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [agentMessages, typing]);
