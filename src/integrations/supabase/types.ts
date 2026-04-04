@@ -1222,6 +1222,42 @@ export type Database = {
           },
         ]
       }
+      cortex_reports: {
+        Row: {
+          created_at: string | null
+          cycle_number: number
+          id: string
+          key_findings: Json | null
+          predictions: Json | null
+          report_type: string
+          sentiment_data: Json | null
+          summary: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          cycle_number: number
+          id?: string
+          key_findings?: Json | null
+          predictions?: Json | null
+          report_type: string
+          sentiment_data?: Json | null
+          summary: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          cycle_number?: number
+          id?: string
+          key_findings?: Json | null
+          predictions?: Json | null
+          report_type?: string
+          sentiment_data?: Json | null
+          summary?: string
+          title?: string
+        }
+        Relationships: []
+      }
       countries: {
         Row: {
           bbox_max_lat: number | null
