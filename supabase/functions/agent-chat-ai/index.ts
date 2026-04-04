@@ -11,6 +11,66 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// ── Spix tool detection & execution ──
+interface SpixAction {
+  type: "call" | "sms" | "email";
+  phone?: string;
+  email?: string;
+  message?: string;
+  subject?: string;
+  playbook_id?: string;
+}
+
+function detectSpixIntent(text: string): SpixAction | null {
+  const lower = text.toLowerCase();
+  const phoneMatch = text.match(/(\+?\d[\d\s\-()]{7,}\d)/);
+  const emailMatch = text.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+
+  const callWords = /позвони|звони|звонок|набери|вызови|call|phone call|dial|ring/i;
+  const smsWords = /смс|sms|отправь сообщение|send message|text message|напиши смс/i;
+  const emailWords = /email|письмо|напиши письмо|send email|отправь письмо|написать email/i;
+
+  if (callWords.test(lower) && phoneMatch) {
+    return { type: "call", phone: phoneMatch[1].replace(/[\s\-()]/g, "") };
+  }
+  if (smsWords.test(lower) && phoneMatch) {
+    const msgPart = text.replace(phoneMatch[0], "").replace(smsWords, "").trim();
+    return { type: "sms", phone: phoneMatch[1].replace(/[\s\-()]/g, ""), message: msgPart || "Hello from MEEET Agent!" };
+  }
+  if (emailWords.test(lower) && emailMatch) {
+    return { type: "email", email: emailMatch[0] };
+  }
+  return null;
+}
+
+async function executeSpixAction(agentId: string, userId: string, action: SpixAction): Promise<string> {
+  const SPIX_URL = Deno.env.get("SUPABASE_URL") + "/functions/v1/agent-spix";
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  try {
+    let body: Record<string, unknown> = { agent_id: agentId, user_id: userId };
+
+    if (action.type === "call") {
+      body = { ...body, action: "call", phone_number: action.phone, playbook_id: action.playbook_id || "general_assistant" };
+    } else if (action.type === "sms") {
+      body = { ...body, action: "sms", phone_number: action.phone, message: action.message };
+    } else if (action.type === "email") {
+      body = { ...body, action: "email", to_email: action.email, subject: action.subject || "Message from MEEET Agent", body: action.message || "Hello!" };
+    }
+
+    const resp = await fetch(SPIX_URL, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (data.success) return "success";
+    return data.error || "unknown_error";
+  } catch (e) {
+    return `error: ${String(e)}`;
+  }
+}
+
 const CLASS_EXPERTISE: Record<string, string> = {
   oracle: "You are a Research Scientist specializing in scientific analysis, papers, drug discovery, physics, biology.",
   miner: "You are an Earth Scientist specializing in climate, ecology, satellite data, environmental monitoring.",
