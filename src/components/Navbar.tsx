@@ -217,7 +217,7 @@ const Navbar = () => {
                 </div>
                 <ScrollArea className="max-h-64">
                   {notifications.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-xs py-6">{t("nav.noNotifications")}</p>
+                    <p className="text-center text-muted-foreground text-xs py-6">No notifications</p>
                   ) : (
                     <div className="divide-y divide-border">
                       {notifications.map((n: any) => (
