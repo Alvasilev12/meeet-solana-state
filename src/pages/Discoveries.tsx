@@ -182,9 +182,9 @@ const Discoveries = () => {
     queryKey: ["discovery-stats"],
     queryFn: async () => {
       const [total, verified, pending] = await Promise.all([
-        supabase.from("discoveries").select("id", { count: "exact", head: true }),
-        supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
-        supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", false),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", false),
       ]);
       return {
         total: total.count ?? 0,

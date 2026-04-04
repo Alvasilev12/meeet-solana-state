@@ -47,8 +47,8 @@ export default function KnowledgeLibrarySection() {
   // Initial stats
   useEffect(() => {
     Promise.all([
-      supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
-      supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_cited", true),
+      supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true),
+      supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_cited", true),
       supabase.from("discoveries").select("view_count").eq("is_approved", true),
     ]).then(([countRes, citedRes, viewsRes]) => {
       setPaperCount(countRes.count ?? 0);

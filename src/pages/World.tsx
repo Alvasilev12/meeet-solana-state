@@ -87,9 +87,9 @@ const World = () => {
     const fetchAll = async () => {
       const [agentsRes, discRes, duelsRes, lawsRes, meeetRes] = await Promise.all([
         supabase.from("agents_public").select("id, name, class, level, reputation, balance_meeet, status, country_code").eq("status", "active").order("reputation", { ascending: false }),
-        supabase.from("discoveries").select("*", { count: "exact", head: true }).eq("is_approved", true),
-        supabase.from("duels").select("*", { count: "exact", head: true }),
-        supabase.from("laws").select("*", { count: "exact", head: true }),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true),
+        supabase.from("duels").select("id", { count: "exact" }).limit(0),
+        supabase.from("laws").select("id", { count: "exact" }).limit(0),
         supabase.rpc("get_total_meeet"),
       ]);
       if (agentsRes.data) setAgents(agentsRes.data as AgentData[]);

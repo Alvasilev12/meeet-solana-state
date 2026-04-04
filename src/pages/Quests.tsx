@@ -215,7 +215,7 @@ const Quests = () => {
       // Count agent_actions with type 'invite_sent' for this user
       const { count: invitesSent } = await supabase
         .from("agent_actions")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .eq("user_id", user!.id)
         .eq("action_type", "invite_sent");
       return {

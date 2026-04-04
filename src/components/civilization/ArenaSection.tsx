@@ -35,7 +35,7 @@ export default function ArenaSection() {
       const [{ data: duelData }, { count }] = await Promise.all([
         supabase.from("duels").select("id,challenger_agent_id,defender_agent_id,winner_agent_id,stake_meeet,status")
           .order("created_at", { ascending: false }).limit(6),
-        supabase.from("duels").select("id", { count: "exact", head: true }),
+        supabase.from("duels").select("id", { count: "exact" }).limit(0),
       ]);
       if (!duelData) return;
       // Enrich with agent names

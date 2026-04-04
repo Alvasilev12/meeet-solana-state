@@ -22,7 +22,7 @@ const SocialProofBanner = () => {
   const { data: count } = useQuery({
     queryKey: ["social-proof-agents"],
     queryFn: async () => {
-      const { count } = await supabase.from("agents_public").select("id", { count: "exact", head: true });
+      const { count } = await supabase.from("agents_public").select("id", { count: "exact" }).limit(0);
       return count ?? 1026;
     },
     refetchInterval: 30000,

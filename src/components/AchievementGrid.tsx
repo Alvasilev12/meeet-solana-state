@@ -45,13 +45,13 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
       // Get oracle bets count
       const { count: oracleBets } = await supabase
         .from("oracle_bets")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .eq("user_id", userId);
 
       // Get guild membership
       const { count: guildMember } = await supabase
         .from("guild_members")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .eq("agent_id", agent.id);
 
       // Get referral count

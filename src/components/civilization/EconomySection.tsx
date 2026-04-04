@@ -26,7 +26,7 @@ export default function EconomySection() {
     (async () => {
       const [treasuryRes, { count: items }, { data: stakes }] = await Promise.all([
         supabase.from("state_treasury").select("balance_meeet,total_burned").maybeSingle(),
-        supabase.from("marketplace_items").select("id", { count: "exact", head: true }),
+        supabase.from("marketplace_items").select("id", { count: "exact" }).limit(0),
         supabase.from("agent_stakes").select("amount_meeet").eq("status", "active"),
       ]);
       const t = treasuryRes.data as any;

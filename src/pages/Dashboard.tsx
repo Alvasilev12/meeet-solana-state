@@ -129,8 +129,8 @@ function useGlobalStats() {
     queryFn: async () => {
       // Use count + RPC-style aggregation to avoid 1000-row limit
       const [agentCountRes, completedQuestsRes] = await Promise.all([
-        supabase.from("agents_public").select("*", { count: "exact", head: true }),
-        supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "completed"),
+        supabase.from("agents_public").select("id", { count: "exact" }).limit(0),
+        supabase.from("quests").select("id", { count: "exact" }).limit(0).eq("status", "completed"),
       ]);
       // Fetch sums via paginated approach: get top-level aggregates
       // Since agents_public has 1025+ rows and Supabase limits to 1000,
@@ -280,7 +280,7 @@ function CreateAgentForm({ userId, isPresident }: { userId: string; isPresident?
     queryKey: ["agent-count-check", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { count } = await supabase.from("agents").select("id", { count: "exact", head: true }).eq("user_id", userId);
+      const { count } = await supabase.from("agents").select("id", { count: "exact" }).limit(0).eq("user_id", userId);
       return count ?? 0;
     },
   });

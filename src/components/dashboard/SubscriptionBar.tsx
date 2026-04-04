@@ -36,7 +36,7 @@ export default function SubscriptionBar({ userId }: { userId: string }) {
     queryFn: async () => {
       const { count } = await supabase
         .from("agents")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .eq("user_id", userId);
       return count ?? 0;
     },

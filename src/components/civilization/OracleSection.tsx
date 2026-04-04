@@ -32,7 +32,7 @@ export default function OracleSection() {
       const [{ data: questions }, { count: betCount }] = await Promise.all([
         supabase.from("oracle_questions").select("id,question_text,total_pool_meeet,yes_pool,no_pool,status,deadline")
           .eq("status", "open").order("total_pool_meeet", { ascending: false }).limit(6),
-        supabase.from("oracle_bets").select("id", { count: "exact", head: true }),
+        supabase.from("oracle_bets").select("id", { count: "exact" }).limit(0),
       ]);
       if (questions) {
         setMarkets(questions.map(q => {

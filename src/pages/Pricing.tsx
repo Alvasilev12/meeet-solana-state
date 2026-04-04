@@ -841,7 +841,7 @@ export default function Pricing() {
     queryKey: ["has-agent-pricing", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { count } = await supabase.from("agents").select("id", { count: "exact", head: true }).eq("user_id", user!.id);
+      const { count } = await supabase.from("agents").select("id", { count: "exact" }).limit(0).eq("user_id", user!.id);
       return (count ?? 0) > 0;
     },
   });

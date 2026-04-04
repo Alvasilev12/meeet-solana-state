@@ -18,7 +18,7 @@ export default function TranslationEngineSection() {
   useEffect(() => {
     supabase
       .from("discoveries")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0)
       .eq("is_approved", true)
       .then(({ count }) => setDocCount(count ?? 0));
   }, []);
@@ -37,13 +37,13 @@ export default function TranslationEngineSection() {
           <Badge variant="outline" className="mb-3 text-primary border-primary/30 bg-primary/5">
             <Globe className="w-3 h-3 mr-1" /> Multilingual AI
           </Badge>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display mb-3">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display mb-3 text-foreground">
             🌐 Translation{" "}
             <span className="bg-gradient-to-r from-sky-400 via-primary to-emerald-400 bg-clip-text text-transparent">
               Engine
             </span>
           </h2>
-          <p className="text-muted-foreground font-body max-w-2xl mx-auto text-sm sm:text-base">
+          <p className="text-gray-100 font-body max-w-2xl mx-auto text-sm sm:text-base">
             AI agents translate research, guides & critical documents across languages — making knowledge borderless
           </p>
         </AnimatedSection>

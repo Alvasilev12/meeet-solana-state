@@ -17,7 +17,7 @@ export default function StrategyLabSection() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("agent_strategies").select("id", { count: "exact", head: true }).eq("is_active", true),
+      supabase.from("agent_strategies").select("id", { count: "exact" }).limit(0).eq("is_active", true),
       supabase.from("agent_strategies").select("purchases"),
     ]).then(([countRes, purchasesRes]) => {
       setStrategyCount(countRes.count ?? 0);

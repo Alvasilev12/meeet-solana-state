@@ -21,8 +21,8 @@ export default function LabSection() {
   useEffect(() => {
     (async () => {
       const [{ count: total }, { count: approved }] = await Promise.all([
-        supabase.from("discoveries").select("id", { count: "exact", head: true }),
-        supabase.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true),
       ]);
       setDiscoveryCount(total ?? 0);
       setApprovedCount(approved ?? 0);

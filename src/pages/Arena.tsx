@@ -78,7 +78,7 @@ function useReviewStats() {
     queryFn: async () => {
       const [duelsRes, discRes] = await Promise.all([
         supabase.from("duels").select("stake_meeet, burn_amount, status", { count: "exact" }).eq("status", "completed"),
-        supabase.from("discoveries").select("id", { count: "exact", head: true }),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
       ]);
       const duels = duelsRes.data ?? [];
       const totalStaked = duels.reduce((s: number, d: any) => s + Number(d.stake_meeet) * 2, 0);

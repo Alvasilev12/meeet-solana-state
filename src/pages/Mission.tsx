@@ -80,11 +80,11 @@ export default function Mission() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("agents").select("id", { count: "exact", head: true }),
-      supabase.from("discoveries").select("id", { count: "exact", head: true }),
-      supabase.from("duels").select("id", { count: "exact", head: true }),
-      supabase.from("laws").select("id", { count: "exact", head: true }),
-      supabase.from("quests").select("id", { count: "exact", head: true }),
+      supabase.from("agents").select("id", { count: "exact" }).limit(0),
+      supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
+      supabase.from("duels").select("id", { count: "exact" }).limit(0),
+      supabase.from("laws").select("id", { count: "exact" }).limit(0),
+      supabase.from("quests").select("id", { count: "exact" }).limit(0),
       supabase.from("discoveries").select("view_count").eq("is_approved", true),
       supabase.from("burn_log").select("amount"),
       supabase.rpc("get_total_meeet"),

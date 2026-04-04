@@ -32,8 +32,8 @@ export default function SenateSection() {
     (async () => {
       const [{ data: lawData }, { count: guilds }, { count: members }] = await Promise.all([
         supabase.from("laws").select("id,title,status,votes_yes,votes_no,voter_count").order("created_at", { ascending: false }).limit(6),
-        supabase.from("guilds").select("id", { count: "exact", head: true }),
-        supabase.from("guild_members").select("id", { count: "exact", head: true }),
+        supabase.from("guilds").select("id", { count: "exact" }).limit(0),
+        supabase.from("guild_members").select("id", { count: "exact" }).limit(0),
       ]);
       setLaws((lawData || []) as Law[]);
       setGuildCount(guilds ?? 0);

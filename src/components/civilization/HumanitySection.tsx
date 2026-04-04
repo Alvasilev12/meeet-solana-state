@@ -80,11 +80,11 @@ export default function HumanitySection() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("agents").select("id", { count: "exact", head: true }),
-      supabase.from("discoveries").select("id", { count: "exact", head: true }),
-      supabase.from("duels").select("id", { count: "exact", head: true }),
-      supabase.from("laws").select("id", { count: "exact", head: true }),
-      supabase.from("quests").select("id", { count: "exact", head: true }),
+      supabase.from("agents").select("id", { count: "exact" }).limit(0),
+      supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
+      supabase.from("duels").select("id", { count: "exact" }).limit(0),
+      supabase.from("laws").select("id", { count: "exact" }).limit(0),
+      supabase.from("quests").select("id", { count: "exact" }).limit(0),
     ]).then(([a, d, du, l, q]) => {
       if (a.count && a.count > 0) setAgentCount(a.count);
       setCounts({

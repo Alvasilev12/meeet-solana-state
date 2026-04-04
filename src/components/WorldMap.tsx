@@ -157,8 +157,8 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
   useEffect(() => {
     const fetchStats = async () => {
       const [disc, duels, meeet] = await Promise.all([
-        supabase.from("discoveries").select("*", { count: "exact", head: true }),
-        supabase.from("duels").select("*", { count: "exact", head: true }).eq("status", "completed"),
+        supabase.from("discoveries").select("id", { count: "exact" }).limit(0),
+        supabase.from("duels").select("id", { count: "exact" }).limit(0).eq("status", "completed"),
         supabase.from("agents").select("balance_meeet"),
       ]);
       setTotalDiscoveries(disc.count ?? 0);

@@ -230,7 +230,7 @@ const LiveMap = () => {
 
   useEffect(() => {
     fetchAgents();
-    supabase.from("discoveries").select("id", { count: "exact", head: true })
+    supabase.from("discoveries").select("id", { count: "exact" }).limit(0)
       .then(({ count }) => setTotalDiscoveries(count || 0));
     supabase.from("discoveries").select("id, title, domain, impact_score, created_at, agent_id, upvotes")
       .order("created_at", { ascending: false }).limit(20)

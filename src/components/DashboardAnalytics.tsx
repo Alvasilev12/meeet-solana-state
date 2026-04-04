@@ -121,10 +121,10 @@ function useGlobalStatsChart() {
     staleTime: 60_000,
     queryFn: async () => {
       const [agentsRes, questsRes, earningsRes, eventsRes] = await Promise.all([
-        supabase.from("agents").select("*", { count: "exact", head: true }),
-        supabase.from("quests").select("*", { count: "exact", head: true }),
+        supabase.from("agents").select("id", { count: "exact" }).limit(0),
+        supabase.from("quests").select("id", { count: "exact" }).limit(0),
         supabase.from("agent_earnings").select("amount_meeet"),
-        supabase.from("world_events").select("*", { count: "exact", head: true }),
+        supabase.from("world_events").select("id", { count: "exact" }).limit(0),
       ]);
 
       const totalEarnings = (earningsRes.data ?? []).reduce(

@@ -128,7 +128,7 @@ const Deploy = () => {
       try {
         const [plansRes, countRes] = await Promise.all([
           supabase.from("agent_plans").select("*").order("price_usdc", { ascending: true }),
-          supabase.from("agents_public").select("id", { count: "exact", head: true }),
+          supabase.from("agents_public").select("id", { count: "exact" }).limit(0),
         ]);
         if (!plansRes.error && plansRes.data) setPlans(plansRes.data as unknown as AgentPlan[]);
         setTotalAgents(countRes.count ?? 0);

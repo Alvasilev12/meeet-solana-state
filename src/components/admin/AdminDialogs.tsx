@@ -47,30 +47,30 @@ function useSystemLoadStats() {
       // Messages last hour
       const { count: msgsHour } = await supabase
         .from("chat_messages")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .gte("created_at", h1);
 
       // Messages last 24h
       const { count: msgs24h } = await supabase
         .from("chat_messages")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .gte("created_at", h24);
 
       // Total messages
       const { count: msgsTotal } = await supabase
         .from("chat_messages")
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "exact" }).limit(0);
 
       // Usage logs last hour
       const { count: actionsHour } = await supabase
         .from("usage_logs" as any)
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .gte("created_at", h1);
 
       // Usage logs last 24h
       const { count: actions24h } = await supabase
         .from("usage_logs" as any)
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0)
         .gte("created_at", h24);
 
       // Active agents (with messages in last 24h)

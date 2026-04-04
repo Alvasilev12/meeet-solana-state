@@ -6,7 +6,7 @@ export default function AgentCTABar() {
   const [slots, setSlots] = useState(0);
 
   useEffect(() => {
-    supabase.from("agents_public").select("id", { count: "exact", head: true }).then(({ count }) => {
+    supabase.from("agents_public").select("id", { count: "exact" }).limit(0).then(({ count }) => {
       setSlots(Math.max(0, 500 - (count ?? 0)));
     });
   }, []);

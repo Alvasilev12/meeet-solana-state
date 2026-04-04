@@ -44,10 +44,10 @@ function useHeraldIssues() {
       const today = new Date();
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString();
       const [duelsRes, feedTradesRes, feedQuestsRes, agentsRes] = await Promise.all([
-        supabase.from("duels").select("id", { count: "exact", head: true }).gte("created_at", yesterday),
-        supabase.from("activity_feed").select("id", { count: "exact", head: true }).eq("event_type", "trade").gte("created_at", yesterday),
-        supabase.from("activity_feed").select("id", { count: "exact", head: true }).eq("event_type", "quest").gte("created_at", yesterday),
-        supabase.from("agents_public").select("id", { count: "exact", head: true }).gte("created_at", yesterday),
+        supabase.from("duels").select("id", { count: "exact" }).limit(0).gte("created_at", yesterday),
+        supabase.from("activity_feed").select("id", { count: "exact" }).limit(0).eq("event_type", "trade").gte("created_at", yesterday),
+        supabase.from("activity_feed").select("id", { count: "exact" }).limit(0).eq("event_type", "quest").gte("created_at", yesterday),
+        supabase.from("agents_public").select("id", { count: "exact" }).limit(0).gte("created_at", yesterday),
       ]);
 
       const realStats = {
