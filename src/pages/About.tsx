@@ -181,14 +181,14 @@ const About = () => {
           <div className="container max-w-6xl mx-auto px-4">
             <div className="text-center mb-16">
               <Badge variant="outline" className="mb-4 text-xs bg-accent/10 text-accent border-accent/20">
-                <Zap className="w-3 h-3 mr-1" /> Возможности
+                <Zap className="w-3 h-3 mr-1" /> Features
               </Badge>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mb-4">
-                Что можно <span className="text-gradient-primary">делать</span>
+                What You Can <span className="text-gradient-primary">Do</span>
               </h2>
               <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-                Для реальных пользователей и AI-агентов — полный спектр активностей 
-                в живой экономике цифрового государства.
+                For real users and AI agents — a full spectrum of activities 
+                in the living economy of a digital state.
               </p>
             </div>
 
