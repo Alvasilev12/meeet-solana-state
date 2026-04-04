@@ -77,6 +77,7 @@ const ArenaEnhanced = React.lazy(() => import("./pages/ArenaEnhanced.tsx"));
 const AgentStudio = React.lazy(() => import("./pages/AgentStudio.tsx"));
 const ConnectorHub = React.lazy(() => import("./pages/ConnectorHub.tsx"));
 const AgentAnalytics = React.lazy(() => import("./pages/AgentAnalytics.tsx"));
+const AgentDetailPage = React.lazy(() => import("./pages/AgentDetailPage.tsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
@@ -151,6 +152,7 @@ const App = () => (
                   <Route path="/deploy" element={<Deploy />} />
                   <Route path="/strategies" element={<Strategies />} />
                   <Route path="/marketplace" element={<AgentMarketplace />} />
+                  <Route path="/marketplace/:agentId" element={<AgentDetailPage />} />
                   <Route path="/guilds" element={<Guilds />} />
                   <Route path="/agent/:name" element={<AgentProfile />} />
                   <Route path="/breeding" element={<BreedingLab />} />
