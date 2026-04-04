@@ -523,7 +523,7 @@ const About = () => {
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button variant="hero" size="lg" className="gap-2" asChild>
                 <a href="https://pump.fun/EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump" target="_blank" rel="noopener noreferrer">
-                  <Flame className="w-5 h-5" /> Купить на pump.fun
+                  <Flame className="w-5 h-5" /> Buy on pump.fun
                 </a>
               </Button>
               <Button variant="outline" size="lg" className="gap-2 border-muted-foreground/20" asChild>
