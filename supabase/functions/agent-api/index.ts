@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
       const [agentRes, statsRes] = await Promise.all([
         agent_id ? sc.from("agents").select(safeFields).eq("id", agent_id).maybeSingle() : { data: null },
-        sc.from("agents").select("id", { count: "exact", head: true }),
+        sc.from("agents").select("id", { count: "exact" }),
       ]);
 
       return json({

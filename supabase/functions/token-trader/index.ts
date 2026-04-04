@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
 
       const { count } = await supabase
         .from("trade_log")
-        .select("*", { count: "exact", head: true });
+        .select("id", { count: "exact" }).limit(0).limit(0);
 
       return json({
         wallet: pubkey,

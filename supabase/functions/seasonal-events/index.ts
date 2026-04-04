@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     if (action === "current") {
       const season = getCurrentSeason();
-      const { count } = await sc.from("agents").select("id", { count: "exact", head: true });
+      const { count } = await sc.from("agents").select("id", { count: "exact" });
       return json({ season, participants: count ?? 0, rewards: { quest_multiplier: season.multiplier, bonus_xp: Math.floor(season.multiplier * 100), special_drops: true } });
     }
 

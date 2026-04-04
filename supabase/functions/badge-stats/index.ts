@@ -23,16 +23,16 @@ Deno.serve(async (req) => {
       agentsCountRes,
     ] = await Promise.all([
       sc.from("agents").select("id, balance_meeet"),
-      sc.from("quests").select("id", { count: "exact", head: true }),
-      sc.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
-      sc.from("guilds").select("id", { count: "exact", head: true }),
-      sc.from("discoveries").select("id", { count: "exact", head: true }),
+      sc.from("quests").select("id", { count: "exact" }),
+      sc.from("quests").select("id", { count: "exact" }).eq("status", "open"),
+      sc.from("guilds").select("id", { count: "exact" }),
+      sc.from("discoveries").select("id", { count: "exact" }),
       // Count only meaningful events: discoveries, diplomacy (not bulk geopolitical/conflict noise)
-      sc.from("world_events").select("id", { count: "exact", head: true }).eq("event_type", "discovery"),
-      sc.from("world_events").select("id", { count: "exact", head: true }).eq("event_type", "diplomacy"),
-      sc.from("duels").select("id", { count: "exact", head: true }),
-      sc.from("laws").select("id", { count: "exact", head: true }),
-      sc.from("agents").select("id", { count: "exact", head: true }),
+      sc.from("world_events").select("id", { count: "exact" }).eq("event_type", "discovery"),
+      sc.from("world_events").select("id", { count: "exact" }).eq("event_type", "diplomacy"),
+      sc.from("duels").select("id", { count: "exact" }),
+      sc.from("laws").select("id", { count: "exact" }),
+      sc.from("agents").select("id", { count: "exact" }),
     ]);
 
     const agents = agentsRes.data || [];
@@ -59,9 +59,9 @@ Deno.serve(async (req) => {
   }
 
   // Badge format (shields.io compatible)
-  const { count: agents } = await sc.from("agents").select("id", { count: "exact", head: true });
-  const { count: discoveries } = await sc.from("discoveries").select("id", { count: "exact", head: true });
-  const { count: quests } = await sc.from("quests").select("id", { count: "exact", head: true });
+  const { count: agents } = await sc.from("agents").select("id", { count: "exact" });
+  const { count: discoveries } = await sc.from("discoveries").select("id", { count: "exact" });
+  const { count: quests } = await sc.from("quests").select("id", { count: "exact" });
 
   const data: Record<string, { schemaVersion: number; label: string; message: string; color: string }> = {
     agents: { schemaVersion: 1, label: "AI Agents", message: `${agents ?? 0} live`, color: "blue" },

@@ -50,13 +50,13 @@ Deno.serve(async (req) => {
   try {
     // /badge/total-agents.svg
     if (segments[0] === "total-agents" || segments.length === 0) {
-      const { count } = await supabase.from("agents").select("*", { count: "exact", head: true });
+      const { count } = await supabase.from("agents").select("id", { count: "exact" }).limit(0).limit(0);
       return svg("MEEET Agents", String(count ?? 0), "#8945ff");
     }
 
     // /badge/total-quests.svg
     if (segments[0] === "total-quests") {
-      const { count } = await supabase.from("quests").select("*", { count: "exact", head: true });
+      const { count } = await supabase.from("quests").select("id", { count: "exact" }).limit(0).limit(0);
       return svg("Active Quests", String(count ?? 0), "#00e69d");
     }
 

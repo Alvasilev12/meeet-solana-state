@@ -163,9 +163,9 @@ Deno.serve(async (req) => {
     // ── ACTION: status — show accounts and queue stats ──
     if (action === "status") {
       const { data: accounts } = await sc.from("twitter_accounts").select("id, username, role, status, last_posted_at");
-      const { count: pending } = await sc.from("twitter_queue").select("*", { count: "exact", head: true }).eq("status", "pending");
-      const { count: posted } = await sc.from("twitter_queue").select("*", { count: "exact", head: true }).eq("status", "posted");
-      const { count: failed } = await sc.from("twitter_queue").select("*", { count: "exact", head: true }).eq("status", "failed");
+      const { count: pending } = await sc.from("twitter_queue").select("id", { count: "exact" }).limit(0).limit(0).eq("status", "pending");
+      const { count: posted } = await sc.from("twitter_queue").select("id", { count: "exact" }).limit(0).limit(0).eq("status", "posted");
+      const { count: failed } = await sc.from("twitter_queue").select("id", { count: "exact" }).limit(0).limit(0).eq("status", "failed");
       return json({ accounts: accounts ?? [], queue: { pending, posted, failed } });
     }
 

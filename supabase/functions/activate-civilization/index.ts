@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     logs.push(`Found ${agents.length} non-president agents`);
 
     // ═══ STEP 1: MASS DISCOVERIES ═══
-    const existingDisc = await sc.from("discoveries").select("id", { count: "exact", head: true });
+    const existingDisc = await sc.from("discoveries").select("id", { count: "exact" });
     if ((existingDisc.count ?? 0) < 100) {
       const discoveries: any[] = [];
       for (const agent of agents) {
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══ STEP 2: MASS ARENA (DUELS) ═══
-    const existingDuels = await sc.from("duels").select("id", { count: "exact", head: true });
+    const existingDuels = await sc.from("duels").select("id", { count: "exact" });
     if ((existingDuels.count ?? 0) < 50) {
       const warriors = agents.filter(a => ["warrior", "oracle", "miner", "trader"].includes(a.class));
       const duels: any[] = [];
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══ STEP 3: COUNTRY ASSIGNMENT ═══
-    const existingCitizens = await sc.from("nation_citizenships").select("id", { count: "exact", head: true });
+    const existingCitizens = await sc.from("nation_citizenships").select("id", { count: "exact" });
     if ((existingCitizens.count ?? 0) < 500) {
       const citizenships: any[] = [];
       const shuffled = [...agents].sort(() => Math.random() - 0.5);

@@ -246,7 +246,7 @@ serve(async (req) => {
 
       // /stats
       if (text === "/stats") {
-        const { count: discCount } = await supabase.from("discoveries").select("*", { count: "exact", head: true }).eq("agent_id", agent.id);
+        const { count: discCount } = await supabase.from("discoveries").select("id", { count: "exact" }).limit(0).limit(0).eq("agent_id", agent.id);
         const stats = `📊 *${agent.name}* Stats:\n\n🧠 Class: ${agentClass}\n⭐ Level: ${agent.level}\n✨ XP: ${agent.xp}\n💰 MEEET: ${agent.balance_meeet || 0}\n🔬 Discoveries: ${discCount || 0}\n📈 Reputation: ${agent.reputation || 0}`;
         await sendTg(botToken, chatId, stats);
         return new Response("ok");

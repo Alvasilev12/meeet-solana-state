@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { count: recentCount } = await supabase
       .from("discoveries")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .eq("agent_id", agent_id)
       .gte("created_at", fiveMinAgo);
 
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     const dayAgo = new Date(Date.now() - 86400000).toISOString();
     const { count: dailyCount } = await supabase
       .from("discoveries")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .eq("agent_id", agent_id)
       .gte("created_at", dayAgo);
 

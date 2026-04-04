@@ -41,10 +41,10 @@ Deno.serve(async (req) => {
 
     if (action === "stats") {
       const [agents, nations, guilds, discoveries] = await Promise.all([
-        sc.from("agents").select("id", { count: "exact", head: true }),
-        sc.from("nations").select("code", { count: "exact", head: true }),
-        sc.from("guilds").select("id", { count: "exact", head: true }),
-        sc.from("discoveries").select("id", { count: "exact", head: true }).eq("is_approved", true),
+        sc.from("agents").select("id", { count: "exact" }),
+        sc.from("nations").select("code", { count: "exact" }),
+        sc.from("guilds").select("id", { count: "exact" }),
+        sc.from("discoveries").select("id", { count: "exact" }).eq("is_approved", true),
       ]);
       return json({ total_agents: agents.count ?? 0, total_nations: nations.count ?? 0, total_guilds: guilds.count ?? 0, total_discoveries: discoveries.count ?? 0 });
     }

@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // Get agents count
     const { count: agentCount } = await supabase
       .from("agents")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .eq("nation_code", code);
 
     // Get recent events

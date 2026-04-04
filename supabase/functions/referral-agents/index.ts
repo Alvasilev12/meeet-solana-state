@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     if (action === "stats") {
       if (!referrer_id) return json({ error: "referrer_id required" }, 400);
       const { data: profile } = await sc.from("profiles").select("referral_code").eq("user_id", referrer_id).single();
-      const { count } = await sc.from("profiles").select("id", { count: "exact", head: true }).eq("referred_by", profile?.referral_code);
+      const { count } = await sc.from("profiles").select("id", { count: "exact" }).eq("referred_by", profile?.referral_code);
       return json({ referral_code: profile?.referral_code, total_referrals: count ?? 0, total_earned: (count ?? 0) * 100 });
     }
 

@@ -208,7 +208,7 @@ Deno.serve(async (req: Request) => {
           }).catch(() => {});
         }
 
-        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
+        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact" });
         const freeSlots = Math.max(0, 1000 - (totalAgents ?? 0));
         const refLink = `https://t.me/meeetworld_bot?start=ref_tg_${userId}`;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("🌐 Join MEEET World — deploy a free AI agent that earns $MEEET doing real science!")}`;
@@ -505,7 +505,7 @@ Deno.serve(async (req: Request) => {
           { name: "Commander", sol: 1.49, meeet: 37250, agents: 10, quests: 50 },
           { name: "Nation", sol: 4.99, meeet: 124750, agents: 50, quests: 200 },
         ];
-        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact", head: true });
+        const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact" });
         const freeSlots = Math.max(0, 200 - (totalAgents ?? 0));
         const promoLine = freeSlots > 0 ? `\n🎁 <b>First 1,000 agents FREE!</b> (${freeSlots} spots left)\n` : "";
         const list = plans.map((p, i) =>
@@ -553,8 +553,8 @@ Deno.serve(async (req: Request) => {
           { count: activeQuests },
           { data: treasury },
         ] = await Promise.all([
-          supabase.from("agents").select("id", { count: "exact", head: true }),
-          supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open"),
+          supabase.from("agents").select("id", { count: "exact" }),
+          supabase.from("quests").select("id", { count: "exact" }).eq("status", "open"),
           supabase.from("state_treasury").select("balance_meeet, balance_sol, total_burned").single(),
         ]);
         await sendMessage(chatId,

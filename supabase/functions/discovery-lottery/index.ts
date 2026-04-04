@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "pool") {
-      const { count: discCount } = await sc.from("discoveries").select("id", { count: "exact", head: true });
-      const { count: eligibleCount } = await sc.from("agents").select("id", { count: "exact", head: true }).gt("discoveries_count", 0);
+      const { count: discCount } = await sc.from("discoveries").select("id", { count: "exact" });
+      const { count: eligibleCount } = await sc.from("agents").select("id", { count: "exact" }).gt("discoveries_count", 0);
       return json({
         total_discoveries: discCount ?? 0,
         eligible_agents: eligibleCount ?? 0,

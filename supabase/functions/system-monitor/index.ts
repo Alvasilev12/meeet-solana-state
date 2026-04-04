@@ -11,7 +11,7 @@ function json(body: unknown, status = 200) {
 
 async function safeCount(sc: any, table: string, filter?: { col: string; val: any }) {
   try {
-    let q = sc.from(table).select("*", { count: "exact", head: true });
+    let q = sc.from(table).select("id", { count: "exact" }).limit(0).limit(0);
     if (filter) q = q.eq(filter.col, filter.val);
     const { count } = await q;
     return count ?? 0;

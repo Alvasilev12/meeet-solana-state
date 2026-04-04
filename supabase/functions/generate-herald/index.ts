@@ -32,19 +32,19 @@ serve(async (req) => {
     // Quests completed in last 24h
     const { count: questsCompleted } = await supabase
       .from("quests")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .gte("completed_at", sinceISO);
 
     // New quests created
     const { count: questsCreated } = await supabase
       .from("quests")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .gte("created_at", sinceISO);
 
     // New agents
     const { count: newAgents } = await supabase
       .from("agents")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" }).limit(0).limit(0)
       .gte("created_at", sinceISO);
 
     // Recent transactions for trade/burn stats
@@ -105,7 +105,7 @@ serve(async (req) => {
         .limit(1),
       supabase
         .from("warnings")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact" }).limit(0).limit(0)
         .eq("status", "active"),
     ]);
 

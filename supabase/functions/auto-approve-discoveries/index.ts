@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
     // Count remaining pending
     const { count: remaining } = await sc.from("discoveries")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("is_approved", false);
 
     return json({
