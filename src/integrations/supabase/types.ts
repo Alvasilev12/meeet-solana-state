@@ -326,6 +326,51 @@ export type Database = {
           },
         ]
       }
+      agent_hiring_proposals: {
+        Row: {
+          civilization: string
+          created_at: string
+          hired_agent_id: string | null
+          id: string
+          personality_preferences: Json | null
+          proposed_by_agent: string | null
+          reason: string
+          required_skills: string[]
+          resolved_at: string | null
+          status: string
+          votes_against: number
+          votes_for: number
+        }
+        Insert: {
+          civilization: string
+          created_at?: string
+          hired_agent_id?: string | null
+          id?: string
+          personality_preferences?: Json | null
+          proposed_by_agent?: string | null
+          reason: string
+          required_skills?: string[]
+          resolved_at?: string | null
+          status?: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Update: {
+          civilization?: string
+          created_at?: string
+          hired_agent_id?: string | null
+          id?: string
+          personality_preferences?: Json | null
+          proposed_by_agent?: string | null
+          reason?: string
+          required_skills?: string[]
+          resolved_at?: string | null
+          status?: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Relationships: []
+      }
       agent_impact: {
         Row: {
           agent_id: string
