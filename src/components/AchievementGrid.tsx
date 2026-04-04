@@ -54,13 +54,6 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
         .select("id", { count: "exact" }).limit(0)
         .eq("agent_id", agent.id);
 
-      // Get referral count
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("referral_count")
-        .eq("user_id", userId)
-        .maybeSingle();
-
       return {
         kills: agent.kills || 0,
         quests_completed: agent.quests_completed || 0,
@@ -69,7 +62,7 @@ export default function AchievementGrid({ userId }: AchievementGridProps) {
         reputation: agent.reputation || 0,
         oracle_bets: oracleBets || 0,
         guild_member: guildMember || 0,
-        referrals: (profile as any)?.referral_count || 0,
+        referrals: 0,
         marketplace_sales: 0,
       };
     },

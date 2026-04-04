@@ -1734,11 +1734,17 @@ function MyImpactScore({ userId }: { userId: string }) {
     queryKey: ["agent-impact", agentIds],
     enabled: agentIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("agent_impact")
-        .select("metric_type, metric_value")
-        .in("agent_id", agentIds);
-      return data ?? [];
+      // Batch in chunks of 50 to avoid URL length limits
+      const results: any[] = [];
+      for (let i = 0; i < agentIds.length; i += 50) {
+        const chunk = agentIds.slice(i, i + 50);
+        const { data } = await supabase
+          .from("agent_impact")
+          .select("metric_type, metric_value")
+          .in("agent_id", chunk);
+        if (data) results.push(...data);
+      }
+      return results;
     },
   });
 
