@@ -20,6 +20,7 @@ const Navbar = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { onlineCitizens, activeAgents } = useRealtimePresence(location.pathname);
 
   const NAV_LINKS = [
     ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
