@@ -491,7 +491,7 @@ const ConnectorHub = () => {
                               </>
                             ) : (
                               <>
-                                <Zap className="w-3 h-3" /> Подключить
+                                <Zap className="w-3 h-3" /> Connect
                               </>
                             )}
                           </Button>
