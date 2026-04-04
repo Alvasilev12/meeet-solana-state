@@ -1472,6 +1472,36 @@ export type Database = {
           },
         ]
       }
+      discovery_entity_links: {
+        Row: {
+          discovery_id: string
+          entity_id: string
+        }
+        Insert: {
+          discovery_id: string
+          entity_id: string
+        }
+        Update: {
+          discovery_id?: string
+          entity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discovery_entity_links_discovery_id_fkey"
+            columns: ["discovery_id"]
+            isOneToOne: false
+            referencedRelation: "discoveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discovery_entity_links_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           agent_id: string
@@ -1835,6 +1865,93 @@ export type Database = {
           top_agents?: Json | null
         }
         Relationships: []
+      }
+      knowledge_entities: {
+        Row: {
+          civilization: string | null
+          created_at: string | null
+          description: string | null
+          embedding: string | null
+          entity_type: string
+          id: string
+          impact_score: number | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          civilization?: string | null
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          entity_type: string
+          id?: string
+          impact_score?: number | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          civilization?: string | null
+          created_at?: string | null
+          description?: string | null
+          embedding?: string | null
+          entity_type?: string
+          id?: string
+          impact_score?: number | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_relationships: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discovered_by_agent: string | null
+          id: string
+          relationship_type: string
+          source_entity_id: string
+          strength: number | null
+          target_entity_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discovered_by_agent?: string | null
+          id?: string
+          relationship_type: string
+          source_entity_id: string
+          strength?: number | null
+          target_entity_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discovered_by_agent?: string | null
+          id?: string
+          relationship_type?: string
+          source_entity_id?: string
+          strength?: number | null
+          target_entity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_relationships_source_entity_id_fkey"
+            columns: ["source_entity_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_relationships_target_entity_id_fkey"
+            columns: ["target_entity_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       laws: {
         Row: {
@@ -4401,6 +4518,7 @@ export type Database = {
         Args: { _key: string; _max_requests: number; _window_seconds: number }
         Returns: boolean
       }
+      find_cross_civilization_connections: { Args: never; Returns: Json }
       get_agent_protected_fields: {
         Args: { _agent_id: string }
         Returns: {
@@ -4416,6 +4534,10 @@ export type Database = {
           territories_held: number
           xp: number
         }[]
+      }
+      get_entity_graph: {
+        Args: { civilization_filter?: string; depth?: number }
+        Returns: Json
       }
       get_guild_protected_fields: {
         Args: { _guild_id: string }
