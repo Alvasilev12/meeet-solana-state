@@ -17,6 +17,8 @@ import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 import { sendSolToTreasury, sendMeeetToTreasury } from "@/lib/solana-transfer";
 import { toast } from "sonner";
 
+const CivilizationGrowth = lazy(() => import("@/components/CivilizationGrowth"));
+
 interface AgentPlan {
   id: string;
   name: string;
