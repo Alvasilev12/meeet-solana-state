@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, Star, CheckCircle2, Users, Zap, Grid3X3, List, MessageSquare, Globe, Send, Code, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -101,6 +102,12 @@ const AgentMarketplace = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selected, setSelected] = useState<HireListing | null>(null);
   const [hiring, setHiring] = useState(false);
+  const [demoAgent, setDemoAgent] = useState<HireListing | null>(null);
+  const [hireAgent, setHireAgent] = useState<HireListing | null>(null);
+  const [demoChatMessages, setDemoChatMessages] = useState<{role: string; content: string}[]>([]);
+  const [demoChatInput, setDemoChatInput] = useState("");
+  const [demoChatLoading, setDemoChatLoading] = useState(false);
+  const demoChatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -140,7 +147,30 @@ const AgentMarketplace = () => {
   const totalAgents = listings.length;
   const totalHires = listings.reduce((s, l) => s + l.total_hires, 0);
 
-  const handleHire = async (listing: HireListing) => {
+  const DEMO_RESPONSES = [
+    "I'd be happy to help with that! Let me analyze the situation and provide recommendations.",
+    "Based on my training, here's what I suggest: Start with a clear strategy, then iterate based on results.",
+    "Great question! I can handle that task efficiently. Would you like me to break it down into steps?",
+  ];
+
+  const sendDemoMessage = () => {
+    if (!demoChatInput.trim() || demoChatLoading) return;
+    const userMsg = { role: "user", content: demoChatInput.trim() };
+    setDemoChatMessages(prev => [...prev, userMsg]);
+    setDemoChatInput("");
+    setDemoChatLoading(true);
+    setTimeout(() => {
+      const response = DEMO_RESPONSES[Math.floor(Math.random() * DEMO_RESPONSES.length)];
+      setDemoChatMessages(prev => [...prev, { role: "assistant", content: response }]);
+      setDemoChatLoading(false);
+    }, 1200);
+  };
+
+  useEffect(() => {
+    demoChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [demoChatMessages]);
+
+  const handleHireConfirm = async (listing: HireListing) => {
     if (!user) { navigate("/auth"); return; }
     setHiring(true);
     try {
@@ -150,8 +180,9 @@ const AgentMarketplace = () => {
         status: "active",
       });
       if (error) throw error;
-      toast.success(`${listing.agents?.name || "Agent"} hired successfully!`);
-      setSelected(null);
+      toast.success(`Successfully hired ${listing.agents?.name || "Agent"}!`);
+      setHireAgent(null);
+      navigate("/dashboard");
     } catch (e: any) {
       toast.error(e.message || "Failed to hire agent");
     } finally {
@@ -272,7 +303,7 @@ const AgentMarketplace = () => {
                   <Card
                     key={l.id}
                     className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01]"
-                    onClick={() => setSelected(l)}
+                    onClick={() => navigate(`/marketplace/${l.id}`)}
                   >
                     <CardContent className="p-5 space-y-3">
                       {l.is_featured && (
@@ -322,14 +353,14 @@ const AgentMarketplace = () => {
                         </div>
                         <div className="flex gap-2">
                           {l.demo_available && (
-                            <Button size="sm" variant="outline" className="text-xs h-8" onClick={(e) => { e.stopPropagation(); toast.info("Demo coming soon!"); }}>
+                            <Button size="sm" variant="outline" className="text-xs h-8" onClick={(e) => { e.stopPropagation(); setDemoAgent(l); setDemoChatMessages([]); }}>
                               Try Demo
                             </Button>
                           )}
                           <Button
                             size="sm"
                             className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                            onClick={(e) => { e.stopPropagation(); handleHire(l); }}
+                            onClick={(e) => { e.stopPropagation(); if (!user) { navigate("/auth"); return; } setHireAgent(l); }}
                           >
                             Hire
                           </Button>
@@ -377,8 +408,8 @@ const AgentMarketplace = () => {
                       </div>
                       <Button
                         size="sm"
-                        className="flex-shrink-0 text-xs bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                        onClick={(e) => { e.stopPropagation(); handleHire(l); }}
+                         className="flex-shrink-0 text-xs bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                        onClick={(e) => { e.stopPropagation(); if (!user) { navigate("/auth"); return; } setHireAgent(l); }}
                       >
                         Hire
                       </Button>
