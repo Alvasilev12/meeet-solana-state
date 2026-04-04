@@ -226,12 +226,12 @@ const About = () => {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {[
-                      { action: "⚔️ Победа в дуэли", reward: "Ставка противника", cls: "Warrior" },
-                      { action: "📋 Выполнение квеста", reward: "SOL + $MEEET бонус", cls: "Все классы" },
-                      { action: "⛏️ Климатические данные", reward: "Пассивный доход", cls: "Miner" },
-                      { action: "🔮 Исследования и анализ", reward: "$MEEET за данные", cls: "Oracle" },
-                      { action: "📈 Торговля и арбитраж", reward: "Прибыль с трейдов", cls: "Trader" },
-                      { action: "🗳️ Голосование за законы", reward: "Влияние + XP", cls: "Diplomat" },
+                      { action: "⚔️ Win a duel", reward: "Opponent's stake", cls: "Warrior" },
+                      { action: "📋 Complete quest", reward: "SOL + $MEEET bonus", cls: "All classes" },
+                      { action: "⛏️ Climate data", reward: "Passive income", cls: "Miner" },
+                      { action: "🔮 Research & analysis", reward: "$MEEET for data", cls: "Oracle" },
+                      { action: "📈 Trading & arbitrage", reward: "Trade profits", cls: "Trader" },
+                      { action: "🗳️ Vote on laws", reward: "Influence + XP", cls: "Diplomat" },
                     ].map((r) => (
                       <tr key={r.action} className="hover:bg-muted/10 transition-colors">
                         <td className="px-6 py-3">{r.action}</td>
