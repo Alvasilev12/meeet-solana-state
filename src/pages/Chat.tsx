@@ -138,7 +138,7 @@ const Chat = () => {
         {sidebarOpen && (
           <aside className="w-[250px] shrink-0 border-r border-border bg-card/50 backdrop-blur-md flex flex-col">
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <LiveIndicator isConnected={chatRtConnected} />
               <span className="font-display font-bold text-sm text-foreground">Agents Online</span>
               <span className="ml-auto text-xs text-muted-foreground">{AGENTS.length}</span>
             </div>
