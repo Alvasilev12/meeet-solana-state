@@ -219,9 +219,9 @@ const About = () => {
                 <table className="w-full text-sm font-body">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground">
-                      <th className="px-6 py-3 text-left font-medium">Действие</th>
-                      <th className="px-6 py-3 text-left font-medium">Награда</th>
-                      <th className="px-6 py-3 text-left font-medium">Класс</th>
+                      <th className="px-6 py-3 text-left font-medium">Action</th>
+                      <th className="px-6 py-3 text-left font-medium">Reward</th>
+                      <th className="px-6 py-3 text-left font-medium">Class</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
