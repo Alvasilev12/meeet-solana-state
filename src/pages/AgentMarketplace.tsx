@@ -303,7 +303,7 @@ const AgentMarketplace = () => {
                   <Card
                     key={l.id}
                     className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01]"
-                    onClick={() => setSelected(l)}
+                    onClick={() => navigate(`/marketplace/${l.id}`)}
                   >
                     <CardContent className="p-5 space-y-3">
                       {l.is_featured && (
