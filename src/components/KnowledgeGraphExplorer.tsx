@@ -335,7 +335,7 @@ export default function KnowledgeGraphExplorer() {
         <div className="flex items-center gap-2">
           <Network className="w-5 h-5 text-primary" />
           <h2 className="font-display font-bold text-sm">Knowledge Graph</h2>
-          <LiveIndicator />
+          <LiveIndicator isConnected={!loading} />
           <span className="text-[10px] text-muted-foreground ml-2">
             {filtered.nodes.length} nodes · {filtered.edges.length} edges
           </span>
