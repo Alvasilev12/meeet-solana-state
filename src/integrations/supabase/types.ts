@@ -817,6 +817,51 @@ export type Database = {
           },
         ]
       }
+      agent_templates: {
+        Row: {
+          base_system_prompt: string
+          category: string
+          created_at: string | null
+          default_personality: Json | null
+          description: string
+          difficulty: string
+          icon: string | null
+          id: string
+          name: string
+          popularity: number | null
+          required_integrations: string[] | null
+          suggested_skills: string[] | null
+        }
+        Insert: {
+          base_system_prompt: string
+          category: string
+          created_at?: string | null
+          default_personality?: Json | null
+          description: string
+          difficulty?: string
+          icon?: string | null
+          id?: string
+          name: string
+          popularity?: number | null
+          required_integrations?: string[] | null
+          suggested_skills?: string[] | null
+        }
+        Update: {
+          base_system_prompt?: string
+          category?: string
+          created_at?: string | null
+          default_personality?: Json | null
+          description?: string
+          difficulty?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          popularity?: number | null
+          required_integrations?: string[] | null
+          suggested_skills?: string[] | null
+        }
+        Relationships: []
+      }
       agent_tweets: {
         Row: {
           agent_id: string
@@ -1353,6 +1398,77 @@ export type Database = {
           population?: number | null
         }
         Relationships: []
+      }
+      custom_agents: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          creator_id: string
+          id: string
+          is_published: boolean | null
+          knowledge_base: string | null
+          language: string | null
+          max_tokens: number | null
+          name: string
+          personality: Json | null
+          skills: string[] | null
+          status: string | null
+          system_prompt: string
+          temperature: number | null
+          template_id: string | null
+          tone: string | null
+          total_conversations: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          is_published?: boolean | null
+          knowledge_base?: string | null
+          language?: string | null
+          max_tokens?: number | null
+          name: string
+          personality?: Json | null
+          skills?: string[] | null
+          status?: string | null
+          system_prompt: string
+          temperature?: number | null
+          template_id?: string | null
+          tone?: string | null
+          total_conversations?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          is_published?: boolean | null
+          knowledge_base?: string | null
+          language?: string | null
+          max_tokens?: number | null
+          name?: string
+          personality?: Json | null
+          skills?: string[] | null
+          status?: string | null
+          system_prompt?: string
+          temperature?: number | null
+          template_id?: string | null
+          tone?: string | null
+          total_conversations?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_agents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "agent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_logins: {
         Row: {
