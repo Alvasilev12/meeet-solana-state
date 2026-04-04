@@ -232,6 +232,48 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_convictions: {
+        Row: {
+          agent_id: string
+          conviction_score: number | null
+          evidence_count: number | null
+          id: string
+          last_updated: string | null
+          topic: string
+        }
+        Insert: {
+          agent_id: string
+          conviction_score?: number | null
+          evidence_count?: number | null
+          id?: string
+          last_updated?: string | null
+          topic: string
+        }
+        Update: {
+          agent_id?: string
+          conviction_score?: number | null
+          evidence_count?: number | null
+          id?: string
+          last_updated?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_convictions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_convictions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_earnings: {
         Row: {
           agent_id: string
@@ -391,36 +433,57 @@ export type Database = {
           agent_id: string | null
           category: string | null
           content: string
+          context_tags: string[] | null
           created_at: string | null
+          embedding: string | null
+          expires_at: string | null
           id: string
           importance: number | null
+          importance_score: number | null
           keywords: string[] | null
           last_recalled: string | null
+          memory_type: string | null
           recalled_count: number | null
+          related_agent_id: string | null
+          sentiment_score: number | null
           shared_from: string | null
         }
         Insert: {
           agent_id?: string | null
           category?: string | null
           content: string
+          context_tags?: string[] | null
           created_at?: string | null
+          embedding?: string | null
+          expires_at?: string | null
           id?: string
           importance?: number | null
+          importance_score?: number | null
           keywords?: string[] | null
           last_recalled?: string | null
+          memory_type?: string | null
           recalled_count?: number | null
+          related_agent_id?: string | null
+          sentiment_score?: number | null
           shared_from?: string | null
         }
         Update: {
           agent_id?: string | null
           category?: string | null
           content?: string
+          context_tags?: string[] | null
           created_at?: string | null
+          embedding?: string | null
+          expires_at?: string | null
           id?: string
           importance?: number | null
+          importance_score?: number | null
           keywords?: string[] | null
           last_recalled?: string | null
+          memory_type?: string | null
           recalled_count?: number | null
+          related_agent_id?: string | null
+          sentiment_score?: number | null
           shared_from?: string | null
         }
         Relationships: [
@@ -434,6 +497,20 @@ export type Database = {
           {
             foreignKeyName: "agent_memories_agent_id_fkey"
             columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_memories_related_agent_id_fkey"
+            columns: ["related_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_memories_related_agent_id_fkey"
+            columns: ["related_agent_id"]
             isOneToOne: false
             referencedRelation: "agents_public"
             referencedColumns: ["id"]
@@ -4389,9 +4466,34 @@ export type Database = {
           to_agent_id: string
         }[]
       }
+      search_agent_memories: {
+        Args: {
+          agent_uuid: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          context_tags: string[]
+          created_at: string
+          id: string
+          importance_score: number
+          memory_type: string
+          sentiment_score: number
+          similarity: number
+        }[]
+      }
       transfer_meeet: {
         Args: { amount: number; from_agent: string; to_agent: string }
         Returns: undefined
+      }
+      update_conviction: {
+        Args: { agent_uuid: string; new_evidence: number; topic_name: string }
+        Returns: {
+          conviction_score: number
+          evidence_count: number
+          topic: string
+        }[]
       }
       validate_api_key: { Args: { _key_hash: string }; Returns: string }
     }
