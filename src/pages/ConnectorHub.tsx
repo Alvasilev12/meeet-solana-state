@@ -545,11 +545,11 @@ const ConnectorHub = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-muted-foreground">Приветствие</label>
+              <label className="text-sm text-muted-foreground">Greeting</label>
               <Input
                 value={widgetGreeting}
                 onChange={(e) => setWidgetGreeting(e.target.value)}
-                placeholder="Привет! Чем могу помочь?"
+                placeholder="Hi! How can I help?"
               />
             </div>
             <div className="relative">
