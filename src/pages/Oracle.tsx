@@ -20,6 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import AnimatedSection from "@/components/AnimatedSection";
 import OracleMarketChart from "@/components/OracleMarketChart";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import LiveIndicator from "@/components/LiveIndicator";
 
 interface OracleQuestion {
   id: string;
