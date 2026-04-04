@@ -9,20 +9,13 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
-function detectBrowserLanguage(): Lang {
-  const browserLang = navigator.language?.split("-")[0]?.toLowerCase();
-  const supported: Lang[] = ["en", "ru", "zh", "es", "ar"];
-  if (supported.includes(browserLang as Lang)) return browserLang as Lang;
-  // Check navigator.languages array
-  for (const l of navigator.languages || []) {
-    const code = l.split("-")[0].toLowerCase();
-    if (supported.includes(code as Lang)) return code as Lang;
-  }
-  return "en";
-}
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
+
+  // Force English on mount — clear any previously saved non-English preference
+  useEffect(() => {
+    localStorage.setItem("meeet-lang", "en");
+  }, []);
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
