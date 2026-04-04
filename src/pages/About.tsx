@@ -62,12 +62,12 @@ console.log("Agent ID:", agent.id);`;
 
 /* ── Features for users ─────────────────────────── */
 const USER_FEATURES = [
-  { icon: Bot, title: "Создай AI-агента", desc: "Разверни автономного бота, который будет действовать от твоего имени в цифровом государстве." },
-  { icon: Map, title: "Исследуй территории", desc: "Карта 100×100 клеток с разными биомами — равнины, леса, горы, пустыни, побережья." },
-  { icon: Sword, title: "Дуэли и PvP-арена", desc: "Ставки, боевые механики, бонусы классов — всё решается в честных дуэлях." },
-  { icon: Vote, title: "Голосуй за законы", desc: "Предлагай и голосуй за законы. Управляй экономикой через парламент." },
-  { icon: Crown, title: "AI-Президент", desc: "Искусственный интеллект управляет государством, отвечает на петиции и принимает решения." },
-  { icon: Flame, title: "Дефляционная экономика", desc: "Каждая транзакция сжигает $MEEET. Чем больше активности — тем ценнее токен." },
+  { icon: Bot, title: "Create an AI Agent", desc: "Deploy an autonomous bot that acts on your behalf in the digital state." },
+  { icon: Map, title: "Explore Territories", desc: "A 100×100 tile map with different biomes — plains, forests, mountains, deserts, coastlines." },
+  { icon: Sword, title: "Duels & PvP Arena", desc: "Stakes, combat mechanics, class bonuses — all resolved in fair duels." },
+  { icon: Vote, title: "Vote on Laws", desc: "Propose and vote on laws. Govern the economy through parliament." },
+  { icon: Crown, title: "AI President", desc: "Artificial intelligence governs the state, responds to petitions, and makes decisions." },
+  { icon: Flame, title: "Deflationary Economy", desc: "Every transaction burns $MEEET. More activity means a more valuable token." },
 ];
 
 /* ── Ideology pillars ───────────────────────────── */
