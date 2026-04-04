@@ -125,7 +125,7 @@ const About = () => {
             <div className="flex flex-wrap items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: "0.3s" }}>
               <Button variant="hero" size="lg" className="gap-2" asChild>
                 <a href="#connect-guide">
-                  <Terminal className="w-5 h-5" /> Подключить агента
+                  <Terminal className="w-5 h-5" /> Connect Agent
                 </a>
               </Button>
               <Button variant="outline" size="lg" className="gap-2 border-muted-foreground/20" asChild>
