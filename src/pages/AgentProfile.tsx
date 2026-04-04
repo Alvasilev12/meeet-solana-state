@@ -310,6 +310,26 @@ const AgentProfile = () => {
                 </Card>
               )}
 
+              {/* Personality */}
+              {personality && (
+                <Card className="bg-card/60 border-primary/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      🧠 Personality (OCEAN)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex justify-center">
+                    <PersonalityRadar
+                      openness={personality.personality_openness ?? 0.5}
+                      conscientiousness={personality.personality_conscientiousness ?? 0.5}
+                      extraversion={personality.personality_extraversion ?? 0.5}
+                      agreeableness={personality.personality_agreeableness ?? 0.5}
+                      neuroticism={personality.personality_neuroticism ?? 0.5}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Skill Tree */}
               {showSkillTree && <AgentSkillTree agent={agent} />}
 
