@@ -119,7 +119,7 @@ export default function FeedbackWidget({ contextType, contextId, agentId, compac
           ))}
         </div>
         <Textarea
-          placeholder="Что можно улучшить? Поделитесь мнением..."
+          placeholder="What can we improve? Share your thoughts..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="bg-background/50 text-xs min-h-[60px]"
