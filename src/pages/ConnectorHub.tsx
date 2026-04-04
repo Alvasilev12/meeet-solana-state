@@ -85,7 +85,7 @@ const CHANNEL_DEFS = [
   {
     type: "email",
     name: "Email",
-    description: "Агент будет отвечать на входящие письма автоматически.",
+    description: "Agent will automatically reply to incoming emails.",
     icon: Mail,
     available: false,
     color: "from-purple-500/20 to-pink-500/20 border-purple-500/30",
