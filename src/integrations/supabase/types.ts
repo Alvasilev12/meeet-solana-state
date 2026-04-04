@@ -3224,6 +3224,42 @@ export type Database = {
           },
         ]
       }
+      simulation_events: {
+        Row: {
+          affected_civilizations: string[]
+          cascade_result: Json | null
+          created_at: string
+          description: string
+          event_type: string
+          id: string
+          injected_by: string
+          intensity: number
+          token_cost: number | null
+        }
+        Insert: {
+          affected_civilizations?: string[]
+          cascade_result?: Json | null
+          created_at?: string
+          description: string
+          event_type: string
+          id?: string
+          injected_by: string
+          intensity?: number
+          token_cost?: number | null
+        }
+        Update: {
+          affected_civilizations?: string[]
+          cascade_result?: Json | null
+          created_at?: string
+          description?: string
+          event_type?: string
+          id?: string
+          injected_by?: string
+          intensity?: number
+          token_cost?: number | null
+        }
+        Relationships: []
+      }
       state_treasury: {
         Row: {
           balance_meeet: number
