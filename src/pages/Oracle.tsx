@@ -20,6 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import AnimatedSection from "@/components/AnimatedSection";
 import OracleMarketChart from "@/components/OracleMarketChart";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import LiveIndicator from "@/components/LiveIndicator";
 
 interface OracleQuestion {
   id: string;
@@ -130,6 +132,21 @@ const Oracle = () => {
     };
     fetchData();
   }, []);
+
+  // Real-time: oracle question pool updates
+  const { isConnected: oracleRtConnected } = useRealtimeSubscription<any>({
+    table: "oracle_questions",
+    event: "UPDATE",
+    onUpdate: (payload) => {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === payload.id
+            ? { ...q, yes_pool: payload.yes_pool, no_pool: payload.no_pool, total_pool_meeet: payload.total_pool_meeet, status: payload.status }
+            : q
+        )
+      );
+    },
+  });
 
   const filtered = useMemo(() => {
     if (category === "all") return questions;
@@ -275,7 +292,10 @@ const Oracle = () => {
                 {t("oracle.title") || "MEEET Oracle"}
               </h1>
             </div>
-            <p className="text-muted-foreground">{t("oracle.subtitle") || "AI-powered prediction markets"}</p>
+            <div className="flex items-center gap-3">
+              <p className="text-muted-foreground">{t("oracle.subtitle") || "AI-powered prediction markets"}</p>
+              <LiveIndicator isConnected={oracleRtConnected} />
+            </div>
           </div>
           <div className="flex gap-2">
             <Link to="/oracle/consensus">

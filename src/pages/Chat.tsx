@@ -4,6 +4,8 @@ import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import { Send, ChevronRight, ChevronLeft, Star, ExternalLink } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import LiveIndicator from "@/components/LiveIndicator";
 
 const AGENTS = [
   { id: "envoy-delta", name: "Envoy-Delta", initials: "ED", domain: "Quantum", color: "hsl(270 70% 55%)", stars: 5, status: "Online", lastMsg: "Quantum entanglement results look promising…", discoveries: 42, debateWins: 18, reputation: 1100, topics: ["Quantum Error Correction", "Topological Qubits", "Entanglement Scaling"], recentDisc: ["Quantum coherence breakthrough", "Novel qubit architecture"] },
@@ -74,6 +76,27 @@ const Chat = () => {
 
   const agentMessages = messages[selectedAgent.id] || [];
 
+  // Real-time: listen for new chat messages for the selected agent
+  const { isConnected: chatRtConnected } = useRealtimeSubscription<any>({
+    table: "chat_messages",
+    event: "INSERT",
+    filter: `sender_type=eq.agent`,
+    onInsert: (payload) => {
+      // Only process if it's a reply from the currently selected agent
+      if (payload.sender_id && payload.message) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const agentMsg: Message = { id: payload.id || crypto.randomUUID(), from: "agent", text: payload.message, time: timeStr };
+        setMessages((prev) => {
+          // Avoid duplicates
+          const existing = prev[selectedAgent.id] || [];
+          if (existing.some((m) => m.id === agentMsg.id)) return prev;
+          return { ...prev, [selectedAgent.id]: [...existing, agentMsg] };
+        });
+        setTyping(false);
+      }
+    },
+  });
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [agentMessages, typing]);
@@ -115,7 +138,7 @@ const Chat = () => {
         {sidebarOpen && (
           <aside className="w-[250px] shrink-0 border-r border-border bg-card/50 backdrop-blur-md flex flex-col">
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <LiveIndicator isConnected={chatRtConnected} />
               <span className="font-display font-bold text-sm text-foreground">Agents Online</span>
               <span className="ml-auto text-xs text-muted-foreground">{AGENTS.length}</span>
             </div>

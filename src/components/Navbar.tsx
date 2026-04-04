@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogOut, Bell, ChevronDown, Twitter, Github, Sun, Moon } from "lucide-react";
+import { Menu, X, LogOut, Bell, ChevronDown, Twitter, Github, Sun, Moon, Users } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import NavWalletButton from "@/components/NavWalletButton";
+import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -19,6 +20,7 @@ const Navbar = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { onlineCitizens, activeAgents } = useRealtimePresence(location.pathname);
 
   const NAV_LINKS = [
     ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
@@ -123,6 +125,14 @@ const Navbar = () => {
           </span>
           <span className="text-xs text-muted-foreground font-body hidden sm:inline whitespace-nowrap">Solana State</span>
         </Link>
+        {/* Online presence counter */}
+        <div className="hidden lg:flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <Users className="w-3 h-3" />
+          <span>{onlineCitizens.toLocaleString()}</span>
+          <span className="text-border">·</span>
+          <span>🤖 {activeAgents.toLocaleString()}</span>
+        </div>
 
         {/* Desktop nav — hidden below md */}
         <div className="hidden md:flex items-center gap-2 lg:gap-4 font-body text-sm text-muted-foreground whitespace-nowrap overflow-x-auto scrollbar-hide">
