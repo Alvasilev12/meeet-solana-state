@@ -133,6 +133,21 @@ const Oracle = () => {
     fetchData();
   }, []);
 
+  // Real-time: oracle question pool updates
+  const { isConnected: oracleRtConnected } = useRealtimeSubscription<any>({
+    table: "oracle_questions",
+    event: "UPDATE",
+    onUpdate: (payload) => {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === payload.id
+            ? { ...q, yes_pool: payload.yes_pool, no_pool: payload.no_pool, total_pool_meeet: payload.total_pool_meeet, status: payload.status }
+            : q
+        )
+      );
+    },
+  });
+
   const filtered = useMemo(() => {
     if (category === "all") return questions;
     return questions.filter((q) => q.category === category);
