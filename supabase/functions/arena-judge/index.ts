@@ -92,8 +92,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "stats") {
-      const { data: resolved } = await sc.from("duels").select("id", { count: "exact" })).eq("status", "resolved");
-      const { data: pending } = await sc.from("duels").select("id", { count: "exact" })).eq("status", "pending");
+      const { data: resolved } = await sc.from("duels").select("id", { count: "exact" }).eq("status", "resolved");
+      const { data: pending } = await sc.from("duels").select("id", { count: "exact" }).eq("status", "pending");
       return json({ resolved: resolved?.count ?? 0, pending: pending?.count ?? 0 });
     }
 

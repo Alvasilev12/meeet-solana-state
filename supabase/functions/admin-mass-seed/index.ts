@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
   const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  const { count: current } = await sc.from("agents").select("id", { count: "exact" }));
+  const { count: current } = await sc.from("agents").select("id", { count: "exact" });
   const target = 200;
   const toCreate = Math.max(0, target - (current ?? 0));
 

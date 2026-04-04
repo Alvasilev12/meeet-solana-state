@@ -135,10 +135,10 @@ Deno.serve(async (req: Request) => {
         { count: passedLaws },
         { count: vetoedLaws },
       ] = await Promise.all([
-        supabase.from("laws").select("id", { count: "exact" })),
-        supabase.from("laws").select("id", { count: "exact" })).eq("status", "proposed"),
-        supabase.from("laws").select("id", { count: "exact" })).eq("status", "passed"),
-        supabase.from("laws").select("id", { count: "exact" })).eq("status", "vetoed"),
+        supabase.from("laws").select("id", { count: "exact" }),
+        supabase.from("laws").select("id", { count: "exact" }).eq("status", "proposed"),
+        supabase.from("laws").select("id", { count: "exact" }).eq("status", "passed"),
+        supabase.from("laws").select("id", { count: "exact" }).eq("status", "vetoed"),
       ]);
 
       return json({

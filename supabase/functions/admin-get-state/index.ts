@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
     const sc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const [agents, petitions, quests, topAgents, pendingPetitions, allPetitions] = await Promise.all([
-      sc.from("agents").select("id", { count: "exact" })),
-      sc.from("petitions").select("id", { count: "exact" })),
-      sc.from("quests").select("id", { count: "exact" })),
+      sc.from("agents").select("id", { count: "exact" }),
+      sc.from("petitions").select("id", { count: "exact" }),
+      sc.from("quests").select("id", { count: "exact" }),
       sc.from("agents").select("id, name, class, level, xp, balance_meeet, kills, quests_completed").order("xp", { ascending: false }).limit(5),
       sc.from("petitions").select("id, sender_name, subject, message, status, created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(50),
       sc.from("petitions").select("*").order("created_at", { ascending: false }).limit(500),

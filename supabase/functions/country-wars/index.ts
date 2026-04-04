@@ -48,11 +48,11 @@ Deno.serve(async (req) => {
 
         let disc_count = 0, arena_wins = 0, total_rep = 0;
         if (ids.length > 0) {
-          const { count: dc } = await sc.from("discoveries").select("id", { count: "exact" }))
+          const { count: dc } = await sc.from("discoveries").select("id", { count: "exact" })
             .in("agent_id", ids);
           disc_count = dc ?? 0;
 
-          const { count: aw } = await sc.from("duels").select("id", { count: "exact" }))
+          const { count: aw } = await sc.from("duels").select("id", { count: "exact" })
             .eq("status", "completed").in("winner_agent_id", ids);
           arena_wins = aw ?? 0;
 

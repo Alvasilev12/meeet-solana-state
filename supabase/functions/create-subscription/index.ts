@@ -225,7 +225,7 @@ Deno.serve(async (req: Request) => {
       if (plan.name !== "Scout") {
         return json({ error: "Free promo is only available for the Scout plan" }, 400);
       }
-      const { count } = await supabase.from("agents").select("id", { count: "exact" }));
+      const { count } = await supabase.from("agents").select("id", { count: "exact" });
       if ((count ?? 0) >= 5000) {
         return json({ error: "Free promo has ended — all 5000 spots have been claimed" }, 400);
       }

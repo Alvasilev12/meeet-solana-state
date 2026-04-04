@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       return json({
         current_season: 1, started: "2026-03-01", ends: "2026-06-01",
         rewards: { first: 10000, second: 5000, third: 2500 },
-        total_matches: await sc.from("duels").select("id", { count: "exact" })).then(r => r.count ?? 0),
+        total_matches: await sc.from("duels").select("id", { count: "exact" }).then(r => r.count ?? 0),
       });
     }
 

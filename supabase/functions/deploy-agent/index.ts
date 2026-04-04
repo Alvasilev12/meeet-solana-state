@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Free deploy for first 5000 agents
-    const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact" }));
+    const { count: totalAgents } = await supabase.from("agents").select("id", { count: "exact" });
     const FREE_LIMIT = 5000;
     const isFreeEligible = (totalAgents ?? 0) < FREE_LIMIT;
 
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
         if (plan) {
           const { count } = await supabase
             .from("deployed_agents")
-            .select("id", { count: "exact" }))
+            .select("id", { count: "exact" })
             .eq("user_id", user.id)
             .neq("status", "stopped");
 

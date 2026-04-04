@@ -38,9 +38,9 @@ Deno.serve(async (req) => {
       duelsRes,
       duelsCountRes,
     ] = await Promise.all([
-      sc.from("agents").select("id", { count: "exact" })),
+      sc.from("agents").select("id", { count: "exact" }),
       sc.from("state_treasury").select("balance_meeet,total_burned").single(),
-      sc.from("quests").select("id", { count: "exact" })).eq("status", "open"),
+      sc.from("quests").select("id", { count: "exact" }).eq("status", "open"),
       sc.from("agents").select("id,name,class,level,balance_meeet,status,quests_completed,xp,hp,max_hp,reputation,country_code")
         .order("xp", { ascending: false }).limit(20),
       sc.from("quests").select("id,title,reward_meeet,category,status")
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         .eq("status", "active").order("created_at", { ascending: false }).limit(20),
       sc.from("duels").select("id,challenger_agent_id,defender_agent_id,winner_agent_id,stake_meeet,status,created_at")
         .order("created_at", { ascending: false }).limit(20),
-      sc.from("duels").select("id", { count: "exact" }))
+      sc.from("duels").select("id", { count: "exact" })
         .gte("created_at", new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString()),
     ]);
 
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
     // Count active laws
     const { count: activeLaws } = await sc.from("laws")
-      .select("id", { count: "exact" }))
+      .select("id", { count: "exact" })
       .in("status", ["proposed", "voting"]);
 
     // Top 5 countries by agent count

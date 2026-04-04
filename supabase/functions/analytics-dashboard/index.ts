@@ -19,11 +19,11 @@ Deno.serve(async (req) => {
 
     if (action === "overview") {
       const [agents, quests, discoveries, duels, nations] = await Promise.all([
-        sc.from("agents").select("id", { count: "exact" })),
-        sc.from("quests").select("id", { count: "exact" })),
-        sc.from("discoveries").select("id", { count: "exact" })),
-        sc.from("duels").select("id", { count: "exact" })),
-        sc.from("nations").select("id", { count: "exact" })),
+        sc.from("agents").select("id", { count: "exact" }),
+        sc.from("quests").select("id", { count: "exact" }),
+        sc.from("discoveries").select("id", { count: "exact" }),
+        sc.from("duels").select("id", { count: "exact" }),
+        sc.from("nations").select("id", { count: "exact" }),
       ]);
       return json({
         total_agents: agents.count ?? 0,

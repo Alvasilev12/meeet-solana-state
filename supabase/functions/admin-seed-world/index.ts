@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   // 1. SEED AGENTS to 200
   // ═══════════════════════════════════════════
-  const { count: agentCount } = await sc.from("agents").select("id", { count: "exact" }));
+  const { count: agentCount } = await sc.from("agents").select("id", { count: "exact" });
   const agentsNeeded = Math.min(500, Math.max(0, 1000 - (agentCount ?? 0)));
 
   if (agentsNeeded > 0) {
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   // 2. SEED DISCOVERIES
   // ═══════════════════════════════════════════
-  const { count: discCount } = await sc.from("discoveries").select("id", { count: "exact" }));
+  const { count: discCount } = await sc.from("discoveries").select("id", { count: "exact" });
   if ((discCount ?? 0) < 10) {
     const discoveries = [
       // MEDICINE & HEALTH
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   // 3. SEED LAWS
   // ═══════════════════════════════════════════
-  const { count: lawCount } = await sc.from("laws").select("id", { count: "exact" }));
+  const { count: lawCount } = await sc.from("laws").select("id", { count: "exact" });
   if ((lawCount ?? 0) < 5) {
     // Get a real agent ID to use as proposer (FK constraint requires agents.id)
     const { data: proposerAgent } = await sc.from("agents").select("id").order("xp", { ascending: false }).limit(1).maybeSingle();
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   // 4. SEED ORACLE QUESTIONS
   // ═══════════════════════════════════════════
-  const { count: oracleCount } = await sc.from("oracle_questions").select("id", { count: "exact" }));
+  const { count: oracleCount } = await sc.from("oracle_questions").select("id", { count: "exact" });
   if ((oracleCount ?? 0) < 8) {
     const questions = [
       { question_text: "Will MEEET agents produce a peer-reviewable medical discovery by Q3 2026?", yes_pool: 8500, no_pool: 3200, status: "open", deadline: new Date(Date.now() + 180 * 86400000).toISOString() },
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
   // ═══════════════════════════════════════════
   // 5. SEED WARNINGS
   // ═══════════════════════════════════════════
-  const { count: warnCount } = await sc.from("warnings").select("id", { count: "exact" }));
+  const { count: warnCount } = await sc.from("warnings").select("id", { count: "exact" });
   if ((warnCount ?? 0) < 5) {
     const warnings = [
       { title: "H5N1 Mutation Cluster Detected", description: "Agent swarm analyzing WHO data identified 3 new H5N1 mutations in SE Asia poultry farms. Pandemic risk elevated. Medical agents mobilized.", severity: 5, type: "health", region: "Southeast Asia", status: "active" },
@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
   // Final count check
   const finalCounts: Record<string, number> = {};
   for (const table of ["agents", "discoveries", "laws", "oracle_questions", "warnings", "arena_matches", "agent_marketplace", "strategies", "achievements", "quests", "petitions"]) {
-    const { count } = await sc.from(table).select("id", { count: "exact" }));
+    const { count } = await sc.from(table).select("id", { count: "exact" });
     finalCounts[table] = count ?? 0;
   }
 

@@ -222,8 +222,8 @@ Deno.serve(async (req) => {
 
       const [agentRes, discRes, msgRes] = await Promise.all([
         supabase.from("agents").select("id, name, class, level, xp, hp, max_hp, balance_meeet, reputation, kills, quests_completed, status, discoveries_count").eq("id", agent_id).maybeSingle(),
-        supabase.from("discoveries").select("id", { count: "exact" })).eq("agent_id", agent_id),
-        supabase.from("agent_messages").select("id", { count: "exact" })).eq("from_agent_id", agent_id),
+        supabase.from("discoveries").select("id", { count: "exact" }).eq("agent_id", agent_id),
+        supabase.from("agent_messages").select("id", { count: "exact" }).eq("from_agent_id", agent_id),
       ]);
 
       if (!agentRes.data) return json({ success: false, error: "Agent not found" }, 404);
