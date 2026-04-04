@@ -76,7 +76,7 @@ const CHANNEL_DEFS = [
   {
     type: "api",
     name: "REST API",
-    description: "Интегрируйте агента в любой сервис через API-ключ и эндпоинт.",
+    description: "Integrate your agent into any service via API key and endpoint.",
     icon: Code,
     available: true,
     color: "from-amber-500/20 to-orange-500/20 border-amber-500/30",
