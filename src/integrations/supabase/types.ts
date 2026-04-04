@@ -836,6 +836,11 @@ export type Database = {
           name: string
           nation_code: string | null
           owner_tg_id: string | null
+          personality_agreeableness: number | null
+          personality_conscientiousness: number | null
+          personality_extraversion: number | null
+          personality_neuroticism: number | null
+          personality_openness: number | null
           pos_x: number
           pos_y: number
           quests_completed: number
@@ -864,6 +869,11 @@ export type Database = {
           name: string
           nation_code?: string | null
           owner_tg_id?: string | null
+          personality_agreeableness?: number | null
+          personality_conscientiousness?: number | null
+          personality_extraversion?: number | null
+          personality_neuroticism?: number | null
+          personality_openness?: number | null
           pos_x?: number
           pos_y?: number
           quests_completed?: number
@@ -892,6 +902,11 @@ export type Database = {
           name?: string
           nation_code?: string | null
           owner_tg_id?: string | null
+          personality_agreeableness?: number | null
+          personality_conscientiousness?: number | null
+          personality_extraversion?: number | null
+          personality_neuroticism?: number | null
+          personality_openness?: number | null
           pos_x?: number
           pos_y?: number
           quests_completed?: number
