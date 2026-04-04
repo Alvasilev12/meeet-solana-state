@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, Star, Users, Zap, MessageSquare, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -72,6 +82,7 @@ const AgentMarketplace = () => {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
   const [demoAgent, setDemoAgent] = useState<Agent | null>(null);
+  const [hireAgent, setHireAgent] = useState<Agent | null>(null);
   const [demoInput, setDemoInput] = useState("");
   const [demoMessages, setDemoMessages] = useState<{ role: string; text: string }[]>([]);
 
@@ -112,8 +123,10 @@ const AgentMarketplace = () => {
     }, 1000);
   };
 
-  const handleHire = (agent: Agent) => {
+  const handleHireConfirm = (agent: Agent | null) => {
+    if (!agent) return;
     toast.success(`🎉 ${agent.name} hired successfully!`);
+    setHireAgent(null);
     setTimeout(() => navigate("/dashboard"), 1500);
   };
 
@@ -123,7 +136,6 @@ const AgentMarketplace = () => {
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
         <main className="flex-1">
-          {/* Hero */}
           <section className="relative overflow-hidden border-b border-border/40">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
             <div className="container mx-auto px-4 py-12 md:py-16 relative">
@@ -142,7 +154,6 @@ const AgentMarketplace = () => {
           </section>
 
           <div className="container mx-auto px-4 py-6">
-            {/* Search + Sort */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -161,7 +172,6 @@ const AgentMarketplace = () => {
               </Select>
             </div>
 
-            {/* Category Pills */}
             <div className="flex flex-wrap gap-2 mb-6">
               {CATEGORIES.map((c) => (
                 <button
@@ -178,7 +188,6 @@ const AgentMarketplace = () => {
               ))}
             </div>
 
-            {/* Empty */}
             {filtered.length === 0 && (
               <div className="text-center py-20">
                 <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-40" />
@@ -187,7 +196,6 @@ const AgentMarketplace = () => {
               </div>
             )}
 
-            {/* Agent Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filtered.map((a) => (
                 <Card
@@ -228,14 +236,20 @@ const AgentMarketplace = () => {
                           size="sm"
                           variant="outline"
                           className="text-xs h-8"
-                          onClick={(e) => { e.stopPropagation(); openDemo(a); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDemo(a);
+                          }}
                         >
                           <MessageSquare className="w-3 h-3 mr-1" /> Try Demo
                         </Button>
                         <Button
                           size="sm"
                           className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                          onClick={(e) => { e.stopPropagation(); handleHire(a); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHireAgent(a);
+                          }}
                         >
                           Hire
                         </Button>
@@ -252,8 +266,16 @@ const AgentMarketplace = () => {
             </div>
           </div>
 
-          {/* Demo Chat Dialog */}
-          <Dialog open={!!demoAgent} onOpenChange={(open) => { if (!open) { setDemoAgent(null); setDemoMessages([]); setDemoInput(""); } }}>
+          <Dialog
+            open={!!demoAgent}
+            onOpenChange={(open) => {
+              if (!open) {
+                setDemoAgent(null);
+                setDemoMessages([]);
+                setDemoInput("");
+              }
+            }}
+          >
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Demo: {demoAgent?.name}</DialogTitle>
@@ -262,9 +284,7 @@ const AgentMarketplace = () => {
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {demoMessages.map((m, i) => (
                     <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                        m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                      }`}>
+                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
                         {m.text}
                       </div>
                     </div>
@@ -285,6 +305,28 @@ const AgentMarketplace = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          <AlertDialog
+            open={!!hireAgent}
+            onOpenChange={(open) => {
+              if (!open) setHireAgent(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hire {hireAgent?.name}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Confirm hiring this agent for ${hireAgent?.price}/month. You’ll be redirected to your dashboard after confirmation.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleHireConfirm(hireAgent)}>
+                  Hire Agent
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
         <Footer />
       </div>
