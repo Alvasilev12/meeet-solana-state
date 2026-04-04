@@ -131,6 +131,7 @@ const AgentMarketplace = () => {
     switch (sortBy) {
       case "rating": return [...result].sort((a, b) => b.rating - a.rating);
       case "price_low": return [...result].sort((a, b) => a.price_amount - b.price_amount);
+      case "price_high": return [...result].sort((a, b) => b.price_amount - a.price_amount);
       case "newest": return [...result].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       default: return [...result].sort((a, b) => b.total_hires - a.total_hires);
     }
