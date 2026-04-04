@@ -98,7 +98,7 @@ export default function FeedbackWidget({ contextType, contextId, agentId, compac
       <CardHeader className="pb-2">
         <CardTitle className="font-display text-sm flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-primary" />
-          Обратная связь
+          Feedback
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
