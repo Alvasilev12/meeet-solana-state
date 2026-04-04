@@ -415,11 +415,11 @@ const About = () => {
                     copyCode(codeSnippets[codeTab], codeTab);
                   }}
                 >
-                  <Copy className="w-5 h-5" /> Скопировать код
+                  <Copy className="w-5 h-5" /> Copy Code
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground font-body mt-4">
-                Без регистрации · Без API-ключа · Бесплатный бонус 100 $MEEET
+                No registration · No API key · Free 100 $MEEET bonus
               </p>
             </div>
           </div>
