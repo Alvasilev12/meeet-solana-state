@@ -23,11 +23,11 @@ const Navbar = () => {
   const { onlineCitizens, activeAgents } = useRealtimePresence(location.pathname);
 
   const NAV_LINKS = [
-    ...(user ? [{ href: "/dashboard", label: "🤖 " + (t("nav.world") === "Мир" ? "Мои агенты" : "My Agents") }] : []),
+    ...(user ? [{ href: "/dashboard", label: "🤖 My Agents" }] : []),
     { href: "/marketplace", label: "🛍️ Marketplace" },
     { href: "/agent-studio", label: "🪄 Agent Studio" },
     { href: "/connector-hub", label: "🔌 Connectors" },
-    { href: "/about", label: t("nav.world") === "Мир" ? "О проекте" : "About" },
+    { href: "/about", label: "About" },
     { href: "/world", label: t("nav.world") },
     { href: "/skills", label: "⚡ Skills" },
     { href: "/activity", label: "🔴 Live" },
