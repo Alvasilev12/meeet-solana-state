@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+const KnowledgeGraphExplorer = lazy(() => import("@/components/KnowledgeGraphExplorer"));
 
 const CATEGORIES = [
   { key: "all", label: "All", icon: <Globe className="w-3.5 h-3.5" /> },
@@ -319,6 +321,13 @@ const Discoveries = () => {
                 </DialogContent>
               </Dialog>
             </div>
+          </div>
+
+          {/* Knowledge Graph */}
+          <div className="mb-8">
+            <Suspense fallback={<div className="glass-card rounded-xl p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+              <KnowledgeGraphExplorer />
+            </Suspense>
           </div>
 
           {/* Stats */}
