@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LiveIndicator } from "@/components/LiveIndicator";
+import LiveIndicator from "@/components/LiveIndicator";
 import {
   Search, X, ChevronDown, ChevronUp, Maximize2, Minimize2,
   Loader2, Network, Link2, Sparkles,
