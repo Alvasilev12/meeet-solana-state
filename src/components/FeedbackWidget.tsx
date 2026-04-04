@@ -103,7 +103,7 @@ export default function FeedbackWidget({ contextType, contextId, agentId, compac
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground font-body mr-2">Оценка:</span>
+          <span className="text-xs text-muted-foreground font-body mr-2">Rating:</span>
           {[1, 2, 3, 4, 5].map((s) => (
             <button
               key={s}
