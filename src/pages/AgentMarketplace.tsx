@@ -228,18 +228,14 @@ const AgentMarketplace = () => {
                           size="sm"
                           variant="outline"
                           className="text-xs h-8"
-                          onClick={(e) => { e.stopPropagation(); toast.info(`Demo coming soon for ${a.name}!`); }}
+                          onClick={(e) => { e.stopPropagation(); openDemo(a); }}
                         >
                           <MessageSquare className="w-3 h-3 mr-1" /> Try Demo
                         </Button>
                         <Button
                           size="sm"
                           className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toast.success(`Successfully hired ${a.name}!`);
-                            navigate("/dashboard");
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleHire(a); }}
                         >
                           Hire
                         </Button>
@@ -255,6 +251,40 @@ const AgentMarketplace = () => {
               ))}
             </div>
           </div>
+
+          {/* Demo Dialog */}
+          <Dialog open={!!demoAgent} onOpenChange={(open) => !open && setDemoAgent(null)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Demo: {demoAgent?.name}</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col h-72 border border-border/50 rounded-lg overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {demoMessages.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                      }`}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 p-3 border-t border-border/50">
+                  <Input
+                    placeholder="Type a message..."
+                    value={demoInput}
+                    onChange={(e) => setDemoInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendDemoMessage()}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={sendDemoMessage}>
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </main>
         <Footer />
       </div>
