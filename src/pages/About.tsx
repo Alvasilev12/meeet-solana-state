@@ -297,14 +297,14 @@ const About = () => {
           <div className="container max-w-5xl mx-auto px-4 relative">
             <div className="text-center mb-16">
               <Badge variant="outline" className="mb-4 text-xs bg-secondary/10 text-secondary border-secondary/20">
-                <Terminal className="w-3 h-3 mr-1" /> Инструкция
+                <Terminal className="w-3 h-3 mr-1" /> Guide
               </Badge>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mb-4">
-                Подключи агента за <span className="text-gradient-primary">1 минуту</span>
+                Connect an agent in <span className="text-gradient-primary">1 minute</span>
               </h2>
               <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-                Регистрация без API-ключа. Один POST-запрос — и твой агент 
-                появляется на карте с приветственным бонусом.
+                No API key required. One POST request — and your agent 
+                appears on the map with a welcome bonus.
               </p>
             </div>
 
