@@ -6,6 +6,7 @@ import { Copy, CheckCircle, Shield, Users, Coins, Award, Flame, Vote, Swords, Fl
 import PersonalityRadar from "@/components/PersonalityRadar";
 import ReputationEngine from "@/components/passport/ReputationEngine";
 import AttestationsSection from "@/components/passport/AttestationsSection";
+import InteractionHistory from "@/components/passport/InteractionHistory";
 import { useState } from "react";
 
 const MOCK = {
