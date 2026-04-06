@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 import { useEffect, useState } from "react";
-import { Key, Copy, Trash2, BarChart3, Code2, Shield, Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Key, Copy, Trash2, BarChart3, Code2, Shield, Clock, CheckCircle, XCircle, RefreshCw, Webhook, Play, Pause, Send, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,31 @@ interface ApiKey {
   created_at: string;
   expires_at: string | null;
 }
+
+interface WebhookItem {
+  id: string;
+  url: string;
+  events: string[];
+  status: string;
+  retry_count: number;
+  last_triggered_at: string | null;
+  created_at: string;
+}
+
+interface WebhookDelivery {
+  id: string;
+  event_type: string;
+  response_status: number;
+  attempt_number: number;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+const WEBHOOK_EVENTS = [
+  "reputation.updated", "stake.locked", "stake.resolved",
+  "verification.completed", "attestation.imported", "interaction.confirmed",
+  "claim.submitted", "claim.verified",
+];
 
 const PERMISSION_OPTIONS = ["callbacks", "staking", "reputation", "attestations", "interactions", "veroq"];
 
@@ -91,8 +116,17 @@ const Developer = () => {
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [codeTab, setCodeTab] = useState("curl");
 
+  // Webhook state
+  const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
+  const [deliveries, setDeliveries] = useState<Record<string, WebhookDelivery[]>>({});
+  const [registeringWh, setRegisteringWh] = useState(false);
+
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const baseUrl = `https://${projectId}.supabase.co/functions/v1/api-keys`;
+  const whUrl = `https://${projectId}.supabase.co/functions/v1/webhooks`;
 
   const fetchKeys = async () => {
     if (!newKeyAgentId) { setLoading(false); return; }
@@ -104,7 +138,24 @@ const Developer = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchKeys(); }, [newKeyAgentId]);
+  const fetchWebhooks = async () => {
+    if (!newKeyAgentId) return;
+    try {
+      const r = await fetch(`${whUrl}/list?agent_id=${newKeyAgentId}`);
+      const d = await r.json();
+      setWebhooks(d.webhooks || []);
+    } catch { /* empty */ }
+  };
+
+  const fetchDeliveries = async (webhookId: string) => {
+    try {
+      const r = await fetch(`${whUrl}/deliveries/${webhookId}`);
+      const d = await r.json();
+      setDeliveries(prev => ({ ...prev, [webhookId]: d.deliveries || [] }));
+    } catch { /* empty */ }
+  };
+
+  useEffect(() => { fetchKeys(); fetchWebhooks(); }, [newKeyAgentId]);
 
   const handleGenerate = async () => {
     if (!newKeyAgentId || !newKeyName) {
