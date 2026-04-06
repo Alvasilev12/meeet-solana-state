@@ -80,6 +80,10 @@ const ConnectorHub = React.lazy(() => import("./pages/ConnectorHub.tsx"));
 const AgentAnalytics = React.lazy(() => import("./pages/AgentAnalytics.tsx"));
 const AgentDetailPage = React.lazy(() => import("./pages/AgentDetailPage.tsx"));
 const Developer = React.lazy(() => import("./pages/Developer.tsx"));
+const Terms = React.lazy(() => import("./pages/Terms.tsx"));
+const Privacy = React.lazy(() => import("./pages/Privacy.tsx"));
+const Cookies = React.lazy(() => import("./pages/Cookies.tsx"));
+const Disclaimer = React.lazy(() => import("./pages/Disclaimer.tsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
@@ -192,6 +196,10 @@ const App = () => (
                   <Route path="/connector-hub" element={<ConnectorHub />} />
                   <Route path="/agent-analytics/:agentId" element={<AgentAnalytics />} />
                   <Route path="/developer" element={<Developer />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/cookies" element={<Cookies />} />
+                  <Route path="/disclaimer" element={<Disclaimer />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
