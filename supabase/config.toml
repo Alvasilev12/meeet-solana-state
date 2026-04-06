@@ -303,3 +303,6 @@ verify_jwt = false
 
 [functions.adk-after-tool]
 verify_jwt = false
+
+[functions.staking-engine]
+verify_jwt = false
