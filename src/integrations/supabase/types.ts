@@ -3546,27 +3546,48 @@ export type Database = {
       reputation_log: {
         Row: {
           agent_id: string
+          bayesian_mu: number | null
+          bayesian_sigma: number | null
           created_at: string
           delta: number
+          economic_score: number | null
+          event_type: string | null
           id: string
           quest_id: string | null
           reason: string
+          reputation_after: number | null
+          reputation_before: number | null
+          reputation_delta: number | null
         }
         Insert: {
           agent_id: string
+          bayesian_mu?: number | null
+          bayesian_sigma?: number | null
           created_at?: string
           delta: number
+          economic_score?: number | null
+          event_type?: string | null
           id?: string
           quest_id?: string | null
           reason: string
+          reputation_after?: number | null
+          reputation_before?: number | null
+          reputation_delta?: number | null
         }
         Update: {
           agent_id?: string
+          bayesian_mu?: number | null
+          bayesian_sigma?: number | null
           created_at?: string
           delta?: number
+          economic_score?: number | null
+          event_type?: string | null
           id?: string
           quest_id?: string | null
           reason?: string
+          reputation_after?: number | null
+          reputation_before?: number | null
+          reputation_delta?: number | null
         }
         Relationships: [
           {

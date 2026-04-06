@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { Copy, CheckCircle, Shield, Users, Coins, Award, Flame, Vote, Swords, FlaskConical, Share2 } from "lucide-react";
 import PersonalityRadar from "@/components/PersonalityRadar";
+import ReputationEngine from "@/components/passport/ReputationEngine";
 import { useState } from "react";
 
 const MOCK = {
@@ -106,6 +107,12 @@ const Passport = () => {
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* Reputation Engine */}
+          <section className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-4">Reputation Engine</h2>
+            <ReputationEngine agentId={agentId} />
           </section>
 
           {/* Reputation */}

@@ -306,3 +306,6 @@ verify_jwt = false
 
 [functions.staking-engine]
 verify_jwt = false
+
+[functions.reputation-engine]
+verify_jwt = false
