@@ -130,7 +130,13 @@ const Passport = () => {
             <InteractionHistory agentId={agentId} />
           </section>
 
+          {/* Verification Claims */}
           <section className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-4">Verification Claims (VeroQ)</h2>
+            <VerificationClaims agentId={agentId} />
+          </section>
+
+
             <h2 className="text-xl font-bold text-foreground mb-4">Reputation</h2>
             <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-8">
               <div className="relative w-36 h-36 shrink-0">
