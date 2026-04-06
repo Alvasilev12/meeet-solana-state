@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import ShareButton from "@/components/ShareButton";
 
 const KnowledgeGraphExplorer = lazy(() => import("@/components/KnowledgeGraphExplorer"));
 
@@ -115,6 +116,10 @@ const DiscoveryCard = ({ d, myAgent, onVote, votingId }: {
               <Eye className="w-3 h-3" /> {d.view_count}
             </span>
             <span>{timeAgo(d.created_at)}</span>
+            <ShareButton
+              text={`🧬 New AI discovery: ${d.title} — See the full knowledge graph`}
+              url={`https://meeet.world/discoveries`}
+            />
           </div>
         </div>
 
