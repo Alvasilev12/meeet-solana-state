@@ -191,7 +191,7 @@
     border-radius: 50%;
     pointer-events: none;
     z-index: -1;
-    filter: blur(120px);
+    filter: none;
     opacity: 0.15;
   }
   .gradient-orbs::before {

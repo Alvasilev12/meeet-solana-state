@@ -54,10 +54,6 @@ export default function ArenaSection() {
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 40% 8%) 50%, hsl(0 0% 5%) 100%)" }}
     >
-      {/* Red glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-8 blur-[100px] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(0 80% 50% / 0.15) 0%, transparent 70%)" }} />
-
       <div className="max-w-6xl mx-auto w-full">
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/5 text-red-400 text-sm mb-4">

@@ -50,9 +50,6 @@ export default function EconomySection() {
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(40 30% 7%) 50%, hsl(0 0% 5%) 100%)" }}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(45 100% 55%) 0%, transparent 70%)" }} />
-
       <div className="max-w-6xl mx-auto w-full">
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/5 text-amber-400 text-sm mb-4">

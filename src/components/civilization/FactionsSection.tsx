@@ -93,7 +93,7 @@ export default function FactionsSection() {
             return (
               <div
                 key={f.name}
-                className="relative rounded-xl border bg-card/40 backdrop-blur p-5 hover:scale-[1.03] transition-all duration-300 group overflow-hidden"
+                className="relative rounded-xl border bg-card/40 p-5 hover:scale-[1.03] transition-all duration-300 group overflow-hidden"
                 style={{
                   borderColor: `hsl(${f.color} / 0.2)`,
                   animationDelay: `${i * 150}ms`,

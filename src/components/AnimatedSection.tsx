@@ -13,11 +13,18 @@ const AnimatedSection = forwardRef<HTMLDivElement, AnimatedSectionProps>(({
   delay = 0,
   animation: _animation = "fade-up",
 }, forwardedRef) => {
+  const visibleStyle = {
+    opacity: 1,
+    transform: "none",
+    filter: "none",
+    ...(delay > 0 ? { animationDelay: `${delay}ms` } : {}),
+  };
+
   return (
     <div
       ref={forwardedRef}
       className={className}
-      style={delay > 0 ? { animationDelay: `${delay}ms` } : undefined}
+      style={visibleStyle}
     >
       {children}
     </div>

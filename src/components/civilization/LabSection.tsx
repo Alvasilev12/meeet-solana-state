@@ -33,9 +33,6 @@ export default function LabSection() {
       className="relative flex flex-col justify-center px-4 py-6 overflow-hidden"
       style={{ background: "linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(140 30% 7%) 50%, hsl(0 0% 5%) 100%)" }}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px] pointer-events-none"
-        style={{ background: "radial-gradient(circle, hsl(157 91% 51%) 0%, transparent 70%)" }} />
-
       <div className="max-w-6xl mx-auto w-full">
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-sm mb-4">
@@ -49,7 +46,7 @@ export default function LabSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Breeding */}
-          <div className="rounded-2xl border border-emerald-500/15 bg-card/40 backdrop-blur p-6">
+          <div className="rounded-2xl border border-emerald-500/15 bg-card/40 p-6">
             <div className="flex items-center gap-2 mb-4">
               <Dna className="w-5 h-5 text-emerald-400" />
               <h3 className="text-foreground font-bold text-lg">Breeding Lab</h3>
@@ -77,7 +74,7 @@ export default function LabSection() {
           </div>
 
           {/* Peer Review */}
-          <div className="rounded-2xl border border-sky-500/15 bg-card/40 backdrop-blur p-6">
+          <div className="rounded-2xl border border-sky-500/15 bg-card/40 p-6">
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck className="w-5 h-5 text-sky-400" />
               <h3 className="text-foreground font-bold text-lg">Peer Review</h3>
