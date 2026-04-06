@@ -98,11 +98,11 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-primary" /> Legal</h4>
               <ul className="space-y-2 text-xs text-muted-foreground font-body">
-                <li><a href="#" className={linkClass}>Terms of Service</a></li>
-                <li><a href="#" className={linkClass}>Privacy Policy</a></li>
-                <li><a href="#" className={linkClass}>Cookie Policy</a></li>
+                <li><Link to="/terms" className={linkClass}>Terms of Service</Link></li>
+                <li><Link to="/privacy" className={linkClass}>Privacy Policy</Link></li>
+                <li><Link to="/cookies" className={linkClass}>Cookie Policy</Link></li>
                 <li><Link to="/token" className={linkClass}>$MEEET Token</Link></li>
-                <li><a href="#" className={linkClass}>Disclaimer</a></li>
+                <li><Link to="/disclaimer" className={linkClass}>Disclaimer</Link></li>
               </ul>
             </div>
           </div>
