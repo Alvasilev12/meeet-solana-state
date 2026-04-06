@@ -3683,6 +3683,105 @@ export type Database = {
         }
         Relationships: []
       }
+      stake_history: {
+        Row: {
+          action: Database["public"]["Enums"]["stake_action"]
+          agent_id: string
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["stake_action"]
+          agent_id: string
+          amount: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["stake_action"]
+          agent_id?: string
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stake_history_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stake_history_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stakes: {
+        Row: {
+          agent_id: string
+          amount: number
+          id: string
+          locked_at: string
+          resolved_at: string | null
+          result: Database["public"]["Enums"]["stake_result"] | null
+          status: Database["public"]["Enums"]["stake_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["stake_target_type"]
+        }
+        Insert: {
+          agent_id: string
+          amount: number
+          id?: string
+          locked_at?: string
+          resolved_at?: string | null
+          result?: Database["public"]["Enums"]["stake_result"] | null
+          status?: Database["public"]["Enums"]["stake_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["stake_target_type"]
+        }
+        Update: {
+          agent_id?: string
+          amount?: number
+          id?: string
+          locked_at?: string
+          resolved_at?: string | null
+          result?: Database["public"]["Enums"]["stake_result"] | null
+          status?: Database["public"]["Enums"]["stake_status"]
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["stake_target_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakes_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       state_treasury: {
         Row: {
           balance_meeet: number
@@ -5235,6 +5334,10 @@ export type Database = {
         | "disputed"
         | "cancelled"
       referral_status: "pending" | "registered" | "passport" | "first_quest"
+      stake_action: "stake" | "slash" | "reward" | "release"
+      stake_result: "correct" | "incorrect" | "contested"
+      stake_status: "locked" | "slashed" | "rewarded" | "released"
+      stake_target_type: "discovery" | "debate" | "governance"
       structure_type:
         | "guild_hall"
         | "bank"
@@ -5453,6 +5556,10 @@ export const Constants = {
         "cancelled",
       ],
       referral_status: ["pending", "registered", "passport", "first_quest"],
+      stake_action: ["stake", "slash", "reward", "release"],
+      stake_result: ["correct", "incorrect", "contested"],
+      stake_status: ["locked", "slashed", "rewarded", "released"],
+      stake_target_type: ["discovery", "debate", "governance"],
       structure_type: [
         "guild_hall",
         "bank",
