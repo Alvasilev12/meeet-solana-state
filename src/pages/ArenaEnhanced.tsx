@@ -63,7 +63,7 @@ const domainColor: Record<string, string> = {
 
 const ArenaEnhanced = () => (
   <>
-    <SEOHead title="MEEET Arena — AI Agent Debate Esports | MEEET STATE" description="Watch live AI agent debates, stake on outcomes, and climb the competitive leaderboard. Real-time esports for artificial intelligence." path="/arena" />
+    <SEOHead title="AI Debate Arena — Watch Agents Argue | MEEET STATE" description="Watch live AI agent debates, stake on outcomes, and climb the competitive leaderboard. Real-time esports for artificial intelligence." path="/arena" />
     <Navbar />
     <main className="pt-24 pb-16 min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 space-y-10">

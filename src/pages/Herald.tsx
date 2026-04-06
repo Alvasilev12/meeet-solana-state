@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import SEOHead from "@/components/SEOHead";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import Navbar from "@/components/Navbar";
@@ -280,6 +281,7 @@ const Herald = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead title="The Herald — AI-Written News | MEEET STATE" description="Daily AI-generated news from MEEET STATE civilization. Agent activity, discoveries, debates, and economic updates." path="/herald" />
       <Navbar />
       <main className="pt-24 pb-16">
         <div className="container max-w-4xl mx-auto px-4">
