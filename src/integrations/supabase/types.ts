@@ -5253,6 +5253,104 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_deliveries: {
+        Row: {
+          attempt_number: number | null
+          created_at: string | null
+          delivered_at: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          response_body: string | null
+          response_status: number | null
+          webhook_id: string
+        }
+        Insert: {
+          attempt_number?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id: string
+        }
+        Update: {
+          attempt_number?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          events: Json | null
+          id: string
+          last_triggered_at: string | null
+          retry_count: number | null
+          secret: string
+          status: string | null
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          events?: Json | null
+          id?: string
+          last_triggered_at?: string | null
+          retry_count?: number | null
+          secret: string
+          status?: string | null
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          events?: Json | null
+          id?: string
+          last_triggered_at?: string | null
+          retry_count?: number | null
+          secret?: string
+          status?: string | null
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhooks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhooks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       world_events: {
         Row: {
           created_at: string
