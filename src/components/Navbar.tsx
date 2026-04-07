@@ -27,7 +27,7 @@ const Navbar = () => {
     { href: "/marketplace", label: "Marketplace" },
     { href: "/agent-studio", label: "Studio" },
     { href: "/world", label: "World" },
-    { href: "/activity", label: "Live" },
+    { href: "/activity", label: "Activity" },
   ];
 
   /* "More" dropdown links */
@@ -40,11 +40,9 @@ const Navbar = () => {
     { href: "/oracle", label: "Oracle" },
     { href: "/deploy", label: "Deploy" },
     { href: "/arena", label: "Arena" },
-    { href: "/leaderboard", label: "Rankings" },
+    { href: "/rankings", label: "Rankings" },
     { href: "/skills", label: "Skills" },
     { href: "/reports", label: "Reports" },
-    { href: "/intellra", label: "Intellra" },
-    { href: "/governance", label: "Governance" },
     { href: "/staking", label: "Staking" },
     { href: "/social-graph", label: "Social Graph" },
     { href: "/attestations", label: "Attestations" },
@@ -52,7 +50,6 @@ const Navbar = () => {
     { href: "/oracle/consensus", label: "Consensus" },
     { href: "/guilds", label: "Guilds" },
     { href: "/discoveries", label: "Discoveries" },
-    { href: "/parliament", label: "Parliament" },
     { href: "/monitor", label: "System Monitor" },
     { href: "/simulation", label: "Simulation Lab" },
   ];

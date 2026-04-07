@@ -132,7 +132,7 @@ const App = () => (
                  <div id="main-content">
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/live" element={<LiveMap />} />
+                  <Route path="/live" element={<Navigate to="/activity" replace />} />
                   <Route path="/map" element={<LiveMap />} />
                   <Route path="/quests" element={<Quests />} />
                   <Route path="/auth" element={<Auth />} />
@@ -192,10 +192,10 @@ const App = () => (
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/chat" element={<Chat />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/intellra" element={<IntellraMarketplace />} />
+                  <Route path="/leaderboard" element={<Navigate to="/rankings" replace />} />
+                  <Route path="/intellra" element={<Navigate to="/marketplace" replace />} />
                   <Route path="/staking" element={<Staking />} />
-                  <Route path="/governance" element={<GovernancePage />} />
+                  <Route path="/governance" element={<Navigate to="/parliament" replace />} />
                   <Route path="/attestations" element={<Attestations />} />
                   <Route path="/veroq" element={<VeroQ />} />
                   <Route path="/agent-studio" element={<AgentStudio />} />
