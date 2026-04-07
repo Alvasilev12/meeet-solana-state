@@ -55,7 +55,7 @@ const AchievementTicker = () => {
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 max-w-sm transition-all duration-500 ${
+      className={`fixed top-16 right-4 z-40 max-w-sm transition-all duration-500 ${
         visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"
       }`}
     >

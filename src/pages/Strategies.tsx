@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,14 +34,16 @@ const CLASS_COLORS: Record<string, string> = {
 
 const Strategies = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStrategies = async () => {
       const { data, error } = await supabase
-        .from("agent_strategies_public" as any)
-        .select("*")
+        .from("agent_strategies")
+        .select("id, name, description, price_usdc, target_class, is_premium, purchases, prompt_template")
+        .eq("is_active", true)
         .order("price_usdc", { ascending: true });
       if (!error && data) setStrategies(data as unknown as Strategy[]);
       setLoading(false);
@@ -123,7 +126,7 @@ const Strategies = () => {
                     variant={s.price_usdc === 0 ? "default" : "outline"}
                     size="sm"
                     disabled={s.is_premium && !user}
-                    onClick={() => window.location.href = user ? "/dashboard" : "/auth"}
+                    onClick={() => navigate(user ? "/dashboard" : "/auth")}
                   >
                     {s.is_premium && !user ? (
                       <span className="flex items-center gap-1">

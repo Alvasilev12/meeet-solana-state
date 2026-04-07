@@ -13,8 +13,8 @@ const CTASection = () => {
   const { data: freeSlots } = useQuery({
     queryKey: ["cta-free-slots"],
     queryFn: async () => {
-      const { data } = await supabase.from("agents_public").select("id");
-      return Math.max(0, 1000 - (data?.length ?? 0));
+      const { count } = await supabase.from("agents_public").select("id", { count: "exact", head: true });
+      return Math.max(0, 1000 - (count ?? 0));
     },
     refetchInterval: 30000,
   });

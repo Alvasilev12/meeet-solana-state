@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Mail, Chrome, Apple, Loader2 } from "lucide-react";
 
-const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "zujrmifaabkletgnpoyw";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://zujrmifaabkletgnpoyw.supabase.co";
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -22,7 +22,7 @@ const Auth = () => {
     if (!loading && user) {
       // If there's a ref code, record the referral
       if (refCode) {
-        fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/referral-api`, {
+        fetch(`${SUPABASE_URL}/functions/v1/referral-api`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "record", ref_code: refCode, user_id: user.id }),

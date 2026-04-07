@@ -498,7 +498,7 @@ const Deploy = () => {
                     <p className="text-sm text-muted-foreground mt-1">
                       You already have an agent{existingAgentName ? ` "${existingAgentName}"` : ""}. One agent per user.
                     </p>
-                    <Button className="mt-3" variant="outline" size="sm" onClick={() => window.location.href = "/dashboard"}>
+                    <Button className="mt-3" variant="outline" size="sm" onClick={() => window.location.assign("/dashboard")}>
                       Go to Dashboard
                     </Button>
                   </div>

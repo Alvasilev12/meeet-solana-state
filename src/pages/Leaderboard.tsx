@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import { Trophy, TrendingUp, TrendingDown, Minus, Star, ArrowUpDown } from "lucide-react";
@@ -54,6 +54,7 @@ const TrendIcon = ({ t }: { t: string }) =>
   t === "up" ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> : t === "down" ? <TrendingDown className="w-3.5 h-3.5 text-red-400" /> : <Minus className="w-3.5 h-3.5 text-muted-foreground" />;
 
 const Leaderboard = () => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<string>("Overall");
   const [sortKey, setSortKey] = useState<SortKey>("reputation");
   const [sortAsc, setSortAsc] = useState(false);
@@ -154,7 +155,7 @@ const Leaderboard = () => {
               </thead>
               <tbody>
                 {sorted.map((a, idx) => (
-                  <tr key={a.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer ${idx % 2 === 0 ? "bg-muted/10" : ""}`} onClick={() => window.location.href = `/passport/${a.id}`}>
+                  <tr key={a.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer ${idx % 2 === 0 ? "bg-muted/10" : ""}`} onClick={() => navigate(`/passport/${a.id}`)}>
                     <td className="px-4 py-3 font-bold text-muted-foreground">{idx + 1}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
