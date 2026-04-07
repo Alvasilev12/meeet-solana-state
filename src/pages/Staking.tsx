@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 
 const fmt = (n: number) => n.toLocaleString();
@@ -233,12 +234,13 @@ const Staking = () => {
         )}
 
         {/* ── Top Stats ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           {[
             { icon: Lock, label: "Total Value Locked", value: fmt(tvl), sub: "MEEET", accent: "text-primary" },
-            { icon: Flame, label: "Total Burned", value: fmt(totalBurned), sub: "MEEET", accent: "text-orange-400" },
+            { icon: Flame, label: "Total Burned", value: fmt(totalBurned), sub: "MEEET", accent: "text-red-500" },
             { icon: Award, label: "Total Rewarded", value: fmt(totalRewarded), sub: "MEEET", accent: "text-emerald-400" },
-            { icon: TrendingDown, label: "Active Stakes", value: fmt(activeCount), sub: "stakes", accent: "text-green-400" },
+            { icon: TrendingDown, label: "Deflation Rate", value: totalBurned > 0 ? `${((totalBurned / 100_000_000) * 100).toFixed(2)}%` : "0%", sub: "of total supply", accent: "text-red-400" },
+            { icon: Coins, label: "Active Stakes", value: fmt(activeCount), sub: "stakes", accent: "text-green-400" },
           ].map(s => (
             <div key={s.label} className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 text-center hover:border-primary/40 transition-colors">
               <s.icon className={`w-6 h-6 mx-auto mb-3 ${s.accent}`} />
@@ -296,15 +298,15 @@ const Staking = () => {
                 <AreaChart data={chartBurn}>
                   <defs>
                     <linearGradient id="burnFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(25,95%,55%)" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="hsl(0,80%,50%)" stopOpacity={0} />
+                      <stop offset="0%" stopColor="hsl(0,72%,51%)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="hsl(0,72%,51%)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
                   <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1_000 ? `${(v / 1_000).toFixed(0)}k` : String(v)} />
                   <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))" }} formatter={(v: number) => [fmt(v) + " MEEET", "Burned"]} />
-                  <Area type="monotone" dataKey="value" stroke="hsl(25,95%,55%)" strokeWidth={2} fill="url(#burnFill)" />
+                  <Area type="monotone" dataKey="value" stroke="hsl(0,72%,51%)" strokeWidth={2} fill="url(#burnFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -371,25 +373,42 @@ const Staking = () => {
           </div>
 
           <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2"><Coins className="w-5 h-5 text-primary" /> Token Supply</h2>
-            <div className="space-y-5">
-              {[
-                { label: "Total Supply", value: "100,000,000", pct: 100 },
-                { label: "Circulating", value: "67,000,000", pct: 67 },
-                { label: "Burned", value: fmt(totalBurned), pct: Math.max(totalBurned / 1_000_000, 0.1) },
-                { label: "Staked (TVL)", value: fmt(tvl), pct: Math.max(tvl / 1_000_000, 0.1) },
-              ].map(s => (
-                <div key={s.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">{s.label}</span>
-                    <span className="text-foreground font-semibold font-mono">{s.value}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(180,80%,50%)]" style={{ width: `${Math.max(s.pct, 1)}%` }} />
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2"><Coins className="w-5 h-5 text-primary" /> Supply Distribution</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Circulating", value: 67_000_000, color: "hsl(262,80%,55%)" },
+                      { name: "Staked", value: Math.max(tvl, 1), color: "hsl(142,70%,50%)" },
+                      { name: "Burned", value: Math.max(totalBurned, 1), color: "hsl(0,72%,51%)" },
+                      { name: "Treasury", value: 8_000_000, color: "hsl(38,92%,50%)" },
+                    ]}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                  >
+                    {[
+                      { color: "hsl(262,80%,55%)" },
+                      { color: "hsl(142,70%,50%)" },
+                      { color: "hsl(0,72%,51%)" },
+                      { color: "hsl(38,92%,50%)" },
+                    ].map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [fmt(v) + " MEEET"]} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              Deflation Rate: <span className="text-red-400 font-semibold">{totalBurned > 0 ? ((totalBurned / 100_000_000) * 100).toFixed(2) : "0"}%</span>
+            </p>
           </div>
         </div>
 
