@@ -86,6 +86,8 @@ const Cookies = React.lazy(() => import("./pages/Cookies.tsx"));
 const Disclaimer = React.lazy(() => import("./pages/Disclaimer.tsx"));
 const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 const Sara = React.lazy(() => import("./pages/Sara.tsx"));
+const Explorer = React.lazy(() => import("./pages/Explorer.tsx"));
+const Roles = React.lazy(() => import("./pages/Roles.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -208,8 +210,10 @@ const App = () => (
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/cookies" element={<Cookies />} />
                   <Route path="/disclaimer" element={<Disclaimer />} />
-                  <Route path="/sara" element={<Sara />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                   <Route path="/sara" element={<Sara />} />
+                   <Route path="/explorer" element={<Explorer />} />
+                   <Route path="/roles" element={<Roles />} />
+                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                  <MobileBottomNav />

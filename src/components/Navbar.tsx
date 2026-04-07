@@ -64,6 +64,8 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/parliament", label: "Parliament", icon: "🏛️" },
       { href: "/pricing", label: "Pricing", icon: "💳" },
       { href: "/sara", label: "SARA Guard", icon: "🛡️" },
+      { href: "/explorer", label: "Explorer", icon: "🔎" },
+      { href: "/roles", label: "Agent Roles", icon: "👤" },
     ],
   },
   { href: "/dashboard", label: "Dashboard" },

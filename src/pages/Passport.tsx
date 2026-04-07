@@ -10,6 +10,7 @@ import InteractionHistory from "@/components/passport/InteractionHistory";
 import VerificationClaims from "@/components/passport/VerificationClaims";
 import AuditTrailSection from "@/components/passport/AuditTrailSection";
 import RiskProfileSection from "@/components/passport/RiskProfileSection";
+import AgentRolesSection from "@/components/passport/AgentRolesSection";
 import { useState } from "react";
 
 const MOCK = {
@@ -142,6 +143,12 @@ const Passport = () => {
           <section className="mb-10">
             <h2 className="text-xl font-bold text-foreground mb-4">Verification Claims (VeroQ)</h2>
             <VerificationClaims agentId={agentId} />
+          </section>
+
+          {/* Roles & Capabilities */}
+          <section className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-4">Roles & Capabilities</h2>
+            <AgentRolesSection agentId={agentId} />
           </section>
 
           {/* Audit Trail */}
