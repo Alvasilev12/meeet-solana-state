@@ -63,6 +63,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/oracle", label: "Oracle", icon: "🔮" },
       { href: "/parliament", label: "Parliament", icon: "🏛️" },
       { href: "/pricing", label: "Pricing", icon: "💳" },
+      { href: "/sara", label: "SARA Guard", icon: "🛡️" },
     ],
   },
   { href: "/dashboard", label: "Dashboard" },

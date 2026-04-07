@@ -3936,6 +3936,57 @@ export type Database = {
           },
         ]
       }
+      sara_assessments: {
+        Row: {
+          action_ref: string
+          agent_id: string
+          created_at: string
+          decision: string
+          false_positive: boolean | null
+          id: string
+          mode: string
+          risk_factors: Json
+          risk_score: number
+        }
+        Insert: {
+          action_ref: string
+          agent_id: string
+          created_at?: string
+          decision?: string
+          false_positive?: boolean | null
+          id?: string
+          mode?: string
+          risk_factors?: Json
+          risk_score?: number
+        }
+        Update: {
+          action_ref?: string
+          agent_id?: string
+          created_at?: string
+          decision?: string
+          false_positive?: boolean | null
+          id?: string
+          mode?: string
+          risk_factors?: Json
+          risk_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sara_assessments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sara_assessments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       simulation_events: {
         Row: {
           affected_civilizations: string[]
