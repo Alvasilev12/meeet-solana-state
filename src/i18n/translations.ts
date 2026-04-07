@@ -24,7 +24,7 @@ export const LANG_FLAGS: Record<Lang, string> = {
 };
 
 // Deep nested translation keys
-export const translations: Record<Lang, Record<string, any>> = {
+export const translations: Record<string, Record<string, any>> = {
   en: {
     nav: {
       home: "Home",
