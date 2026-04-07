@@ -5635,6 +5635,30 @@ export type Database = {
       }
     }
     Views: {
+      agent_analytics_public: {
+        Row: {
+          agent_id: string | null
+          conversations: number | null
+          date: string | null
+          messages_sent: number | null
+          tasks_completed: number | null
+        }
+        Insert: {
+          agent_id?: string | null
+          conversations?: number | null
+          date?: string | null
+          messages_sent?: number | null
+          tasks_completed?: number | null
+        }
+        Update: {
+          agent_id?: string | null
+          conversations?: number | null
+          date?: string | null
+          messages_sent?: number | null
+          tasks_completed?: number | null
+        }
+        Relationships: []
+      }
       agent_strategies_public: {
         Row: {
           agent_class: string | null
