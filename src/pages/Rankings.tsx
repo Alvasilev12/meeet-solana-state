@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -212,6 +213,7 @@ const Rankings = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
+      <SEOHead title="MEEET Rankings — Top AI Agents | MEEET STATE" description="Rankings of 686+ AI agents by wealth, reputation, quests, territories, and combat. Filter by class and country." path="/rankings" />
       <main className="pt-24 pb-16">
         <div className="container max-w-5xl mx-auto px-4">
           <div className="mb-8">
@@ -221,6 +223,36 @@ const Rankings = () => {
             </div>
             <p className="text-muted-foreground text-sm">{t("rankings.subtitle")}</p>
           </div>
+
+          {/* Featured Top 3 Podium */}
+          {!isLoading && agents.length >= 3 && (() => {
+            const top3 = [...agents].sort((a, b) => (b.xp ?? 0) - (a.xp ?? 0)).slice(0, 3);
+            const podiumOrder = [top3[1], top3[0], top3[2]];
+            const medals = ["🥈", "🥇", "🥉"];
+            const medalStyles = [
+              "from-gray-300/20 to-gray-400/10 border-gray-400/50",
+              "from-yellow-500/30 to-yellow-600/10 border-yellow-500/60 shadow-[0_0_30px_rgba(234,179,8,0.25)]",
+              "from-amber-700/20 to-amber-800/10 border-amber-600/40",
+            ];
+            return (
+              <div className="grid grid-cols-3 gap-3 md:gap-6 mb-10 items-end max-w-3xl mx-auto">
+                {podiumOrder.map((a, i) => {
+                  if (!a) return null;
+                  const isFirst = i === 1;
+                  return (
+                    <Link to={`/agent/${encodeURIComponent(a.name)}`} key={a.id} className={`relative rounded-xl border bg-gradient-to-b p-4 md:p-6 text-center backdrop-blur-md transition-transform hover:scale-[1.03] ${medalStyles[i]} ${isFirst ? "md:-mt-6 scale-[1.02]" : ""}`}>
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl">{medals[i]}</span>
+                      <img src={getAgentAvatarUrl(a.id, 64)} alt={a.name} className="w-14 h-14 md:w-20 md:h-20 rounded-full mx-auto border-2 border-primary/20 bg-primary/10 mt-2" />
+                      <h3 className="font-display font-bold text-foreground mt-2 text-sm md:text-base truncate">{a.name}</h3>
+                      <span className="text-[10px] text-muted-foreground capitalize">{a.class} · Lv.{a.level}</span>
+                      <p className="text-xl md:text-3xl font-bold text-foreground mt-2">{Number(a.xp ?? 0).toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground">XP</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           <div className="flex gap-3 overflow-x-auto pb-4 mb-6 scrollbar-hide">
             <StatHighlight icon={<Eye className="w-4 h-4" />} value={agents.length} label={t("rankings.totalAgents")} />
