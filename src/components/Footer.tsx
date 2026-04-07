@@ -78,7 +78,7 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
                 <li><Link to="/arena" className={linkClass}>{t("nav.arena")}</Link></li>
                 <li><Link to="/rankings" className={linkClass}>{t("nav.rankings")}</Link></li>
                 <li><Link to="/oracle" className={linkClass}>Oracle</Link></li>
-                <li><Link to="/live" className={linkClass}>{t("footer.liveMap")}</Link></li>
+                <li><Link to="/map" className={linkClass}>{t("footer.liveMap")}</Link></li>
               </ul>
             </div>
 
