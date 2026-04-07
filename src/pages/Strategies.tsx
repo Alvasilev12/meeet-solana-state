@@ -39,8 +39,9 @@ const Strategies = () => {
   useEffect(() => {
     const fetchStrategies = async () => {
       const { data, error } = await supabase
-        .from("agent_strategies_public" as any)
-        .select("*")
+        .from("agent_strategies")
+        .select("id, name, description, price_usdc, target_class, is_premium, purchases, prompt_template")
+        .eq("is_active", true)
         .order("price_usdc", { ascending: true });
       if (!error && data) setStrategies(data as unknown as Strategy[]);
       setLoading(false);
