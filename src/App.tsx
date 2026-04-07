@@ -88,6 +88,8 @@ const NotFound = React.lazy(() => import("./pages/NotFound.tsx"));
 const Sara = React.lazy(() => import("./pages/Sara.tsx"));
 const Explorer = React.lazy(() => import("./pages/Explorer.tsx"));
 const Roles = React.lazy(() => import("./pages/Roles.tsx"));
+const LiveDashboard = React.lazy(() => import("./pages/LiveDashboard.tsx"));
+const DeveloperPortal = React.lazy(() => import("./pages/DeveloperPortal.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -135,7 +137,7 @@ const App = () => (
                  <div id="main-content">
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/live" element={<Navigate to="/activity" replace />} />
+                  <Route path="/live" element={<LiveDashboard />} />
                   <Route path="/map" element={<LiveMap />} />
                   <Route path="/quests" element={<Quests />} />
                   <Route path="/auth" element={<Auth />} />
@@ -205,7 +207,7 @@ const App = () => (
                   <Route path="/studio" element={<Navigate to="/agent-studio" replace />} />
                   <Route path="/connector-hub" element={<ConnectorHub />} />
                   <Route path="/agent-analytics/:agentId" element={<AgentAnalytics />} />
-                  <Route path="/developer" element={<Developer />} />
+                  <Route path="/developer" element={<DeveloperPortal />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/cookies" element={<Cookies />} />

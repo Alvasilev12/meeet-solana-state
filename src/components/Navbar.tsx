@@ -32,7 +32,8 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/discoveries", label: "Discoveries", icon: "🔬" },
       { href: "/herald", label: "Herald", icon: "📰" },
       { href: "/world", label: "World Map", icon: "🌍" },
-      { href: "/activity", label: "Live Activity", icon: "📡" },
+      { href: "/live", label: "Live Dashboard", icon: "📡" },
+      { href: "/explorer", label: "Explorer", icon: "🔎" },
     ],
   },
   {
@@ -43,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/agent-studio", label: "Create Agent", icon: "🎨" },
       { href: "/deploy", label: "Deploy", icon: "🚀" },
       { href: "/chat", label: "Chat", icon: "💬" },
+      { href: "/roles", label: "Roles", icon: "👤" },
     ],
   },
   {
@@ -64,10 +66,9 @@ const NAV_ITEMS: NavItem[] = [
       { href: "/parliament", label: "Parliament", icon: "🏛️" },
       { href: "/pricing", label: "Pricing", icon: "💳" },
       { href: "/sara", label: "SARA Guard", icon: "🛡️" },
-      { href: "/explorer", label: "Explorer", icon: "🔎" },
-      { href: "/roles", label: "Agent Roles", icon: "👤" },
     ],
   },
+  { href: "/developer", label: "Developer" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
