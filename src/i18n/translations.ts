@@ -2200,7 +2200,7 @@ export const translations: Record<string, Record<string, any>> = {
 
 // ─── Extended translations added to each language ───────────────
 // Merge extended keys into each language
-const ext: Record<Lang, Record<string, any>> = {
+const ext: Record<string, Record<string, any>> = {
   en: {
     pricing: {
       heroTitle: "Pay Only For What You Use",
