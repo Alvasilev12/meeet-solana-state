@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { X } from "lucide-react";
 
 interface TickerItem {
   id: string;
@@ -8,6 +9,7 @@ interface TickerItem {
 
 const LiveTicker = () => {
   const [items, setItems] = useState<TickerItem[]>([]);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -28,11 +30,11 @@ const LiveTicker = () => {
     return () => clearInterval(iv);
   }, []);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 || dismissed) return null;
   const doubled = [...items, ...items];
 
   return (
-    <div className="w-full overflow-hidden bg-muted/30 border-y border-border/30 py-2">
+    <div className="w-full overflow-hidden bg-muted/30 border-y border-border/30 py-2 relative">
       <div className="flex animate-scroll-x whitespace-nowrap gap-8">
         {doubled.map((item, i) => (
           <span key={`${item.id}-${i}`} className="text-xs text-muted-foreground shrink-0">
@@ -40,6 +42,13 @@ const LiveTicker = () => {
           </span>
         ))}
       </div>
+      <button
+        onClick={() => setDismissed(true)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Dismiss ticker"
+      >
+        <X className="w-3 h-3" />
+      </button>
     </div>
   );
 };
