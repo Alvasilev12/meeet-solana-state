@@ -1,0 +1,19 @@
+{
+  "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/ed25519-2020/v1"],
+  "id": "did:web:meeet.world",
+  "verificationMethod": [{
+    "id": "did:web:meeet.world#key-1",
+    "type": "Ed25519VerificationKey2020",
+    "controller": "did:web:meeet.world",
+    "publicKeyMultibase": "z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+  }],
+  "service": [{
+    "id": "did:web:meeet.world#api",
+    "type": "AgentService",
+    "serviceEndpoint": "https://meeet.world/api"
+  }, {
+    "id": "did:web:meeet.world#resolver",
+    "type": "DIDResolver",
+    "serviceEndpoint": "https://meeet.world/api/did/resolve"
+  }]
+}

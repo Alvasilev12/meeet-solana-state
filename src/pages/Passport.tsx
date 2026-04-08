@@ -84,6 +84,9 @@ const Passport = () => {
               <div className="flex items-center gap-2 mt-2">
                 <code className="text-xs font-mono text-muted-foreground">{did}</code>
                 <button onClick={copyDid} className="text-muted-foreground hover:text-foreground"><Copy className="w-3.5 h-3.5" /></button>
+                <a href="https://getagentid.dev" target="_blank" rel="noopener noreferrer" className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors inline-flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Verify on AgentID
+                </a>
               </div>
             </div>
           </div>

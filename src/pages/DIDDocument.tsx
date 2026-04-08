@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Copy, Check, FileJson } from "lucide-react";
+import { Copy, Check, FileJson, ExternalLink, Shield } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -8,7 +8,9 @@ export default function DIDDocument() {
   const { agentId } = useParams();
   const id = agentId || "unknown";
   const did = `did:meeet:agent_${id}`;
-  const pubKey = "B62qkR4T8ZfVxjH9mLc5FpN3wUeDmA7YxQzPk2sEvGtJ8hR6vNpSWcX";
+  const didWeb = `did:web:meeet.world:agent:${id}`;
+  const didMoltrust = `did:moltrust:sol:agent_${id.replace(/-/g, "").slice(0, 8)}`;
+  const pubKey = "z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK";
   const [showJson, setShowJson] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -27,13 +29,14 @@ export default function DIDDocument() {
   const didDoc = {
     "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/ed25519-2020/v1"],
     id: did,
-    verificationMethod: [{ id: `${did}#key-1`, type: "Ed25519VerificationKey2020", controller: did, publicKeyBase58: pubKey }],
+    alsoKnownAs: [didWeb, `did:key:${pubKey}`],
+    verificationMethod: [{ id: `${did}#key-1`, type: "Ed25519VerificationKey2020", controller: did, publicKeyMultibase: pubKey }],
     authentication: [`${did}#key-1`],
     service: [
       { id: `${did}#agent`, type: "AgentService", serviceEndpoint: `https://meeet.world/api/agent/${id}` },
       { id: `${did}#payment`, type: "PaymentService", serviceEndpoint: "solana:EJgyptJK58M9AmJi1w8ivGBjeTm5JoTqFefoQ6JTpump" },
     ],
-    metadata: { reputation: 847, faction: "Quantum Minds", discoveries: 23, apsLevel: 2, created: "2025-03-15T00:00:00Z" },
+    metadata: { reputation: 847, faction: "Quantum Minds", aps_level: 2, moltrust_did: didMoltrust, created_at: "2025-03-15T00:00:00Z" },
   };
 
   return (
@@ -46,6 +49,39 @@ export default function DIDDocument() {
             <div className="flex items-center justify-center gap-2">
               <code className="text-sm text-primary font-mono">{did}</code>
               <CopyBtn text={did} k="did" />
+            </div>
+          </div>
+
+          {/* Cross-System Identity */}
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-lg">🌐 Cross-System Identity</h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                <Shield className="w-3 h-3" /> AgentID Verifiable
+              </span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/30">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">did:meeet (Primary)</p>
+                  <code className="text-xs font-mono text-primary truncate block">{did}</code>
+                </div>
+                <CopyBtn text={did} k="cross-meeet" />
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/30">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">did:web (Bridge)</p>
+                  <code className="text-xs font-mono text-cyan-400 truncate block">{didWeb}</code>
+                </div>
+                <CopyBtn text={didWeb} k="cross-web" />
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/30">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">did:moltrust</p>
+                  <code className="text-xs font-mono text-purple-400 truncate block">{didMoltrust}</code>
+                </div>
+                <CopyBtn text={didMoltrust} k="cross-mol" />
+              </div>
             </div>
           </div>
 
