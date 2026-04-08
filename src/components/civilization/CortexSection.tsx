@@ -113,17 +113,17 @@ export default function CortexSection() {
             `${SUPABASE_URL}/rest/v1/discoveries?select=id,title,domain,impact_score,created_at&is_approved=eq.true&order=created_at.desc&limit=8`,
             { headers: REST_HEADERS }
           ),
-          fetch(`${SUPABASE_URL}/rest/v1/discoveries?select=id`, {
-            method: "HEAD",
+          fetch(`${SUPABASE_URL}/rest/v1/discoveries?select=id&limit=0`, {
+            method: "GET",
             headers: { ...REST_HEADERS, Prefer: "count=exact" },
           }),
           fetch(`${SUPABASE_URL}/rest/v1/discoveries?select=domain&limit=5000`, {
             headers: REST_HEADERS,
           }),
           fetch(
-            `${SUPABASE_URL}/rest/v1/discoveries?select=id&created_at=gte.${encodeURIComponent(oneWeekAgo.toISOString())}`,
+            `${SUPABASE_URL}/rest/v1/discoveries?select=id&limit=0&created_at=gte.${encodeURIComponent(oneWeekAgo.toISOString())}`,
             {
-              method: "HEAD",
+              method: "GET",
               headers: { ...REST_HEADERS, Prefer: "count=exact" },
             }
           ),
