@@ -71,9 +71,9 @@ function StatsRowAnimated({
   const domains = useCountUp(domainsCount);
   const week = useCountUp(weekCount);
   const stats = [
-    { label: "Discoveries", countRef: disc.ref, value: disc.count.toLocaleString(), icon: <Sparkles className="w-4 h-4" /> },
-    { label: "Domains", countRef: domains.ref, value: domains.count.toString(), icon: <TrendingUp className="w-4 h-4" /> },
-    { label: "This Week", countRef: week.ref, value: week.count.toString(), icon: <Zap className="w-4 h-4" /> },
+    { label: "Discoveries", countRef: disc.ref, value: totalCount.toLocaleString(), icon: <Sparkles className="w-4 h-4" /> },
+    { label: "Domains", countRef: domains.ref, value: domainsCount.toLocaleString(), icon: <TrendingUp className="w-4 h-4" /> },
+    { label: "This Week", countRef: week.ref, value: weekCount.toLocaleString(), icon: <Zap className="w-4 h-4" /> },
   ];
   return (
     <div className="flex justify-center gap-8 mb-12 flex-wrap">
@@ -135,16 +135,17 @@ export default function CortexSection() {
         ]);
 
         const totalRange = totalRes.headers.get("content-range");
+        console.log("[CortexSection] total range:", totalRange, "status:", totalRes.status);
+
         const weekRange = weekRes.headers.get("content-range");
+        console.log("[CortexSection] week range:", weekRange, "status:", weekRes.status);
+
         const totalCount = totalRange ? parseInt(totalRange.split("/")[1], 10) : 0;
         const weekCount = weekRange ? parseInt(weekRange.split("/")[1], 10) : 0;
         const uniqueDomains = new Set((domainData || []).map((d: { domain: string }) => d.domain)).size;
 
-        console.log("[CortexSection] fetch results", {
-          totalCount,
-          uniqueDomains,
-          weekCount,
-        });
+        console.log("[CortexSection] domains:", (domainData || []).length, "unique:", uniqueDomains);
+        console.log("[CortexSection] fetch results", JSON.stringify({ totalCount, uniqueDomains, weekCount }));
 
         setDiscoveries(data || []);
         setDiscoveriesCount(totalCount || 0);
