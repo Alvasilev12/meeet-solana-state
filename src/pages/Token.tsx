@@ -72,7 +72,7 @@ function AnimatedCounter({ target, prefix = "", suffix = "" }: { target: number;
     }, duration / steps);
     return () => clearInterval(timer);
   }, [target]);
-  return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
+  return <span>{prefix}{count.toLocaleString("en-US")}{suffix}</span>;
 }
 
 function LiveBurnFeed() {
@@ -268,7 +268,7 @@ const Token = () => {
                     </div>
                     <div className="border-l border-border pl-6 hidden md:block">
                       <p className="text-xs text-muted-foreground mb-1">24h Volume</p>
-                      <p className="text-lg font-bold">${price.volume24h.toLocaleString()}</p>
+                      <p className="text-lg font-bold">${price.volume24h.toLocaleString("en-US")}</p>
                     </div>
                   </>
                 )}
@@ -326,7 +326,7 @@ const Token = () => {
                   <p className="text-xs text-muted-foreground">SOL</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString() : "—"}</p>
+                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString("en-US") : "—"}</p>
                   <p className="text-xs text-muted-foreground">$MEEET</p>
                 </div>
               </div>
@@ -352,7 +352,7 @@ const Token = () => {
               <Card className="border-border bg-card/80">
                 <CardContent className="p-5 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Circulating</p>
-                  <p className="text-xl font-bold">{(supplyData?.circulating ?? 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold">{(supplyData?.circulating ?? 0).toLocaleString("en-US")}</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card/80">
@@ -364,7 +364,7 @@ const Token = () => {
               <Card className="border-border bg-card/80">
                 <CardContent className="p-5 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Total Staked</p>
-                  <p className="text-xl font-bold text-sky-400">{(supplyData?.staked ?? 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold text-sky-400">{(supplyData?.staked ?? 0).toLocaleString("en-US")}</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card/80">
@@ -425,7 +425,7 @@ const Token = () => {
                   <div key={i} className="flex items-center gap-3 text-sm bg-card/50 border border-border rounded-lg px-4 py-2.5">
                     <Flame className="w-4 h-4 text-red-400 shrink-0" />
                     <span className="flex-1">{b.reason.replace(/_/g, " ")}</span>
-                    <span className="font-bold text-red-400">-{Number(b.amount).toLocaleString()}</span>
+                    <span className="font-bold text-red-400">-{Number(b.amount).toLocaleString("en-US")}</span>
                     <span className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</span>
                   </div>
                 ))}
@@ -456,7 +456,7 @@ const Token = () => {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(STAKING_TIERS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v.label} — {v.apy}% APY (min {v.min.toLocaleString()})</SelectItem>
+                          <SelectItem key={k} value={k}>{v.label} — {v.apy}% APY (min {v.min.toLocaleString("en-US")})</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -464,7 +464,7 @@ const Token = () => {
                 </div>
                 <div className="flex flex-col justify-center items-center bg-primary/5 rounded-xl p-6 border border-primary/10">
                   <p className="text-sm text-muted-foreground mb-2">Estimated monthly reward</p>
-                  <p className="text-4xl font-display font-bold text-primary">{monthlyReward.toLocaleString()} MEEET</p>
+                  <p className="text-4xl font-display font-bold text-primary">{monthlyReward.toLocaleString("en-US")} MEEET</p>
                   <p className="text-xs text-muted-foreground mt-2">≈ ${(monthlyReward * price.priceUsd).toFixed(2)} USD</p>
                   {tier.lock_days > 0 && <p className="text-xs text-muted-foreground mt-1">Lock period: {tier.lock_days} days</p>}
                   {tier.bonus !== "None" && <Badge variant="outline" className="mt-2 text-xs">{tier.bonus}</Badge>}
