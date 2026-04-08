@@ -405,10 +405,10 @@ const Discoveries = () => {
               <button
                 key={cat.key}
                 onClick={() => setCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-display flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-display flex items-center gap-1.5 whitespace-nowrap transition-colors border ${
                   category === cat.key
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 {cat.icon}
