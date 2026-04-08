@@ -93,6 +93,7 @@ const LiveDashboard = React.lazy(() => import("./pages/LiveDashboard.tsx"));
 const DeveloperPortal = React.lazy(() => import("./pages/DeveloperPortal.tsx"));
 const MolTrust = React.lazy(() => import("./pages/MolTrust.tsx"));
 const SocialBot = React.lazy(() => import("./pages/SocialBot.tsx"));
+const Newsletter = React.lazy(() => import("./pages/Newsletter.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -221,6 +222,7 @@ const App = () => (
                    <Route path="/callback" element={<Callback />} />
                     <Route path="/moltrust" element={<MolTrust />} />
                     <Route path="/social-bot" element={<SocialBot />} />
+                    <Route path="/newsletter" element={<Newsletter />} />
                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

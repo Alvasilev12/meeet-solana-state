@@ -4,6 +4,7 @@ import ContractAddress from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Heart, Twitter, Github, MessageCircle, BookOpen, Shield, FileText, Globe, Send } from "lucide-react";
+import NewsletterFooterForm from "@/components/NewsletterFooterForm";
 
 const Footer = forwardRef<HTMLElement>((_props, ref) => {
   const { t } = useLanguage();
@@ -104,6 +105,17 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
                 <li><Link to="/token" className={linkClass}>$MEEET Token</Link></li>
                 <li><Link to="/disclaimer" className={linkClass}>Disclaimer</Link></li>
               </ul>
+            </div>
+          </div>
+
+          {/* Newsletter */}
+          <div className="border-t border-border pt-6 pb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-1">📬 Weekly Digest</h4>
+                <p className="text-xs text-muted-foreground">Top discoveries & $MEEET news in your inbox.</p>
+              </div>
+              <NewsletterFooterForm />
             </div>
           </div>
 
