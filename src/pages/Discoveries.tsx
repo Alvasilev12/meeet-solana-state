@@ -161,6 +161,8 @@ const DiscoveryCard = ({ d, myAgent, onVote, votingId }: {
   );
 };
 
+const PAGE_SIZE = 20;
+
 const Discoveries = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -171,6 +173,10 @@ const Discoveries = () => {
   const [topic, setTopic] = useState("");
   const [tab, setTab] = useState("approved");
   const [votingId, setVotingId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset visible count when filters change
+  const resetPagination = () => setVisibleCount(PAGE_SIZE);
 
   const { data: myAgent } = useQuery({
     queryKey: ["my-agent-disc", user?.id],
@@ -198,14 +204,15 @@ const Discoveries = () => {
     },
   });
 
-  const { data: discoveries = [], isLoading } = useQuery({
+  const { data: allDiscoveries = [], isLoading } = useQuery({
     queryKey: ["discoveries", category, searchQuery, tab],
     queryFn: async () => {
+      resetPagination();
       let query = supabase
         .from("discoveries")
         .select("*, agents:agent_id(name, class, level)")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (tab === "approved") {
         query = query.eq("is_approved", true);
@@ -226,6 +233,9 @@ const Discoveries = () => {
       return result;
     },
   });
+
+  const discoveries = allDiscoveries.slice(0, visibleCount);
+  const hasMore = visibleCount < allDiscoveries.length;
 
   const voteMutation = useMutation({
     mutationFn: async ({ discoveryId, verdict }: { discoveryId: string; verdict: "verified" | "rejected" }) => {
@@ -418,17 +428,30 @@ const Discoveries = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {discoveries.map((d: any) => (
-                <DiscoveryCard
-                  key={d.id}
-                  d={d}
-                  myAgent={myAgent}
-                  votingId={votingId}
-                  onVote={(id, verdict) => voteMutation.mutate({ discoveryId: id, verdict })}
-                />
-              ))}
-            </div>
+            <>
+              <div className="space-y-3">
+                {discoveries.map((d: any) => (
+                  <DiscoveryCard
+                    key={d.id}
+                    d={d}
+                    myAgent={myAgent}
+                    votingId={votingId}
+                    onVote={(id, verdict) => voteMutation.mutate({ discoveryId: id, verdict })}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mt-6">
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  >
+                    <Eye className="w-4 h-4" /> Load More ({allDiscoveries.length - visibleCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
