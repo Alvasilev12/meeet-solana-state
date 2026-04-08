@@ -116,6 +116,27 @@ const Passport = () => {
             <p className="text-sm text-muted-foreground mt-2">Rank #47 of 1,020</p>
           </section>
 
+          {/* MolTrust Verification */}
+          <section>
+            <h2 className="text-xl font-bold text-foreground mb-4">MolTrust Verification</h2>
+            <div className="bg-card border border-border rounded-xl p-5 flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+                <Shield className="w-7 h-7 text-cyan-400" />
+              </div>
+              <div className="flex-1 text-center sm:text-left space-y-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <span className="text-sm font-semibold text-foreground">did:moltrust</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/20 text-green-400">MolTrust Verified</span>
+                </div>
+                <code className="text-xs font-mono text-muted-foreground">did:moltrust:sol:agent_{id}</code>
+                <div className="flex items-center justify-center sm:justify-start gap-4 mt-1">
+                  <span className="text-xs text-muted-foreground">Trust Score: <span className="text-cyan-400 font-semibold">0.87</span></span>
+                  <span className="text-xs text-muted-foreground">Merkle TX: <span className="text-primary font-mono">5xK...m2p</span></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section>
             <h2 className="text-xl font-bold text-foreground mb-4">Activity</h2>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
