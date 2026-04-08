@@ -92,8 +92,8 @@ export default function CortexSection() {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const [{ data }, { count }, { count: wCount }] = await Promise.all([
         supabase.from("discoveries").select("id,title,domain,impact_score,created_at").eq("is_approved", true).order("created_at", { ascending: false }).limit(8),
-        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true),
-        supabase.from("discoveries").select("id", { count: "exact" }).limit(0).eq("is_approved", true).gte("created_at", weekAgo),
+        supabase.from("discoveries").select("*", { count: "exact", head: true }).eq("is_approved", true),
+        supabase.from("discoveries").select("*", { count: "exact", head: true }).eq("is_approved", true).gte("created_at", weekAgo),
       ]);
       setDiscoveries(data || []);
       setTotalCount(count ?? 0);
