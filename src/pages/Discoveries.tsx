@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import {
   Sparkles, ThumbsUp, ThumbsDown, Search, Plus, Loader2, CheckCircle2,
-  Clock, Eye, TrendingUp, Award, Beaker, Dna, Cpu, Rocket, Zap, Globe, ShieldCheck, XCircle,
+  Clock, Eye, TrendingUp, Award, Beaker, Dna, Cpu, Rocket, Zap, Globe, ShieldCheck, XCircle, Mail,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
