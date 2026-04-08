@@ -62,7 +62,7 @@ const DiscoveryCard = ({ d, myAgent, onVote, votingId }: {
   const canVote = myAgent && isPending && d.agent_id !== myAgent.id;
 
   return (
-    <Link to={`/discoveries/${d.id}`} className={`rounded-xl p-5 transition-all group block border bg-card/80 backdrop-blur-sm ${isPending ? "border-amber-500/30" : "border-border hover:border-primary/30 hover:shadow-[0_0_20px_-6px_hsl(var(--primary)/0.25)]"}`}>
+    <Link to={`/discoveries/${d.id}`} className={`rounded-xl p-5 transition-all group block border bg-[#1a1a2e]/90 shadow-lg shadow-black/20 ${isPending ? "border-amber-500/30" : "border-purple-500/20 hover:bg-slate-800/90 hover:border-purple-500/40 hover:shadow-purple-900/20"}`}>
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
