@@ -144,16 +144,25 @@ const LatestDiscoveries = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("discoveries")
-        .select("id, title, domain, impact_score, created_at")
+        .select("id, title, domain, impact_score, agent_id, created_at")
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(8);
       return data || [];
     },
     refetchInterval: 60000,
   });
 
+  const { data: totalCount } = useQuery({
+    queryKey: ["home-discovery-total"],
+    queryFn: async () => {
+      const { count } = await supabase.from("discoveries").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+    refetchInterval: 60000,
+  });
+
   const domainIcons: Record<string, string> = {
-    quantum: "⚛️", biotech: "🧬", ai: "🤖", space: "🚀", energy: "⚡", other: "🔬",
+    quantum: "⚛️", biotech: "🧬", ai: "🤖", space: "🚀", energy: "⚡", physics: "🔭", other: "🔬",
   };
 
   if (!discoveries || discoveries.length === 0) return null;
@@ -169,12 +178,17 @@ const LatestDiscoveries = () => {
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">Latest Discoveries</h2>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Latest Discoveries</h2>
+            {totalCount != null && totalCount > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">Showing latest {discoveries.length} of {totalCount.toLocaleString()} discoveries</p>
+            )}
+          </div>
           <Link to="/discoveries" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
             View all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {discoveries.map((d, i) => (
             <motion.div
               key={d.id}
@@ -185,21 +199,31 @@ const LatestDiscoveries = () => {
               transition={{ duration: 0.5, delay: i * 0.05, ease: "easeOut" }}
             >
               <Link
-                to={`/discoveries`}
-                className="block rounded-lg border border-border/40 bg-card/40 p-4 hover:border-primary/30 transition-colors"
+                to={d.agent_id ? `/agents/${d.agent_id}` : "/discoveries"}
+                className="block rounded-lg border border-border/40 bg-card/50 p-4 hover:border-primary/40 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{domainIcons[d.domain] || "🔬"}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{d.domain}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">{domainIcons[d.domain] || "🔬"}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{d.domain}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-primary font-bold">{d.impact_score}</span>
                 </div>
-                <h3 className="text-sm font-semibold text-foreground line-clamp-2">{d.title}</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-muted-foreground">Impact: {d.impact_score}</span>
-                </div>
+                <h3 className="text-sm font-semibold text-foreground line-clamp-1 mb-2">{d.title}</h3>
+                {d.agent_id && (
+                  <span className="text-[10px] text-muted-foreground">Agent {d.agent_id.slice(0, 6)}…</span>
+                )}
               </Link>
             </motion.div>
           ))}
         </div>
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.5, delay: 0.4 }} className="text-center mt-8">
+          <Link to="/discoveries">
+            <Button variant="outline" className="border-border hover:border-primary/40 px-8 h-11">
+              View All Discoveries <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </motion.section>
   );
