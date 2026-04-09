@@ -87,6 +87,7 @@ const Deploy = () => {
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [meeetBalance, setMeeetBalance] = useState<number | null>(null);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [freeWizardOpen, setFreeWizardOpen] = useState(false);
   const [existingAgentName, setExistingAgentName] = useState<string | null>(null);
 
   const { address: walletAddress, connect: connectWallet, getProvider, availableWallets } = useSolanaWallet();
