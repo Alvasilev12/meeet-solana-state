@@ -276,7 +276,8 @@ export default function DailyQuests() {
 
         {/* Daily Quests */}
         <div className="space-y-3">
-          <h2 className="text-xl font-bold flex items-center gap-2"><Gift className="w-5 h-5 text-primary" /> Daily Quests</h2>
+          <h2 className="text-xl font-bold flex items-center gap-2"><Gift className="w-5 h-5 text-primary" /> Today's Quests</h2>
+          <p className="text-sm text-muted-foreground">{dailyCompleted}/{quests.length} completed — {earnedDailyReward} $MEEET earned today</p>
           <div className="space-y-3">
             {quests.map(q => {
               const done = q.currentProgress >= q.requiredProgress;
@@ -310,7 +311,7 @@ export default function DailyQuests() {
                         {q.claimed ? (
                           <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">Claimed</Badge>
                         ) : done ? (
-                          <Button size="sm" className="h-7 text-xs px-3" onClick={() => handleClaim(q.id, "daily")}>
+                          <Button size="sm" className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleClaim(q.id, "daily")}>
                             Claim
                           </Button>
                         ) : (
