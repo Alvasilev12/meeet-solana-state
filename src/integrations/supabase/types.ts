@@ -4191,6 +4191,83 @@ export type Database = {
           },
         ]
       }
+      season_scores: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          points: number
+          rank: number | null
+          rewards_claimed: boolean
+          season_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          points?: number
+          rank?: number | null
+          rewards_claimed?: boolean
+          season_id: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          points?: number
+          rank?: number | null
+          rewards_claimed?: boolean
+          season_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_scores_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+          theme: string | null
+          theme_gradient: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date: string
+          theme?: string | null
+          theme_gradient?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+          theme?: string | null
+          theme_gradient?: string | null
+        }
+        Relationships: []
+      }
       simulation_events: {
         Row: {
           affected_civilizations: string[]
