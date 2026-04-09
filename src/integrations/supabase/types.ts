@@ -4915,6 +4915,33 @@ export type Database = {
           },
         ]
       }
+      trial_agents: {
+        Row: {
+          agent_name: string
+          agent_type: string
+          converted: boolean
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          agent_name: string
+          agent_type: string
+          converted?: boolean
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          agent_name?: string
+          agent_type?: string
+          converted?: boolean
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       tweet_likes: {
         Row: {
           created_at: string | null
