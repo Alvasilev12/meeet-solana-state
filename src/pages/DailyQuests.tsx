@@ -260,11 +260,11 @@ export default function DailyQuests() {
         </Card>
 
         {/* Today's Progress Summary */}
-        <Card className="border-border/50 bg-[hsl(235,30%,12%)]">
+        <Card className="border-slate-500 bg-slate-700">
           <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-lg text-foreground">Today's Progress</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-semibold text-lg text-white">Today's Progress</h3>
+              <p className="text-sm text-slate-300">
                 {dailyClaimed}/{quests.length} quests claimed · {earnedDailyReward}/{totalDailyReward} $MEEET earned
               </p>
             </div>
@@ -276,14 +276,14 @@ export default function DailyQuests() {
 
         {/* Daily Quests */}
         <div className="space-y-3">
-          <h2 className="text-xl font-bold flex items-center gap-2"><Gift className="w-5 h-5 text-primary" /> Today's Quests</h2>
-          <p className="text-sm text-muted-foreground">{dailyCompleted}/{quests.length} completed — {earnedDailyReward} $MEEET earned today</p>
+          <h2 className="text-white text-xl font-bold flex items-center gap-2"><Gift className="w-5 h-5 text-primary" /> Today's Quests</h2>
+          <p className="text-sm text-slate-300">{dailyCompleted}/{quests.length} completed — {earnedDailyReward} $MEEET earned today</p>
           <div className="space-y-3">
             {quests.map(q => {
               const done = q.currentProgress >= q.requiredProgress;
               return (
                 <motion.div key={q.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className={cn("border-slate-600 bg-slate-800 transition-all", q.claimed && "opacity-60")}>
+                  <Card className={cn("border-slate-500 bg-slate-700 transition-all", q.claimed && "opacity-60")}>
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -293,7 +293,7 @@ export default function DailyQuests() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-foreground">{q.title}</span>
+                          <span className="font-semibold text-sm text-white">{q.title}</span>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border text-muted-foreground">{q.category}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{q.description}</p>
@@ -309,13 +309,13 @@ export default function DailyQuests() {
                           <Coins className="w-3.5 h-3.5" /> {q.reward}
                         </span>
                         {q.claimed ? (
-                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">Claimed</Badge>
+                          <Badge className="bg-slate-600 text-slate-300 border-slate-500 text-[10px]">Claimed</Badge>
                         ) : done ? (
                           <Button size="sm" className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleClaim(q.id, "daily")}>
                             Claim
                           </Button>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">In Progress</span>
+                          <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">In Progress</Badge>
                         )}
                       </div>
                     </CardContent>
@@ -328,13 +328,13 @@ export default function DailyQuests() {
 
         {/* Weekly Quests */}
         <div className="space-y-3">
-          <h2 className="text-xl font-bold flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-400" /> Weekly Quests</h2>
+          <h2 className="text-white text-xl font-bold flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-400" /> Weekly Quests</h2>
           <div className="space-y-3">
             {weeklyQuests.map(q => {
               const done = q.currentProgress >= q.requiredProgress;
               return (
                 <motion.div key={q.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className={cn("border-slate-600 bg-slate-800 transition-all", q.claimed && "opacity-60")}>
+                  <Card className={cn("border-slate-500 bg-slate-700 transition-all", q.claimed && "opacity-60")}>
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -344,7 +344,7 @@ export default function DailyQuests() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-foreground">{q.title}</span>
+                          <span className="font-semibold text-sm text-white">{q.title}</span>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/30 text-yellow-400">weekly</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{q.description}</p>
@@ -360,13 +360,13 @@ export default function DailyQuests() {
                           <Coins className="w-3.5 h-3.5" /> {q.reward}
                         </span>
                         {q.claimed ? (
-                          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px]">Claimed</Badge>
+                          <Badge className="bg-slate-600 text-slate-300 border-slate-500 text-[10px]">Claimed</Badge>
                         ) : done ? (
-                          <Button size="sm" className="h-7 text-xs px-3 bg-yellow-500 hover:bg-yellow-600 text-black" onClick={() => handleClaim(q.id, "weekly")}>
+                          <Button size="sm" className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleClaim(q.id, "weekly")}>
                             Claim
                           </Button>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">In Progress</span>
+                          <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">In Progress</Badge>
                         )}
                       </div>
                     </CardContent>
