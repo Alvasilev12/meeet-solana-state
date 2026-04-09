@@ -203,7 +203,7 @@ const App = () => (
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/chat" element={<Chat />} />
-                  <Route path="/leaderboard" element={<Navigate to="/rankings" replace />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/intellra" element={<Navigate to="/marketplace" replace />} />
                   <Route path="/staking" element={<Staking />} />
                   <Route path="/governance" element={<GovernancePage />} />
