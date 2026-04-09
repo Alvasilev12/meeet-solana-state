@@ -16,6 +16,7 @@ const Index = React.lazy(() => import("./pages/Index.tsx"));
 const LiveMap = React.lazy(() => import("./pages/LiveMap.tsx"));
 const Quests = React.lazy(() => import("./pages/Quests.tsx"));
 const DailyQuests = React.lazy(() => import("./pages/DailyQuests.tsx"));
+const Achievements = React.lazy(() => import("./pages/Achievements.tsx"));
 const Auth = React.lazy(() => import("./pages/Auth.tsx"));
 const Rankings = React.lazy(() => import("./pages/Rankings.tsx"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard.tsx"));
