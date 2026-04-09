@@ -20,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getClassName, getClassIcon } from "@/data/agent-classes";
 import type { Tables } from "@/integrations/supabase/types";
 import AnimatedSection from "@/components/AnimatedSection";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast as sonnerToast } from "sonner";
 
 type Agent = Tables<"agents">;
 
