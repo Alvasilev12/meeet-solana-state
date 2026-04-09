@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/runtime-client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 const EVENT_LABELS: Record<string, { icon: string; title: string }> = {
@@ -12,6 +12,17 @@ const EVENT_LABELS: Record<string, { icon: string; title: string }> = {
   reward: { icon: "🏆", title: "Reward Earned" },
   deploy: { icon: "🚀", title: "Agent Deployed" },
 };
+
+function getAgentInitials(name: string) {
+  return name?.slice(0, 2).toUpperCase() || "AG";
+}
+
+function getAgentColor(name: string) {
+  const colors = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#ef4444", "#6366f1"];
+  let hash = 0;
+  for (const c of (name || "")) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
 
 function spawnConfetti() {
   const colors = ["#fbbf24", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#3b82f6"];
@@ -35,7 +46,6 @@ function spawnConfetti() {
     container.appendChild(piece);
   }
 
-  // Add keyframes if not present
   if (!document.getElementById("confetti-style")) {
     const style = document.createElement("style");
     style.id = "confetti-style";
@@ -51,14 +61,43 @@ function spawnConfetti() {
   setTimeout(() => container.remove(), 3000);
 }
 
+/** Render a notification with an agent avatar circle */
+function notifyWithAvatar(title: string, description: string, agentName?: string) {
+  const name = agentName || title.split(" ")[0] || "Agent";
+  const initials = getAgentInitials(name);
+  const color = getAgentColor(name);
+
+  toast(title, {
+    description,
+    duration: 5000,
+    icon: (
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: color,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontSize: 11,
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
+        {initials}
+      </div>
+    ),
+  });
+}
+
 export function useRealtimeNotifications() {
-  const { toast } = useToast();
   const { user } = useAuth();
   const mountedRef = useRef(true);
 
   const handleAchievement = useCallback(async (achievementId: string | null) => {
     if (!achievementId) return;
-    // Fetch achievement details
     const { data } = await supabase
       .from("achievements")
       .select("name, description, icon")
@@ -71,35 +110,29 @@ export function useRealtimeNotifications() {
 
     spawnConfetti();
 
-    toast({
-      title: `🏆 ${icon} ${name}`,
+    toast.success(`🏆 ${icon} ${name}`, {
       description: desc,
       duration: 6000,
     });
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // Subscribe to activity feed for global events
     const feedChannel = supabase
       .channel("rt-activity-feed")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_feed" }, (payload) => {
         if (!mountedRef.current) return;
         const row = payload.new as any;
-        if (user?.id && row.agent_id) {
-          // Best-effort filter for own agents
-        }
         const meta = EVENT_LABELS[row.event_type] || { icon: "📡", title: "Event" };
-        toast({
-          title: `${meta.icon} ${meta.title}`,
-          description: row.title?.slice(0, 100),
-          duration: 4000,
-        });
+        notifyWithAvatar(
+          `${meta.icon} ${meta.title}`,
+          row.title?.slice(0, 100) || "",
+          row.title?.split(" ")[0],
+        );
       })
       .subscribe();
 
-    // Subscribe to user-specific notifications
     let notifChannel: any = null;
     let achieveChannel: any = null;
 
@@ -112,15 +145,13 @@ export function useRealtimeNotifications() {
         }, (payload) => {
           if (!mountedRef.current) return;
           const row = payload.new as any;
-          toast({
-            title: row.title,
-            description: row.body?.slice(0, 120),
-            duration: 5000,
-          });
+          notifyWithAvatar(
+            row.title || "Notification",
+            row.body?.slice(0, 120) || "",
+          );
         })
         .subscribe();
 
-      // Subscribe to achievement unlocks
       achieveChannel = supabase
         .channel(`rt-achievements-${user.id}`)
         .on("postgres_changes", {
@@ -140,5 +171,5 @@ export function useRealtimeNotifications() {
       if (notifChannel) supabase.removeChannel(notifChannel);
       if (achieveChannel) supabase.removeChannel(achieveChannel);
     };
-  }, [user?.id, toast, handleAchievement]);
+  }, [user?.id, handleAchievement]);
 }
