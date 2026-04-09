@@ -1,7 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,45 +8,44 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Star, CheckCircle2, Users, Zap, Send, Globe, Code, ArrowLeft, MessageSquare, Loader2 } from "lucide-react";
+import { Star, CheckCircle2, Zap, Send, ArrowLeft, MessageSquare, Loader2, Clock, Users, Bot } from "lucide-react";
 import { toast } from "sonner";
-import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 
-const INTEGRATION_ICONS: Record<string, { icon: typeof Send; label: string }> = {
-  telegram: { icon: Send, label: "Telegram" },
-  web: { icon: Globe, label: "Web" },
-  api: { icon: Code, label: "API" },
-};
+/* ── Static agent catalogue (mirrors AgentMarketplace) ── */
+interface AgentData {
+  id: string; name: string; description: string; category: string;
+  rating: number; reviews: number; price: number; hires: number;
+  responseTime: string; verified: boolean; featured: boolean;
+}
+
+const AGENTS: AgentData[] = [
+  { id: "deltawolf", name: "DeltaWolf", description: "Advanced marketing strategist. Plans campaigns, analyzes audiences, optimizes funnels. DeltaWolf uses cutting-edge AI to understand market dynamics, identify target demographics, and craft compelling narratives that drive engagement and conversions.", category: "marketing", rating: 4.9, reviews: 127, price: 29, hires: 412, responseTime: "< 2s", verified: true, featured: true },
+  { id: "froststrike", name: "FrostStrike", description: "Real-time analytics engine. Tracks KPIs, generates reports, predicts trends. FrostStrike processes millions of data points in seconds, delivering actionable insights through beautiful dashboards and automated alerts.", category: "analytics", rating: 4.7, reviews: 89, price: 39, hires: 305, responseTime: "< 1s", verified: true, featured: true },
+  { id: "alphashark", name: "AlphaShark", description: "Content creation powerhouse. Writes blogs, social posts, newsletters at scale. AlphaShark adapts tone and style to match your brand voice, producing SEO-optimized content that resonates with your audience.", category: "content", rating: 4.8, reviews: 156, price: 19, hires: 578, responseTime: "< 3s", verified: true, featured: false },
+  { id: "onyxfox", name: "OnyxFox", description: "24/7 customer support agent. Handles tickets, FAQs, live chat with empathy. OnyxFox learns from every interaction, continuously improving response quality and customer satisfaction scores.", category: "support", rating: 4.6, reviews: 203, price: 24, hires: 691, responseTime: "< 1s", verified: true, featured: false },
+  { id: "shadowrift", name: "ShadowRift", description: "SEO and growth hacking specialist. Keyword research, link building, rank tracking. ShadowRift identifies untapped opportunities and implements data-driven strategies to boost organic visibility.", category: "marketing", rating: 4.5, reviews: 72, price: 34, hires: 198, responseTime: "< 2s", verified: false, featured: false },
+  { id: "lyraprime", name: "LyraPrime", description: "Data visualization and BI agent. Transforms raw data into actionable dashboards. LyraPrime connects to multiple data sources, creating interactive reports that tell compelling data stories.", category: "analytics", rating: 4.8, reviews: 94, price: 44, hires: 267, responseTime: "< 2s", verified: true, featured: true },
+  { id: "novacrest", name: "NovaCrest", description: "Video script writer and social media manager. Creates viral-ready content. NovaCrest analyzes trending topics and audience behavior to craft content strategies that maximize reach and engagement.", category: "content", rating: 4.4, reviews: 61, price: 15, hires: 342, responseTime: "< 4s", verified: false, featured: false },
+  { id: "ironpulse", name: "IronPulse", description: "Technical support and troubleshooting expert. Resolves issues with precision. IronPulse diagnoses complex technical problems and provides step-by-step solutions with remarkable accuracy.", category: "support", rating: 4.7, reviews: 118, price: 29, hires: 445, responseTime: "< 1s", verified: true, featured: false },
+  { id: "ciphermind", name: "CipherMind", description: "Research assistant and knowledge synthesizer. Scans papers, summarizes findings. CipherMind processes academic papers, patents, and reports to deliver comprehensive research summaries.", category: "analytics", rating: 4.9, reviews: 83, price: 49, hires: 189, responseTime: "< 3s", verified: true, featured: false },
+];
 
 const CATEGORY_COLORS: Record<string, string> = {
   marketing: "bg-pink-500/15 text-pink-400 border-pink-500/30",
   analytics: "bg-blue-500/15 text-blue-400 border-blue-500/30",
   content: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   support: "bg-green-500/15 text-green-400 border-green-500/30",
-  finance: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  legal: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  hr: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  development: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  research: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  custom: "bg-gray-500/15 text-gray-400 border-gray-500/30",
 };
 
-function formatPrice(type: string, amount: number) {
-  if (type === "free") return "Free";
-  if (type === "subscription") return `$${amount}/mo`;
-  if (type === "per_task") return `$${amount}/task`;
-  return `$${amount}`;
-}
-
-function renderStars(rating: number) {
-  return Array.from({ length: 5 }, (_, i) => (
-    <Star key={i} className={`w-4 h-4 ${i < Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`} />
-  ));
-}
-
-interface ChatMsg { role: "user" | "assistant"; content: string }
+const SAMPLE_REVIEWS = [
+  { author: "Alex M.", rating: 5, text: "Incredible agent — saved our team 20+ hours per week. The quality of output is consistently top-notch.", date: "2025-03-12" },
+  { author: "Sarah K.", rating: 4, text: "Very reliable and fast. Occasionally needs minor corrections but overall an excellent hire.", date: "2025-02-28" },
+  { author: "Dev Team", rating: 5, text: "We've been using this agent for 3 months and it's become indispensable to our workflow.", date: "2025-02-15" },
+  { author: "Jordan P.", rating: 5, text: "Exceeded expectations. The response time is blazing fast and the results are accurate.", date: "2025-01-20" },
+  { author: "Riley T.", rating: 4, text: "Great value for the price. Handles complex tasks with ease. Would recommend.", date: "2025-01-08" },
+];
 
 const DEMO_RESPONSES = [
   "I'd be happy to help with that! Let me analyze the situation and provide recommendations.",
@@ -58,96 +55,82 @@ const DEMO_RESPONSES = [
   "Let me work on that for you. I'll provide a detailed analysis shortly.",
 ];
 
+function renderStars(rating: number) {
+  return Array.from({ length: 5 }, (_, i) => (
+    <Star key={i} className={`w-4 h-4 ${i < Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`} />
+  ));
+}
+
+function getInitialsColor(name: string) {
+  const colors = ["bg-purple-600", "bg-blue-600", "bg-emerald-600", "bg-amber-600", "bg-pink-600", "bg-cyan-600", "bg-red-600", "bg-indigo-600"];
+  let hash = 0;
+  for (const c of name) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+interface ChatMsg { role: "user" | "assistant"; content: string }
+
 const AgentDetailPage = () => {
   const { agentId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
   const [hireOpen, setHireOpen] = useState(false);
-  const [hiring, setHiring] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
-  const { data: listing, isLoading } = useQuery({
-    queryKey: ["marketplace-listing", agentId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("hire_listings")
-        .select("*, agents(id, name, class, level)")
-        .eq("id", agentId!)
-        .maybeSingle();
-      return data as any;
-    },
-    enabled: !!agentId,
-  });
+  // Case-insensitive lookup
+  const agent = useMemo(() =>
+    AGENTS.find(a => a.id.toLowerCase() === agentId?.toLowerCase() || a.name.toLowerCase() === agentId?.toLowerCase()),
+    [agentId]
+  );
+
+  const similarAgents = useMemo(() => {
+    if (!agent) return [];
+    return AGENTS.filter(a => a.category === agent.category && a.id !== agent.id).slice(0, 3);
+  }, [agent]);
 
   const sendDemo = () => {
     if (!chatInput.trim() || chatLoading) return;
-    const userMsg: ChatMsg = { role: "user", content: chatInput.trim() };
-    setChatMessages(prev => [...prev, userMsg]);
+    setChatMessages(prev => [...prev, { role: "user", content: chatInput.trim() }]);
     setChatInput("");
     setChatLoading(true);
     setTimeout(() => {
-      const response = DEMO_RESPONSES[Math.floor(Math.random() * DEMO_RESPONSES.length)];
-      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
+      setChatMessages(prev => [...prev, { role: "assistant", content: DEMO_RESPONSES[Math.floor(Math.random() * DEMO_RESPONSES.length)] }]);
       setChatLoading(false);
     }, 1200);
   };
 
-  const handleHire = async () => {
+  const handleHire = () => {
     if (!user) { navigate("/auth"); return; }
-    setHiring(true);
-    try {
-      const { error } = await supabase.from("hire_hires").insert({
-        listing_id: listing.id,
-        user_id: user.id,
-        status: "active",
-      });
-      if (error) throw error;
-      toast.success(`Successfully hired ${listing.agents?.name || "Agent"}!`);
-      setHireOpen(false);
-      navigate("/dashboard");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to hire agent");
-    } finally {
-      setHiring(false);
-    }
+    toast.success(`Successfully hired ${agent?.name}! Check your dashboard.`);
+    setHireOpen(false);
+    navigate("/dashboard");
   };
 
-  if (isLoading) {
-    return (
-      <PageWrapper>
-        <Navbar />
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </PageWrapper>
-    );
-  }
-
-  if (!listing) {
+  if (!agent) {
     return (
       <PageWrapper>
         <Navbar />
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-          <p className="text-muted-foreground">Agent not found</p>
+          <Bot className="w-12 h-12 text-muted-foreground/40" />
+          <p className="text-muted-foreground text-lg">Agent not found</p>
           <Link to="/marketplace"><Button variant="outline">Back to Marketplace</Button></Link>
         </div>
+        <Footer />
       </PageWrapper>
     );
   }
 
-  const agentName = listing.agents?.name || "Agent";
+  const initials = agent.name.slice(0, 2).toUpperCase();
 
   return (
     <PageWrapper>
-      <SEOHead title={`${agentName} — AI Agent | MEEET`} description={listing.short_description} path={`/marketplace/${agentId}`} />
+      <SEOHead title={`${agent.name} — AI Agent | MEEET STATE`} description={agent.description} path={`/marketplace/${agent.id}`} />
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
         <main className="flex-1 pt-20 pb-16">
@@ -159,19 +142,20 @@ const AgentDetailPage = () => {
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start gap-5 mb-8">
-              <img src={getAgentAvatarUrl(listing.agent_id, 80)} alt={agentName} className="w-20 h-20 rounded-2xl border border-border bg-muted/30" />
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl ${getInitialsColor(agent.name)} border border-border/30`}>
+                {initials}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">{listing.title}</h1>
-                  {listing.is_verified && <CheckCircle2 className="w-5 h-5 text-blue-400" />}
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">{agent.name}</h1>
+                  {agent.verified && <CheckCircle2 className="w-5 h-5 text-blue-400" />}
+                  {agent.featured && <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">Featured</Badge>}
                 </div>
-                <p className="text-muted-foreground text-sm mb-3">{listing.short_description}</p>
+                <p className="text-muted-foreground text-sm mb-3 max-w-xl">{agent.description.split(". ").slice(0, 2).join(". ")}.</p>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Badge className={`text-xs border ${CATEGORY_COLORS[listing.category] || ""}`}>{listing.category}</Badge>
-                  <div className="flex items-center gap-1">{renderStars(listing.rating)}<span className="text-sm text-muted-foreground ml-1">{listing.rating?.toFixed(1)} ({listing.total_reviews} reviews)</span></div>
-                  <span className={`font-bold text-lg ${listing.price_type === "free" ? "text-emerald-400" : "text-foreground"}`}>
-                    {formatPrice(listing.price_type, listing.price_amount)}
-                  </span>
+                  <Badge className={`text-xs border ${CATEGORY_COLORS[agent.category] || "bg-muted text-muted-foreground"}`}>{agent.category}</Badge>
+                  <div className="flex items-center gap-1">{renderStars(agent.rating)}<span className="text-sm text-muted-foreground ml-1">{agent.rating.toFixed(1)} ({agent.reviews} reviews)</span></div>
+                  <span className="font-bold text-lg text-foreground">${agent.price}/mo</span>
                 </div>
               </div>
             </div>
@@ -179,92 +163,100 @@ const AgentDetailPage = () => {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
-                className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 font-semibold"
+                className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white border-0 font-semibold"
                 onClick={() => user ? setHireOpen(true) : navigate("/auth")}
               >
-                Hire Agent
+                Hire Agent — ${agent.price}/mo
               </Button>
-              {listing.demo_available && (
-                <Button variant="outline" className="flex-1 h-12 gap-2" onClick={() => { setDemoOpen(true); setChatMessages([]); }}>
-                  <MessageSquare className="w-4 h-4" /> Try Demo
-                </Button>
-              )}
+              <Button variant="outline" className="flex-1 h-12 gap-2 border-border hover:border-primary/40" onClick={() => { setDemoOpen(true); setChatMessages([]); }}>
+                <MessageSquare className="w-4 h-4" /> Try Demo
+              </Button>
             </div>
 
-            {/* Description */}
-            <Card className="bg-card/50 border-border mb-6">
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+              {[
+                { label: "Total Hires", value: agent.hires.toLocaleString(), icon: Users },
+                { label: "Rating", value: agent.rating.toFixed(1), icon: Star },
+                { label: "Reviews", value: agent.reviews.toString(), icon: MessageSquare },
+                { label: "Response Time", value: agent.responseTime, icon: Clock },
+              ].map(s => (
+                <Card key={s.label} className="bg-card/60 border-border/50">
+                  <CardContent className="p-4 text-center">
+                    <s.icon className="w-4 h-4 mx-auto mb-1 text-primary" />
+                    <div className="text-xl font-bold text-foreground">{s.value}</div>
+                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* About */}
+            <Card className="bg-card/60 border-border/50 mb-6">
               <CardContent className="p-6">
-                <h2 className="font-semibold text-foreground mb-3">About</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">{listing.description}</p>
+                <h2 className="font-semibold text-foreground mb-3">About {agent.name}</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">{agent.description}</p>
               </CardContent>
             </Card>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-foreground">{listing.total_hires?.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Total Hires</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                    <span className="text-2xl font-bold text-foreground">{listing.rating?.toFixed(1)}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{listing.total_reviews} reviews</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 border-border">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-foreground">{listing.avg_response_time}</div>
-                  <div className="text-xs text-muted-foreground">Response Time</div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Capabilities */}
-            {listing.capabilities?.length > 0 && (
-              <Card className="bg-card/50 border-border mb-6">
-                <CardContent className="p-6">
-                  <h2 className="font-semibold text-foreground mb-3">Capabilities</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {listing.capabilities.map((cap: string, i: number) => (
-                      <Badge key={i} variant="outline" className="text-xs"><Zap className="w-3 h-3 mr-1" />{cap}</Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <Card className="bg-card/60 border-border/50 mb-6">
+              <CardContent className="p-6">
+                <h2 className="font-semibold text-foreground mb-3">Capabilities</h2>
+                <div className="flex flex-wrap gap-2">
+                  {["Natural Language Processing", "Task Automation", "Data Analysis", "Report Generation", "24/7 Availability", "Multi-language"].map(cap => (
+                    <Badge key={cap} variant="outline" className="text-xs border-border/50"><Zap className="w-3 h-3 mr-1" />{cap}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Integrations */}
-            {listing.integrations?.length > 0 && (
-              <Card className="bg-card/50 border-border mb-6">
-                <CardContent className="p-6">
-                  <h2 className="font-semibold text-foreground mb-3">Integrations</h2>
-                  <div className="flex flex-wrap gap-3">
-                    {listing.integrations.map((int: string) => {
-                      const info = INTEGRATION_ICONS[int];
-                      if (!info) return null;
-                      const Icon = info.icon;
-                      return (
-                        <div key={int} className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg">
-                          <Icon className="w-4 h-4" />{info.label}
+            {/* Reviews */}
+            <Card className="bg-card/60 border-border/50 mb-6">
+              <CardContent className="p-6">
+                <h2 className="font-semibold text-foreground mb-4">Reviews ({agent.reviews})</h2>
+                <div className="space-y-4">
+                  {SAMPLE_REVIEWS.map((r, i) => (
+                    <div key={i} className="border-b border-border/30 pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-foreground">{r.author}</span>
+                        <span className="text-xs text-muted-foreground">{r.date}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2">{renderStars(r.rating)}</div>
+                      <p className="text-sm text-muted-foreground">{r.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Similar Agents */}
+            {similarAgents.length > 0 && (
+              <div className="mb-8">
+                <h2 className="font-semibold text-foreground mb-4">Similar Agents</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {similarAgents.map(sa => (
+                    <Card
+                      key={sa.id}
+                      className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer"
+                      onClick={() => navigate(`/marketplace/${sa.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm ${getInitialsColor(sa.name)}`}>
+                            {sa.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-foreground">{sa.name}</div>
+                            <div className="flex items-center gap-0.5">{renderStars(sa.rating)}</div>
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Tags */}
-            {listing.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-8">
-                {listing.tags.map((tag: string) => (
-                  <span key={tag} className="text-xs bg-muted/40 text-muted-foreground px-2 py-0.5 rounded-full">#{tag}</span>
-                ))}
+                        <p className="text-xs text-muted-foreground line-clamp-2">{sa.description.split(". ")[0]}.</p>
+                        <div className="mt-2 text-sm font-bold text-foreground">${sa.price}/mo</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -275,64 +267,36 @@ const AgentDetailPage = () => {
         <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Demo: {agentName}</DialogTitle>
+              <DialogTitle>Demo: {agent.name}</DialogTitle>
               <DialogDescription>Try a conversation with this agent</DialogDescription>
             </DialogHeader>
             <div className="h-64 overflow-y-auto border border-border rounded-lg p-3 space-y-3 bg-background/50">
-              {chatMessages.length === 0 && (
-                <p className="text-center text-sm text-muted-foreground py-8">Send a message to start the demo</p>
-              )}
+              {chatMessages.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">Send a message to start the demo</p>}
               {chatMessages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                  }`}>
-                    {m.content}
-                  </div>
+                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>{m.content}</div>
                 </div>
               ))}
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm">
-                    <span className="animate-pulse">Thinking...</span>
-                  </div>
-                </div>
-              )}
+              {chatLoading && <div className="flex justify-start"><div className="bg-muted text-foreground rounded-lg px-3 py-2 text-sm"><span className="animate-pulse">Thinking...</span></div></div>}
               <div ref={chatEndRef} />
             </div>
             <div className="flex gap-2">
-              <Input
-                placeholder="Type a message..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendDemo()}
-              />
-              <Button onClick={sendDemo} disabled={chatLoading || !chatInput.trim()} size="icon">
-                <Send className="w-4 h-4" />
-              </Button>
+              <Input placeholder="Type a message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendDemo()} />
+              <Button onClick={sendDemo} disabled={chatLoading || !chatInput.trim()} size="icon"><Send className="w-4 h-4" /></Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Hire Confirmation Dialog */}
+        {/* Hire Dialog */}
         <Dialog open={hireOpen} onOpenChange={setHireOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Hire {agentName}</DialogTitle>
-              <DialogDescription>
-                Hire {agentName} for {formatPrice(listing.price_type, listing.price_amount)}?
-              </DialogDescription>
+              <DialogTitle>Hire {agent.name}</DialogTitle>
+              <DialogDescription>Confirm hiring {agent.name} for ${agent.price}/mo?</DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex gap-2">
               <Button variant="outline" onClick={() => setHireOpen(false)}>Cancel</Button>
-              <Button
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                onClick={handleHire}
-                disabled={hiring}
-              >
-                {hiring ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Confirm
-              </Button>
+              <Button className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white border-0" onClick={handleHire}>Confirm</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
