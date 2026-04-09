@@ -9,8 +9,9 @@ import PageWrapper from "@/components/PageWrapper";
 import LiveTicker from "@/components/LiveTicker";
 import CortexSection from "@/components/civilization/CortexSection";
 import WelcomeOnboarding from "@/components/WelcomeOnboarding";
-import { ArrowRight, FlaskConical, Swords, Coins } from "lucide-react";
+import { ArrowRight, FlaskConical, Swords, Coins, Code, Terminal } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
