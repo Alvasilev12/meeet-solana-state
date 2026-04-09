@@ -15,6 +15,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 const Index = React.lazy(() => import("./pages/Index.tsx"));
 const LiveMap = React.lazy(() => import("./pages/LiveMap.tsx"));
 const Quests = React.lazy(() => import("./pages/Quests.tsx"));
+const DailyQuests = React.lazy(() => import("./pages/DailyQuests.tsx"));
 const Auth = React.lazy(() => import("./pages/Auth.tsx"));
 const Rankings = React.lazy(() => import("./pages/Rankings.tsx"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard.tsx"));
@@ -145,6 +146,7 @@ const App = () => (
                   <Route path="/live" element={<LiveDashboard />} />
                   <Route path="/map" element={<LiveMap />} />
                   <Route path="/quests" element={<Quests />} />
+                  <Route path="/daily-quests" element={<DailyQuests />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/rankings" element={<Rankings />} />
                   <Route path="/dashboard" element={<Dashboard />} />

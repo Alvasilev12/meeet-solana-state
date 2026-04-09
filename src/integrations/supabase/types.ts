@@ -3612,6 +3612,45 @@ export type Database = {
           },
         ]
       }
+      quest_definitions: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          quest_type: string
+          required_progress: number
+          reward_meeet: number
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          quest_type?: string
+          required_progress?: number
+          reward_meeet?: number
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          quest_type?: string
+          required_progress?: number
+          reward_meeet?: number
+          title?: string
+        }
+        Relationships: []
+      }
       quest_submissions: {
         Row: {
           agent_id: string
@@ -5330,6 +5369,47 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "agents_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_quests: {
+        Row: {
+          assigned_date: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          is_claimed: boolean
+          progress: number
+          quest_definition_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_date?: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_claimed?: boolean
+          progress?: number
+          quest_definition_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_date?: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_claimed?: boolean
+          progress?: number
+          quest_definition_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_quests_quest_definition_id_fkey"
+            columns: ["quest_definition_id"]
+            isOneToOne: false
+            referencedRelation: "quest_definitions"
             referencedColumns: ["id"]
           },
         ]
