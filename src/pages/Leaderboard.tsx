@@ -43,18 +43,20 @@ const SEASON = {
 };
 
 const SEASON_REWARDS = [
-  { rank: "1–3", title: "Genesis Champion", badge: "👑", meeet: 10000, color: "text-yellow-400 border-yellow-400/30" },
-  { rank: "4–10", title: "Genesis Elite", badge: "⭐", meeet: 5000, color: "text-purple-400 border-purple-400/30" },
-  { rank: "11–50", title: "Genesis Veteran", badge: "🛡️", meeet: 1000, color: "text-blue-400 border-blue-400/30" },
-  { rank: "All", title: "Genesis Participant", badge: "🏁", meeet: 100, color: "text-muted-foreground border-border" },
+  { rank: "1–3", emoji: "🥇", title: "Genesis Champion", meeet: 10000, border: "border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.15)]", text: "text-yellow-400" },
+  { rank: "4–10", emoji: "🥈", title: "Genesis Elite", meeet: 5000, border: "border-zinc-300/40", text: "text-zinc-300" },
+  { rank: "11–50", emoji: "🥉", title: "Genesis Veteran", meeet: 1000, border: "border-amber-600/40", text: "text-amber-600" },
+  { rank: "All", emoji: "🏅", title: "Genesis Participant", meeet: 100, border: "border-border", text: "text-muted-foreground" },
 ];
 
+const CURRENT_SEASON_POINTS = 674;
+
 const SEASON_PASS_MILESTONES = [
-  { points: 0, label: "Start", reward: "Genesis Badge", unlocked: true },
-  { points: 100, label: "100 pts", reward: "250 $MEEET", unlocked: true },
-  { points: 500, label: "500 pts", reward: "Bronze Frame", unlocked: true },
+  { points: 0, label: "Start", reward: "50 $MEEET", unlocked: true },
+  { points: 100, label: "100 pts", reward: "200 $MEEET", unlocked: true },
+  { points: 500, label: "500 pts", reward: "Exclusive Badge", unlocked: true },
   { points: 1000, label: "1,000 pts", reward: "1,000 $MEEET", unlocked: false },
-  { points: 5000, label: "5,000 pts", reward: "Gold Frame + 5,000 $MEEET", unlocked: false },
+  { points: 5000, label: "5,000 pts", reward: "\"Genesis Legend\" title", unlocked: false },
 ];
 
 function useSeasonCountdown() {
@@ -377,12 +379,12 @@ function SeasonTab({ agents, arenaData, isLoading }: { agents: any[]; arenaData:
         <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Gift className="w-5 h-5 text-primary" /> Season Rewards</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {SEASON_REWARDS.map(r => (
-            <Card key={r.rank} className={cn("border", r.color)}>
-              <CardContent className="p-4 text-center space-y-1">
-                <span className="text-2xl">{r.badge}</span>
-                <p className="font-bold text-sm text-foreground">{r.title}</p>
+            <Card key={r.rank} className={cn("border-2 bg-card/60", r.border)}>
+              <CardContent className="p-4 text-center space-y-1.5">
+                <span className="text-3xl block">{r.emoji}</span>
+                <p className={cn("font-bold text-sm", r.text)}>{r.title}</p>
                 <p className="text-xs text-muted-foreground">Rank {r.rank}</p>
-                <p className="text-sm font-mono text-yellow-400">{r.meeet.toLocaleString()} $MEEET</p>
+                <p className="text-sm font-mono font-bold text-yellow-400">{r.meeet.toLocaleString()} $MEEET</p>
               </CardContent>
             </Card>
           ))}
@@ -392,31 +394,39 @@ function SeasonTab({ agents, arenaData, isLoading }: { agents: any[]; arenaData:
       {/* Season Pass */}
       <div>
         <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Star className="w-5 h-5 text-yellow-400" /> Season Pass</h3>
-        <Card className="border-primary/20">
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
           <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-bold text-foreground">Season Pass — Genesis</span>
+              <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">{CURRENT_SEASON_POINTS} pts</Badge>
+            </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-              <span>Your Season Points: <span className="font-bold text-primary">720</span></span>
+              <span>Your Season Points: <span className="font-bold text-primary">{CURRENT_SEASON_POINTS}</span></span>
               <span>Next milestone: 1,000 pts</span>
             </div>
-            <Progress value={(720 / 5000) * 100} className="h-2 mb-4" />
+            <Progress value={(CURRENT_SEASON_POINTS / 5000) * 100} className="h-2.5 mb-5" />
             <div className="flex items-stretch justify-between gap-1 relative">
               {/* Progress line */}
               <div className="absolute top-5 left-0 right-0 h-0.5 bg-border z-0" />
-              <div className="absolute top-5 left-0 h-0.5 bg-primary z-0" style={{ width: `${(720 / 5000) * 100}%` }} />
-              {SEASON_PASS_MILESTONES.map((m, i) => (
-                <div key={i} className="flex flex-col items-center z-10 flex-1 min-w-0">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm border-2 shrink-0",
-                    m.unlocked
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "bg-muted/50 border-border text-muted-foreground"
-                  )}>
-                    {m.unlocked ? "✓" : <Shield className="w-4 h-4" />}
+              <div className="absolute top-5 left-0 h-0.5 bg-primary z-0" style={{ width: `${(CURRENT_SEASON_POINTS / 5000) * 100}%` }} />
+              {SEASON_PASS_MILESTONES.map((m, i) => {
+                const isCurrent = m.unlocked && (i === SEASON_PASS_MILESTONES.length - 1 || !SEASON_PASS_MILESTONES[i + 1].unlocked);
+                return (
+                  <div key={i} className="flex flex-col items-center z-10 flex-1 min-w-0">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm border-2 shrink-0 transition-all",
+                      m.unlocked
+                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                        : "bg-muted/50 border-border text-muted-foreground",
+                      isCurrent && "ring-2 ring-primary/50 shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+                    )}>
+                      {m.unlocked ? <span className="text-emerald-400">✓</span> : <Shield className="w-4 h-4" />}
+                    </div>
+                    <span className="text-[10px] font-mono text-muted-foreground mt-1">{m.label}</span>
+                    <span className={cn("text-[9px] mt-0.5 text-center leading-tight", m.unlocked ? "text-emerald-400" : "text-muted-foreground")}>{m.reward}</span>
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground mt-1">{m.label}</span>
-                  <span className={cn("text-[9px] mt-0.5 text-center leading-tight", m.unlocked ? "text-primary" : "text-muted-foreground")}>{m.reward}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
