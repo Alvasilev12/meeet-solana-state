@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,11 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Star, Users, Zap, MessageSquare, Send } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Search, Star, Users, Zap, MessageSquare, Send, GitCompareArrows, X } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import AgentCompareModal from "@/components/AgentCompareModal";
 
 interface Agent {
   id: string;
@@ -83,6 +84,7 @@ function renderStars(rating: number) {
 
 const AgentMarketplace = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
@@ -90,6 +92,50 @@ const AgentMarketplace = () => {
   const [hireAgent, setHireAgent] = useState<Agent | null>(null);
   const [demoInput, setDemoInput] = useState("");
   const [demoMessages, setDemoMessages] = useState<{ role: string; text: string }[]>([]);
+
+  // Compare state
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  // Read compare param from URL on mount
+  useEffect(() => {
+    const compareParam = searchParams.get("compare");
+    if (compareParam) {
+      const ids = compareParam.split(",").filter((id) => AGENTS.some((a) => a.id === id));
+      if (ids.length >= 2) {
+        setCompareIds(new Set(ids.slice(0, 3)));
+        setCompareOpen(true);
+      }
+    }
+  }, []);
+
+  // Sync compare IDs to URL
+  useEffect(() => {
+    if (compareIds.size >= 2) {
+      searchParams.set("compare", Array.from(compareIds).join(","));
+    } else {
+      searchParams.delete("compare");
+    }
+    setSearchParams(searchParams, { replace: true });
+  }, [compareIds]);
+
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= 3) {
+          toast.error("Maximum 3 agents for comparison");
+          return prev;
+        }
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const compareAgents = AGENTS.filter((a) => compareIds.has(a.id));
 
   const filtered = useMemo(() => {
     let result = [...AGENTS];
@@ -202,75 +248,137 @@ const AgentMarketplace = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((a) => (
-                <Card
-                  key={a.id}
-                  className="bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01]"
-                  onClick={() => navigate(`/marketplace/${a.id}`)}
-                >
-                  <CardContent className="p-5 space-y-3">
-                    {a.featured && (
-                      <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px] mb-1">⭐ Featured</Badge>
-                    )}
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                        style={{ background: AVATAR_COLORS[a.name] || "hsl(var(--primary))" }}
+              {filtered.map((a) => {
+                const isComparing = compareIds.has(a.id);
+                return (
+                  <Card
+                    key={a.id}
+                    className={`bg-card/60 border-border/50 hover:border-primary/40 transition-all cursor-pointer group hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01] relative ${isComparing ? "ring-2 ring-primary/50 border-primary/40" : ""}`}
+                    onClick={() => navigate(`/marketplace/${a.id}`)}
+                  >
+                    <CardContent className="p-5 space-y-3">
+                      {/* Compare checkbox */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompare(a.id);
+                        }}
+                        className={`absolute top-3 right-3 w-7 h-7 rounded-md border-2 flex items-center justify-center transition-all text-xs ${
+                          isComparing
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-border/60 text-transparent hover:border-muted-foreground/50 hover:text-muted-foreground"
+                        }`}
+                        title={isComparing ? "Remove from comparison" : "Add to comparison"}
                       >
-                        {a.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-foreground truncate">{a.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{a.description}</p>
-                      </div>
-                    </div>
+                        {isComparing ? "✓" : <GitCompareArrows className="w-3.5 h-3.5" />}
+                      </button>
 
-                    <Badge className={`text-[10px] border ${CATEGORY_COLORS[a.category] || "bg-muted text-muted-foreground"}`}>
-                      {a.category}
-                    </Badge>
-
-                    <div className="flex items-center gap-1">
-                      {renderStars(a.rating)}
-                      <span className="text-xs text-muted-foreground ml-1">{a.rating} ({a.reviews})</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-border/30">
-                      <span className="font-bold text-lg text-foreground">${a.price}<span className="text-xs text-muted-foreground font-normal">/mo</span></span>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDemo(a);
-                          }}
+                      {a.featured && (
+                        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px] mb-1">⭐ Featured</Badge>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                          style={{ background: AVATAR_COLORS[a.name] || "hsl(var(--primary))" }}
                         >
-                          <MessageSquare className="w-3 h-3 mr-1" /> Try Demo
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setHireAgent(a);
-                          }}
-                        >
-                          Hire
-                        </Button>
+                          {a.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-foreground truncate">{a.name}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{a.description}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1"><Users className="w-3 h-3" />{a.hires} hires</span>
-                      <span className="flex items-center gap-1"><Zap className="w-3 h-3" />{a.responseTime}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <Badge className={`text-[10px] border ${CATEGORY_COLORS[a.category] || "bg-muted text-muted-foreground"}`}>
+                        {a.category}
+                      </Badge>
+
+                      <div className="flex items-center gap-1">
+                        {renderStars(a.rating)}
+                        <span className="text-xs text-muted-foreground ml-1">{a.rating} ({a.reviews})</span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                        <span className="font-bold text-lg text-foreground">${a.price}<span className="text-xs text-muted-foreground font-normal">/mo</span></span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDemo(a);
+                            }}
+                          >
+                            <MessageSquare className="w-3 h-3 mr-1" /> Try Demo
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="text-xs h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHireAgent(a);
+                            }}
+                          >
+                            Hire
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{a.hires} hires</span>
+                        <span className="flex items-center gap-1"><Zap className="w-3 h-3" />{a.responseTime}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
 
+          {/* Floating compare bar */}
+          {compareIds.size >= 2 && !compareOpen && (
+            <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 animate-fade-in">
+              <div className="flex items-center gap-3 bg-primary/95 backdrop-blur-md text-primary-foreground px-5 py-3 rounded-full shadow-xl shadow-primary/25 border border-primary/60">
+                <div className="flex -space-x-2">
+                  {compareAgents.map((a) => (
+                    <div
+                      key={a.id}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-primary"
+                      style={{ background: AVATAR_COLORS[a.name] || "hsl(var(--primary))" }}
+                    >
+                      {a.name.slice(0, 2)}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs font-semibold"
+                  onClick={() => setCompareOpen(true)}
+                >
+                  <GitCompareArrows className="w-3.5 h-3.5 mr-1.5" />
+                  Compare {compareIds.size} Agents
+                </Button>
+                <button
+                  onClick={() => setCompareIds(new Set())}
+                  className="text-primary-foreground/70 hover:text-primary-foreground transition-colors"
+                  aria-label="Clear comparison"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Compare modal */}
+          <AgentCompareModal
+            agents={compareAgents}
+            open={compareOpen}
+            onClose={() => setCompareOpen(false)}
+          />
+
+          {/* Demo dialog */}
           <Dialog
             open={!!demoAgent}
             onOpenChange={(open) => {
@@ -311,6 +419,7 @@ const AgentMarketplace = () => {
             </DialogContent>
           </Dialog>
 
+          {/* Hire confirmation */}
           <AlertDialog
             open={!!hireAgent}
             onOpenChange={(open) => {
@@ -321,7 +430,7 @@ const AgentMarketplace = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Hire {hireAgent?.name}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Confirm hiring this agent for ${hireAgent?.price}/month. You’ll be redirected to your dashboard after confirmation.
+                  Confirm hiring this agent for ${hireAgent?.price}/month. You'll be redirected to your dashboard after confirmation.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
