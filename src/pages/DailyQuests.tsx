@@ -293,8 +293,8 @@ export default function DailyQuests() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{q.title}</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{q.category}</Badge>
+                          <span className="font-semibold text-sm text-foreground">{q.title}</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border text-muted-foreground">{q.category}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{q.description}</p>
                         <div className="mt-1.5 flex items-center gap-2">
@@ -305,7 +305,7 @@ export default function DailyQuests() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-sm font-bold text-yellow-400 flex items-center gap-1">
+                        <span className="text-sm font-bold text-emerald-400 flex items-center gap-1">
                           <Coins className="w-3.5 h-3.5" /> {q.reward}
                         </span>
                         {q.claimed ? (
@@ -344,7 +344,7 @@ export default function DailyQuests() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{q.title}</span>
+                          <span className="font-semibold text-sm text-foreground">{q.title}</span>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-500/30 text-yellow-400">weekly</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{q.description}</p>
