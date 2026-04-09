@@ -283,7 +283,7 @@ export default function DailyQuests() {
               const done = q.currentProgress >= q.requiredProgress;
               return (
                 <motion.div key={q.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className={cn("border-border/50 bg-[hsl(235,30%,12%)] transition-all", q.claimed && "opacity-60")}>
+                  <Card className={cn("border-slate-600 bg-slate-800 transition-all", q.claimed && "opacity-60")}>
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -334,7 +334,7 @@ export default function DailyQuests() {
               const done = q.currentProgress >= q.requiredProgress;
               return (
                 <motion.div key={q.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className={cn("border-yellow-500/30 bg-[hsl(235,30%,12%)] transition-all", q.claimed && "opacity-60")}>
+                  <Card className={cn("border-slate-600 bg-slate-800 transition-all", q.claimed && "opacity-60")}>
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
