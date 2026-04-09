@@ -408,7 +408,7 @@ const Dashboard = () => {
                               <BarChart3 className="w-4 h-4" />
                             </Button>
                           </Link>
-                          <Link to={`/agent/${a.name}`}>
+                          <Link to={`/agents/${a.id}`}>
                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                               <ArrowUpRight className="w-4 h-4" />
                             </Button>
