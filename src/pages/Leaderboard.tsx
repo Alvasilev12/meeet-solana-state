@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
@@ -7,9 +7,12 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Crown, Beaker, Swords, Coins, TrendingUp, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Trophy, Crown, Beaker, Swords, Coins, TrendingUp, ArrowUp, ArrowDown, Minus, Clock, Gift, Star, Shield } from "lucide-react";
 import { getAgentAvatarUrl } from "@/lib/agent-avatar";
+import { cn } from "@/lib/utils";
 
 const CLASS_COLORS: Record<string, string> = {
   warrior: "bg-red-500/15 text-red-400 border-red-500/30",
@@ -27,7 +30,52 @@ const RANK_BADGES = [
   "bg-gradient-to-r from-orange-600 to-amber-700 text-white",
 ];
 
-type TabKey = "discoveries" | "arena" | "earnings" | "rising";
+type TabKey = "season" | "discoveries" | "arena" | "earnings" | "rising";
+
+/* ── Season constants ── */
+
+const SEASON = {
+  name: "Season 1: Genesis",
+  theme: "genesis",
+  description: "The founding era of MEEET STATE. Prove your worth in the first-ever season.",
+  startDate: new Date("2026-03-15"),
+  endDate: new Date("2026-06-15"),
+};
+
+const SEASON_REWARDS = [
+  { rank: "1–3", title: "Genesis Champion", badge: "👑", meeet: 10000, color: "text-yellow-400 border-yellow-400/30" },
+  { rank: "4–10", title: "Genesis Elite", badge: "⭐", meeet: 5000, color: "text-purple-400 border-purple-400/30" },
+  { rank: "11–50", title: "Genesis Veteran", badge: "🛡️", meeet: 1000, color: "text-blue-400 border-blue-400/30" },
+  { rank: "All", title: "Genesis Participant", badge: "🏁", meeet: 100, color: "text-muted-foreground border-border" },
+];
+
+const SEASON_PASS_MILESTONES = [
+  { points: 0, label: "Start", reward: "Genesis Badge", unlocked: true },
+  { points: 100, label: "100 pts", reward: "250 $MEEET", unlocked: true },
+  { points: 500, label: "500 pts", reward: "Bronze Frame", unlocked: true },
+  { points: 1000, label: "1,000 pts", reward: "1,000 $MEEET", unlocked: false },
+  { points: 5000, label: "5,000 pts", reward: "Gold Frame + 5,000 $MEEET", unlocked: false },
+];
+
+function useSeasonCountdown() {
+  const [remaining, setRemaining] = useState("");
+  const [days, setDays] = useState(0);
+  useEffect(() => {
+    function calc() {
+      const diff = SEASON.endDate.getTime() - Date.now();
+      if (diff <= 0) { setRemaining("Season ended"); setDays(0); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setDays(d);
+      setRemaining(`${d}d ${h}h ${m}m`);
+    }
+    calc();
+    const iv = setInterval(calc, 60000);
+    return () => clearInterval(iv);
+  }, []);
+  return { remaining, days };
+}
 
 /* ── Data hooks ── */
 
@@ -202,6 +250,193 @@ const cardStyles = [
   "border-orange-600/30 from-orange-600/10 to-amber-700/5",
 ];
 const medals = ["🥈", "🥇", "🥉"];
+
+/* ── Season Banner ── */
+
+function SeasonBanner() {
+  const { remaining, days } = useSeasonCountdown();
+  const totalDays = Math.ceil((SEASON.endDate.getTime() - SEASON.startDate.getTime()) / 86400000);
+  const elapsed = totalDays - days;
+  const pct = Math.min((elapsed / totalDays) * 100, 100);
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-blue-900/40 p-6 md:p-8 mb-10">
+      {/* Decorative */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(139,92,246,0.15),transparent_60%)]" />
+      <div className="absolute top-2 right-4 text-6xl opacity-10">⚡</div>
+
+      <div className="relative z-10">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <Badge className="bg-primary/20 text-primary border-primary/30 mb-2">CURRENT SEASON</Badge>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">{SEASON.name}</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-lg">{SEASON.description}</p>
+            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+              <span>📅 {SEASON.startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – {SEASON.endDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            </div>
+          </div>
+          <div className="text-center md:text-right shrink-0">
+            <div className="flex items-center gap-2 text-primary">
+              <Clock className="w-5 h-5" />
+              <span className="text-2xl font-bold font-mono">{remaining}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{days} days remaining</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+            <span>Season Progress</span>
+            <span>{Math.round(pct)}%</span>
+          </div>
+          <Progress value={pct} className="h-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Season Tab ── */
+
+function SeasonTab({ agents, arenaData, isLoading }: { agents: any[]; arenaData: ArenaEntry[]; isLoading: boolean }) {
+  // Compute season points: discoveries*10 + arenaWins*15 + meeet/100 + votes*5 (simulated votes)
+  const arenaWinsMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const a of arenaData) m[a.id] = a.wins;
+    return m;
+  }, [arenaData]);
+
+  const seasonAgents = useMemo(() => {
+    return agents.map(a => {
+      const discPts = (a.discoveries_count ?? 0) * 10;
+      const arenaPts = (arenaWinsMap[a.id] ?? 0) * 15;
+      const earnPts = Math.floor((Number(a.balance_meeet) ?? 0) / 100);
+      // Simulated governance votes based on level
+      const votePts = Math.floor(a.level * 2.5) * 5;
+      const total = discPts + arenaPts + earnPts + votePts;
+      return { ...a, seasonPoints: total, discPts, arenaPts, earnPts, votePts };
+    }).sort((a, b) => b.seasonPoints - a.seasonPoints).slice(0, 50);
+  }, [agents, arenaWinsMap]);
+
+  if (isLoading) return <LoadingSkeleton />;
+
+  const top3 = seasonAgents.slice(0, 3);
+
+  return (
+    <div className="space-y-10">
+      {/* Podium */}
+      {top3.length >= 3 && (
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-6 items-end max-w-3xl mx-auto">
+          {[top3[1], top3[0], top3[2]].map((a, i) => (
+            <PodiumCard key={a.id} agent={a} medal={medals[i]} style={cardStyles[i]} metric={a.seasonPoints.toLocaleString()} metricLabel="Season Points" isGold={i === 1} />
+          ))}
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-xl border border-border overflow-hidden bg-card/40 backdrop-blur-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-muted/20">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground w-16">#</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Agent</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground hidden md:table-cell">Disc.</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground hidden md:table-cell">Arena</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground hidden sm:table-cell">Earn</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Total</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground w-12">Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seasonAgents.map((a, i) => (
+                <tr key={a.id} className="border-b border-border/50 hover:bg-primary/5 transition-colors">
+                  <td className="px-4 py-3"><RankCell rank={i + 1} /></td>
+                  <td className="px-4 py-3">
+                    <Link to={`/agents/${a.id}`} className="flex items-center gap-2.5 group/link">
+                      <img src={getAgentAvatarUrl(a.id, 32)} alt={a.name} className="w-8 h-8 rounded-lg border border-primary/20 bg-primary/10 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-display font-semibold text-foreground text-sm group-hover/link:text-primary transition-colors truncate block">{a.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">Lv.{a.level}</span>
+                      </div>
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground hidden md:table-cell">{a.discPts}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground hidden md:table-cell">{a.arenaPts}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground hidden sm:table-cell">{a.earnPts}</td>
+                  <td className="px-4 py-3 text-right font-mono font-semibold text-primary text-sm">{a.seasonPoints.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-center"><TrendIndicator index={i} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Season Rewards */}
+      <div>
+        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Gift className="w-5 h-5 text-primary" /> Season Rewards</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {SEASON_REWARDS.map(r => (
+            <Card key={r.rank} className={cn("border", r.color)}>
+              <CardContent className="p-4 text-center space-y-1">
+                <span className="text-2xl">{r.badge}</span>
+                <p className="font-bold text-sm text-foreground">{r.title}</p>
+                <p className="text-xs text-muted-foreground">Rank {r.rank}</p>
+                <p className="text-sm font-mono text-yellow-400">{r.meeet.toLocaleString()} $MEEET</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Season Pass */}
+      <div>
+        <h3 className="text-lg font-bold flex items-center gap-2 mb-4"><Star className="w-5 h-5 text-yellow-400" /> Season Pass</h3>
+        <Card className="border-primary/20">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>Your Season Points: <span className="font-bold text-primary">720</span></span>
+              <span>Next milestone: 1,000 pts</span>
+            </div>
+            <Progress value={(720 / 5000) * 100} className="h-2 mb-4" />
+            <div className="flex items-stretch justify-between gap-1 relative">
+              {/* Progress line */}
+              <div className="absolute top-5 left-0 right-0 h-0.5 bg-border z-0" />
+              <div className="absolute top-5 left-0 h-0.5 bg-primary z-0" style={{ width: `${(720 / 5000) * 100}%` }} />
+              {SEASON_PASS_MILESTONES.map((m, i) => (
+                <div key={i} className="flex flex-col items-center z-10 flex-1 min-w-0">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm border-2 shrink-0",
+                    m.unlocked
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-muted/50 border-border text-muted-foreground"
+                  )}>
+                    {m.unlocked ? "✓" : <Shield className="w-4 h-4" />}
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground mt-1">{m.label}</span>
+                  <span className={cn("text-[9px] mt-0.5 text-center leading-tight", m.unlocked ? "text-primary" : "text-muted-foreground")}>{m.reward}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Points breakdown */}
+      <Card className="border-border">
+        <CardContent className="p-4">
+          <h4 className="text-sm font-semibold mb-3 text-muted-foreground">How Season Points Work</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-xs">
+            <div className="p-3 rounded-lg bg-muted/20"><Beaker className="w-4 h-4 mx-auto mb-1 text-emerald-400" /><p className="font-bold text-foreground">10 pts</p><p className="text-muted-foreground">per Discovery</p></div>
+            <div className="p-3 rounded-lg bg-muted/20"><Swords className="w-4 h-4 mx-auto mb-1 text-red-400" /><p className="font-bold text-foreground">15 pts</p><p className="text-muted-foreground">per Arena Win</p></div>
+            <div className="p-3 rounded-lg bg-muted/20"><Coins className="w-4 h-4 mx-auto mb-1 text-yellow-400" /><p className="font-bold text-foreground">1 pt</p><p className="text-muted-foreground">per 100 $MEEET</p></div>
+            <div className="p-3 rounded-lg bg-muted/20"><Trophy className="w-4 h-4 mx-auto mb-1 text-purple-400" /><p className="font-bold text-foreground">5 pts</p><p className="text-muted-foreground">per Gov. Vote</p></div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 /* ── Tab renderers ── */
 
@@ -412,6 +647,7 @@ function LoadingSkeleton() {
 /* ── Main ── */
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: typeof Beaker }[] = [
+  { key: "season", label: "Season 1", icon: Trophy },
   { key: "discoveries", label: "Discoveries", icon: Beaker },
   { key: "arena", label: "Arena", icon: Swords },
   { key: "earnings", label: "Earnings", icon: Coins },
@@ -419,7 +655,7 @@ const TAB_CONFIG: { key: TabKey; label: string; icon: typeof Beaker }[] = [
 ];
 
 const Leaderboard = () => {
-  const [tab, setTab] = useState<TabKey>("discoveries");
+  const [tab, setTab] = useState<TabKey>("season");
   const { data: agents = [], isLoading: agentsLoading } = useAgents();
   const { data: arenaData = [], isLoading: arenaLoading } = useArenaStats();
   const { data: risingData = [], isLoading: risingLoading } = useRisingStars();
@@ -443,8 +679,11 @@ const Leaderboard = () => {
               <p className="text-muted-foreground text-sm md:text-base">Top performing agents across the nation</p>
             </div>
 
+            {/* Season Banner */}
+            <SeasonBanner />
+
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-8 bg-muted/30 border border-border rounded-xl p-1">
+              <TabsList className="grid w-full grid-cols-5 mb-8 bg-muted/30 border border-border rounded-xl p-1">
                 {TAB_CONFIG.map((t) => (
                   <TabsTrigger key={t.key} value={t.key} className="gap-1.5 text-xs md:text-sm data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg">
                     <t.icon className="w-3.5 h-3.5 hidden sm:block" /> {t.label}
@@ -452,6 +691,9 @@ const Leaderboard = () => {
                 ))}
               </TabsList>
 
+              <TabsContent value="season">
+                <SeasonTab agents={agents} arenaData={arenaData} isLoading={agentsLoading || arenaLoading} />
+              </TabsContent>
               <TabsContent value="discoveries">
                 <DiscoveriesTab agents={agents} isLoading={agentsLoading} />
               </TabsContent>
