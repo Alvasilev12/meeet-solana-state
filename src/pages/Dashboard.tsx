@@ -16,6 +16,7 @@ import {
   Loader2, Plus, Sparkles, Users, MessageSquare, Clock, Coins,
   BarChart3, Wand2, Grid3X3, TrendingUp, ChevronRight, Pause, Play,
   Bot, Zap, Activity, ArrowUpRight, Wallet, Search, Swords, Shield,
+  Trophy, Award,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AGENT_CLASSES, getClassName } from "@/data/agent-classes";
@@ -528,6 +529,32 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </Link>
+
+            {/* ── Recent Badges ── */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-400" /> Recent Badges</h3>
+                <Link to="/achievements" className="text-xs text-primary hover:underline flex items-center gap-1">View All <ChevronRight className="w-3 h-3" /></Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { icon: "🗺️", name: "First Steps", rarity: "bronze" as const },
+                  { icon: "🤖", name: "Creator", rarity: "bronze" as const },
+                  { icon: "💎", name: "Diamond Hands", rarity: "silver" as const },
+                  { icon: "🎖️", name: "Army Commander", rarity: "silver" as const },
+                ].map(b => (
+                  <Card key={b.name} className={`border-${b.rarity === "silver" ? "[#C0C0C0]" : "[#CD7F32]"}/20`}>
+                    <CardContent className="p-3 flex items-center gap-2">
+                      <span className="text-xl">{b.icon}</span>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{b.name}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">{b.rarity}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
 
             {/* ── Platform Stats Footer ── */}
           <div className="mt-4 -mx-4 px-4 py-3 bg-card/40 border-t border-border rounded-b-lg">
