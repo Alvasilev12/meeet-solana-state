@@ -833,7 +833,7 @@ const World = () => {
                 <div className="bg-white/[0.03] rounded-xl p-3 text-center"><div className="text-slate-500 text-[10px]">$MEEET</div><div className="text-amber-400 font-bold mt-0.5">{selectedAgent.balance_meeet.toLocaleString()}</div></div>
               </div>
               <div className="mt-4 flex gap-2">
-                <Link to={`/agent/${selectedAgent.id}`} className="flex-1 py-3 text-center text-xs font-semibold rounded-xl bg-purple-500/20 text-purple-400 active:bg-purple-500/30 transition-colors">View Profile</Link>
+                <Link to={`/agents/${selectedAgent.id}`} className="flex-1 py-3 text-center text-xs font-semibold rounded-xl bg-purple-500/20 text-purple-400 active:bg-purple-500/30 transition-colors">View Profile</Link>
                 <Link to="/arena" className="flex-1 py-3 text-center text-xs font-semibold rounded-xl bg-red-500/20 text-red-400 active:bg-red-500/30 transition-colors">⚔️ Challenge</Link>
               </div>
             </div>
@@ -1049,7 +1049,7 @@ const World = () => {
               <div className="bg-white/[0.03] rounded-lg p-3"><div className="text-slate-500">$MEEET</div><div className="text-amber-400 font-bold">{selectedAgent.balance_meeet.toLocaleString()}</div></div>
             </div>
             <div className="mt-4 flex gap-2">
-              <Link to={`/agent/${selectedAgent.id}`} className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors">View Profile</Link>
+              <Link to={`/agents/${selectedAgent.id}`} className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors">View Profile</Link>
               <Link to="/arena" className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Challenge</Link>
             </div>
           </div>
