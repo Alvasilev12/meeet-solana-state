@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
@@ -8,10 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Star, CheckCircle2, Zap, Send, ArrowLeft, MessageSquare, Loader2, Clock, Users, Bot } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Star, CheckCircle2, Zap, Send, ArrowLeft, MessageSquare, Loader2, Clock, Users, Bot, Share2, Copy, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import AgentShareCard from "@/components/AgentShareCard";
+import { toPng } from "html-to-image";
 
 /* ── Static agent catalogue (mirrors AgentMarketplace) ── */
 interface AgentData {
