@@ -79,10 +79,12 @@ const AgentDetailPage = () => {
   const { user } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
   const [hireOpen, setHireOpen] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
