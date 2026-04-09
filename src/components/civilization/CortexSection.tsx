@@ -73,7 +73,7 @@ function StatsRowAnimated({
   const stats = [
     { label: "Discoveries", countRef: disc.ref, value: totalCount.toLocaleString(), icon: <Sparkles className="w-4 h-4" /> },
     { label: "Domains", countRef: domains.ref, value: domainsCount.toLocaleString(), icon: <TrendingUp className="w-4 h-4" /> },
-    { label: "This Week", countRef: week.ref, value: weekCount.toLocaleString(), icon: <Zap className="w-4 h-4" /> },
+    ...(weekCount > 0 ? [{ label: "This Week", countRef: week.ref, value: weekCount.toLocaleString(), icon: <Zap className="w-4 h-4" /> }] : []),
   ];
   return (
     <div className="flex justify-center gap-8 mb-12 flex-wrap">

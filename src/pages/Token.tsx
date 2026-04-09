@@ -257,9 +257,8 @@ const Token = () => {
                     </div>
                     <div className="border-l border-border pl-6">
                       <p className="text-xs text-muted-foreground mb-1">24h</p>
-                      <p className={`text-lg font-bold flex items-center gap-1 ${priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
-                        {priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                        {priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%
+                      <p className={`text-lg font-bold flex items-center gap-1 ${price.change24h === 0 ? "text-muted-foreground" : priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
+                        {price.change24h === 0 ? "—" : (<>{priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%</>)}
                       </p>
                     </div>
                     <div className="border-l border-border pl-6 hidden sm:block">
@@ -268,7 +267,7 @@ const Token = () => {
                     </div>
                     <div className="border-l border-border pl-6 hidden md:block">
                       <p className="text-xs text-muted-foreground mb-1">24h Volume</p>
-                      <p className="text-lg font-bold">${price.volume24h.toLocaleString("en-US")}</p>
+                      <p className="text-lg font-bold">{price.volume24h === 0 ? "< $1" : `$${price.volume24h.toLocaleString("en-US")}`}</p>
                     </div>
                   </>
                 )}

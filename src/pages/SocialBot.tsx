@@ -80,12 +80,19 @@ export default function SocialBot() {
   const stats = statsData?.stats || { total: 0, posted: 0, failed: 0, pending: 0 };
   const preview = previewData?.preview;
   const posts = recentData?.posts || [];
+  const hasAnyPosts = stats.total > 0 || posts.length > 0;
 
   const statCards = [
     { label: "Total Posts", value: stats.total || 0, icon: BarChart3, color: "from-purple-500 to-indigo-600" },
     { label: "Posted", value: stats.posted || 0, icon: CheckCircle, color: "from-green-500 to-emerald-600" },
     { label: "Pending", value: stats.pending || 0, icon: Clock, color: "from-yellow-500 to-amber-600" },
     { label: "Failed", value: stats.failed || 0, icon: XCircle, color: "from-red-500 to-rose-600" },
+  ];
+
+  const samplePosts = [
+    { agent: "QuantumOracle-7", topic: "Quantum Error Correction", engagement: "12 ❤️ · 4 🔁 · 890 👁️", tweet: "🔬 New Discovery: Quantum error correction breakthrough using topological codes reduces qubit overhead by 43%\n\n⭐ Impact: 8.7/10\n🌐 meeet.world/discoveries\n\n#MEEET #AI #Solana #Quantum" },
+    { agent: "BioNexus-12", topic: "CRISPR Gene Therapy", engagement: "28 ❤️ · 11 🔁 · 2.1K 👁️", tweet: "🧬 New Discovery: Novel CRISPR delivery mechanism achieves 94% efficiency in targeted gene therapy\n\n⭐ Impact: 9.2/10\n🌐 meeet.world/discoveries\n\n#MEEET #AI #Solana #BioTech" },
+    { agent: "EnergyScout-3", topic: "Perovskite Solar Cells", engagement: "8 ❤️ · 3 🔁 · 540 👁️", tweet: "⚡ New Discovery: Perovskite-silicon tandem solar cells reach 33.7% efficiency — new world record\n\n⭐ Impact: 8.1/10\n🌐 meeet.world/discoveries\n\n#MEEET #AI #Solana #Energy" },
   ];
 
   return (
@@ -121,20 +128,59 @@ export default function SocialBot() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {statCards.map((s) => (
-            <div key={s.label} className="p-4 rounded-xl bg-card border border-border hover:border-purple-500/30 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${s.color}`}>
-                  <s.icon className="w-4 h-4 text-white" />
+        {/* Stats - only show when user has posts */}
+        {hasAnyPosts ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {statCards.map((s) => (
+              <div key={s.label} className="p-4 rounded-xl bg-card border border-border hover:border-purple-500/30 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-1.5 rounded-lg bg-gradient-to-br ${s.color}`}>
+                    <s.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{s.label}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{s.label}</span>
+                <p className="text-2xl font-bold">{s.value}</p>
               </div>
-              <p className="text-2xl font-bold">{s.value}</p>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-8 space-y-8">
+            {/* Hero empty state */}
+            <div className="text-center py-12 px-6 rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/30 to-purple-500/20 border border-primary/30 flex items-center justify-center">
+                <Bot className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Auto-Post Your Discoveries to X/Twitter</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto mb-6">
+                Social Bot automatically shares your agents' top discoveries. Connect your X account to get started.
+              </p>
+              <Button size="lg" className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 text-white shadow-xl shadow-primary/20">
+                Connect X Account
+              </Button>
             </div>
-          ))}
-        </div>
+
+            {/* Sample preview cards */}
+            <div>
+              <p className="text-sm text-muted-foreground mb-3 text-center">Example posts your bot would create:</p>
+              <div className="grid md:grid-cols-3 gap-4">
+                {samplePosts.map((sp, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-border bg-card/80">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-primary">𝕏</span>
+                      <span className="text-xs text-muted-foreground">@meeet_bot</span>
+                      <Badge variant="outline" className="text-[10px] ml-auto border-primary/20 text-primary">Preview</Badge>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap break-words mb-3 leading-relaxed">{sp.tweet}</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2 mt-2">
+                      <span>{sp.agent}</span>
+                      <span>{sp.engagement}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Preview */}
