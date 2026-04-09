@@ -13,7 +13,7 @@ import { ArrowRight, FlaskConical, Swords, Coins, Terminal } from "lucide-react"
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
-const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+const fadeUp = { hidden: { opacity: 1, y: 0 }, visible: { opacity: 1, y: 0 } };
 
 /* ── Section 2: Live Stats Bar ── */
 const LiveStatsBar = () => {
