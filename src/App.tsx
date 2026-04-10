@@ -128,6 +128,8 @@ const PageLoader = () => (
 const FloatingAgentCounter = React.lazy(() => import("@/components/FloatingAgentCounter"));
 const AchievementTicker = React.lazy(() => import("@/components/AchievementTicker"));
 const ExitIntentPopup = React.lazy(() => import("@/components/ExitIntentPopup"));
+const FloatingTokenBanner = React.lazy(() => import("@/components/FloatingTokenBanner"));
+const ShareEarnButton = React.lazy(() => import("@/components/ShareEarnButton"));
 
 const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
   useRealtimeNotifications();
@@ -250,6 +252,8 @@ const App = () => (
                    <FloatingAgentCounter />
                    <AchievementTicker />
                    <ExitIntentPopup />
+                   <FloatingTokenBanner />
+                   <ShareEarnButton />
                  </Suspense>
                  </div>
                </Suspense>
