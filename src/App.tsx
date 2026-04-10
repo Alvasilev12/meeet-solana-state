@@ -130,6 +130,7 @@ const AchievementTicker = React.lazy(() => import("@/components/AchievementTicke
 const ExitIntentPopup = React.lazy(() => import("@/components/ExitIntentPopup"));
 const FloatingTokenBanner = React.lazy(() => import("@/components/FloatingTokenBanner"));
 const ShareEarnButton = React.lazy(() => import("@/components/ShareEarnButton"));
+const SocialProofFeed = React.lazy(() => import("@/components/SocialProofFeed"));
 
 const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
   useRealtimeNotifications();
@@ -254,6 +255,7 @@ const App = () => (
                    <ExitIntentPopup />
                    <FloatingTokenBanner />
                    <ShareEarnButton />
+                   <SocialProofFeed />
                  </Suspense>
                  </div>
                </Suspense>
