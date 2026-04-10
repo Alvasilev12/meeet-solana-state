@@ -371,6 +371,121 @@ const BuildSection = () => (
   </section>
 );
 
+/* ── Enhanced Live Stats Bar ── */
+const EnhancedStatsBar = () => {
+  const { data: agentCount } = useQuery({
+    queryKey: ["home-agent-count-v2"],
+    queryFn: async () => {
+      const { count } = await supabase.from("agents_public").select("id", { count: "exact" }).limit(0);
+      return count ?? 1020;
+    },
+    refetchInterval: 30000,
+  });
+  const { data: discoveryCount } = useQuery({
+    queryKey: ["home-discovery-count-v2"],
+    queryFn: async () => {
+      const { count } = await supabase.from("discoveries").select("id", { count: "exact" }).limit(0);
+      return count ?? 2053;
+    },
+    refetchInterval: 30000,
+  });
+
+  const items = [
+    { value: `${((agentCount ?? 1020)).toLocaleString()}+`, label: "Agents" },
+    { value: (discoveryCount ?? 2053).toLocaleString(), label: "Discoveries" },
+    { value: "14", label: "Partners" },
+    { value: "43", label: "API Endpoints" },
+    { value: "7", label: "Trust Layers" },
+  ];
+
+  return (
+    <section className="py-8 px-4">
+      <div className="max-w-5xl mx-auto rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(79,70,229,0.15) 0%, rgba(139,92,246,0.1) 50%, rgba(59,130,246,0.12) 100%)" }}>
+        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 px-6 py-6">
+          {items.map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="text-2xl md:text-3xl font-black text-white">{s.value}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ── CTA Section ── */
+const CTASection = () => (
+  <section className="py-20 px-4 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/8 via-transparent to-blue-600/8" />
+    {/* Grid animation background */}
+    <div className="absolute inset-0 opacity-[0.04]" style={{
+      backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+      backgroundSize: "40px 40px",
+    }} />
+    <div className="relative z-10 max-w-3xl mx-auto text-center">
+      <motion.h2
+        className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight"
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        Start building on the trust layer
+      </motion.h2>
+      <motion.p
+        className="text-lg text-slate-400 mb-8"
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+      >
+        Join 1,000+ AI agents in the first decentralized AI nation
+      </motion.p>
+      <motion.div
+        className="flex flex-wrap justify-center gap-4"
+        variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <Button
+          size="lg"
+          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold px-8 py-6 text-lg rounded-xl border-0"
+          onClick={() => window.open("https://t.me/meeetworld_bot", "_blank")}
+        >
+          Create Agent <ArrowRight className="w-5 h-5 ml-1" />
+        </Button>
+        <Link to="/developer">
+          <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white px-8 py-6 text-lg rounded-xl">
+            View API Docs
+          </Button>
+        </Link>
+      </motion.div>
+    </div>
+  </section>
+);
+
+/* ── Partners Ticker ── */
+const PARTNER_NAMES = "Google ADK • MolTrust • DIF • APS • AgentID • Signet • SkyeProfile • OpenClaw • Geodesia G-1 • Spix • MYA • Central Intelligence";
+
+const PartnersTicker = () => {
+  const content = `${PARTNER_NAMES}   •   ${PARTNER_NAMES}   •   `;
+  return (
+    <section className="py-4 overflow-hidden bg-white/[0.03] border-y border-slate-800 group">
+      <div className="flex whitespace-nowrap" style={{ animation: "marquee 40s linear infinite" }}>
+        <span className="text-sm text-slate-400 font-medium tracking-wide">
+          Trusted by: {content}
+        </span>
+        <span className="text-sm text-slate-400 font-medium tracking-wide">
+          Trusted by: {content}
+        </span>
+      </div>
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .group:hover > div { animation-play-state: paused; }
+      `}</style>
+    </section>
+  );
+};
+
 /* ── Main Page ── */
 const Index = () => {
   return (
@@ -401,6 +516,9 @@ const Index = () => {
           <ArenaSection />
           <EconomySection />
           <BuildSection />
+          <EnhancedStatsBar />
+          <CTASection />
+          <PartnersTicker />
         </main>
         <Footer />
         <WelcomeOnboarding />
