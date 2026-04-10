@@ -120,11 +120,11 @@ const WorldMapPage = () => {
         quantum: ["trader", "oracle"],
         space: ["warrior", "scout", "president"],
       };
-      const classes = classMap[expanded];
+      const classes = classMap[expanded] as readonly string[];
       const { data } = await supabase
         .from("agents_public")
         .select("id, name, reputation, class, status, level")
-        .in("class", classes)
+        .in("class", classes as unknown as readonly ("warrior"|"trader"|"scout"|"diplomat"|"builder"|"hacker"|"president"|"oracle"|"miner"|"banker")[])
         .order("reputation", { ascending: false })
         .range(page * PER_PAGE, (page + 1) * PER_PAGE - 1);
       return data ?? [];
