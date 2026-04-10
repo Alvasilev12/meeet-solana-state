@@ -42,20 +42,36 @@ const USE_CASES = [
   { icon: "🔥", title: "Burns", desc: "20% of ALL fees burned forever · Deflationary by design" },
 ];
 
+const JUPITER_URL = `https://jup.ag/swap/SOL-${MEEET_CONTRACT_ADDRESS}`;
+const SOLSCAN_URL = `https://solscan.io/token/${MEEET_CONTRACT_ADDRESS}`;
+
 const HOW_TO_BUY = [
-  { step: 1, title: "Get Phantom Wallet", desc: "Download from phantom.app", link: "https://phantom.app" },
-  { step: 2, title: "Buy SOL", desc: "Purchase SOL on any exchange and transfer to Phantom" },
-  { step: 3, title: "Go to Pump.fun", desc: "Open the MEEET token page", link: PUMP_FUN_URL },
-  { step: 4, title: "Swap SOL → MEEET", desc: "Enter amount, confirm swap. Done! 🎉" },
+  { step: 1, title: "Get a Solana Wallet", desc: "Download Phantom or Solflare", icon: Wallet, link: "https://phantom.app" },
+  { step: 2, title: "Buy SOL", desc: "Purchase SOL on any exchange and transfer to your wallet", icon: Coins },
+  { step: 3, title: "Go to Pump.fun or Jupiter", desc: "Open the $MEEET swap page", icon: ArrowRight, link: PUMP_FUN_URL },
+  { step: 4, title: "Paste Contract Address", desc: MEEET_CONTRACT_ADDRESS.slice(0, 8) + "..." + MEEET_CONTRACT_ADDRESS.slice(-4), icon: Copy },
+  { step: 5, title: "Swap SOL for $MEEET", desc: "Enter amount, confirm swap. Done! 🎉", icon: Zap },
 ];
 
-const DISTRIBUTION = [
-  { label: "Liquidity Pool", pct: 40, color: "hsl(262, 100%, 63.5%)" },
-  { label: "Circulating (Agents)", pct: 40, color: "hsl(210, 40%, 50%)" },
-  { label: "System (Dev Buy)", pct: 10, color: "hsl(157, 91%, 51%)" },
-  { label: "Team", pct: 5, color: "#fbbf24" },
-  { label: "Airdrop", pct: 5, color: "#fb7185" },
+const TOKEN_UTILITY = [
+  { title: "Staking Rewards", desc: "Earn up to 100% APY", link: "/staking", icon: "📊" },
+  { title: "Governance Voting", desc: "Shape the AI nation's future", link: "/governance", icon: "🗳️" },
+  { title: "Agent Deployment", desc: "Pay fees to deploy agents", icon: "🤖" },
+  { title: "Tournament Prizes", desc: "Win $MEEET in arena battles", icon: "🏆" },
+  { title: "Marketplace Transactions", desc: "Buy and sell agents", icon: "🛒" },
+  { title: "Oracle Predictions", desc: "Bet on AI outcomes", icon: "🔮" },
 ];
+
+const DISTRIBUTION_NEW = [
+  { label: "Community & Staking", pct: 40, color: "hsl(262, 100%, 63.5%)" },
+  { label: "Development", pct: 20, color: "hsl(210, 40%, 50%)" },
+  { label: "Liquidity", pct: 15, color: "hsl(157, 91%, 51%)" },
+  { label: "Team (vested 12mo)", pct: 10, color: "#fbbf24" },
+  { label: "Marketing", pct: 10, color: "#fb7185" },
+  { label: "Reserve", pct: 5, color: "#94a3b8" },
+];
+
+const DISTRIBUTION = DISTRIBUTION_NEW;
 
 function AnimatedCounter({ target, prefix = "", suffix = "" }: { target: number; prefix?: string; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -505,36 +521,73 @@ const Token = () => {
             </div>
           </section>
 
-          {/* HOW TO BUY */}
+          {/* HOW TO BUY — Expanded */}
           <section>
             <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
-              <Wallet className="w-6 h-6 text-amber-400" /> How to Buy
+              <Wallet className="w-6 h-6 text-amber-400" /> How to Buy $MEEET
             </h2>
             <div className="glass-card p-8">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {HOW_TO_BUY.map(s => (
-                  <div key={s.step} className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-display font-bold text-lg">
-                      {s.step}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                {HOW_TO_BUY.map(s => {
+                  const Icon = s.icon;
+                  return (
+                    <div key={s.step} className="text-center">
+                      <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-1">Step {s.step}</div>
+                      <h3 className="font-bold text-sm mb-1">{s.title}</h3>
+                      <p className="text-xs text-muted-foreground">{s.desc}</p>
+                      {s.link && (
+                        <a href={s.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1">
+                          Open <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
-                    <h3 className="font-bold text-sm mb-1">{s.title}</h3>
-                    <p className="text-xs text-muted-foreground">{s.desc}</p>
-                    {s.link && (
-                      <a href={s.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1">
-                        Open <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="text-center mt-8 pt-6 border-t border-border">
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-8 pt-6 border-t border-border">
                 <Button size="lg" className="gap-2 bg-gradient-to-r from-primary to-purple-500 text-white shadow-xl" asChild>
                   <a href={PUMP_FUN_URL} target="_blank" rel="noopener noreferrer">
-                    Buy $MEEET Now <ArrowRight className="w-4 h-4" />
+                    Buy on Pump.fun <ArrowRight className="w-4 h-4" />
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" className="gap-2" asChild>
+                  <a href={JUPITER_URL} target="_blank" rel="noopener noreferrer">
+                    Buy on Jupiter <ExternalLink className="w-4 h-4" />
+                  </a>
+                </Button>
+                <Button size="lg" variant="outline" className="gap-2" asChild>
+                  <a href={SOLSCAN_URL} target="_blank" rel="noopener noreferrer">
+                    View on Solscan <Eye className="w-4 h-4" />
                   </a>
                 </Button>
               </div>
+            </div>
+          </section>
+
+          {/* TOKEN UTILITY */}
+          <section>
+            <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-emerald-400" /> Token Utility
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {TOKEN_UTILITY.map(u => (
+                <Card key={u.title} className="border-border bg-card/80 hover:border-primary/20 transition-colors group">
+                  <CardContent className="p-5">
+                    <span className="text-2xl mb-2 block">{u.icon}</span>
+                    <h3 className="font-display font-bold text-sm mb-1">{u.title}</h3>
+                    <p className="text-xs text-muted-foreground mb-2">{u.desc}</p>
+                    {u.link && (
+                      <Link to={u.link} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                        Learn more <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
