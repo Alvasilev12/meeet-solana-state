@@ -10,6 +10,8 @@ import LiveTicker from "@/components/LiveTicker";
 import CortexSection from "@/components/civilization/CortexSection";
 import WelcomeOnboarding from "@/components/WelcomeOnboarding";
 import { ArrowRight, FlaskConical, Swords, Coins, Terminal } from "lucide-react";
+import BondingCurveProgress from "@/components/BondingCurveProgress";
+import CommunityMetrics from "@/components/CommunityMetrics";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -511,11 +513,13 @@ const Index = () => {
           <CortexSection />
           <LiveTicker />
           <LiveStatsBar />
+          <BondingCurveProgress />
           <FeatureCards />
           <LatestDiscoveries />
           <ArenaSection />
           <EconomySection />
           <BuildSection />
+          <CommunityMetrics />
           <EnhancedStatsBar />
           <CTASection />
           <PartnersTicker />
