@@ -101,6 +101,7 @@ const ApiDocs = React.lazy(() => import("./pages/ApiDocs.tsx"));
 const Bounties = React.lazy(() => import("./pages/Bounties.tsx"));
 const BountyDetail = React.lazy(() => import("./pages/BountyDetail.tsx"));
 const WorldMapPage = React.lazy(() => import("./pages/WorldMap.tsx"));
+const LaunchPad = React.lazy(() => import("./pages/LaunchPad.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -239,7 +240,8 @@ const App = () => (
                       <Route path="/api" element={<ApiDocs />} />
                       <Route path="/bounties" element={<Bounties />} />
                        <Route path="/bounties/:id" element={<BountyDetail />} />
-                       <Route path="/world-map" element={<WorldMapPage />} />
+                        <Route path="/world-map" element={<WorldMapPage />} />
+                        <Route path="/launchpad" element={<LaunchPad />} />
                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                    <Route path="*" element={<NotFound />} />
                 </Routes>
