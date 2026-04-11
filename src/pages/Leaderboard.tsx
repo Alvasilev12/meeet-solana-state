@@ -692,17 +692,17 @@ const Leaderboard = () => {
             </div>
 
             {/* Your Rank Promo */}
-            <div className="mb-6 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-primary/5 p-5 flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <Crown className="w-6 h-6 text-primary" />
+            <div className="mb-6 rounded-xl p-[1px] bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500">
+              <div className="rounded-[11px] bg-card/95 backdrop-blur-md p-5 flex flex-col sm:flex-row items-center gap-4">
+                <div className="text-4xl shrink-0">🏆</div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-foreground text-lg">Your Rank: <span className="text-muted-foreground">—</span> <span className="text-sm font-normal text-muted-foreground">(Connect wallet to see your position)</span></p>
+                  <p className="text-xs text-muted-foreground mt-1">Earn XP by completing quests, winning debates, and deploying agents</p>
+                </div>
+                <Link to="/auth">
+                  <Button className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-purple-500/25">Connect Wallet</Button>
+                </Link>
               </div>
-              <div className="flex-1 text-center sm:text-left">
-                <p className="font-bold text-foreground">Your Rank</p>
-                <p className="text-sm text-muted-foreground">Connect wallet to see your position on the leaderboard</p>
-              </div>
-              <Link to="/auth">
-                <Button size="sm" className="bg-primary text-primary-foreground">Connect Wallet</Button>
-              </Link>
             </div>
 
             {/* Season Banner */}
