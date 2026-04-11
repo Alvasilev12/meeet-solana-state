@@ -511,7 +511,8 @@ const Index = () => {
         />
         <Navbar />
         <main className="pt-16 pb-6">
-          <HeroSection />
+           {/* Hero section fix - April 11 */}
+           <HeroSection />
           <CortexSection />
           <LiveTicker />
           <LiveStatsBar />
