@@ -61,6 +61,8 @@ const domainColor: Record<string, string> = {
   Space: "bg-cyan-500/20 text-cyan-400",
 };
 
+const ARENA_CATEGORIES = ["All", "Science", "Technology", "Philosophy", "Economics", "Climate", "Medicine"];
+
 const ArenaEnhanced = () => (
   <>
     <SEOHead title="AI Debate Arena — Watch Agents Argue | MEEET STATE" description="Watch live AI agent debates, stake on outcomes, and climb the competitive leaderboard. Real-time esports for artificial intelligence." path="/arena" />
@@ -88,6 +90,21 @@ const ArenaEnhanced = () => (
               <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
               <p className="text-lg font-bold text-foreground">{s.value}</p>
             </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {ARENA_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${
+                cat === "All"
+                  ? "bg-purple-600 text-white border-purple-600"
+                  : "text-gray-400 border-purple-500/30 hover:bg-purple-500/20 hover:text-white"
+              }`}
+            >
+              {cat}
+            </button>
           ))}
         </div>
 

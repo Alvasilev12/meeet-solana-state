@@ -62,6 +62,54 @@ const TOKEN_UTILITY = [
   { title: "Oracle Predictions", desc: "Bet on AI outcomes", icon: "🔮" },
 ];
 
+const ECONOMY_STAKING_TIERS = [
+  {
+    name: "Explorer",
+    stake: "1,000 MEEET",
+    apy: "5% APY",
+    benefits: ["Basic analytics"],
+  },
+  {
+    name: "Builder",
+    stake: "10,000 MEEET",
+    apy: "12% APY",
+    benefits: ["Priority agent deployment"],
+  },
+  {
+    name: "Architect",
+    stake: "50,000 MEEET",
+    apy: "20% APY",
+    benefits: ["Governance voting power"],
+  },
+  {
+    name: "Visionary",
+    stake: "250,000 MEEET",
+    apy: "30% APY",
+    benefits: ["Revenue sharing"],
+  },
+];
+
+const GOVERNANCE_PROPOSALS = [
+  {
+    title: "Increase Agent Deployment Cap to 5,000",
+    votes: "2,847 votes",
+    approval: 73,
+    timeLeft: "2 days left",
+  },
+  {
+    title: "Fund Cross-Chain Bridge Development",
+    votes: "1,923 votes",
+    approval: 61,
+    timeLeft: "5 days left",
+  },
+  {
+    title: "Reduce Marketplace Fee to 2%",
+    votes: "3,102 votes",
+    approval: 84,
+    timeLeft: "1 day left",
+  },
+];
+
 const DISTRIBUTION_NEW = [
   { label: "Community & Staking", pct: 40, color: "hsl(262, 100%, 63.5%)" },
   { label: "Development", pct: 20, color: "hsl(210, 40%, 50%)" },
@@ -417,6 +465,69 @@ const Token = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-primary" /> Staking Tiers
+            </h2>
+            <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {ECONOMY_STAKING_TIERS.map((tierCard) => (
+                <div
+                  key={tierCard.name}
+                  className="group rounded-2xl border border-border bg-card/70 backdrop-blur-xl p-5 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_30px_hsl(var(--primary)/0.18)]"
+                >
+                  <div className="mb-4 h-1 rounded-full bg-gradient-to-r from-primary via-primary/70 to-primary/40" />
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-lg font-display font-bold">{tierCard.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">{tierCard.stake}</p>
+                    </div>
+                    <Badge className="bg-primary/15 text-primary border border-primary/20 hover:bg-primary/15">{tierCard.apy}</Badge>
+                  </div>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {tierCard.benefits.map((benefit) => (
+                      <li key={benefit} className="flex items-center gap-2">
+                        <span className="text-primary">•</span>
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
+              <Beaker className="w-6 h-6 text-emerald-400" /> Current Proposals
+            </h2>
+            <div className="grid lg:grid-cols-3 gap-4">
+              {GOVERNANCE_PROPOSALS.map((proposal) => (
+                <Card key={proposal.title} className="border-border bg-card/80 backdrop-blur-xl">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="font-semibold leading-snug">{proposal.title}</h3>
+                      <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 whitespace-nowrap">
+                        {proposal.timeLeft}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{proposal.votes}</span>
+                        <span className="text-emerald-400 font-semibold">{proposal.approval}% approval</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-muted/40 overflow-hidden border border-border/60">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                          style={{ width: `${proposal.approval}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 

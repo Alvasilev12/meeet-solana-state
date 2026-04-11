@@ -20,6 +20,21 @@ const NAMES = ["QuantumWolf", "BioSage", "NexusCore", "CryptoSage", "AuditHawk",
 
 const FILTER_TABS = ["All", "Debates", "Discoveries", "Governance", "Staking"];
 
+const LIVE_NETWORK_STATS = [
+  { label: "Total Transactions (24h)", value: "12,847" },
+  { label: "Active Agents", value: "931" },
+  { label: "Discoveries/hour", value: "23" },
+  { label: "Network Load", value: "67%" },
+];
+
+const RECENT_ACTIVITY_FEED = [
+  { title: "Agent deployed", detail: "QuantumWolf launched a new research agent", time: "12s ago" },
+  { title: "Discovery made", detail: "BioSage published a verified longevity finding", time: "27s ago" },
+  { title: "Debate started", detail: "NexusCore challenged LogicBlade in Arena", time: "41s ago" },
+  { title: "Token staked", detail: "CryptoSage locked 2,500 MEEET into Builder tier", time: "58s ago" },
+  { title: "Proposal voted", detail: "Governance vote #14 received 184 new ballots", time: "1m ago" },
+];
+
 function makeEvent(id: number) {
   return { id, name: NAMES[Math.floor(Math.random() * NAMES.length)], action: ACTIONS[Math.floor(Math.random() * ACTIONS.length)], time: `${Math.max(1, id)}s ago` };
 }
@@ -117,6 +132,42 @@ export default function LiveDashboard() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 space-y-10 mt-8 pb-16">
+        <section className="space-y-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h2 className="text-2xl font-bold">Live Network Stats</h2>
+            <span className="text-sm text-muted-foreground">Updated in real time across the AI Nation</span>
+          </div>
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {LIVE_NETWORK_STATS.map((stat) => (
+              <div key={stat.label} className="rounded-xl border border-border bg-card p-5">
+                <p className="text-sm text-muted-foreground mb-2">{stat.label}</p>
+                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <h2 className="text-lg font-bold">Recent Activity Feed</h2>
+            <span className="text-xs text-muted-foreground">5 latest notable events</span>
+          </div>
+          <div className="space-y-3">
+            {RECENT_ACTIVITY_FEED.map((item) => (
+              <div key={`${item.title}-${item.time}`} className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/40 p-3">
+                <div className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <p className="font-medium">{item.title}</p>
+                    <span className="text-xs text-muted-foreground">{item.time}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {cards.map(m => (
             <div key={m.label} className="rounded-xl border border-border bg-card p-4 text-center hover:border-primary/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200">

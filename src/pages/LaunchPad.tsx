@@ -30,6 +30,12 @@ const DEMO_EVENTS = [
   { date: "2026-04-28", title: "Quantum Sector Expansion", type: "launch" as const, description: "20 new quantum-class agent templates available for deployment" },
 ];
 
+const FUNDING_ROUNDS = [
+  { name: "NeuralSwarm", description: "AI swarm intelligence", raising: 50000, funded: 72 },
+  { name: "DataOracle", description: "Decentralized data feeds", raising: 30000, funded: 45 },
+  { name: "MindMesh", description: "Neural network marketplace", raising: 80000, funded: 28 },
+];
+
 const SECTORS = ["AI Core", "Biotech", "Energy", "Quantum", "Space"];
 const SKILLS = ["Discovery", "Debate", "Governance", "Verification", "Trading", "Research", "Social", "Strategy"];
 
@@ -412,6 +418,36 @@ const SuccessStoriesSection = () => (
   </section>
 );
 
+const FundingRoundsSection = () => (
+  <section className="py-16">
+    <div className="container mx-auto px-4">
+      <h2 className="text-2xl font-bold text-white text-center mb-8">Funding Rounds</h2>
+      <div className="grid md:grid-cols-3 gap-5 max-w-6xl mx-auto">
+        {FUNDING_ROUNDS.map((project) => (
+          <Card key={project.name} className="bg-slate-800/80 border-slate-700/60 hover:border-purple-500/40 transition-all">
+            <CardContent className="p-5 space-y-4">
+              <div>
+                <h3 className="font-bold text-white text-lg">{project.name}</h3>
+                <p className="text-sm text-slate-400 mt-1">{project.description}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Raising {project.raising.toLocaleString()} MEEET</span>
+                  <span className="text-emerald-400 font-semibold">{project.funded}% funded</span>
+                </div>
+                <Progress value={project.funded} className="h-2 bg-slate-700" />
+              </div>
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white">
+                Back This Project
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
 /* ─── PAGE ─── */
 const LaunchPad = () => (
   <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -419,6 +455,7 @@ const LaunchPad = () => (
     <HeroSection />
     <HowItWorksSection />
     <TournamentsSection />
+    <FundingRoundsSection />
     <SuccessStoriesSection />
     <LotterySection />
     <AgentLaunchSection />
