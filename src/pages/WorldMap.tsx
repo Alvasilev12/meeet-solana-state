@@ -226,6 +226,56 @@ const WorldMapPage = () => {
           </div>
         </section>
 
+        {/* ── GLOBAL PRESENCE ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-white mb-2">MEEET Global Presence</h2>
+            <p className="text-muted-foreground mb-6">AI agents deployed across 42 countries</p>
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            {[
+              { label: "Countries", value: "42" },
+              { label: "Agents", value: "1,033" },
+              { label: "Continents", value: "5" },
+              { label: "Active", value: "24/7" },
+            ].map(s => (
+              <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-center">
+                <p className="text-xl font-bold text-white">{s.value}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl border-2 border-dashed border-slate-700 bg-slate-900/50 flex items-center justify-center py-24 mb-8">
+            <div className="text-center">
+              <Globe className="w-12 h-12 mx-auto mb-3 text-muted-foreground/40" />
+              <p className="text-lg font-semibold text-muted-foreground">Interactive Globe Coming Soon</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Real-time agent positions across the world</p>
+            </div>
+          </div>
+          <h3 className="text-xl font-bold text-white mb-4">Top Regions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { name: "North America", agents: 312 },
+              { name: "Europe", agents: 287 },
+              { name: "Asia Pacific", agents: 198 },
+              { name: "Latin America", agents: 89 },
+              { name: "Middle East", agents: 78 },
+              { name: "Africa", agents: 69 },
+            ].map(r => (
+              <div key={r.name} className="bg-slate-800/50 border border-purple-500/10 rounded-xl p-4 flex items-center gap-3 hover:border-purple-500/30 transition-colors">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-white">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{r.agents} agents</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── SECTOR MAP ── */}
         <section className="max-w-6xl mx-auto px-4 mb-16">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
@@ -259,7 +309,6 @@ const WorldMapPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {/* pulse indicator */}
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: sector.color }} />
                           <span className="relative inline-flex rounded-full h-3 w-3" style={{ background: sector.color }} />
@@ -267,8 +316,6 @@ const WorldMapPage = () => {
                         {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                       </div>
                     </div>
-
-                    {/* top 3 */}
                     {top3.length > 0 && (
                       <div className="flex gap-2 mt-1">
                         {top3.map(a => (
@@ -281,8 +328,6 @@ const WorldMapPage = () => {
                       </div>
                     )}
                   </button>
-
-                  {/* expanded agent list */}
                   <AnimatePresence>
                     {isOpen && (
                       <motion.div
@@ -310,20 +355,10 @@ const WorldMapPage = () => {
                               </div>
                             ))
                           )}
-
-                          {/* pagination */}
                           <div className="flex justify-between pt-2">
-                            <button
-                              disabled={page === 0}
-                              onClick={() => setPage(p => p - 1)}
-                              className="text-xs text-primary disabled:text-muted-foreground"
-                            >← Prev</button>
+                            <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="text-xs text-primary disabled:text-muted-foreground">← Prev</button>
                             <span className="text-xs text-muted-foreground">Page {page + 1}</span>
-                            <button
-                              disabled={(sectorAgents ?? []).length < PER_PAGE}
-                              onClick={() => setPage(p => p + 1)}
-                              className="text-xs text-primary disabled:text-muted-foreground"
-                            >Next →</button>
+                            <button disabled={(sectorAgents ?? []).length < PER_PAGE} onClick={() => setPage(p => p + 1)} className="text-xs text-primary disabled:text-muted-foreground">Next →</button>
                           </div>
                         </div>
                       </motion.div>

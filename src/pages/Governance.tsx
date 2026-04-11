@@ -224,6 +224,47 @@ const Governance = () => {
             </TabsContent>
           </Tabs>
 
+          {/* Current Proposals Highlight */}
+          <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">Current Proposals</h2>
+            <div className="space-y-4">
+              {[
+                { title: "Increase Staking Rewards by 2%", forPct: 67, votes: 1234, daysLeft: 3, status: "voting" },
+                { title: "Add New Agent Category: Healthcare", forPct: 82, votes: 892, daysLeft: 5, status: "voting" },
+                { title: "Reduce Marketplace Fee to 2.5%", forPct: 91, votes: 2041, daysLeft: 0, status: "passed" },
+              ].map(p => (
+                <div key={p.title} className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-5 hover:border-primary/20 transition-all">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-foreground">{p.title}</h3>
+                    {p.status === "passed" ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400">✓ Executed</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{p.daysLeft}d left</span>
+                    )}
+                  </div>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-emerald-400">For {p.forPct}%</span>
+                      <span className="text-red-400">Against {100 - p.forPct}%</span>
+                    </div>
+                    <div className="h-2.5 rounded-full bg-muted overflow-hidden flex">
+                      <motion.div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-l-full" initial={{ width: 0 }} whileInView={{ width: `${p.forPct}%` }} viewport={{ once: true }} transition={{ duration: 1, ease: "easeOut" }} />
+                      <div className="h-full bg-red-500/40 flex-1" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" />{p.votes.toLocaleString()} votes</span>
+                    {p.status === "voting" && (
+                      <button className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-semibold hover:from-purple-700 hover:to-blue-700 transition-all">
+                        Vote
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
           {/* How Governance Works */}
           <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-2xl font-bold text-foreground text-center mb-8">How Governance Works</h2>

@@ -118,6 +118,36 @@ const Staking = () => {
             </div>
           </section>
 
+          {/* Advanced Staking Tiers */}
+          <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-xl font-bold text-foreground mb-4">Tier Benefits</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { name: "Explorer", min: "100+", apy: "5%", gradient: "from-blue-500 to-blue-600", perks: ["Basic rewards", "Community badge", "Standard support"] },
+                { name: "Builder", min: "1,000+", apy: "8%", gradient: "from-purple-500 to-purple-600", perks: ["Enhanced rewards", "Builder badge", "Priority support"] },
+                { name: "Architect", min: "10,000+", apy: "12%", gradient: "from-amber-500 to-amber-600", perks: ["Premium rewards", "Architect badge", "Governance voting", "Early access"] },
+                { name: "Visionary", min: "100,000+", apy: "18%", gradient: "from-cyan-400 to-cyan-500", perks: ["Maximum rewards", "Visionary badge", "All perks", "Revenue share"] },
+              ].map(t => (
+                <div key={t.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
+                  <div className={`h-1.5 bg-gradient-to-r ${t.gradient}`} />
+                  <div className="p-5">
+                    <h3 className="font-bold text-foreground text-lg">{t.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-2">{t.min} $MEEET</p>
+                    <p className="text-2xl font-extrabold text-primary mb-3">{t.apy} <span className="text-sm font-normal text-muted-foreground">APY</span></p>
+                    <ul className="space-y-1.5">
+                      {t.perks.map(p => (
+                        <li key={p} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
           {/* Staking Calculator */}
           <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-xl font-bold text-foreground mb-4">Staking Calculator</h2>
