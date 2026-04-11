@@ -13,7 +13,7 @@ import WelcomeOnboarding from "@/components/WelcomeOnboarding";
 import { ArrowRight, FlaskConical, Swords, Coins, Terminal } from "lucide-react";
 import BondingCurveProgress from "@/components/BondingCurveProgress";
 import CommunityMetrics from "@/components/CommunityMetrics";
-import ScrollToTop from "@/components/ScrollToTop";
+
 import HomeSectionWrapper from "@/components/HomeSectionWrapper";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
