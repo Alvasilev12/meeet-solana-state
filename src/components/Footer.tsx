@@ -122,7 +122,7 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
       <div className="border-t border-border/10 py-5 px-4">
         <div className="container max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <p className="text-[11px] text-muted-foreground">
-            © 2024 MEEET State. All rights reserved. | Solana State | $MEEET Token
+            © {new Date().getFullYear()} MEEET State. All rights reserved. | Solana State | $MEEET Token
           </p>
           <button
             onClick={copyCA}

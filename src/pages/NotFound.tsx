@@ -93,7 +93,7 @@ const NotFound = () => {
         </div>
 
         <p className="text-[10px] text-muted-foreground/50 font-mono pt-4">
-          Route: {location.pathname}
+          Route: {location.pathname} · © {new Date().getFullYear()} MEEET State
         </p>
       </div>
 
