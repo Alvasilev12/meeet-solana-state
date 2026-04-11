@@ -195,6 +195,7 @@ const App = () => (
                   <Route path="/tg" element={<TelegramApp />} />
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/skyeprofile" element={<SkyeProfile />} />
                   <Route path="/monitor" element={<SystemMonitor />} />
                   <Route path="/product-hunt" element={<ProductHunt />} />
                   <Route path="/press" element={<Press />} />
