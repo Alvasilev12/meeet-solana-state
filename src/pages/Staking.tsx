@@ -62,11 +62,16 @@ const Staking = () => (
     <Navbar />
     <main className="pt-24 pb-16 min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 space-y-8">
-        <h1 className="text-4xl font-bold text-foreground text-center">Staking & Burns</h1>
+        {/* Hero */}
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold text-foreground">Stake $MEEET</h1>
+          <p className="text-muted-foreground max-w-xl mx-auto">Earn rewards, strengthen the network, and unlock exclusive tiers</p>
+        </div>
 
+        {/* Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {METRICS.map(m => (
-            <div key={m.label} className="bg-card border border-border rounded-xl p-4 text-center">
+            <div key={m.label} className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/20 transition-all">
               <m.icon className={`w-5 h-5 mx-auto mb-2 ${m.color}`} />
               <p className="text-2xl font-bold text-foreground">{m.value}</p>
               <p className="text-xs text-muted-foreground">{m.sub}</p>
@@ -74,6 +79,27 @@ const Staking = () => (
             </div>
           ))}
         </div>
+
+        {/* Staking Tiers */}
+        <section>
+          <h2 className="text-xl font-bold text-foreground mb-4">Staking Tiers</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              { name: "Flex", apy: "5%", lock: "No lock", icon: "🔓", border: "border-muted-foreground/30" },
+              { name: "Bronze", apy: "12%", lock: "7 days", icon: "🥉", border: "border-amber-700/40" },
+              { name: "Silver", apy: "25%", lock: "30 days", icon: "🥈", border: "border-slate-400/40" },
+              { name: "Gold", apy: "50%", lock: "90 days", icon: "🥇", border: "border-amber-400/40" },
+              { name: "Diamond", apy: "100%", lock: "365 days", icon: "💎", border: "border-cyan-400/40" },
+            ].map(t => (
+              <div key={t.name} className={`bg-card border ${t.border} rounded-xl p-4 text-center hover:scale-105 transition-transform`}>
+                <span className="text-2xl">{t.icon}</span>
+                <p className="font-bold text-foreground mt-1">{t.name}</p>
+                <p className="text-lg font-bold text-primary">{t.apy} APY</p>
+                <p className="text-[10px] text-muted-foreground">{t.lock}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section>
           <h2 className="text-xl font-bold text-foreground mb-4">Active Stakes</h2>
