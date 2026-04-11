@@ -7,6 +7,7 @@ import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
 import PageWrapper from "@/components/PageWrapper";
 import LiveTicker from "@/components/LiveTicker";
+import HeroSection from "@/components/HeroSection";
 import CortexSection from "@/components/civilization/CortexSection";
 import WelcomeOnboarding from "@/components/WelcomeOnboarding";
 import { ArrowRight, FlaskConical, Swords, Coins, Terminal } from "lucide-react";
@@ -510,6 +511,7 @@ const Index = () => {
         />
         <Navbar />
         <main className="pt-16 pb-6">
+          <HeroSection />
           <CortexSection />
           <LiveTicker />
           <LiveStatsBar />
