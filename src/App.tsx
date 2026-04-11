@@ -51,6 +51,7 @@ const TelegramApp = React.lazy(() => import("./pages/TelegramApp.tsx"));
 const BreedingLab = React.lazy(() => import("./pages/BreedingLab.tsx"));
 const Guide = React.lazy(() => import("./pages/Guide.tsx"));
 const Pricing = React.lazy(() => import("./pages/Pricing.tsx"));
+const SkyeProfile = React.lazy(() => import("./pages/SkyeProfile.tsx"));
 const SystemMonitor = React.lazy(() => import("./pages/SystemMonitor.tsx"));
 const ProductHunt = React.lazy(() => import("./pages/ProductHunt.tsx"));
 const Press = React.lazy(() => import("./pages/Press.tsx"));
@@ -194,6 +195,7 @@ const App = () => (
                   <Route path="/tg" element={<TelegramApp />} />
                   <Route path="/guide" element={<Guide />} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/skyeprofile" element={<SkyeProfile />} />
                   <Route path="/monitor" element={<SystemMonitor />} />
                   <Route path="/product-hunt" element={<ProductHunt />} />
                   <Route path="/press" element={<Press />} />
