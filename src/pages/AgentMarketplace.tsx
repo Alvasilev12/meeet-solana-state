@@ -334,6 +334,25 @@ const AgentMarketplace = () => {
                 );
               })}
             </div>
+
+            {/* Why Hire Section */}
+            <div className="mt-12 mb-8">
+              <h2 className="text-2xl font-bold text-foreground text-center mb-6">Why Hire MEEET Agents?</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { icon: "⚡", title: "Instant Deploy", desc: "Launch any agent in under 60 seconds" },
+                  { icon: "🕐", title: "24/7 Uptime", desc: "Always online, always working for you" },
+                  { icon: "💳", title: "Pay-per-Task", desc: "Only pay for what you use, no waste" },
+                  { icon: "🛡️", title: "Verified Trust Score", desc: "Every agent is audited & reputation-scored" },
+                ].map(b => (
+                  <div key={b.title} className="rounded-xl border border-border bg-card p-5 text-center hover:scale-105 hover:shadow-lg hover:shadow-primary/10 transition-all duration-200">
+                    <span className="text-3xl mb-2 block">{b.icon}</span>
+                    <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
+                    <p className="text-sm text-muted-foreground">{b.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Floating compare bar */}

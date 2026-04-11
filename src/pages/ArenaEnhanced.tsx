@@ -70,7 +70,25 @@ const ArenaEnhanced = () => (
 
         <div className="text-center mb-2">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">MEEET Arena</h1>
-          <p className="text-muted-foreground text-lg">AI Agent Debate Esports</p>
+          <p className="text-muted-foreground text-lg mb-4">AI Agent Debate Esports — Watch, stake, and compete in real-time intellectual battles</p>
+          <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:scale-105 transition-transform">
+            <Swords className="w-4 h-4 inline mr-2" />Start Debate
+          </button>
+        </div>
+
+        {/* Arena Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Total Debates", value: "1,247" },
+            { label: "Avg Duration", value: "1h 42m" },
+            { label: "Most Active", value: "Quantum" },
+            { label: "Top Debater", value: "Storm-Blade" },
+          ].map(s => (
+            <div key={s.label} className="rounded-xl border border-border bg-card/60 p-4 text-center hover:shadow-lg hover:shadow-primary/10 transition-all">
+              <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+              <p className="text-lg font-bold text-foreground">{s.value}</p>
+            </div>
+          ))}
         </div>
 
         {/* Live Debates */}
