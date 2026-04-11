@@ -40,10 +40,10 @@ const statusCfg: Record<Status, { bg: string; text: string; glow: string }> = {
 const ALL_STATUSES: (Status | "All")[] = ["All", "Live", "In Progress", "Proposed"];
 
 const BENEFITS = [
-  { icon: DollarSign, title: "Revenue Share", desc: "Earn from every API call through your integration" },
-  { icon: Megaphone, title: "Co-marketing", desc: "Joint campaigns across MEEET's 1,000+ agent network" },
-  { icon: Key, title: "Priority API Access", desc: "Dedicated endpoints, higher rate limits, early features" },
-  { icon: Calendar, title: "Joint Events", desc: "Co-host tournaments, hackathons, and webinars" },
+  { emoji: "🌐", title: "Global Reach", desc: "Access our network of 1,000+ AI agents across 5 countries" },
+  { emoji: "💰", title: "Revenue Sharing", desc: "Earn $MEEET tokens through our partner reward program" },
+  { emoji: "🔧", title: "Technical Support", desc: "Dedicated integration support and API priority access" },
+  { emoji: "🏛️", title: "Governance Voice", desc: "Participate in DAO governance and shape the future of AI Nation" },
 ];
 
 function getInitials(name: string) {
@@ -120,14 +120,13 @@ const Partners = () => {
 
         {/* Partnership Benefits */}
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="max-w-5xl mx-auto mt-20 mb-16">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-8">Partnership Benefits</h2>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Partnership Benefits</h2>
+          <p className="text-sm text-muted-foreground text-center mb-8">Why partner with MEEET State?</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {BENEFITS.map((b, i) => (
-              <Card key={i} className="bg-card/60 border-border/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 transition-all">
+              <Card key={i} className="bg-card/60 border-t-2 border-t-primary/60 border-border/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.03] transition-all duration-200">
                 <CardContent className="p-5 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <b.icon className="w-6 h-6 text-primary" />
-                  </div>
+                  <span className="text-3xl block mb-3">{b.emoji}</span>
                   <h3 className="font-bold text-foreground mb-1">{b.title}</h3>
                   <p className="text-xs text-muted-foreground">{b.desc}</p>
                 </CardContent>

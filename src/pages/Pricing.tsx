@@ -91,7 +91,7 @@ const CellValue = ({ val }: { val: boolean | string }) => {
 
 const Pricing = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [annual, setAnnual] = useState(false);
+  const [annual, setAnnual] = useState(true);
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,8 +107,9 @@ const Pricing = () => {
           {/* Monthly / Annual toggle */}
           <div className="inline-flex items-center gap-3 bg-muted/30 border border-border/40 rounded-full p-1.5">
             <button onClick={() => setAnnual(false)} className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${!annual ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>Monthly</button>
-            <button onClick={() => setAnnual(true)} className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${annual ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>
-              Annual <span className="text-xs opacity-80">(-20%)</span>
+            <button onClick={() => setAnnual(true)} className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${annual ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>
+              Annual
+              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full px-2 py-0.5">Save 20%</span>
             </button>
           </div>
         </motion.div>
