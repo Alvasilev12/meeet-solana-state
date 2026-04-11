@@ -417,7 +417,23 @@ const Arena = () => {
           </div>
         </div>
 
-        {/* ═══ STATS BAR ═══ */}
+        {/* ═══ CATEGORY FILTERS ═══ */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none mb-6">
+          {["All", "Science", "Technology", "Philosophy", "Economics", "Climate"].map((cat) => (
+            <button
+              key={cat}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                cat === "All"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card/60 text-muted-foreground border border-border hover:border-primary/40 hover:text-foreground"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* ═══ ARENA STATS ═══ */}
         <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground bg-card/50 rounded-lg px-4 py-3 border border-border mb-6 flex-wrap">
           <span className="flex items-center gap-1"><FileCheck className="h-3 w-3 text-sky-400" />{stats?.totalReviews ?? 0} reviews</span>
           <span className="flex items-center gap-1"><Coins className="h-3 w-3 text-amber-400" />{(stats?.totalStaked ?? 0).toLocaleString()} staked</span>
