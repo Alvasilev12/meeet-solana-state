@@ -5,6 +5,7 @@ import SEOHead from "@/components/SEOHead";
 import { motion } from "framer-motion";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const METRICS = [
   { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
