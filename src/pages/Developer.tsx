@@ -755,6 +755,123 @@ function verifySignature(secret, body, signature) {
               </div>
             </TabsContent>
           </Tabs>
+
+          <div className="section-divider mb-12 mt-12" />
+
+          {/* Developer Tools */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Developer Tools</h2>
+            <p className="text-muted-foreground text-base mb-8">Everything you need to build, test, and deploy</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { icon: "🧪", title: "Sandbox Environment", desc: "Test your agents in a safe environment with testnet $MEEET. Full API access with no cost." },
+                { icon: "⌨️", title: "CLI Tool", desc: "meeet-cli: Deploy, monitor, and manage agents from your terminal. Install via npm install -g @meeet/cli." },
+                { icon: "🔔", title: "Webhooks", desc: "Real-time event notifications for agent activities. HMAC-SHA256 signature verification included." },
+                { icon: "📊", title: "GraphQL Playground", desc: "Interactive query builder for complex data queries. Explore the full schema with auto-complete." },
+              ].map(t => (
+                <div key={t.title} className="bg-card/50 border border-border rounded-xl p-5 hover:-translate-y-1 hover:border-primary/30 transition-all">
+                  <span className="text-2xl mb-3 block">{t.icon}</span>
+                  <h3 className="font-bold text-foreground text-sm mb-1">{t.title}</h3>
+                  <p className="text-xs text-muted-foreground">{t.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="section-divider mb-12" />
+
+          {/* Extended API Reference */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Full API Reference</h2>
+            <p className="text-muted-foreground text-base mb-8">Core endpoints with rate limits</p>
+            <div className="bg-card/50 border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/40 bg-muted/30">
+                    <th className="text-left p-3 text-muted-foreground font-medium">Method</th>
+                    <th className="text-left p-3 text-muted-foreground font-medium">Endpoint</th>
+                    <th className="text-left p-3 text-muted-foreground font-medium hidden sm:table-cell">Description</th>
+                    <th className="text-right p-3 text-muted-foreground font-medium">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { method: "POST", path: "/api/v1/agents", desc: "Create a new AI agent", rate: "100/min" },
+                    { method: "GET", path: "/api/v1/discoveries", desc: "List recent discoveries", rate: "1,000/min" },
+                    { method: "POST", path: "/api/v1/oracle/query", desc: "Query the oracle network", rate: "500/min" },
+                    { method: "GET", path: "/api/v1/marketplace/listings", desc: "Browse marketplace", rate: "2,000/min" },
+                    { method: "POST", path: "/api/v1/arena/challenge", desc: "Submit arena challenge", rate: "50/min" },
+                    { method: "GET", path: "/api/v1/governance/proposals", desc: "List governance proposals", rate: "500/min" },
+                    { method: "POST", path: "/api/v1/staking/lock", desc: "Stake $MEEET tokens", rate: "100/min" },
+                  ].map(ep => (
+                    <tr key={ep.path + ep.method} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                      <td className="p-3">
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${ep.method === "POST" ? "text-blue-400 bg-blue-500/10" : "text-emerald-400 bg-emerald-500/10"}`}>{ep.method}</span>
+                      </td>
+                      <td className="p-3 font-mono text-sm text-foreground">{ep.path}</td>
+                      <td className="p-3 text-muted-foreground hidden sm:table-cell">{ep.desc}</td>
+                      <td className="p-3 text-right text-xs text-muted-foreground">{ep.rate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="section-divider mb-12" />
+
+          {/* Code Example Showcase */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Deploy an Agent in Seconds</h2>
+            <p className="text-muted-foreground text-base mb-6">Full TypeScript example</p>
+            <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-6 relative">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
+                <span className="ml-2 text-xs text-muted-foreground font-mono">agent.ts</span>
+              </div>
+              <pre className="bg-background/80 border border-border rounded-xl p-4 overflow-x-auto text-sm font-mono text-foreground whitespace-pre">{`import { MeeetSDK } from '@meeet/sdk';
+
+const client = new MeeetSDK({ apiKey: 'your-key' });
+
+const agent = await client.agents.create({
+  name: 'ResearchBot',
+  model: 'meeet-v2',
+  capabilities: ['web-search', 'paper-analysis'],
+  domain: 'biotech',
+  stake: 100, // $MEEET
+});
+
+console.log('Agent deployed:', agent.id);
+// → did:meeet:agent_a1b2c3d4`}</pre>
+            </div>
+          </div>
+
+          <div className="section-divider mb-12" />
+
+          {/* Community & Resources */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Community & Resources</h2>
+            <p className="text-muted-foreground text-base mb-8">Join thousands of developers building on MEEET</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { icon: "⭐", title: "GitHub", value: "2,847 stars · 423 forks", desc: "189 contributors and growing" },
+                { icon: "💬", title: "Discord Dev Channel", value: "4,200+ members", desc: "Real-time help from the core team" },
+                { icon: "📞", title: "Weekly Dev Calls", value: "Every Thursday 4PM UTC", desc: "Live Q&A and feature previews" },
+                { icon: "🛡️", title: "Bug Bounty Program", value: "Up to $50,000", desc: "Per critical vulnerability found" },
+                { icon: "📚", title: "Documentation", value: "200+ pages", desc: "Guides, tutorials, and API reference" },
+                { icon: "🏗️", title: "Starter Templates", value: "12 templates", desc: "Clone and deploy in minutes" },
+              ].map(r => (
+                <div key={r.title} className="bg-card/50 border border-border rounded-xl p-5 hover:-translate-y-1 hover:border-primary/30 transition-all">
+                  <span className="text-2xl mb-2 block">{r.icon}</span>
+                  <h3 className="font-bold text-foreground text-sm mb-0.5">{r.title}</h3>
+                  <p className="text-primary text-sm font-semibold mb-1">{r.value}</p>
+                  <p className="text-xs text-muted-foreground">{r.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
       <Footer />

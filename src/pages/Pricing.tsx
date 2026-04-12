@@ -250,6 +250,60 @@ const Pricing = () => {
 
         <div className="section-divider max-w-4xl mx-auto mb-20" />
 
+        {/* Enterprise Features */}
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-4xl mx-auto mb-20">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-2">Enterprise-Grade Features</h2>
+          <p className="text-muted-foreground text-center text-base mb-8">Built for teams that need maximum control and performance</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { icon: "🧠", title: "Custom AI Model Training", desc: "Fine-tune models on your proprietary data with dedicated compute resources and full data isolation." },
+              { icon: "🏗️", title: "Private Infrastructure", desc: "Dedicated nodes for maximum performance. Isolated network with custom SLA guarantees." },
+              { icon: "🔒", title: "Compliance & Audit", desc: "SOC 2, GDPR, HIPAA-ready infrastructure. Full audit trails and data residency controls." },
+              { icon: "🏷️", title: "White-Label Solutions", desc: "Deploy MEEET technology under your brand. Custom domains, themes, and API namespacing." },
+            ].map(f => (
+              <div key={f.title} className="bg-card/50 border border-border rounded-xl p-5 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                <span className="text-2xl mb-3 block">{f.icon}</span>
+                <h3 className="font-bold text-foreground mb-1">{f.title}</h3>
+                <p className="text-sm text-muted-foreground">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <div className="section-divider max-w-4xl mx-auto mb-20" />
+
+        {/* $MEEET Token Benefits */}
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-3xl mx-auto mb-20">
+          <div className="bg-gradient-to-r from-purple-500/10 to-amber-500/10 border border-purple-500/20 rounded-2xl p-8">
+            <h2 className="text-2xl font-bold text-foreground text-center mb-2">💰 Pay with $MEEET — Save 20%</h2>
+            <p className="text-muted-foreground text-center text-sm mb-6">Use $MEEET tokens for instant on-chain payments with exclusive benefits</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { value: "20%", label: "Discount on all paid plans" },
+                { value: "10K+", label: "Stake for automatic Pro upgrade" },
+                { value: "Instant", label: "On-chain payment settlement" },
+              ].map(b => (
+                <div key={b.label} className="text-center p-4 rounded-xl bg-background/50 border border-border/40">
+                  <p className="text-2xl font-black text-primary mb-1">{b.value}</p>
+                  <p className="text-xs text-muted-foreground">{b.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Trusted By — Enhanced */}
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-4xl mx-auto text-center mb-20">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">500+ organizations trust MEEET for AI infrastructure</p>
+          <div className="flex flex-wrap justify-center gap-8 mb-4">
+            {["TechCorp", "NeuralLabs", "DataFlow AI", "QuantumBridge", "SynapseNet", "Stanford AI Lab", "MIT Media Lab"].map(n => (
+              <span key={n} className="text-sm font-semibold text-foreground/30 hover:text-foreground/60 transition-colors">{n}</span>
+            ))}
+          </div>
+        </motion.div>
+
+        <div className="section-divider max-w-4xl mx-auto mb-20" />
+
         {/* Money-Back Guarantee + CTA */}
         <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-2xl mx-auto text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
