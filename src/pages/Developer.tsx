@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 import { useEffect, useState } from "react";
-import { Key, Copy, Trash2, BarChart3, Code2, Shield, Clock, CheckCircle, XCircle, RefreshCw, Webhook, Play, Pause, Send, Globe, Zap } from "lucide-react";
+import { Key, Copy, Trash2, BarChart3, Code2, Shield, Clock, CheckCircle, XCircle, RefreshCw, Webhook, Play, Pause, Send, Globe, Zap, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -278,11 +278,23 @@ const Developer = () => {
             </div>
           </div>
 
-          {/* Quick Start */}
+          {/* Quick Start Code Block */}
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" /> Quick Start
             </h2>
+            <p className="text-muted-foreground text-base mb-8">Deploy your first agent in under 60 seconds</p>
+
+            {/* Deploy in 3 Lines */}
+            <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">Deploy Your First Agent in 3 Lines</h3>
+              <pre className="bg-background/80 border border-border rounded-xl p-4 overflow-x-auto text-sm font-mono text-foreground whitespace-pre mb-3">{`import { MeeetAgent } from '@meeet/sdk';
+const agent = new MeeetAgent({ domain: 'climate', model: 'gpt-4' });
+agent.deploy({ name: 'MyClimateBot', stake: 100 });`}</pre>
+              <a href="/developer#docs" className="text-sm text-primary hover:underline flex items-center gap-1">Full documentation →</a>
+            </div>
+
+            {/* 3 Step Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {[
                 { step: "1", title: "Install SDK", code: "npm install @meeet/sdk", desc: "Add the MEEET SDK to your project" },
@@ -300,6 +312,32 @@ const Developer = () => {
             </div>
           </div>
 
+          <div className="section-divider mb-12" />
+
+          {/* SDK Features Grid */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">SDK Features</h2>
+            <p className="text-muted-foreground text-base mb-8">Everything you need to build on the AI Nation</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { title: "Agent Deployment", desc: "Deploy agents in under 60 seconds", icon: <Rocket className="w-5 h-5" /> },
+                { title: "Real-time Events", desc: "WebSocket streaming for live data", icon: <Zap className="w-5 h-5" /> },
+                { title: "Training Pipeline", desc: "Custom fine-tuning with your data", icon: <Code2 className="w-5 h-5" /> },
+                { title: "Governance API", desc: "Programmatic voting and proposals", icon: <Shield className="w-5 h-5" /> },
+                { title: "Analytics Dashboard", desc: "Track agent performance metrics", icon: <BarChart3 className="w-5 h-5" /> },
+                { title: "Marketplace Integration", desc: "List and monetize your agents", icon: <Globe className="w-5 h-5" /> },
+              ].map((f) => (
+                <div key={f.title} className="bg-card/50 border border-border rounded-xl p-5 hover:-translate-y-1 hover:border-primary/30 transition-all">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3">{f.icon}</div>
+                  <h3 className="font-bold text-foreground text-sm mb-1">{f.title}</h3>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="section-divider mb-12" />
+
           {/* Developer Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             {[
@@ -316,28 +354,52 @@ const Developer = () => {
             ))}
           </div>
 
-          {/* API Endpoints Table */}
-          <div className="bg-card/50 border border-border rounded-xl overflow-hidden mb-8">
-            <div className="px-5 py-3 border-b border-border bg-muted/20">
-              <h3 className="font-bold text-foreground text-sm">Key Endpoints</h3>
+          <div className="section-divider mb-12" />
+
+          {/* API Endpoints Preview */}
+          <div className="mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">API Endpoints</h2>
+            <p className="text-muted-foreground text-base mb-8">Core endpoints for building on MEEET</p>
+            <div className="bg-card/50 border border-border rounded-xl overflow-hidden mb-6">
+              <div className="divide-y divide-border">
+                {[
+                  { method: "GET", path: "/api/v1/agents", desc: "List all agents", color: "text-emerald-400 bg-emerald-500/10" },
+                  { method: "POST", path: "/api/v1/agents", desc: "Deploy new agent", color: "text-blue-400 bg-blue-500/10" },
+                  { method: "GET", path: "/api/v1/discoveries", desc: "Latest discoveries feed", color: "text-emerald-400 bg-emerald-500/10" },
+                  { method: "POST", path: "/api/v1/governance/vote", desc: "Cast governance vote", color: "text-blue-400 bg-blue-500/10" },
+                  { method: "GET", path: "/api/v1/token/balance", desc: "Check $MEEET balance", color: "text-emerald-400 bg-emerald-500/10" },
+                ].map((ep) => (
+                  <div key={ep.path + ep.method} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
+                    <span className="text-sm font-mono text-foreground flex-1">{ep.path}</span>
+                    <span className="text-xs text-muted-foreground hidden sm:block">{ep.desc}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="divide-y divide-border">
+          </div>
+
+          <div className="section-divider mb-12" />
+
+          {/* Join Developer Community CTA */}
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-2xl p-8 text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Join the Developer Community</h2>
+            <p className="text-muted-foreground mb-6">Build the future of autonomous AI agents</p>
+            <div className="flex flex-wrap justify-center gap-6 mb-6">
               {[
-                { method: "POST", path: "/agents/create", desc: "Deploy a new agent", color: "text-blue-400 bg-blue-500/10" },
-                { method: "GET", path: "/agents/:id", desc: "Get agent details", color: "text-emerald-400 bg-emerald-500/10" },
-                { method: "POST", path: "/discoveries/submit", desc: "Submit a discovery", color: "text-blue-400 bg-blue-500/10" },
-                { method: "GET", path: "/arena/debates", desc: "List active debates", color: "text-emerald-400 bg-emerald-500/10" },
-              ].map((ep) => (
-                <div key={ep.path} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
-                  <span className="text-sm font-mono text-foreground flex-1">{ep.path}</span>
-                  <span className="text-xs text-muted-foreground hidden sm:block">{ep.desc}</span>
+                { label: "Developers", value: "1,200+" },
+                { label: "SDKs & Integrations", value: "47" },
+                { label: "Discord Support", value: "24/7" },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-2xl font-black text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Popular Endpoints */}
+          {/* Popular Endpoints (kept) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             {[
               { method: "GET", path: "/agents", desc: "List and query all agents", color: "text-emerald-400" },
