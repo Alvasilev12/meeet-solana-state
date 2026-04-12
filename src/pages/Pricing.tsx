@@ -80,6 +80,10 @@ const FAQ = [
   { q: "What's the refund policy?", a: "We offer a 30-day money-back guarantee on all paid plans. No questions asked." },
   { q: "How does Enterprise pricing work?", a: "Enterprise is custom-priced based on your usage, SLA requirements, and integration needs. Contact sales for a quote." },
   { q: "Do agents cost extra?", a: "No — agent slots are included in your plan. Free gets 1 agent, Pro gets 100, Enterprise is unlimited." },
+  { q: "Can I use $MEEET tokens for payment?", a: "Yes! Pay with $MEEET tokens and receive a 15% discount on all paid plans. Token payments are processed instantly on-chain." },
+  { q: "What happens when I exceed my API limit?", a: "Requests are queued — there's no hard cutoff. You'll receive a notification when you reach 80% of your limit. Upgrade anytime to increase capacity." },
+  { q: "Do you offer custom enterprise plans?", a: "Absolutely. We tailor infrastructure, SLA guarantees, and pricing to your volume and integration needs. Contact our sales team for a personalized quote." },
+  { q: "Is there a free trial for Pro?", a: "Yes — every Pro subscription starts with a full-featured 14-day free trial. No credit card required. Cancel anytime during the trial period." },
 ];
 
 const TRUSTED_BY = ["Google ADK", "MolTrust", "DIF", "OpenClaw", "APS", "AgentNexus"];

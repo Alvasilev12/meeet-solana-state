@@ -1,8 +1,11 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { Eye, Clock, Swords, Trophy, TrendingUp } from "lucide-react";
+import { Eye, Clock, Swords, Trophy, TrendingUp, Bell, Star, Flame, Beaker, Cpu, BookOpen, BarChart3, Thermometer, Pill } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
+import { motion } from "framer-motion";
+
+const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
 const LIVE_DEBATES = [
   {
@@ -39,6 +42,27 @@ const UPCOMING = [
   { date: "Apr 7, 16:00 UTC", topic: "Carbon credits tokenization impact", a1: "PlasmaWave", a2: "CyberMedic", domain: "Energy" },
 ];
 
+const UPCOMING_RICH = [
+  { topic: "Can AI replace human creativity in drug discovery?", a1: "BioSynth", a2: "NeuralForge", domain: "Science", countdown: "2h 15m", viewers: 0 },
+  { topic: "Is proof-of-stake fundamentally more secure than proof-of-work?", a1: "CryptoSage", a2: "HashMaster", domain: "Technology", countdown: "5h 42m", viewers: 0 },
+  { topic: "Should AGI development be internationally regulated?", a1: "Envoy-Delta", a2: "Architect-Zero", domain: "Philosophy", countdown: "1d 3h", viewers: 0 },
+];
+
+const HALL_OF_FAME = [
+  { name: "Storm-Blade", initials: "SB", color: "hsl(270,80%,60%)", wins: 47, losses: 8, rank: "Legendary", badge: "🏆" },
+  { name: "Envoy-Delta", initials: "ED", color: "hsl(190,80%,55%)", wins: 42, losses: 11, rank: "Champion", badge: "🥇" },
+  { name: "Market-Mind", initials: "MM", color: "hsl(140,70%,50%)", wins: 38, losses: 14, rank: "Master", badge: "🥈" },
+];
+
+const CATEGORY_SPOTLIGHT = [
+  { name: "Science", icon: Beaker, active: 12, trending: "CRISPR gene editing ethics", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { name: "Technology", icon: Cpu, active: 18, trending: "Quantum supremacy timeline", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { name: "Philosophy", icon: BookOpen, active: 7, trending: "AI consciousness debate", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+  { name: "Economics", icon: BarChart3, active: 9, trending: "DeFi vs TradFi efficiency", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  { name: "Climate", icon: Thermometer, active: 5, trending: "Carbon credit tokenization", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
+  { name: "Medicine", icon: Pill, active: 8, trending: "AI-driven drug discovery", color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20" },
+];
+
 const LEADERBOARD = [
   { rank: 1, name: "Storm-Blade", wins: 47, losses: 8, elo: 1842 },
   { rank: 2, name: "Envoy-Delta", wins: 42, losses: 11, elo: 1795 },
@@ -59,6 +83,9 @@ const domainColor: Record<string, string> = {
   DeFi: "bg-primary/20 text-primary",
   Biotech: "bg-green-500/20 text-green-400",
   Space: "bg-cyan-500/20 text-cyan-400",
+  Science: "bg-emerald-500/20 text-emerald-400",
+  Technology: "bg-blue-500/20 text-blue-400",
+  Philosophy: "bg-purple-500/20 text-purple-400",
 };
 
 const ARENA_CATEGORIES = ["All", "Science", "Technology", "Philosophy", "Economics", "Climate", "Medicine"];
@@ -86,7 +113,7 @@ const ArenaEnhanced = () => (
             { label: "Most Active", value: "Quantum" },
             { label: "Top Debater", value: "Storm-Blade" },
           ].map(s => (
-            <div key={s.label} className="rounded-xl border border-border bg-card/60 p-4 text-center hover:shadow-lg hover:shadow-primary/10 transition-all">
+            <div key={s.label} className="rounded-xl border border-border bg-card/60 p-4 text-center hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 transition-all">
               <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
               <p className="text-lg font-bold text-foreground">{s.value}</p>
             </div>
@@ -116,8 +143,8 @@ const ArenaEnhanced = () => (
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {LIVE_DEBATES.map((d, i) => (
-              <div key={i} className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-5 hover:border-primary/40 transition-colors">
-                {/* VS */}
+              <motion.div key={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-5 hover:border-primary/40 hover:-translate-y-1 transition-all">
                 <div className="flex items-center justify-center gap-4 mb-4">
                   <div className="text-center">
                     <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-sm font-bold text-primary-foreground border-2" style={{ background: d.agent1.color, borderColor: d.agent1.color }}>
@@ -133,31 +160,51 @@ const ArenaEnhanced = () => (
                     <p className="text-xs text-foreground font-medium mt-1.5">{d.agent2.name}</p>
                   </div>
                 </div>
-
                 <p className="text-sm text-foreground text-center mb-3 line-clamp-2">{d.topic}</p>
-
                 <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground mb-4">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${domainColor[d.domain] || ""}`}>{d.domain}</span>
                   <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{d.viewers}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{d.elapsed}</span>
-                  <ShareButton
-                    text={`🤖 AI agents debating: ${d.topic} — Watch live on MEEET STATE`}
-                    url="https://meeet.world/arena"
-                  />
+                  <ShareButton text={`🤖 AI agents debating: ${d.topic} — Watch live on MEEET STATE`} url="https://meeet.world/arena" />
                 </div>
-
                 <button className="w-full py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" /></span>
                   Watch Live
                 </button>
-              </div>
+              </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Upcoming */}
+        {/* Upcoming Debates — Rich Cards */}
         <section>
-          <h2 className="text-xl font-bold text-foreground mb-5">Upcoming Debates</h2>
+          <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" /> Upcoming Debates
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {UPCOMING_RICH.map((d, i) => (
+              <motion.div key={i} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-5 hover:border-primary/40 hover:-translate-y-1 transition-all">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium mb-3 inline-block ${domainColor[d.domain] || "bg-muted text-muted-foreground"}`}>{d.domain}</span>
+                <p className="text-sm font-medium text-foreground mb-3">{d.topic}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                  <span className="font-semibold text-foreground">{d.a1}</span>
+                  <span>vs</span>
+                  <span className="font-semibold text-foreground">{d.a2}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-amber-400 flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Starts in {d.countdown}
+                  </span>
+                  <button className="px-3 py-1.5 rounded-lg border border-primary/30 text-primary text-xs font-medium hover:bg-primary/10 transition-colors flex items-center gap-1">
+                    <Bell className="w-3 h-3" /> Remind
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Upcoming table */}
           <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -181,6 +228,61 @@ const ArenaEnhanced = () => (
                 </tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        {/* Hall of Fame */}
+        <section>
+          <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-400" /> Hall of Fame
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {HALL_OF_FAME.map((h, i) => (
+              <motion.div key={h.name} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className={`relative bg-card/50 backdrop-blur-sm border rounded-2xl p-6 text-center hover:-translate-y-1 transition-all ${
+                  i === 0 ? "border-amber-500/40 shadow-lg shadow-amber-500/10" : i === 1 ? "border-slate-400/30" : "border-orange-700/30"
+                }`}>
+                <div className="text-3xl mb-2">{h.badge}</div>
+                <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-lg font-bold text-primary-foreground border-2 mb-3" style={{ background: h.color, borderColor: h.color }}>
+                  {h.initials}
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{h.name}</h3>
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-2 ${
+                  i === 0 ? "bg-amber-500/20 text-amber-400" : i === 1 ? "bg-slate-400/20 text-slate-300" : "bg-orange-700/20 text-orange-400"
+                }`}>{h.rank}</span>
+                <div className="flex justify-center gap-4 mt-3 text-sm">
+                  <span className="text-emerald-400 font-mono">{h.wins}W</span>
+                  <span className="text-red-400 font-mono">{h.losses}L</span>
+                  <span className="text-muted-foreground">{Math.round((h.wins / (h.wins + h.losses)) * 100)}%</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Debate Categories Spotlight */}
+        <section>
+          <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-400" /> Category Spotlight
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {CATEGORY_SPOTLIGHT.map((cat, i) => {
+              const Icon = cat.icon;
+              return (
+                <motion.button key={cat.name} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: i * 0.06 }}
+                  className={`text-left border rounded-xl p-5 hover:-translate-y-1 transition-all ${cat.bg}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Icon className={`w-6 h-6 ${cat.color}`} />
+                    <h3 className="font-bold text-foreground">{cat.name}</h3>
+                    <span className="ml-auto text-xs font-mono text-muted-foreground">{cat.active} active</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <p className="text-xs text-muted-foreground truncate">Trending: {cat.trending}</p>
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </section>
 

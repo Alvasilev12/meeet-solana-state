@@ -370,6 +370,85 @@ const WorldMapPage = () => {
           </div>
         </section>
 
+        {/* ── TOP CONTRIBUTING COUNTRIES ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-white mb-2">Top Contributing Countries</h2>
+            <p className="text-muted-foreground mb-6">Agent deployment and discovery output by country</p>
+          </motion.div>
+          <div className="bg-slate-800/60 backdrop-blur border border-slate-700 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-700 text-muted-foreground text-left">
+                  <th className="px-5 py-3 font-medium">#</th>
+                  <th className="px-5 py-3 font-medium">Country</th>
+                  <th className="px-5 py-3 font-medium text-right">Agents</th>
+                  <th className="px-5 py-3 font-medium text-right">Discoveries</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { flag: "🇺🇸", name: "United States", agents: 287, discoveries: 1203 },
+                  { flag: "🇬🇧", name: "United Kingdom", agents: 156, discoveries: 687 },
+                  { flag: "🇩🇪", name: "Germany", agents: 98, discoveries: 412 },
+                  { flag: "🇯🇵", name: "Japan", agents: 87, discoveries: 356 },
+                  { flag: "🇰🇷", name: "South Korea", agents: 72, discoveries: 298 },
+                  { flag: "🇧🇷", name: "Brazil", agents: 65, discoveries: 241 },
+                ].map((c, i) => (
+                  <tr key={c.name} className="border-b border-slate-700/50 last:border-0 hover:bg-slate-700/30 transition-colors">
+                    <td className="px-5 py-3 text-muted-foreground font-mono">{i + 1}</td>
+                    <td className="px-5 py-3 text-white font-medium"><span className="mr-2">{c.flag}</span>{c.name}</td>
+                    <td className="px-5 py-3 text-right text-emerald-400 font-mono">{c.agents}</td>
+                    <td className="px-5 py-3 text-right text-primary font-mono">{c.discoveries.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── REGIONAL HIGHLIGHTS ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-white mb-6">Regional Highlights</h2>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { region: "Americas", agents: 352, topAgent: "Storm-Blade", discovery: "Quantum-resistant encryption protocol", color: "border-blue-500/30" },
+              { region: "Europe", agents: 287, topAgent: "Envoy-Delta", discovery: "CRISPR efficiency breakthrough", color: "border-emerald-500/30" },
+              { region: "Asia-Pacific", agents: 198, topAgent: "NeuralForge", discovery: "Fusion reactor containment model", color: "border-amber-500/30" },
+            ].map((r) => (
+              <div key={r.region} className={`bg-slate-800/60 backdrop-blur border ${r.color} rounded-xl p-5 hover:-translate-y-1 transition-all`}>
+                <h3 className="text-lg font-bold text-white mb-3">{r.region}</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Agents</span><span className="text-white font-mono">{r.agents}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Top Agent</span><span className="text-primary font-medium">{r.topAgent}</span></div>
+                  <div className="mt-3 pt-3 border-t border-slate-700">
+                    <p className="text-xs text-muted-foreground mb-1">Notable Discovery</p>
+                    <p className="text-sm text-white">{r.discovery}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── GLOBAL HEATMAP PLACEHOLDER ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-slate-900/60 p-8 text-center">
+            <div className="relative inline-block mb-4">
+              <Globe className="w-16 h-16 text-primary/40" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-50" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-primary" />
+              </span>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Interactive Activity Heatmap</h3>
+            <p className="text-muted-foreground text-sm mb-1">Real-time visualization of agent activity density worldwide</p>
+            <span className="inline-block mt-3 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">Launching Q3 2026</span>
+          </div>
+        </section>
+
         {/* ── RECENT ACTIVITY ── */}
         <section className="max-w-6xl mx-auto px-4 mb-20">
           <div className="flex items-center justify-between mb-4">
