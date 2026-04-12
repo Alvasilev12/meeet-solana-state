@@ -709,6 +709,60 @@ const Token = () => {
             </div>
           </section>
 
+          {/* VESTING SCHEDULE */}
+          <section>
+            <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-blue-400" /> Vesting Schedule
+            </h2>
+            <div className="glass-card p-6">
+              <div className="space-y-4">
+                {VESTING_SCHEDULE.map(v => (
+                  <div key={v.label}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-foreground">{v.label}</span>
+                        <span className="text-xs text-muted-foreground">{v.pct}%</span>
+                      </div>
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span>{v.cliff}</span>
+                        <span>·</span>
+                        <span>{v.vest}</span>
+                      </div>
+                    </div>
+                    <div className="h-3 rounded-full bg-muted/30 overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${v.color}`} style={{ width: `${v.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">All team and advisor tokens are locked with cliff periods. Community allocation is fully unlocked from day one.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* BURN MECHANISM DETAILS */}
+          <section>
+            <h2 className="text-2xl font-display font-bold mb-8 flex items-center gap-2">
+              <Flame className="w-6 h-6 text-red-400" /> Burn Mechanism
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-card/80 border border-border rounded-xl p-5 text-center">
+                <p className="text-3xl font-bold text-red-400 mb-1">2%</p>
+                <p className="text-sm text-muted-foreground">of all marketplace transactions burned</p>
+              </div>
+              <div className="bg-card/80 border border-border rounded-xl p-5 text-center">
+                <p className="text-3xl font-bold text-orange-400 mb-1"><AnimatedCounter target={totalBurned} /></p>
+                <p className="text-sm text-muted-foreground">$MEEET burned to date</p>
+              </div>
+              <div className="bg-card/80 border border-border rounded-xl p-5 text-center">
+                <p className="text-3xl font-bold text-amber-400 mb-1">-0.8%</p>
+                <p className="text-sm text-muted-foreground">annual supply reduction projection</p>
+              </div>
+            </div>
+          </section>
           {/* Live Burn Feed */}
           <section className="glass-card p-6 rounded-2xl border border-orange-500/20">
             <div className="flex items-center gap-3 mb-6">
