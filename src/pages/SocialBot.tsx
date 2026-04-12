@@ -328,6 +328,148 @@ export default function SocialBot() {
           </div>
         </motion.section>
 
+        {/* Bot Personality Templates */}
+        <motion.section className="mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Bot Personality Templates</h2>
+          <p className="text-muted-foreground text-center mb-6">Choose a personality that matches your brand</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { emoji: "📊", name: "Professional Analyst", desc: "Data-driven posts with charts and statistics. Perfect for research agents." },
+              { emoji: "😂", name: "Meme Lord", desc: "Humorous, viral-ready content. High engagement, maximum reach." },
+              { emoji: "🤝", name: "Community Manager", desc: "Warm, inclusive tone. Asks questions and engages followers." },
+              { emoji: "📰", name: "News Reporter", desc: "Objective, fact-first style. Breaking discoveries as they happen." },
+              { emoji: "🔮", name: "Alpha Hunter", desc: "Exclusive insights, prediction-style posts. Web3-native voice." },
+              { emoji: "🎓", name: "Educator", desc: "Explains complex topics simply. Thread-style breakdowns." },
+            ].map(t => (
+              <div key={t.name} className="bg-card/80 border border-border rounded-xl p-5 hover:border-primary/20 hover:-translate-y-1 transition-all">
+                <span className="text-3xl block mb-3">{t.emoji}</span>
+                <h3 className="font-bold text-foreground mb-1">{t.name}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{t.desc}</p>
+                <Button size="sm" variant="outline" className="w-full">Use Template</Button>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Content Calendar */}
+        <motion.section className="mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Content Calendar</h2>
+          <p className="text-muted-foreground text-center mb-6">AI-optimized posting schedule for maximum engagement</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-card/80 border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-4">Weekly Schedule</h3>
+              <div className="space-y-2">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
+                  const posts = [3, 4, 3, 5, 4, 2, 2][i];
+                  return (
+                    <div key={day} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-8">{day}</span>
+                      <div className="flex-1 h-2 rounded-full bg-muted/30 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-purple-400" style={{ width: `${posts * 20}%` }} />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-12 text-right">{posts} posts</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="bg-card/80 border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-4">Content Mix</h3>
+              <div className="space-y-3">
+                {[
+                  { label: "Educational", pct: 40, color: "from-blue-500 to-cyan-400" },
+                  { label: "Community", pct: 30, color: "from-emerald-500 to-green-400" },
+                  { label: "News & Updates", pct: 20, color: "from-purple-500 to-pink-400" },
+                  { label: "Memes & Fun", pct: 10, color: "from-amber-500 to-orange-400" },
+                ].map(c => (
+                  <div key={c.label}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">{c.label}</span>
+                      <span className="text-foreground font-medium">{c.pct}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted/30 overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${c.color}`} style={{ width: `${c.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Multi-Platform Support */}
+        <motion.section className="mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Multi-Platform Support</h2>
+          <p className="text-muted-foreground text-center mb-6">Connect and manage all your social channels</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { name: "Twitter/X", icon: "𝕏", status: "Connected", connected: true, color: "border-blue-500/30" },
+              { name: "Discord", icon: "💬", status: "Connected", connected: true, color: "border-indigo-500/30" },
+              { name: "Telegram", icon: "✈️", status: "Available", connected: false, color: "border-cyan-500/30" },
+              { name: "Farcaster", icon: "🟣", status: "Coming Soon", connected: false, color: "border-purple-500/30" },
+            ].map(p => (
+              <div key={p.name} className={`bg-card/80 border ${p.color} rounded-xl p-5 text-center hover:-translate-y-1 transition-all`}>
+                <span className="text-3xl block mb-2">{p.icon}</span>
+                <h3 className="font-bold text-foreground mb-1">{p.name}</h3>
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs ${p.connected ? "bg-emerald-500/20 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${p.connected ? "bg-emerald-400" : "bg-muted-foreground"}`} />
+                  {p.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Analytics & Insights */}
+        <motion.section className="mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-2">Analytics & Insights</h2>
+          <p className="text-muted-foreground text-center mb-6">Understand what works and optimize your strategy</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-card/80 border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-3">Best Performing Posts</h3>
+              <div className="space-y-2">
+                {[
+                  { type: "🔬 Discovery", engagement: "34.2%" },
+                  { type: "⚔️ Debate Results", engagement: "28.7%" },
+                  { type: "📊 Data Threads", engagement: "24.1%" },
+                  { type: "🏛️ Governance", engagement: "18.9%" },
+                ].map(p => (
+                  <div key={p.type} className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">{p.type}</span>
+                    <span className="text-sm font-bold text-primary">{p.engagement}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-card/80 border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-3">Optimal Posting Times</h3>
+              <div className="grid grid-cols-6 gap-1">
+                {Array.from({ length: 24 }, (_, h) => {
+                  const heat = [10, 5, 3, 2, 3, 8, 20, 40, 60, 75, 80, 70, 55, 65, 80, 90, 85, 70, 60, 50, 40, 30, 25, 15][h];
+                  return (
+                    <div key={h} className="text-center">
+                      <div className="h-8 rounded-sm mb-0.5" style={{ background: `hsl(262 80% 65% / ${heat / 100})` }} />
+                      {h % 6 === 0 && <span className="text-[8px] text-muted-foreground">{h}h</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">UTC timezone · Brighter = higher engagement</p>
+            </div>
+            <div className="bg-card/80 border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-3">Audience Growth</h3>
+              <div className="flex items-end gap-1 h-24">
+                {[20, 35, 28, 45, 52, 48, 60, 72, 68, 80, 85, 92].map((v, i) => (
+                  <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-primary/60 to-primary" style={{ height: `${v}%` }} />
+                ))}
+              </div>
+              <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+                <span>Jan</span><span>Jun</span><span>Dec</span>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
         {/* See It In Action */}
         <motion.section className="mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <h2 className="text-2xl font-bold text-foreground text-center mb-2">See It In Action</h2>

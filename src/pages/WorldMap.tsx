@@ -490,6 +490,82 @@ const WorldMapPage = () => {
           </div>
         </section>
 
+        {/* ── REGIONAL HUBS ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <div className="section-divider mb-8" />
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Regional Hubs</h2>
+            <p className="text-muted-foreground text-base mb-8">Major network hubs powering the AI Nation</p>
+          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { city: "San Francisco", region: "North America", nodes: 3847, spec: "NLP Research", latency: "12ms", color: "border-blue-500/30", accent: "text-blue-400" },
+              { city: "Zürich", region: "Europe", nodes: 2134, spec: "DeFi Infrastructure", latency: "18ms", color: "border-emerald-500/30", accent: "text-emerald-400" },
+              { city: "Singapore", region: "Asia Pacific", nodes: 2891, spec: "Trading Algorithms", latency: "22ms", color: "border-amber-500/30", accent: "text-amber-400" },
+              { city: "Dubai", region: "Middle East", nodes: 1245, spec: "Energy Markets", latency: "28ms", color: "border-pink-500/30", accent: "text-pink-400" },
+              { city: "São Paulo", region: "South America", nodes: 987, spec: "Climate Analytics", latency: "35ms", color: "border-cyan-500/30", accent: "text-cyan-400" },
+            ].map(h => (
+              <div key={h.city} className={`bg-slate-800/60 backdrop-blur border ${h.color} rounded-xl p-5 hover:-translate-y-1 transition-all`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>
+                  <h3 className={`font-bold ${h.accent}`}>{h.city}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">{h.region} · {h.spec}</p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white font-mono">{h.nodes.toLocaleString()} nodes</span>
+                  <span className="text-muted-foreground">{h.latency} latency</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── BECOME A NODE OPERATOR ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <div className="section-divider mb-8" />
+          <div className="rounded-xl p-[1px] bg-gradient-to-r from-primary via-purple-500 to-cyan-500">
+            <div className="rounded-[11px] bg-slate-900/95 backdrop-blur-xl p-8">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Become a Node Operator</h2>
+                  <p className="text-muted-foreground mb-6">Run a MEEET node and earn rewards for securing the network.</p>
+                  <div className="space-y-3 mb-6">
+                    {[
+                      { label: "Hardware", desc: "8-core CPU, 32GB RAM, 1TB SSD" },
+                      { label: "Expected Rewards", desc: "~2,500 $MEEET/month" },
+                      { label: "Setup Time", desc: "~30 minutes with our CLI" },
+                    ].map(r => (
+                      <div key={r.label} className="flex items-start gap-3">
+                        <span className="text-primary text-sm mt-0.5">✓</span>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{r.label}</p>
+                          <p className="text-xs text-muted-foreground">{r.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white font-semibold hover:from-primary/90 hover:to-purple-500/90 transition-all shadow-lg shadow-primary/25">
+                    Apply Now →
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Consensus Rate", value: "99.2%" },
+                    { label: "Avg Block Time", value: "0.4s" },
+                    { label: "Network TPS", value: "4,200" },
+                    { label: "Geo Distribution", value: "127 countries" },
+                  ].map(s => (
+                    <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-center">
+                      <p className="text-xl font-bold text-white">{s.value}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── GLOBAL HEATMAP PLACEHOLDER ── */}
         <section className="max-w-6xl mx-auto px-4 mb-12">
           <div className="rounded-2xl border border-dashed border-primary/30 bg-slate-900/60 p-8 text-center">
@@ -506,34 +582,44 @@ const WorldMapPage = () => {
           </div>
         </section>
 
-        {/* ── RECENT ACTIVITY ── */}
-        <section className="max-w-6xl mx-auto px-4 mb-20">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary" /> Recent Activity
-            </h2>
-            <span className="text-xs text-muted-foreground">Auto-refreshes every 30s</span>
-          </div>
-          <div className="grid gap-2">
-            {(recentActivity ?? []).map((ev, i) => (
-              <motion.div
-                key={ev.id}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="flex items-center gap-3 bg-slate-800/60 backdrop-blur border border-slate-700 rounded-lg px-4 py-3"
-              >
-                <span className="text-lg">{eventIcon(ev.event_type)}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{ev.title}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleTimeString()}</p>
+        {/* ── NETWORK ACTIVITY FEED ── */}
+        <section className="max-w-6xl mx-auto px-4 mb-12">
+          <div className="section-divider mb-8" />
+          <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Network Activity Feed</h2>
+            <p className="text-muted-foreground text-base mb-6">Real-time events across the MEEET network</p>
+          </motion.div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              {[
+                { text: "Node sf-042 processed 1.2M tokens", time: "2s ago", icon: "⚡" },
+                { text: "New validator joined from Tokyo", time: "18s ago", icon: "🇯🇵" },
+                { text: "Consensus reached on block #847,293", time: "34s ago", icon: "✅" },
+                { text: "Discovery verified by 3 oracle nodes", time: "1m ago", icon: "🔬" },
+                { text: "Staking pool reached 2.4M $MEEET", time: "2m ago", icon: "📊" },
+              ].map((e, i) => (
+                <div key={i} className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3">
+                  <span className="text-lg">{e.icon}</span>
+                  <p className="text-sm text-white flex-1">{e.text}</p>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{e.time}</span>
                 </div>
-                <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full capitalize">{ev.event_type.replace(/_/g, " ")}</span>
-              </motion.div>
-            ))}
-            {(recentActivity ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">No recent activity.</p>
-            )}
+              ))}
+            </div>
+            <div className="space-y-2">
+              {(recentActivity ?? []).slice(0, 5).map((ev, i) => (
+                <motion.div key={ev.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }} className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3">
+                  <span className="text-lg">{eventIcon(ev.event_type)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{ev.title}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleTimeString()}</p>
+                  </div>
+                  <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full capitalize">{ev.event_type.replace(/_/g, " ")}</span>
+                </motion.div>
+              ))}
+              {(recentActivity ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">No recent activity.</p>
+              )}
+            </div>
           </div>
         </section>
       </main>

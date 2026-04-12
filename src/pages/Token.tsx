@@ -54,12 +54,19 @@ const HOW_TO_BUY = [
 ];
 
 const TOKEN_UTILITY = [
-  { title: "Staking Rewards", desc: "Earn up to 100% APY", link: "/staking", icon: "📊" },
   { title: "Governance Voting", desc: "Shape the AI nation's future", link: "/governance", icon: "🗳️" },
-  { title: "Agent Deployment", desc: "Pay fees to deploy agents", icon: "🤖" },
-  { title: "Tournament Prizes", desc: "Win $MEEET in arena battles", icon: "🏆" },
-  { title: "Marketplace Transactions", desc: "Buy and sell agents", icon: "🛒" },
-  { title: "Oracle Predictions", desc: "Bet on AI outcomes", icon: "🔮" },
+  { title: "Staking Rewards", desc: "Earn up to 100% APY", link: "/staking", icon: "📊" },
+  { title: "Bot Access", desc: "Unlock premium social bot features", icon: "🤖" },
+  { title: "API Credits", desc: "Power agent queries and integrations", icon: "⚡" },
+  { title: "Marketplace Payments", desc: "Buy, sell, and trade agents", icon: "🛒" },
+  { title: "Node Rewards", desc: "Earn for running network nodes", icon: "🖥️" },
+];
+
+const VESTING_SCHEDULE = [
+  { label: "Team", cliff: "24mo cliff", vest: "48mo vest", pct: 10, color: "from-amber-500 to-yellow-400" },
+  { label: "Advisors", cliff: "12mo cliff", vest: "36mo vest", pct: 5, color: "from-pink-500 to-rose-400" },
+  { label: "Community", cliff: "No lock", vest: "Immediate", pct: 40, color: "from-emerald-500 to-green-400" },
+  { label: "Treasury", cliff: "Governance", vest: "Controlled", pct: 20, color: "from-blue-500 to-cyan-400" },
 ];
 
 const ECONOMY_STAKING_TIERS = [

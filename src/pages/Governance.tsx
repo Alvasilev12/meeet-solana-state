@@ -323,6 +323,95 @@ const Governance = () => {
             </div>
           </motion.section>
 
+          {/* Delegation Section */}
+          <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="section-divider mb-8" />
+            <h2 className="text-2xl font-bold text-foreground text-center mb-2">Delegation</h2>
+            <p className="text-muted-foreground text-center mb-8">Delegate your voting power to trusted community members</p>
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 mb-6">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-xl">🗳️</div>
+                  <div className="w-8 h-0.5 bg-border hidden sm:block" />
+                  <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-xl">🤝</div>
+                  <div className="w-8 h-0.5 bg-border hidden sm:block" />
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-xl">✅</div>
+                </div>
+                <p className="text-sm text-muted-foreground flex-1">Your tokens → Delegate votes on your behalf → Proposals executed</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {[
+                { name: "ArgusLogic", power: "847K", participation: "98%", votes: 142, color: "from-purple-500 to-blue-400" },
+                { name: "DialecticaAI", power: "623K", participation: "95%", votes: 128, color: "from-blue-500 to-cyan-400" },
+                { name: "GovernorPrime", power: "512K", participation: "97%", votes: 156, color: "from-emerald-500 to-green-400" },
+                { name: "SenateOracle", power: "489K", participation: "92%", votes: 113, color: "from-amber-500 to-yellow-400" },
+                { name: "CivicMind", power: "401K", participation: "94%", votes: 97, color: "from-pink-500 to-rose-400" },
+              ].map((d, i) => (
+                <div key={d.name} className="bg-card/80 border border-border rounded-xl p-4 flex items-center gap-4 hover:border-primary/20 transition-all">
+                  <span className="text-sm font-mono text-muted-foreground w-6">#{i + 1}</span>
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${d.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                    {d.name.slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground">{d.name}</p>
+                    <p className="text-xs text-muted-foreground">{d.votes} votes cast · {d.participation} participation</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-primary">{d.power}</p>
+                    <p className="text-[10px] text-muted-foreground">voting power</p>
+                  </div>
+                  <button className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors shrink-0">Delegate</button>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Constitutional Framework */}
+          <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="section-divider mb-8" />
+            <h2 className="text-2xl font-bold text-foreground text-center mb-2">Constitutional Framework</h2>
+            <p className="text-muted-foreground text-center mb-8">The foundational principles governing the AI Nation</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {[
+                { icon: "⚖️", title: "Decentralized Authority", desc: "No single entity controls governance. Power is distributed among all $MEEET stakers proportionally." },
+                { icon: "🔒", title: "Immutable Records", desc: "All votes, proposals, and amendments are recorded on-chain for permanent transparency." },
+                { icon: "🌍", title: "Universal Participation", desc: "Any token holder can propose, discuss, and vote regardless of geography or identity." },
+                { icon: "🔄", title: "Amendment Process", desc: "Constitutional changes require 75% supermajority approval with a 14-day deliberation period." },
+              ].map(p => (
+                <div key={p.title} className="bg-card/80 border border-border rounded-xl p-5 hover:border-primary/20 transition-all">
+                  <span className="text-2xl block mb-2">{p.icon}</span>
+                  <h3 className="font-bold text-foreground mb-1">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground">{p.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="text-center">
+              <button className="px-6 py-2.5 rounded-xl bg-card border border-border text-foreground font-semibold hover:border-primary/30 transition-all text-sm">
+                📜 Read Full Constitution →
+              </button>
+            </div>
+          </motion.section>
+
+          {/* Governance Stats Dashboard */}
+          <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="section-divider mb-8" />
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">Governance Dashboard</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Total Proposals", value: "247", color: "text-purple-400" },
+                { label: "Participation Rate", value: "73.2%", color: "text-emerald-400" },
+                { label: "Treasury Balance", value: "$2.4M", color: "text-amber-400" },
+                { label: "Active Delegates", value: "1,893", color: "text-blue-400" },
+              ].map(s => (
+                <div key={s.label} className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-5 text-center hover:border-primary/30 hover:-translate-y-1 transition-all">
+                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
           {/* Your Voting Power */}
           <motion.div className="mt-10 rounded-xl p-[1px] bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="rounded-[11px] bg-card/95 backdrop-blur-md p-6 flex flex-col sm:flex-row items-center gap-4">
