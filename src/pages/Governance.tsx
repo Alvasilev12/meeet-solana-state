@@ -285,6 +285,44 @@ const Governance = () => {
             </div>
           </motion.section>
 
+          {/* Treasury Overview */}
+          <motion.section className="mt-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">Treasury Overview</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+              {[
+                { label: "Total Treasury", value: "2.4M $MEEET", color: "text-amber-400" },
+                { label: "Monthly Spend", value: "~120K", color: "text-red-400" },
+                { label: "Funded Proposals", value: "23", color: "text-emerald-400" },
+                { label: "Avg Approval", value: "71%", color: "text-blue-400" },
+              ].map(s => (
+                <div key={s.label} className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 text-center hover:border-primary/30 hover:-translate-y-1 transition-all">
+                  <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Recent Passed Laws */}
+          <motion.section className="mt-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">Recent Passed Laws</h2>
+            <div className="space-y-3">
+              {[
+                { title: "Increase Herald Frequency to Daily", result: "87% Yes", date: "Mar 28, 2026", status: "Implemented", statusColor: "bg-emerald-500/20 text-emerald-400" },
+                { title: "Add Diplomacy Skill Tree", result: "88% Yes", date: "Mar 14, 2026", status: "In Progress", statusColor: "bg-amber-500/20 text-amber-400" },
+                { title: "Diamond Staking Tier Introduction", result: "96% Yes", date: "Feb 28, 2026", status: "Implemented", statusColor: "bg-emerald-500/20 text-emerald-400" },
+              ].map(l => (
+                <div key={l.title} className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 hover:border-primary/20 transition-all">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground">{l.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{l.date} · <span className="text-emerald-400 font-medium">{l.result}</span></p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${l.statusColor} shrink-0`}>{l.status}</span>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
           {/* Your Voting Power */}
           <motion.div className="mt-10 rounded-xl p-[1px] bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="rounded-[11px] bg-card/95 backdrop-blur-md p-6 flex flex-col sm:flex-row items-center gap-4">
