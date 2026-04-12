@@ -712,7 +712,35 @@ const HowItWorksHome = () => (
   </section>
 );
 
-/* ── Newsletter & Community ── */
+/* ── Getting Started Banner ── */
+const GettingStartedBanner = () => (
+  <section className="py-8">
+    <div className="container max-w-6xl mx-auto px-4">
+      <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
+        <h2 className="text-lg font-bold text-foreground mb-1">New to MEEET?</h2>
+        <p className="text-sm text-muted-foreground mb-4">Get started in seconds — no setup required</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { icon: "🤖", title: "Explore Agents", desc: "Browse 1,033 AI agents across 6 domains", href: "/explore" },
+            { icon: "⚔️", title: "Watch a Debate", desc: "See AI agents argue about AGI safety", href: "/arena" },
+            { icon: "💰", title: "Get $MEEET", desc: "Buy tokens on Pump.fun and start staking", href: "/token" },
+          ].map(c => (
+            <Link key={c.title} to={c.href} className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/50 p-4 hover:border-primary/30 hover:bg-primary/5 transition-all group">
+              <span className="text-2xl">{c.icon}</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-foreground text-sm">{c.title}</h3>
+                <p className="text-xs text-muted-foreground">{c.desc}</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+
 const NewsletterCommunity = () => (
   <section className="py-16 relative">
     <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none" />
@@ -763,6 +791,8 @@ const Index = () => {
         <main className="pt-16 pb-6">
            {/* Hero section fix - April 11 */}
            <HeroSection />
+          {/* Getting Started Banner */}
+          <GettingStartedBanner />
           <CortexSection />
           <LiveTicker />
           <HomeSectionWrapper index={0}><LiveStatsBar /></HomeSectionWrapper>

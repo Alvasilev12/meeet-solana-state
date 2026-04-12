@@ -448,6 +448,72 @@ const FundingRoundsSection = () => (
   </section>
 );
 
+/* ─── LAUNCH PIPELINE ─── */
+const LaunchPipelineSection = () => (
+  <section className="py-16 px-4">
+    <div className="max-w-6xl mx-auto">
+      <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Current Launch Pipeline</h2>
+      <p className="text-gray-400 mb-8">Projects building the future of AI infrastructure</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {[
+          { name: "NeuroBridge", stage: "Funded & Building", raised: "45,000", desc: "Brain-computer interface data aggregation agent", progress: 72, color: "border-emerald-500/40", badge: "bg-emerald-500/20 text-emerald-400" },
+          { name: "EcoTracer", stage: "In Review", raised: "30,000", desc: "Carbon footprint tracking across supply chains", progress: 45, color: "border-amber-500/40", badge: "bg-amber-500/20 text-amber-400" },
+          { name: "LexiGuard", stage: "Community Vote", raised: "25,000", desc: "Legal document analysis and compliance agent", progress: 89, color: "border-purple-500/40", badge: "bg-purple-500/20 text-purple-400", extra: "Voting ends in 2 days" },
+        ].map(p => (
+          <Card key={p.name} className={`bg-slate-800/60 ${p.color} backdrop-blur-sm`}>
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-white text-lg">{p.name}</h3>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${p.badge}`}>{p.stage}</span>
+              </div>
+              <p className="text-sm text-gray-400">{p.desc}</p>
+              <div className="text-sm text-gray-300">Raised: <span className="font-bold text-white">{p.raised} $MEEET</span></div>
+              <Progress value={p.progress} className="h-2" />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>{p.progress}% complete</span>
+                {p.extra && <span className="text-amber-400">{p.extra}</span>}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* LaunchPad Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {[
+          { label: "Projects Launched", value: "12" },
+          { label: "$MEEET Funded", value: "890K" },
+          { label: "Success Rate", value: "87%" },
+          { label: "In Pipeline", value: "3" },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-center">
+            <p className="text-2xl font-bold text-white">{s.value}</p>
+            <p className="text-xs text-gray-400 mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* How to Launch */}
+      <h2 className="text-xl font-bold text-white mb-6 text-center">How to Launch a Project</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { icon: "📝", title: "Submit Proposal", desc: "Outline your project, team, and funding needs" },
+          { icon: "👥", title: "Community Review", desc: "7-day open review period with feedback" },
+          { icon: "🗳️", title: "Token Vote", desc: "$MEEET holders vote to approve funding" },
+          { icon: "🚀", title: "Launch & Fund", desc: "Approved projects receive treasury funding" },
+        ].map((s, i) => (
+          <div key={s.title} className="rounded-xl border border-white/10 bg-white/5 p-5 text-center">
+            <span className="text-3xl">{s.icon}</span>
+            <span className="block text-xs text-purple-400 font-bold mt-2">Step {i + 1}</span>
+            <h3 className="font-semibold text-white mt-1">{s.title}</h3>
+            <p className="text-xs text-gray-400 mt-1">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
 /* ─── PAGE ─── */
 const LaunchPad = () => (
   <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -456,6 +522,7 @@ const LaunchPad = () => (
     <HowItWorksSection />
     <TournamentsSection />
     <FundingRoundsSection />
+    <LaunchPipelineSection />
     <SuccessStoriesSection />
     <LotterySection />
     <AgentLaunchSection />

@@ -714,6 +714,70 @@ const Oracle = () => {
             </div>
           </AnimatedSection>
         )}
+        {/* Oracle Data Feeds */}
+        <AnimatedSection className="py-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Real-Time Data Feeds</h2>
+          <p className="text-muted-foreground mb-8">Multi-source aggregation powering agent intelligence</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { name: "Scientific Papers", count: "847K indexed", update: "Every 6h", accuracy: "99.2%", color: "border-blue-500/30" },
+              { name: "Patent Filings", count: "234K indexed", update: "Every 12h", accuracy: "98.7%", color: "border-purple-500/30" },
+              { name: "Clinical Trials", count: "156K indexed", update: "Every 24h", accuracy: "99.5%", color: "border-emerald-500/30" },
+              { name: "Crypto Markets", count: "Real-time", update: "0.3s latency", accuracy: "99.9%", color: "border-amber-500/30" },
+              { name: "Climate Data", count: "1.2M datapoints", update: "Every 1h", accuracy: "99.1%", color: "border-cyan-500/30" },
+              { name: "Genomic Databases", count: "89K sequences", update: "Weekly", accuracy: "99.8%", color: "border-pink-500/30" },
+            ].map(f => (
+              <Card key={f.name} className={`bg-card/80 ${f.color} hover:shadow-lg transition-all`}>
+                <CardContent className="p-5 space-y-3">
+                  <h3 className="font-bold text-foreground">{f.name}</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Indexed</span><span className="font-medium text-foreground">{f.count}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Update</span><span className="font-medium text-foreground">{f.update}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Accuracy</span><span className="font-bold text-emerald-400">{f.accuracy}</span></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </AnimatedSection>
+
+        {/* Oracle Architecture */}
+        <AnimatedSection className="py-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">Oracle Architecture</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+            {[
+              { step: "1", title: "Data Collection", desc: "Multi-source aggregation from 200+ verified sources", icon: "📡" },
+              { step: "2", title: "Validation", desc: "Cross-referenced by 3 independent oracle nodes", icon: "🔍" },
+              { step: "3", title: "On-Chain Publishing", desc: "Immutable Solana-anchored data feeds", icon: "⛓️" },
+            ].map((s, i) => (
+              <div key={s.step} className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-2xl mb-4">{s.icon}</div>
+                <span className="text-xs font-bold text-primary mb-1">Step {s.step}</span>
+                <h3 className="font-bold text-foreground mb-2">{s.title}</h3>
+                <p className="text-sm text-muted-foreground">{s.desc}</p>
+                {i < 2 && <div className="hidden md:block absolute top-8 text-muted-foreground/30 text-2xl" style={{ left: `${33 * (i + 1)}%`, transform: "translateX(-50%)" }}>→</div>}
+              </div>
+            ))}
+          </div>
+        </AnimatedSection>
+
+        {/* Oracle Transparency */}
+        <AnimatedSection className="py-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 text-center">Oracle Transparency</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Average Accuracy", value: "99.4%", color: "text-emerald-400" },
+              { label: "Average Latency", value: "0.8s", color: "text-blue-400" },
+              { label: "Active Sources", value: "847", color: "text-purple-400" },
+              { label: "SLA Uptime", value: "99.99%", color: "text-amber-400" },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-5 text-center">
+                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </AnimatedSection>
       </main>
       <Footer />
     </div>

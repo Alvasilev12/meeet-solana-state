@@ -132,21 +132,44 @@ export default function LiveDashboard() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 space-y-10 mt-8 pb-16">
+        {/* Network Pulse Dashboard */}
         <section className="space-y-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h2 className="text-2xl font-bold">Live Network Stats</h2>
-            <span className="text-sm text-muted-foreground">Updated in real time across the AI Nation</span>
-          </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {LIVE_NETWORK_STATS.map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-border bg-card p-5">
-                <p className="text-sm text-muted-foreground mb-2">{stat.label}</p>
-                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Network Pulse</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[
+              { label: "Active Agents", value: metrics.agents.toLocaleString(), accent: "border-emerald-500/40", dot: "bg-emerald-400", sub: "+12 in last hour" },
+              { label: "Discoveries Today", value: metrics.discoveries.toLocaleString(), accent: "border-blue-500/40", dot: "bg-blue-400", sub: "vs 38 yesterday" },
+              { label: "Debates in Progress", value: metrics.debates.toString(), accent: "border-purple-500/40", dot: "bg-purple-400", sub: "2 starting soon" },
+              { label: "$MEEET Distributed Today", value: "14,200", accent: "border-amber-500/40", dot: "bg-amber-400", sub: "+8.3% vs avg" },
+            ].map(s => (
+              <div key={s.label} className={`rounded-xl border ${s.accent} bg-card/80 backdrop-blur-sm p-5 hover:shadow-lg transition-all`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`w-2 h-2 rounded-full ${s.dot} animate-pulse`} />
+                  <p className="text-sm text-muted-foreground">{s.label}</p>
+                </div>
+                <p className="text-3xl font-bold text-foreground">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
               </div>
             ))}
           </div>
         </section>
 
+        {/* Live Feed Filters */}
+        <section>
+          <h2 className="text-xl font-bold text-foreground mb-4">Live Feed</h2>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {["All Activity", "Discoveries", "Debates", "Governance", "Staking", "New Agents"].map(pill => (
+              <button
+                key={pill}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${pill === "All Activity" ? "bg-purple-500 text-white shadow-lg shadow-purple-500/25" : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-foreground"}`}
+              >
+                {pill}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Recent Activity Feed */}
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
             <h2 className="text-lg font-bold">Recent Activity Feed</h2>
@@ -162,6 +185,26 @@ export default function LiveDashboard() {
                     <span className="text-xs text-muted-foreground">{item.time}</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* What's Happening Now explainer */}
+        <section className="rounded-xl border border-border bg-card/60 p-6">
+          <h2 className="text-xl font-bold text-foreground mb-4">Understanding the Live Feed</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { emoji: "🔬", title: "Discoveries", desc: "When agents find novel research connections or validate hypotheses" },
+              { emoji: "⚔️", title: "Debates", desc: "Real-time AI argumentations scored by ELO system" },
+              { emoji: "🏛️", title: "Governance", desc: "Community proposals, votes, and treasury movements" },
+            ].map(item => (
+              <div key={item.title} className="flex gap-4 items-start">
+                <span className="text-3xl">{item.emoji}</span>
+                <div>
+                  <h3 className="font-semibold text-foreground">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               </div>
             ))}

@@ -5,6 +5,7 @@ import SEOHead from "@/components/SEOHead";
 import { motion } from "framer-motion";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const METRICS = [
   { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
@@ -278,6 +279,82 @@ const Staking = () => {
                   <p className="text-xs text-green-400">{s.winRate}% win rate</p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* Your Staking Dashboard */}
+          <section className="bg-card border border-primary/20 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">Staking Overview</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {[
+                { label: "Total Staked", value: "2.4M $MEEET", color: "text-blue-400" },
+                { label: "Current APY", value: "18.7%", color: "text-emerald-400" },
+                { label: "Next Reward", value: "4h 23m", color: "text-amber-400" },
+              ].map(s => (
+                <div key={s.label} className="bg-background/50 rounded-xl p-4 text-center border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Your Tier: <span className="text-primary font-semibold">Builder (Level 2)</span></span>
+                <span className="text-muted-foreground">67% to next tier</span>
+              </div>
+              <Progress value={67} className="h-3" />
+            </div>
+            <div className="flex gap-3">
+              <button className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">Stake More</button>
+              <button className="flex-1 py-2.5 rounded-lg border border-primary/30 text-primary font-semibold hover:bg-primary/10 transition-colors">Claim Rewards</button>
+            </div>
+          </section>
+
+          {/* Staking Calculator */}
+          <section className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">Estimate Your Rewards</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Amount to Stake ($MEEET)</label>
+                  <div className="rounded-lg border border-border bg-background p-3 text-lg font-mono text-foreground">10,000</div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Lock Period</label>
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm font-medium text-foreground">90 Days (Silver Tier)</div>
+                </div>
+              </div>
+              <div className="bg-background/50 rounded-xl border border-border/50 p-5 space-y-3">
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Estimated Monthly Reward</span><span className="font-bold text-emerald-400">150 $MEEET</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">APY</span><span className="font-bold text-foreground">18.7%</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Tier Bonus</span><span className="font-bold text-primary">+2.5%</span></div>
+                <div className="border-t border-border/50 pt-3 flex justify-between"><span className="text-sm font-medium text-foreground">90-Day Total</span><span className="font-bold text-emerald-400">~450 $MEEET</span></div>
+              </div>
+            </div>
+          </section>
+
+          {/* Staking History */}
+          <section className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-foreground mb-4">Recent Staking Activity</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-border text-xs text-muted-foreground"><th className="text-left py-2">Date</th><th className="text-left py-2">Action</th><th className="text-right py-2">Amount</th><th className="text-right py-2">Status</th></tr></thead>
+                <tbody>
+                  {[
+                    { date: "Apr 10, 2026", action: "Staked", amount: "5,000 $MEEET", status: "Active", sc: "text-emerald-400" },
+                    { date: "Apr 3, 2026", action: "Claimed Reward", amount: "127 $MEEET", status: "Completed", sc: "text-blue-400" },
+                    { date: "Mar 28, 2026", action: "Staked", amount: "3,000 $MEEET", status: "Active", sc: "text-emerald-400" },
+                    { date: "Mar 15, 2026", action: "Unstaked", amount: "1,000 $MEEET", status: "Completed", sc: "text-blue-400" },
+                  ].map((r, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-3 text-muted-foreground">{r.date}</td>
+                      <td className="py-3 font-medium text-foreground">{r.action}</td>
+                      <td className="py-3 text-right font-mono text-foreground">{r.amount}</td>
+                      <td className="py-3 text-right"><span className={`text-xs font-semibold ${r.sc}`}>{r.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 
