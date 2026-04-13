@@ -114,7 +114,7 @@ const Governance = () => {
           {/* Stats Row */}
           <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             {GOV_STATS.map(s => (
-              <div key={s.label} className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 text-center hover:border-primary/30 transition-all">
+              <div key={s.label} className="glass-card p-4 text-center">
                 <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color}`} />
                 <p className="text-xl font-bold text-foreground">{s.value}</p>
                 <p className="text-[10px] text-muted-foreground mt-1">{s.label}</p>
@@ -135,7 +135,7 @@ const Governance = () => {
                 const total = p.votesFor + p.votesAgainst;
                 const forPct = total > 0 ? Math.round((p.votesFor / total) * 100) : 0;
                 return (
-                  <div key={p.id} className="bg-card border border-border rounded-2xl p-6">
+                  <div key={p.id} className="glass-card p-6">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
                       <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${p.proposer.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                         {p.proposer.name.slice(0, 2).toUpperCase()}

@@ -628,6 +628,29 @@ canvas {
   box-shadow: 0 8px 30px -8px hsl(var(--primary) / 0.15);
 }
 
+/* ── Glass-morphism card utility ── */
+.glass-card {
+  background: hsl(var(--foreground) / 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.glass-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px -12px hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary) / 0.2);
+}
+
+/* ── Gradient text utility ── */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* ── CTA pulse idle ── */
 @keyframes cta-pulse {
   0%, 100% { transform: scale(1); }
@@ -635,6 +658,16 @@ canvas {
 }
 .cta-pulse {
   animation: cta-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── Button shimmer on hover ── */
+@keyframes btn-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.btn-shimmer:hover {
+  background-size: 200% 100%;
+  animation: btn-shimmer 1.5s linear infinite;
 }
 
 /* ── Gradient border shimmer ── */
@@ -664,4 +697,32 @@ canvas {
   background: linear-gradient(90deg, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.5), hsl(var(--primary) / 0.3));
   background-size: 200% 100%;
   animation: divider-shimmer 3s ease infinite;
+}
+
+/* ── Consistent section spacing ── */
+.section-pad {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+@media (min-width: 768px) {
+  .section-pad {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+/* ── Accessible skip link ── */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+.skip-to-content:focus {
+  left: 0;
 }

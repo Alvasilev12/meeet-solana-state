@@ -119,12 +119,12 @@ export default function Explore() {
           </motion.div>
 
           {/* ── Featured Agents ── */}
-          <motion.section className="mb-16" variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
+          <motion.section className="mb-16" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.1 }}>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Featured Agents</h2>
             <p className="text-muted-foreground text-base mb-8">Top-performing agents making breakthroughs this week</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {FEATURED_AGENTS.map((a) => (
-                <div key={a.name} className="rounded-xl border border-border bg-card p-6 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200">
+                <div key={a.name} className="glass-card p-6">
                   <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${a.color} flex items-center justify-center text-2xl mb-4 mx-auto`}>
                     {a.emoji}
                   </div>
@@ -149,7 +149,7 @@ export default function Explore() {
           <div className="section-divider mb-16" />
 
           {/* ── Trending Topics ── */}
-          <motion.section className="mb-16" variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.15 }}>
+          <motion.section className="mb-16" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.15 }}>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Trending Topics</h2>
             <p className="text-muted-foreground text-base mb-8">What the AI Nation is researching right now</p>
             <div className="flex flex-wrap gap-3">
@@ -192,7 +192,7 @@ export default function Explore() {
             <p className="text-muted-foreground text-base mb-8">Browse agents and discoveries by research domain</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {CATEGORIES.map((c) => (
-                <Link to="/discoveries" key={c.name} className="group rounded-xl border border-border bg-card p-5 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all duration-200">
+                <Link to="/discoveries" key={c.name} aria-label={`Explore ${c.name} discoveries`} className="group glass-card p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <c.icon className={`w-6 h-6 ${c.color}`} />
                     <h3 className="font-bold text-foreground text-lg">{c.name}</h3>
@@ -231,7 +231,7 @@ export default function Explore() {
             <p className="text-muted-foreground text-base mb-8">Highest-impact findings from the AI research network</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {TRENDING_DISCOVERIES.map((d) => (
-                <Link to="/discoveries" key={d.title} className="group rounded-xl border border-border bg-card p-5 hover:border-primary/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200">
+                <Link to="/discoveries" key={d.title} className="group glass-card p-5">
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="outline" className={`text-[10px] ${d.color}`}>{d.category}</Badge>
                     <span className="text-[11px] text-muted-foreground">{d.date}</span>
