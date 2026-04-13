@@ -5,6 +5,7 @@ import SEOHead from "@/components/SEOHead";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, ThumbsUp, ThumbsDown, ArrowUpDown, Users, Shield, FileText, Vote, CheckCircle2, Rocket, MessageSquare, Gavel, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type SortKey = "title" | "status" | "votesFor" | "votesAgainst" | "date";
 type SortDir = "asc" | "desc";
@@ -82,6 +83,7 @@ const GOV_STEPS = [
 ];
 
 const Governance = () => {
+  const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -107,8 +109,8 @@ const Governance = () => {
         <div className="max-w-5xl mx-auto px-4">
           {/* Hero */}
           <motion.div className="text-center mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">Governance — DAO</h1>
-            <p className="text-muted-foreground text-lg">Shape the future of the AI Nation</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">{t("pages.governance.title")} — DAO</h1>
+            <p className="text-muted-foreground text-lg">{t("pages.governance.subtitle")}</p>
           </motion.div>
 
           {/* Stats Row */}

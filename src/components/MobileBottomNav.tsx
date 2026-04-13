@@ -1,19 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Search, Bot, Swords, LayoutDashboard } from "lucide-react";
-
-const ITEMS = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/discoveries", icon: Search, label: "Explore" },
-  { href: "/marketplace", icon: Bot, label: "Agents" },
-  { href: "/arena", icon: Swords, label: "Arena" },
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const HIDDEN_ON = ["/live", "/tg"];
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
+  const { t } = useLanguage();
   if (HIDDEN_ON.some(p => pathname.startsWith(p))) return null;
+
+  const ITEMS = [
+    { href: "/", icon: Home, label: t("nav.home") },
+    { href: "/discoveries", icon: Search, label: t("nav.explore") },
+    { href: "/marketplace", icon: Bot, label: t("nav.agents") },
+    { href: "/arena", icon: Swords, label: t("nav.arenaNav") },
+    { href: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
+  ];
 
   return (
     <>

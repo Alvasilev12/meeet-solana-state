@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const METRICS = [
   { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
@@ -66,6 +67,7 @@ const CALC_TIERS = [
 ];
 
 const Staking = () => {
+  const { t } = useLanguage();
   const [calcAmount, setCalcAmount] = useState(100);
   const [calcTier, setCalcTier] = useState(0);
 
@@ -81,9 +83,9 @@ const Staking = () => {
           {/* Hero */}
           <motion.div className="text-center space-y-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-4xl md:text-5xl font-extrabold">
-              <span className="bg-gradient-to-r from-purple-400 via-primary to-blue-400 bg-clip-text text-transparent">Stake $MEEET</span>, Earn Rewards
+              <span className="bg-gradient-to-r from-purple-400 via-primary to-blue-400 bg-clip-text text-transparent">{t("pages.staking.title")}</span>
             </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">Lock your tokens to earn passive income and boost your governance power</p>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t("pages.staking.subtitle")}</p>
           </motion.div>
 
           {/* Metrics */}

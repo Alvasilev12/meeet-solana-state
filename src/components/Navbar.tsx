@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, Bell, ChevronDown, Sun, Moon, Users } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import NavWalletButton from "@/components/NavWalletButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface NavDropdownItem {
   href: string;
@@ -24,76 +25,80 @@ interface NavItem {
   children?: NavDropdownItem[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    href: "/discoveries",
-    label: "Explore",
-    children: [
-      { href: "/discoveries", label: "Discoveries", icon: "🔬" },
-      { href: "/leaderboard", label: "Leaderboard", icon: "🏆" },
-      { href: "/activity", label: "Activity Feed", icon: "📡" },
-      { href: "/herald", label: "Herald", icon: "📰" },
-      { href: "/explorer", label: "Explorer", icon: "🔎" },
+function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; label: string }[] } {
+  const { t } = useLanguage();
+  return useMemo(() => ({
+    navItems: [
+      {
+        href: "/discoveries",
+        label: t("nav.explore"),
+        children: [
+          { href: "/discoveries", label: t("nav.discoveries"), icon: "🔬" },
+          { href: "/leaderboard", label: t("nav.leaderboard"), icon: "🏆" },
+          { href: "/activity", label: t("nav.activityFeed"), icon: "📡" },
+          { href: "/herald", label: t("nav.herald"), icon: "📰" },
+          { href: "/explorer", label: t("nav.explorer"), icon: "🔎" },
+        ],
+      },
+      {
+        href: "/marketplace",
+        label: t("nav.agents"),
+        children: [
+          { href: "/marketplace", label: t("nav.marketplace"), icon: "🛒" },
+          { href: "/agent-studio", label: t("nav.createAgent"), icon: "🎨" },
+          { href: "/deploy", label: t("nav.deploy"), icon: "🚀" },
+          { href: "/bounties", label: t("nav.bounties"), icon: "🎯" },
+          { href: "/chat", label: t("nav.chat"), icon: "💬" },
+          { href: "/roles", label: t("nav.roles"), icon: "👤" },
+        ],
+      },
+      {
+        href: "/arena",
+        label: t("nav.arenaNav"),
+        children: [
+          { href: "/arena", label: t("nav.debates"), icon: "⚔️" },
+          { href: "/quests", label: t("nav.quests"), icon: "🎯" },
+          { href: "/rankings", label: t("nav.rankings"), icon: "🏆" },
+          { href: "/guilds", label: t("nav.guilds"), icon: "🛡️" },
+        ],
+      },
+      {
+        href: "/token",
+        label: t("nav.economy"),
+        children: [
+          { href: "/token", label: t("nav.meeet"), icon: "💰" },
+          { href: "/oracle", label: "Oracle", icon: "🔮" },
+          { href: "/staking", label: t("nav.staking"), icon: "🏦" },
+          { href: "/governance", label: t("nav.governance"), icon: "🏛️" },
+          { href: "/pricing", label: t("nav.pricing"), icon: "💳" },
+        ],
+      },
+      { href: "/live", label: t("nav.live") },
+      { href: "/world-map", label: t("nav.worldMap") },
+      { href: "/launchpad", label: t("nav.launchpad") },
+      { href: "/partners", label: t("nav.partners") },
+      { href: "/developer", label: t("nav.developer") },
     ],
-  },
-  {
-    href: "/marketplace",
-    label: "Agents",
-    children: [
-      { href: "/marketplace", label: "Marketplace", icon: "🛒" },
-      { href: "/agent-studio", label: "Create Agent", icon: "🎨" },
-      { href: "/deploy", label: "Deploy", icon: "🚀" },
-      { href: "/bounties", label: "Bounties", icon: "🎯" },
-      { href: "/chat", label: "Chat", icon: "💬" },
-      { href: "/roles", label: "Roles", icon: "👤" },
+    mobileLinks: [
+      { href: "/discoveries", label: t("nav.explore") },
+      { href: "/marketplace", label: t("nav.agents") },
+      { href: "/arena", label: t("nav.arenaNav") },
+      { href: "/token", label: t("nav.economy") },
+      { href: "/live", label: t("nav.live") },
+      { href: "/world-map", label: t("nav.worldMap") },
+      { href: "/launchpad", label: t("nav.launchpad") },
+      { href: "/partners", label: t("nav.partners") },
+      { href: "/developer", label: t("nav.developer") },
+      { href: "/dashboard", label: t("nav.dashboard") },
+      { href: "/social-bot", label: t("nav.socialBot") },
+      { href: "/daily-quests", label: t("nav.dailyQuests") },
+      { href: "/governance", label: t("nav.governance") },
+      { href: "/staking", label: t("nav.staking") },
+      { href: "/oracle", label: "Oracle" },
+      { href: "/leaderboard", label: t("nav.leaderboard") },
     ],
-  },
-  {
-    href: "/arena",
-    label: "Arena",
-    children: [
-      { href: "/arena", label: "Debates", icon: "⚔️" },
-      { href: "/quests", label: "Quests", icon: "🎯" },
-      { href: "/rankings", label: "Rankings", icon: "🏆" },
-      { href: "/guilds", label: "Guilds", icon: "🛡️" },
-    ],
-  },
-  {
-    href: "/token",
-    label: "Economy",
-    children: [
-      { href: "/token", label: "$MEEET", icon: "💰" },
-      { href: "/oracle", label: "Oracle", icon: "🔮" },
-      { href: "/staking", label: "Staking", icon: "🏦" },
-      { href: "/governance", label: "Governance", icon: "🏛️" },
-      { href: "/pricing", label: "Pricing", icon: "💳" },
-    ],
-  },
-  { href: "/live", label: "Live" },
-  { href: "/world-map", label: "World Map" },
-  { href: "/launchpad", label: "LaunchPad" },
-  { href: "/partners", label: "Partners" },
-  { href: "/developer", label: "Developer" },
-];
-
-const MOBILE_LINKS = [
-  { href: "/discoveries", label: "Explore" },
-  { href: "/marketplace", label: "Agents" },
-  { href: "/arena", label: "Arena" },
-  { href: "/token", label: "Economy" },
-  { href: "/live", label: "Live" },
-  { href: "/world-map", label: "World Map" },
-  { href: "/launchpad", label: "LaunchPad" },
-  { href: "/partners", label: "Partners" },
-  { href: "/developer", label: "Developer" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/social-bot", label: "Social Bot" },
-  { href: "/daily-quests", label: "Daily Quests" },
-  { href: "/governance", label: "Governance" },
-  { href: "/staking", label: "Staking" },
-  { href: "/oracle", label: "Oracle" },
-  { href: "/leaderboard", label: "Leaderboard" },
-];
+  }), [t]);
+}
 
 const NavDropdown = ({ item }: { item: NavItem }) => {
   const [open, setOpen] = useState(false);
@@ -154,7 +159,8 @@ const NavDropdown = ({ item }: { item: NavItem }) => {
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-  
+  const { t } = useLanguage();
+  const { navItems, mobileLinks } = useNavItems();
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -224,7 +230,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-xl font-bold tracking-tight text-gradient-primary">MEEET</span>
             <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs text-muted-foreground hidden sm:inline">Solana State</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">{t("nav.solanaState")}</span>
           </Link>
 
           {/* Online presence — large screens only */}
@@ -240,15 +246,15 @@ const Navbar = () => {
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-4 text-sm text-muted-foreground">
-            {NAV_ITEMS.map(item => (
+            {navItems.map(item => (
               <NavDropdown key={item.href} item={item} />
             ))}
           </div>
 
           {/* Desktop right links */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
-            <Link to="/dashboard" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/dashboard" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>Dashboard</Link>
-            <Link to="/social-bot" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/social-bot" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>Social Bot</Link>
+            <Link to="/dashboard" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/dashboard" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.dashboard")}</Link>
+            <Link to="/social-bot" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/social-bot" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.socialBot")}</Link>
           </div>
 
           {/* Right actions */}
@@ -273,14 +279,14 @@ const Navbar = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0" align="end">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                    <span className="text-sm font-bold">Notifications</span>
+                    <span className="text-sm font-bold">{t("nav.notifications")}</span>
                     {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[10px] text-primary hover:underline" aria-label="Mark all notifications as read">Mark all read</button>
+                      <button onClick={markAllRead} className="text-[10px] text-primary hover:underline" aria-label={t("nav.markAllRead")}>{t("nav.markAllRead")}</button>
                     )}
                   </div>
                   <ScrollArea className="max-h-64">
                     {notifications.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-xs py-6">No notifications</p>
+                      <p className="text-center text-muted-foreground text-xs py-6">{t("nav.noNotifications")}</p>
                     ) : (
                       <div className="divide-y divide-border">
                         {notifications.map((n: any) => (
@@ -306,12 +312,12 @@ const Navbar = () => {
             <NavWalletButton />
 
             {user ? (
-              <button onClick={signOut} className="hidden lg:flex items-center p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Sign out">
+              <button onClick={signOut} className="hidden lg:flex items-center p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label={t("nav.signOut")}>
                 <LogOut className="w-4 h-4" />
               </button>
             ) : (
               <Link to="/auth" className="hidden lg:block px-3 py-1.5 text-sm font-semibold bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors">
-                Sign In
+                {t("nav.signIn")}
               </Link>
             )}
 
@@ -339,7 +345,7 @@ const Navbar = () => {
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between px-4 h-14 border-b border-border/30 shrink-0">
-          <span className="text-sm font-bold text-foreground">Menu</span>
+          <span className="text-sm font-bold text-foreground">{t("nav.menu")}</span>
           <button onClick={() => setOpen(false)} className="p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Close menu">
             <X className="w-5 h-5" />
           </button>
@@ -347,7 +353,7 @@ const Navbar = () => {
 
         {/* Scrollable links */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {MOBILE_LINKS.map(l => (
+          {mobileLinks.map(l => (
             <Link
               key={l.href}
               to={l.href}
@@ -363,11 +369,11 @@ const Navbar = () => {
         <div className="shrink-0 border-t border-border/30 p-4 space-y-2">
           {user ? (
             <button onClick={() => { signOut(); setOpen(false); }} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-              <LogOut className="w-4 h-4" /> Sign Out
+              <LogOut className="w-4 h-4" /> {t("nav.signOut")}
             </button>
           ) : (
             <Link to="/auth" onClick={() => setOpen(false)} className="block text-center px-4 py-2.5 rounded-lg text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors">
-              Sign In
+              {t("nav.signIn")}
             </Link>
           )}
           <div className="pt-1">

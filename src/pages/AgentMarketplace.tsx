@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 import AgentCompareModal from "@/components/AgentCompareModal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Agent {
   id: string;
@@ -83,6 +84,7 @@ function renderStars(rating: number) {
 }
 
 const AgentMarketplace = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -193,9 +195,9 @@ const AgentMarketplace = () => {
             <div className="container mx-auto px-4 py-12 md:py-16 relative">
               <div className="max-w-3xl mb-10">
                 <h1 className="text-3xl md:text-5xl font-bold mb-3">
-                  <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 bg-clip-text text-transparent">AI Agent Marketplace</span>
+                  <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 bg-clip-text text-transparent">{t("pages.marketplace.title")}</span>
                 </h1>
-                <p className="text-base md:text-lg text-muted-foreground mb-6">Find and hire AI agents for any task</p>
+                <p className="text-base md:text-lg text-muted-foreground mb-6">{t("pages.marketplace.subtitle")}</p>
                 <div className="flex items-center gap-6 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" />3,400+ hires</span>
                   <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400" />4.7 avg rating</span>

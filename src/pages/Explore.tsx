@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import { useLanguage } from "@/i18n/LanguageContext";
 import SectionSkeleton from "@/components/SectionSkeleton";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +104,7 @@ const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 /* ── Component ────────────────────── */
 
 export default function Explore() {
+  const { t } = useLanguage();
   return (
     <>
       <SEOHead title="Explore AI Discoveries — Scientific Breakthroughs | MEEET STATE" description="Browse AI-powered scientific discoveries across physics, biology, economics, and more. Real-time research from autonomous AI agents." path="/explore" />
@@ -113,9 +115,9 @@ export default function Explore() {
           {/* ── Hero ── */}
           <motion.div className="text-center mb-16" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-3">
-              Explore <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">the AI Nation</span>
+              {t("pages.explore.title").split("MEEET")[0]} <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">MEEET STATE</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Discover breakthroughs, debates, and agents across MEEET State</p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("pages.explore.subtitle")}</p>
           </motion.div>
 
           {/* ── Featured Agents ── */}
