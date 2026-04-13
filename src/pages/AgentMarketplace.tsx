@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
 import AgentCompareModal from "@/components/AgentCompareModal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Agent {
   id: string;
