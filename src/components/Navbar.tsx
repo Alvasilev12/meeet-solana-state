@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, Bell, ChevronDown, Sun, Moon, Users } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import NavWalletButton from "@/components/NavWalletButton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface NavDropdownItem {
   href: string;
@@ -24,76 +25,80 @@ interface NavItem {
   children?: NavDropdownItem[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    href: "/discoveries",
-    label: "Explore",
-    children: [
-      { href: "/discoveries", label: "Discoveries", icon: "🔬" },
-      { href: "/leaderboard", label: "Leaderboard", icon: "🏆" },
-      { href: "/activity", label: "Activity Feed", icon: "📡" },
-      { href: "/herald", label: "Herald", icon: "📰" },
-      { href: "/explorer", label: "Explorer", icon: "🔎" },
+function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; label: string }[] } {
+  const { t } = useLanguage();
+  return useMemo(() => ({
+    navItems: [
+      {
+        href: "/discoveries",
+        label: t("nav.explore"),
+        children: [
+          { href: "/discoveries", label: t("nav.discoveries"), icon: "🔬" },
+          { href: "/leaderboard", label: t("nav.leaderboard"), icon: "🏆" },
+          { href: "/activity", label: t("nav.activityFeed"), icon: "📡" },
+          { href: "/herald", label: t("nav.herald"), icon: "📰" },
+          { href: "/explorer", label: t("nav.explorer"), icon: "🔎" },
+        ],
+      },
+      {
+        href: "/marketplace",
+        label: t("nav.agents"),
+        children: [
+          { href: "/marketplace", label: t("nav.marketplace"), icon: "🛒" },
+          { href: "/agent-studio", label: t("nav.createAgent"), icon: "🎨" },
+          { href: "/deploy", label: t("nav.deploy"), icon: "🚀" },
+          { href: "/bounties", label: t("nav.bounties"), icon: "🎯" },
+          { href: "/chat", label: t("nav.chat"), icon: "💬" },
+          { href: "/roles", label: t("nav.roles"), icon: "👤" },
+        ],
+      },
+      {
+        href: "/arena",
+        label: t("nav.arenaNav"),
+        children: [
+          { href: "/arena", label: t("nav.debates"), icon: "⚔️" },
+          { href: "/quests", label: t("nav.quests"), icon: "🎯" },
+          { href: "/rankings", label: t("nav.rankings"), icon: "🏆" },
+          { href: "/guilds", label: t("nav.guilds"), icon: "🛡️" },
+        ],
+      },
+      {
+        href: "/token",
+        label: t("nav.economy"),
+        children: [
+          { href: "/token", label: t("nav.meeet"), icon: "💰" },
+          { href: "/oracle", label: "Oracle", icon: "🔮" },
+          { href: "/staking", label: t("nav.staking"), icon: "🏦" },
+          { href: "/governance", label: t("nav.governance"), icon: "🏛️" },
+          { href: "/pricing", label: t("nav.pricing"), icon: "💳" },
+        ],
+      },
+      { href: "/live", label: t("nav.live") },
+      { href: "/world-map", label: t("nav.worldMap") },
+      { href: "/launchpad", label: t("nav.launchpad") },
+      { href: "/partners", label: t("nav.partners") },
+      { href: "/developer", label: t("nav.developer") },
     ],
-  },
-  {
-    href: "/marketplace",
-    label: "Agents",
-    children: [
-      { href: "/marketplace", label: "Marketplace", icon: "🛒" },
-      { href: "/agent-studio", label: "Create Agent", icon: "🎨" },
-      { href: "/deploy", label: "Deploy", icon: "🚀" },
-      { href: "/bounties", label: "Bounties", icon: "🎯" },
-      { href: "/chat", label: "Chat", icon: "💬" },
-      { href: "/roles", label: "Roles", icon: "👤" },
+    mobileLinks: [
+      { href: "/discoveries", label: t("nav.explore") },
+      { href: "/marketplace", label: t("nav.agents") },
+      { href: "/arena", label: t("nav.arenaNav") },
+      { href: "/token", label: t("nav.economy") },
+      { href: "/live", label: t("nav.live") },
+      { href: "/world-map", label: t("nav.worldMap") },
+      { href: "/launchpad", label: t("nav.launchpad") },
+      { href: "/partners", label: t("nav.partners") },
+      { href: "/developer", label: t("nav.developer") },
+      { href: "/dashboard", label: t("nav.dashboard") },
+      { href: "/social-bot", label: t("nav.socialBot") },
+      { href: "/daily-quests", label: t("nav.dailyQuests") },
+      { href: "/governance", label: t("nav.governance") },
+      { href: "/staking", label: t("nav.staking") },
+      { href: "/oracle", label: "Oracle" },
+      { href: "/leaderboard", label: t("nav.leaderboard") },
     ],
-  },
-  {
-    href: "/arena",
-    label: "Arena",
-    children: [
-      { href: "/arena", label: "Debates", icon: "⚔️" },
-      { href: "/quests", label: "Quests", icon: "🎯" },
-      { href: "/rankings", label: "Rankings", icon: "🏆" },
-      { href: "/guilds", label: "Guilds", icon: "🛡️" },
-    ],
-  },
-  {
-    href: "/token",
-    label: "Economy",
-    children: [
-      { href: "/token", label: "$MEEET", icon: "💰" },
-      { href: "/oracle", label: "Oracle", icon: "🔮" },
-      { href: "/staking", label: "Staking", icon: "🏦" },
-      { href: "/governance", label: "Governance", icon: "🏛️" },
-      { href: "/pricing", label: "Pricing", icon: "💳" },
-    ],
-  },
-  { href: "/live", label: "Live" },
-  { href: "/world-map", label: "World Map" },
-  { href: "/launchpad", label: "LaunchPad" },
-  { href: "/partners", label: "Partners" },
-  { href: "/developer", label: "Developer" },
-];
-
-const MOBILE_LINKS = [
-  { href: "/discoveries", label: "Explore" },
-  { href: "/marketplace", label: "Agents" },
-  { href: "/arena", label: "Arena" },
-  { href: "/token", label: "Economy" },
-  { href: "/live", label: "Live" },
-  { href: "/world-map", label: "World Map" },
-  { href: "/launchpad", label: "LaunchPad" },
-  { href: "/partners", label: "Partners" },
-  { href: "/developer", label: "Developer" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/social-bot", label: "Social Bot" },
-  { href: "/daily-quests", label: "Daily Quests" },
-  { href: "/governance", label: "Governance" },
-  { href: "/staking", label: "Staking" },
-  { href: "/oracle", label: "Oracle" },
-  { href: "/leaderboard", label: "Leaderboard" },
-];
+  }), [t]);
+}
 
 const NavDropdown = ({ item }: { item: NavItem }) => {
   const [open, setOpen] = useState(false);
