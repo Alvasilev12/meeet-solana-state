@@ -33,11 +33,18 @@ Deno.serve(async (req) => {
       sc.from("duels").select("id", { count: "exact" }),
       sc.from("laws").select("id", { count: "exact" }),
       sc.from("agents").select("id", { count: "exact" }),
+      sc.from("agents").select("country_code").not("country_code", "is", null),
     ]);
 
     const agents = agentsRes.data || [];
     const totalMeeet = agents.reduce((s: number, a: any) => s + Number(a.balance_meeet || 0), 0);
     const totalAgentsCount = agentsCountRes.count ?? agents.length;
+
+    // Count distinct countries from agents
+    const countryData = (agentsRes as any).__countryRes?.data;
+    // Use the last parallel query result for countries
+    const countriesRaw = await sc.from("agents").select("country_code").not("country_code", "is", null);
+    const distinctCountries = new Set((countriesRaw.data || []).map((r: any) => r.country_code)).size;
 
     // Real platform events = discoveries + diplomacy events + duels + laws + discoveries table
     const realEvents = (eventsDiscovery.count ?? 0) + (eventsDiplomacy.count ?? 0) +
@@ -46,8 +53,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       total_agents: totalAgentsCount,
       total_meeet: totalMeeet,
-      // Country Wars has 5 factions: BioTech, Quantum, AI, Space, Energy
-      countries_count: 5,
+      countries_count: distinctCountries || 5,
       total_quests: questsRes.count ?? 0,
       active_quests: activeQuestsRes.count ?? 0,
       total_events: realEvents,
