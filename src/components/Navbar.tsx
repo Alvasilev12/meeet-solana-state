@@ -230,7 +230,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="text-xl font-bold tracking-tight text-gradient-primary">MEEET</span>
             <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span className="text-xs text-muted-foreground hidden sm:inline">Solana State</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">{t("nav.solanaState")}</span>
           </Link>
 
           {/* Online presence — large screens only */}
@@ -246,15 +246,15 @@ const Navbar = () => {
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-4 text-sm text-muted-foreground">
-            {NAV_ITEMS.map(item => (
+            {navItems.map(item => (
               <NavDropdown key={item.href} item={item} />
             ))}
           </div>
 
           {/* Desktop right links */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
-            <Link to="/dashboard" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/dashboard" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>Dashboard</Link>
-            <Link to="/social-bot" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/social-bot" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>Social Bot</Link>
+            <Link to="/dashboard" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/dashboard" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.dashboard")}</Link>
+            <Link to="/social-bot" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/social-bot" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.socialBot")}</Link>
           </div>
 
           {/* Right actions */}
@@ -353,7 +353,7 @@ const Navbar = () => {
 
         {/* Scrollable links */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {MOBILE_LINKS.map(l => (
+          {mobileLinks.map(l => (
             <Link
               key={l.href}
               to={l.href}
