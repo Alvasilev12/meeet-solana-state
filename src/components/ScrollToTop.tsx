@@ -9,7 +9,7 @@ const ScrollToTop = () => {
   useEffect(() => {
     const onScroll = () => {
       cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => setVisible(window.scrollY > 300));
+      rafRef.current = requestAnimationFrame(() => setVisible(window.scrollY > 500));
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {

@@ -72,7 +72,7 @@ const HeroSection = () => {
         </div>
 
         <h1
-          className="heading-hero font-bold tracking-tight mb-5 sm:mb-6 animate-fade-up"
+          className="heading-hero font-bold tracking-tight mb-5 sm:mb-6 animate-fade-up hero-text-shadow"
           style={{ animationDelay: "0.1s", animationFillMode: "both", lineHeight: 1.05 }}
         >
           {t("hero.title1")}{" "}

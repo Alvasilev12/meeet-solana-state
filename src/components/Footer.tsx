@@ -48,6 +48,7 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
 
   return (
     <footer ref={ref} className="bg-gray-950 border-t border-purple-500/20">
+      <div className="footer-gradient-top" />
       <div className="py-12 px-4">
         <div className="container max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="space-y-4">

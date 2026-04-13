@@ -755,3 +755,74 @@ canvas {
 .skip-to-content:focus {
   left: 0;
 }
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* ── Card hover micro-interaction ── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 8px 24px -8px hsl(var(--primary) / 0.15);
+}
+
+/* ── Button tactile feedback ── */
+button:active, [role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-skeleton {
+  background: linear-gradient(90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Hero text depth ── */
+.hero-text-shadow {
+  text-shadow: 0 2px 16px hsl(var(--primary) / 0.25);
+}
+
+/* ── Footer gradient separator ── */
+.footer-gradient-top {
+  background: linear-gradient(to right, transparent, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.2), transparent);
+  height: 1px;
+}
+
+/* ── Prefers reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
+  button:active, [role="button"]:active {
+    transform: none;
+  }
+}
