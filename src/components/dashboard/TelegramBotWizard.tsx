@@ -163,7 +163,7 @@ export default function TelegramBotWizard({ userId, agentId, tier }: { userId: s
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="glass-card rounded-lg p-3 space-y-2 text-xs text-muted-foreground font-body">
-          <p>1. {t("tgBot.step1")} <a href="https://t.me/BotFather" target="_blank" className="text-primary hover:underline">{t("tgBot.step1Link")}</a> {t("tgBot.step1Desc")}</p>
+          <p>1. {t("tgBot.step1")} <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("tgBot.step1Link")}</a> {t("tgBot.step1Desc")}</p>
           <p>2. {t("tgBot.step2")} <code className="bg-muted px-1 rounded">{t("tgBot.step2Cmd")}</code> {t("tgBot.step2Desc")}</p>
           <p>3. {t("tgBot.step3")}</p>
         </div>
