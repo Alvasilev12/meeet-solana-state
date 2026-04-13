@@ -73,6 +73,7 @@ export const translations: Record<string, Record<string, any>> = {
       dailyQuests: "Daily Quests",
       aiLab: "AI Lab",
       calculator: "ROI Calculator",
+      aiTools: "AI Tools",
       menu: "Menu",
     },
     pages: {
@@ -684,6 +685,7 @@ export const translations: Record<string, Record<string, any>> = {
       dailyQuests: "Ежедневные квесты",
       aiLab: "ИИ Лаборатория",
       calculator: "Калькулятор ROI",
+      aiTools: "ИИ Инструменты",
       menu: "Меню",
     },
     pages: {
