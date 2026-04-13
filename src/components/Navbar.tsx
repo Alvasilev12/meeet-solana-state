@@ -279,14 +279,14 @@ const Navbar = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0" align="end">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                    <span className="text-sm font-bold">Notifications</span>
+                    <span className="text-sm font-bold">{t("nav.notifications")}</span>
                     {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[10px] text-primary hover:underline" aria-label="Mark all notifications as read">Mark all read</button>
+                      <button onClick={markAllRead} className="text-[10px] text-primary hover:underline" aria-label={t("nav.markAllRead")}>{t("nav.markAllRead")}</button>
                     )}
                   </div>
                   <ScrollArea className="max-h-64">
                     {notifications.length === 0 ? (
-                      <p className="text-center text-muted-foreground text-xs py-6">No notifications</p>
+                      <p className="text-center text-muted-foreground text-xs py-6">{t("nav.noNotifications")}</p>
                     ) : (
                       <div className="divide-y divide-border">
                         {notifications.map((n: any) => (
@@ -312,12 +312,12 @@ const Navbar = () => {
             <NavWalletButton />
 
             {user ? (
-              <button onClick={signOut} className="hidden lg:flex items-center p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label="Sign out">
+              <button onClick={signOut} className="hidden lg:flex items-center p-2 text-muted-foreground hover:text-foreground transition-colors" aria-label={t("nav.signOut")}>
                 <LogOut className="w-4 h-4" />
               </button>
             ) : (
               <Link to="/auth" className="hidden lg:block px-3 py-1.5 text-sm font-semibold bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors">
-                Sign In
+                {t("nav.signIn")}
               </Link>
             )}
 
