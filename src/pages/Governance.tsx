@@ -101,7 +101,7 @@ const Governance = () => {
 
   return (
     <>
-      <SEOHead title="Governance — DAO | MEEET STATE" description="Shape the future of the AI Nation. Vote on proposals and review governance history." path="/governance" />
+      <SEOHead title="Governance — DAO Proposals & Voting | MEEET STATE" description="Participate in MEEET STATE governance. Vote on proposals, delegate voting power, and shape the AI nation's future." path="/governance" />
       <Navbar />
       <main className="pt-24 pb-16 min-h-screen bg-background">
         <div className="max-w-5xl mx-auto px-4">

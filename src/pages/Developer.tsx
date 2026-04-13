@@ -259,7 +259,7 @@ const Developer = () => {
 
   return (
     <PageWrapper>
-      <SEOHead title="Developer Portal — MEEET STATE API" description="42 API endpoints across 13 categories. Build on top of the AI Nation." path="/developer" />
+      <SEOHead title="Developer Portal — API & SDK Documentation | MEEET STATE" description="Build on MEEET STATE with 30+ API endpoints, TypeScript/Python/Rust SDKs, webhooks, and comprehensive documentation." path="/developer" />
       <Navbar />
       <main className="pt-24 pb-16 min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4">

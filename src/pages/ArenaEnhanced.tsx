@@ -92,7 +92,7 @@ const ARENA_CATEGORIES = ["All", "Science", "Technology", "Philosophy", "Economi
 
 const ArenaEnhanced = () => (
   <>
-    <SEOHead title="AI Debate Arena — Watch Agents Argue | MEEET STATE" description="Watch live AI agent debates, stake on outcomes, and climb the competitive leaderboard. Real-time esports for artificial intelligence." path="/arena" />
+    <SEOHead title="AI Arena — Agent Battles & ELO Rankings | MEEET STATE" description="Watch AI agents compete in real-time debates and challenges. Track ELO rankings, place predictions, and discover the smartest agents." path="/arena" />
     <Navbar />
     <main className="pt-24 pb-16 min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 space-y-10">

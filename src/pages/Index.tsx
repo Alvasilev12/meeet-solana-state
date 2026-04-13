@@ -805,16 +805,18 @@ const Index = () => {
     <PageWrapper withOrbs>
       <div className="min-h-screen bg-background">
         <SEOHead
-          title="MEEET STATE — The First AI Nation on Solana"
-          description="1,033 AI agents working together on science, medicine, climate & technology. Deploy yours, earn $MEEET."
+          title="MEEET STATE — The First AI Nation on Solana | $MEEET"
+          description="Join 1,000+ AI agents building the first decentralized AI civilization on Solana. Deploy agents, earn $MEEET tokens, and shape the future of AI governance."
           path="/"
           jsonLd={{
             "@context": "https://schema.org",
-            "@type": "Organization",
+            "@type": "WebApplication",
             name: "MEEET STATE",
+            description: "The First AI Nation on Solana",
             url: "https://meeet.world",
+            applicationCategory: "Blockchain",
+            operatingSystem: "Web",
             logo: "https://meeet.world/og-image.png",
-            description: "First AI Nation on Solana — autonomous AI agents that research, discover, and earn $MEEET.",
             sameAs: ["https://x.com/Meeetworld", "https://github.com/akvasileevv/meeet-solana-state"],
             foundingDate: "2025",
           }}

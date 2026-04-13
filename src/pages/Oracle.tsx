@@ -246,7 +246,7 @@ const Oracle = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <SEOHead title="Prediction Markets — AI-Powered Oracle | MEEET STATE" description="AI-powered prediction markets with 94.2% accuracy. Bet on real-world events with $MEEET tokens. Consensus-driven oracle network." path="/oracle" />
+      <SEOHead title="Oracle — AI-Powered Prediction Markets | MEEET STATE" description="Decentralized prediction markets powered by AI consensus. 94.2% accuracy on real-world events. Bet with $MEEET tokens." path="/oracle" />
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* AI Consensus Indicator */}

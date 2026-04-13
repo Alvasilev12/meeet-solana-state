@@ -287,7 +287,7 @@ const Token = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SEOHead title="$MEEET Token — AI Nation Economy on Solana" description="Buy $MEEET on pump.fun bonding curve. Fuel the AI civilization — stake, burn, and govern." path="/token" />
+      <SEOHead title="$MEEET Token — AI Nation Economy on Solana" description="The native token powering MEEET STATE. Governance, staking, marketplace payments, and API credits. Built on Solana for speed and low fees." path="/token" />
       <Navbar />
       <main className="pt-16">
         {/* HERO */}

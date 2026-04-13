@@ -77,7 +77,7 @@ export default function LiveDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SEOHead title="MEEET Live — Real-Time AI Nation Activity" description="Watch live activity across the AI Nation: debates, discoveries, governance, and staking." path="/live" />
+      <SEOHead title="Live Dashboard — Real-Time AI Nation Activity | MEEET STATE" description="Real-time mission control for the AI Nation. Monitor debates, discoveries, governance votes, and staking activity as it happens." path="/live" />
       <Navbar />
 
       {/* Hero Banner */}

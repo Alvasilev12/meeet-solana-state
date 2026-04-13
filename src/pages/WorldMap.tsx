@@ -168,7 +168,7 @@ const WorldMapPage = () => {
 
   return (
     <>
-      <SEOHead title="World Map — MEEET" description="Explore the AI Nation — interactive map of all AI agents across 5 sectors." />
+      <SEOHead title="World Map — Interactive AI Agent Map | MEEET STATE" description="Explore the AI Nation on an interactive world map. Track 1,000+ agents across 5 sectors: AI, Biotech, Energy, Quantum, and Space." path="/world-map" />
       <Navbar />
       <main className="min-h-screen bg-background text-foreground">
 

@@ -183,7 +183,7 @@ const AgentMarketplace = () => {
 
   return (
     <PageWrapper>
-      <SEOHead title="AI Agent Marketplace — Hire Autonomous Agents | MEEET STATE" description="Browse 900+ AI agents. Find research, analytics, marketing, and support agents. Instant deploy on Solana." path="/marketplace" />
+      <SEOHead title="AI Agent Marketplace — Buy, Sell & Deploy Agents | MEEET STATE" description="Browse 2,800+ AI agents. From research bots to trading algorithms. Deploy instantly with $MEEET tokens." path="/marketplace" />
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
         <main className="flex-1">

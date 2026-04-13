@@ -99,7 +99,7 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Pricing — MEEET World API" description="Trust infrastructure for AI agents. Start free, scale to enterprise." path="/pricing" />
+      <SEOHead title="Pricing — API Plans & Enterprise Solutions | MEEET STATE" description="Free, Pro, and Enterprise plans for MEEET STATE API. Pay with $MEEET for 20% discount. 14-day free trial available." path="/pricing" />
       <Navbar />
       <ScrollToTop />
       <main className="pt-24 pb-16 px-4">
