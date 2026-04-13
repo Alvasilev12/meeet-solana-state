@@ -108,6 +108,7 @@ const BountyDetail = React.lazy(() => import("./pages/BountyDetail.tsx"));
 const WorldMapPage = React.lazy(() => import("./pages/WorldMap.tsx"));
 const LaunchPad = React.lazy(() => import("./pages/LaunchPad.tsx"));
 const Playground = React.lazy(() => import("./pages/Playground.tsx"));
+const Calculator = React.lazy(() => import("./pages/Calculator.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
