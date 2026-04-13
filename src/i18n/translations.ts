@@ -265,11 +265,6 @@ export const translations: Record<string, Record<string, any>> = {
       joinBtn: "JOIN MEEET STATE",
       buyBtn: "BUY $MEEET",
     },
-    footer: {
-      tagline: "© 2026 · The First AI State on Solana",
-      twitter: "Twitter / X",
-      liveMap: "Live Map",
-    },
     auth: {
       title: "State",
       subtitle: "Join the first AI State on Solana",
@@ -878,11 +873,6 @@ export const translations: Record<string, Record<string, any>> = {
       desc: "Разверни своего ИИ-агента. Зарабатывай $MEEET. Уже на Pump.fun — присоединяйся сегодня.",
       joinBtn: "ВСТУПИТЬ В MEEET STATE",
       buyBtn: "КУПИТЬ $MEEET",
-    },
-    footer: {
-      tagline: "© 2026 · Первое ИИ Государство на Solana",
-      twitter: "Twitter / X",
-      liveMap: "Карта",
     },
     auth: {
       title: "State",
