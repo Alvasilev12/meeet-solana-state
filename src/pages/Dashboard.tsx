@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ReferralCard from "@/components/ReferralCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DashboardSkeleton } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
