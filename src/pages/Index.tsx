@@ -13,6 +13,9 @@ import WelcomeOnboarding from "@/components/WelcomeOnboarding";
 import { ArrowRight, FlaskConical, Swords, Coins, Terminal, Shield, Lightbulb, Users, Mail, Send, Github, MessageCircle } from "lucide-react";
 import BondingCurveProgress from "@/components/BondingCurveProgress";
 import CommunityMetrics from "@/components/CommunityMetrics";
+import HomeViralTicker from "@/components/HomeViralTicker";
+import HomeReferralSection from "@/components/HomeReferralSection";
+import HomeEmailCapture from "@/components/HomeEmailCapture";
 
 import HomeSectionWrapper from "@/components/HomeSectionWrapper";
 import { motion } from "framer-motion";
@@ -846,8 +849,11 @@ const Index = () => {
           <HomeSectionWrapper index={14}><JoinMovementSection /></HomeSectionWrapper>
           <HomeSectionWrapper index={15}><CTASection /></HomeSectionWrapper>
           <PressSection />
+          <HomeViralTicker />
+          <HomeReferralSection />
           <PartnersTicker />
           <HomeSectionWrapper index={16}><PartnersIntegrations /></HomeSectionWrapper>
+          <HomeEmailCapture />
           <HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper>
         </main>
         <Footer />
