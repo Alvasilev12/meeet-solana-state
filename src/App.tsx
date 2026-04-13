@@ -140,6 +140,7 @@ const SocialProofFeed = React.lazy(() => import("@/components/SocialProofFeed"))
 
 const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
   useRealtimeNotifications();
+  useOnlineStatus();
   return <>{children}</>;
 };
 
