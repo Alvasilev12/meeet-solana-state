@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/runtime-client";
 const FloatingAgentCounter = () => {
   const [count, setCount] = useState(686);
   const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem("liveActivityClosed") === "true"; } catch { return false; }
+    return localStorage.getItem("liveActivityClosed") === "true";
   });
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const FloatingAgentCounter = () => {
     e.preventDefault();
     e.stopPropagation();
     setDismissed(true);
-    try { localStorage.setItem("liveActivityClosed", "true"); } catch {}
+    localStorage.setItem("liveActivityClosed", "true");
   };
 
   return (
