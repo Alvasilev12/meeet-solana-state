@@ -855,6 +855,7 @@ const Index = () => {
           <HomeSectionWrapper index={16}><PartnersIntegrations /></HomeSectionWrapper>
           <HomeEmailCapture />
           <HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper>
+          <OracleCTASection />
         </main>
         <Footer />
         <WelcomeOnboarding />
