@@ -110,6 +110,7 @@ const LaunchPad = React.lazy(() => import("./pages/LaunchPad.tsx"));
 const Playground = React.lazy(() => import("./pages/Playground.tsx"));
 const Calculator = React.lazy(() => import("./pages/Calculator.tsx"));
 const AITools = React.lazy(() => import("./pages/AITools.tsx"));
+const TrustApi = React.lazy(() => import("./pages/TrustApi.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -258,6 +259,7 @@ const AnimatedRoutes = () => {
           <Route path="/playground" element={<RouteErrorBoundary><Playground /></RouteErrorBoundary>} />
           <Route path="/calculator" element={<RouteErrorBoundary><Calculator /></RouteErrorBoundary>} />
           <Route path="/ai-tools" element={<RouteErrorBoundary><AITools /></RouteErrorBoundary>} />
+          <Route path="/trust-api" element={<RouteErrorBoundary><TrustApi /></RouteErrorBoundary>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

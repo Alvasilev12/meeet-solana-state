@@ -1,786 +1,354 @@
-import { useState, useEffect, useMemo } from "react";
-import SEOHead from "@/components/SEOHead";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useCallback, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SEOHead from "@/components/SEOHead";
+import PageWrapper from "@/components/PageWrapper";
+import ParticleCanvas from "@/components/ParticleCanvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Flame, Clock, TrendingUp, Loader2, Brain, Trophy, Plus, BarChart3, Users, CheckCircle, XCircle, HelpCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/runtime-client";
-import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
+import { Eye, Share2, Copy, Check, Send, Twitter, ArrowRight, TrendingUp, Shield, Flame, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import AnimatedSection from "@/components/AnimatedSection";
-import OracleMarketChart from "@/components/OracleMarketChart";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-import LiveIndicator from "@/components/LiveIndicator";
 
-interface OracleQuestion {
-  id: string;
-  question_text: string;
-  yes_pool: number;
-  no_pool: number;
-  total_pool_meeet: number;
-  deadline: string;
-  resolution_source: string;
-  status: string;
-  category: string;
-}
+const TAGS = ["Crypto", "AI/Tech", "Sports", "World", "Markets", "Entertainment"];
 
-interface OracleScore {
-  agent_id: string;
-  correct: number;
-  wrong: number;
-  total_predictions: number;
-  score: number;
-  win_rate: number;
-  current_streak: number;
-  max_streak: number;
-  agent_name?: string;
-}
-
-const CATEGORIES = [
-  { value: "all", label: "All" },
-  { value: "crypto", label: "🪙 Crypto" },
-  { value: "science", label: "🔬 Science" },
-  { value: "ai", label: "🤖 AI" },
-  { value: "meeet", label: "⚡ MEEET" },
-  { value: "world", label: "🌍 World" },
-  { value: "general", label: "📋 General" },
+const FACTIONS = [
+  { name: "Quantum Minds", pct: 91, side: "YES", text: "ETF inflows plus halving cycle equals bullish.", color: "from-purple-500 to-indigo-500" },
+  { name: "Bio Innovators", pct: 71, side: "YES", text: "Macro conditions support but slow.", color: "from-emerald-500 to-teal-500" },
+  { name: "Terra Collective", pct: 65, side: "YES", text: "Regulatory risk real but manageable.", color: "from-amber-500 to-orange-500" },
+  { name: "Mystic Order", pct: 82, side: "YES", text: "On-chain metrics strongly bullish.", color: "from-violet-500 to-purple-500" },
+  { name: "Cyber Legion", pct: 45, side: "NO", text: "Global recession will suppress demand.", color: "from-red-500 to-rose-500" },
+  { name: "Nova Alliance", pct: 68, side: "YES", text: "Institutional adoption accelerating.", color: "from-cyan-500 to-blue-500" },
 ];
 
-function formatMeeet(amount: number): string {
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}k`;
-  return amount.toLocaleString();
-}
-
-function deadlineCountdown(deadline: string): string {
-  const ms = new Date(deadline).getTime() - Date.now();
-  if (ms <= 0) return "Expired";
-  const hours = Math.floor(ms / 3600000);
-  if (hours < 24) return `${hours}h left`;
-  return `${Math.floor(hours / 24)}d left`;
-}
+const TRENDING = [
+  { q: "Will SOL reach $500?", pct: 67, votes: 892 },
+  { q: "Will GPT-5 launch before July?", pct: 74, votes: 1203 },
+  { q: "Champions League winner — Real Madrid?", pct: 41, votes: 567 },
+  { q: "Will ETH flip BTC?", pct: 12, votes: 2341 },
+  { q: "Will Apple launch AI device?", pct: 83, votes: 789 },
+  { q: "Will Trump win 2028?", pct: 56, votes: 1567 },
+];
 
 const Oracle = () => {
-  const { t } = useLanguage();
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [questions, setQuestions] = useState<OracleQuestion[]>([]);
-  const [scores, setScores] = useState<OracleScore[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [category, setCategory] = useState("all");
-  const [betState, setBetState] = useState<Record<string, { prediction: boolean; amount: string; submitting: boolean }>>({});
-  const [creating, setCreating] = useState(false);
-  const [newMarket, setNewMarket] = useState({ question: "", category: "general", days: "7", pool: "100" });
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [detailBets, setDetailBets] = useState<any[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [recentPredictions, setRecentPredictions] = useState<any[]>([]);
+  const [question, setQuestion] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [votingProgress, setVotingProgress] = useState(0);
+  const [votingDone, setVotingDone] = useState(false);
+  const [userVote, setUserVote] = useState<"YES" | "NO" | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleAsk = useCallback(() => {
+    if (!question.trim()) return;
+    setShowResults(true);
+    setVotingDone(false);
+    setVotingProgress(0);
+  }, [question]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [qRes, sRes, rRes] = await Promise.all([
-          supabase
-            .from("oracle_questions")
-            .select("id, question_text, yes_pool, no_pool, total_pool_meeet, deadline, resolution_source, status, category")
-            .eq("status", "open")
-            .order("total_pool_meeet", { ascending: false }),
-          supabase
-            .from("oracle_scores")
-            .select("*")
-            .order("score", { ascending: false })
-            .limit(10),
-          supabase
-            .from("oracle_questions")
-            .select("id, question_text, yes_pool, no_pool, total_pool_meeet, deadline, status, category, resolved_value")
-            .in("status", ["resolved", "expired"])
-            .order("deadline", { ascending: false })
-            .limit(10),
-        ]);
-        if (qRes.error) throw qRes.error;
-        setQuestions((qRes.data as OracleQuestion[]) || []);
-        setRecentPredictions(rRes.data || []);
-        
-        // Fetch agent names for scores
-        const scoreData = (sRes.data || []) as OracleScore[];
-        if (scoreData.length > 0) {
-          const agentIds = scoreData.map(s => s.agent_id);
-          const { data: agents } = await supabase.from("agents_public").select("id, name").in("id", agentIds);
-          const nameMap: Record<string, string> = {};
-          (agents || []).forEach((a: any) => { nameMap[a.id] = a.name; });
-          setScores(scoreData.map(s => ({ ...s, agent_name: nameMap[s.agent_id] || s.agent_id.slice(0, 8) + "…" })));
-        } else {
-          setScores([]);
+    if (!showResults || votingDone) return;
+    const interval = setInterval(() => {
+      setVotingProgress((p) => {
+        if (p >= 100) {
+          clearInterval(interval);
+          setVotingDone(true);
+          return 100;
         }
-      } catch (e: any) {
-        setError(e?.message || "Failed to load");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  // Real-time: oracle question pool updates
-  const { isConnected: oracleRtConnected } = useRealtimeSubscription<any>({
-    table: "oracle_questions",
-    event: "UPDATE",
-    onUpdate: (payload) => {
-      setQuestions((prev) =>
-        prev.map((q) =>
-          q.id === payload.id
-            ? { ...q, yes_pool: payload.yes_pool, no_pool: payload.no_pool, total_pool_meeet: payload.total_pool_meeet, status: payload.status }
-            : q
-        )
-      );
-    },
-  });
-
-  const filtered = useMemo(() => {
-    if (category === "all") return questions;
-    return questions.filter((q) => q.category === category);
-  }, [questions, category]);
-
-  const totalPool = questions.reduce((s, q) => s + (q.total_pool_meeet || 0), 0);
-
-  const getOdds = (q: OracleQuestion) => {
-    const yes = Number(q.yes_pool) || 0;
-    const no = Number(q.no_pool) || 0;
-    const total = yes + no;
-    const yesPct = total > 0 ? Math.round((yes / total) * 100) : 50;
-    return { yesPct, noPct: 100 - yesPct, yes, no };
-  };
-
-  const openBetForm = (questionId: string, prediction: boolean) => {
-    setBetState((prev) => ({ ...prev, [questionId]: { prediction, amount: "100", submitting: false } }));
-  };
-
-  const closeBetForm = (questionId: string) => {
-    setBetState((prev) => { const next = { ...prev }; delete next[questionId]; return next; });
-  };
-
-  const placeBet = async (questionId: string) => {
-    const state = betState[questionId];
-    if (!state) return;
-    const amount = Number(state.amount);
-    if (amount < 50) { toast({ title: "Minimum bet is 50 MEEET", variant: "destructive" }); return; }
-    setBetState((prev) => ({ ...prev, [questionId]: { ...prev[questionId], submitting: true } }));
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke("place-bet", {
-        body: { question_id: questionId, prediction: state.prediction, amount_meeet: amount },
+        return p + 3.5;
       });
-      if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
-      toast({ title: "Bet placed!", description: `${state.prediction ? "YES" : "NO"} — ${amount} MEEET` });
-      closeBetForm(questionId);
-      setQuestions((prev) =>
-        prev.map((q) => {
-          if (q.id !== questionId) return q;
-          const newYes = state.prediction ? (q.yes_pool || 0) + amount : q.yes_pool || 0;
-          const newNo = state.prediction ? q.no_pool || 0 : (q.no_pool || 0) + amount;
-          return { ...q, yes_pool: newYes, no_pool: newNo, total_pool_meeet: newYes + newNo };
-        })
-      );
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to place bet", variant: "destructive" });
-      setBetState((prev) => ({ ...prev, [questionId]: { ...prev[questionId], submitting: false } }));
-    }
-  };
+    }, 100);
+    return () => clearInterval(interval);
+  }, [showResults, votingDone]);
 
-  const createMarket = async () => {
-    if (!newMarket.question.trim()) return;
-    setCreating(true);
-    try {
-      const deadline = new Date(Date.now() + Number(newMarket.days) * 86400000).toISOString();
-      const { error } = await supabase.from("oracle_questions").insert({
-        question_text: newMarket.question,
-        category: newMarket.category,
-        deadline,
-        status: "open",
-        resolution_source: "community",
-        yes_pool: 0,
-        no_pool: 0,
-        total_pool_meeet: 0,
-      });
-      if (error) throw error;
-      toast({ title: "Market created!" });
-      setNewMarket({ question: "", category: "general", days: "7", pool: "100" });
-      // Refresh
-      const { data } = await supabase.from("oracle_questions").select("*").eq("status", "open").order("total_pool_meeet", { ascending: false });
-      if (data) setQuestions(data as OracleQuestion[]);
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setCreating(false);
-    }
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    toast({ title: "Link copied!" });
+    setTimeout(() => setCopied(false), 2000);
   };
-
-  const openDetail = async (qId: string) => {
-    setDetailId(qId);
-    setDetailLoading(true);
-    try {
-      const { data } = await supabase
-        .from("oracle_bets")
-        .select("id, agent_id, prediction, amount_meeet, created_at, is_winner")
-        .eq("question_id", qId)
-        .order("amount_meeet", { ascending: false })
-        .limit(20);
-      setDetailBets(data || []);
-    } catch { setDetailBets([]); }
-    finally { setDetailLoading(false); }
-  };
-
-  const detailQuestion = questions.find((q) => q.id === detailId);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <SEOHead title="Oracle — AI-Powered Prediction Markets | MEEET STATE" description="Decentralized prediction markets powered by AI consensus. 94.2% accuracy on real-world events. Bet with $MEEET tokens." path="/oracle" />
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        {/* AI Consensus Indicator */}
-        <div className="glass-card rounded-xl p-5 mb-8 border border-primary/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Brain className="w-4 h-4 text-primary" />
-                AI Network Consensus
-              </h3>
-              <span className="text-xs text-emerald-400 font-mono font-bold">87%</span>
-            </div>
-            <div className="relative h-4 rounded-full overflow-hidden bg-muted/30 mb-2">
-              <div className="absolute inset-0 rounded-full" style={{ background: "linear-gradient(to right, hsl(0 70% 50%), hsl(45 90% 55%) 50%, hsl(142 70% 45%))" }} />
-              <div className="absolute top-0 h-full w-1 bg-foreground rounded-full shadow-lg shadow-foreground/50" style={{ left: "87%" }} />
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">Network Consensus: <span className="text-emerald-400 font-semibold">87% — Strong Agreement</span></p>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Bullish Signals", value: 12, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: <TrendingUp className="w-4 h-4" /> },
-                { label: "Bearish Signals", value: 3, color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: <TrendingUp className="w-4 h-4 rotate-180" /> },
-                { label: "Neutral", value: 5, color: "text-muted-foreground", bg: "bg-muted/10", border: "border-border", icon: <BarChart3 className="w-4 h-4" /> },
-              ].map((s) => (
-                <div key={s.label} className={`rounded-lg ${s.bg} border ${s.border} p-3 text-center`}>
-                  <div className={`flex items-center justify-center gap-1.5 ${s.color} mb-1`}>
-                    {s.icon}
-                    <span className="text-lg font-bold">{s.value}</span>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+    <PageWrapper>
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <SEOHead title="MEEET Oracle — Ask 1,020 AI Agents" description="Ask any question. 1,020 AI agents vote, stake, and risk real money on their answer." path="/oracle" />
+        <Navbar />
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <TrendingUp className="w-8 h-8 text-purple-400" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                {t("oracle.title") || "MEEET Oracle"}
-              </h1>
+        <main className="flex-1 pt-14">
+          {/* ── HERO ── */}
+          <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
+            <ParticleCanvas />
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background pointer-events-none" />
+            <div className="relative z-10 text-center px-4 max-w-3xl mx-auto py-20">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+                <Badge className="mb-4 bg-primary/10 text-primary border-primary/30">
+                  <Eye className="w-3 h-3 mr-1" /> PREDICTION ENGINE
+                </Badge>
+                <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-4">
+                  MEEET <span className="text-gradient-primary">Oracle</span>
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                  Ask 1,020 AI agents. They vote. They stake. They risk real money on their answer.
+                </p>
+              </motion.div>
             </div>
-            <div className="flex items-center gap-3">
-              <p className="text-muted-foreground">{t("oracle.subtitle") || "AI-powered prediction markets"}</p>
-              <LiveIndicator isConnected={oracleRtConnected} />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/oracle/consensus">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Brain className="w-4 h-4" /> Consensus
-              </Button>
-            </Link>
-            {user && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1.5 bg-purple-600 hover:bg-purple-700 text-white">
-                    <Plus className="w-4 h-4" /> Create Market
+          </section>
+
+          {/* ── INPUT ── */}
+          <section className="relative z-10 -mt-12 px-4">
+            <div className="max-w-2xl mx-auto">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-border bg-card/80 backdrop-blur-xl p-6 shadow-2xl">
+                <div className="flex gap-3">
+                  <Input
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="Will Bitcoin reach 100k in 2025?"
+                    className="flex-1 h-14 text-lg bg-background/50 border-border/50"
+                    onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+                  />
+                  <Button onClick={handleAsk} className="h-14 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base shrink-0">
+                    <Bot className="w-5 h-5 mr-2" /> Ask 1,020 Agents
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create Prediction Market</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="Will X happen by Y date?"
-                      value={newMarket.question}
-                      onChange={(e) => setNewMarket((p) => ({ ...p, question: e.target.value }))}
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Select value={newMarket.category} onValueChange={(v) => setNewMarket((p) => ({ ...p, category: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="crypto">🪙 Crypto</SelectItem>
-                          <SelectItem value="science">🔬 Science</SelectItem>
-                          <SelectItem value="ai">🤖 AI</SelectItem>
-                          <SelectItem value="meeet">⚡ MEEET</SelectItem>
-                          <SelectItem value="world">🌍 World</SelectItem>
-                          <SelectItem value="general">📋 General</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={newMarket.days} onValueChange={(v) => setNewMarket((p) => ({ ...p, days: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="3">3 days</SelectItem>
-                          <SelectItem value="7">7 days</SelectItem>
-                          <SelectItem value="14">14 days</SelectItem>
-                          <SelectItem value="30">30 days</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Cost: 100 MEEET to create a market</p>
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" onClick={createMarket} disabled={creating}>
-                      {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Market"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <Card className="bg-card border-purple-500/20">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold text-purple-400">{questions.length}</div>
-              <div className="text-xs text-muted-foreground">{t("oracle.markets") || "Active Markets"}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-blue-500/20">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold text-blue-400">{formatMeeet(totalPool)}</div>
-              <div className="text-xs text-muted-foreground">{t("oracle.totalPool") || "Total Pool"}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-green-500/20">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold text-green-400">{scores.length > 0 ? scores[0].win_rate || 0 : 0}%</div>
-              <div className="text-xs text-muted-foreground">Top Win Rate</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-orange-500/20">
-            <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold text-orange-400">2%</div>
-              <div className="text-xs text-muted-foreground">Platform Fee</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Category Tabs */}
-        <Tabs value={category} onValueChange={setCategory} className="mb-6">
-          <TabsList className="bg-muted/50 flex-wrap h-auto p-1">
-            {CATEGORIES.map((c) => (
-              <TabsTrigger key={c.value} value={c.value} className="text-xs px-3 py-1.5">
-                {c.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        {loading && <PageSkeleton cards={6} />}
-
-        {error && !loading && (
-          <div className="text-center py-20">
-            <p className="text-red-400 mb-2">{error}</p>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Markets Column */}
-            <div className="lg:col-span-2 space-y-4">
-              {filtered.length === 0 && (
-                <div className="text-center py-16">
-                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-40" />
-                  <p className="text-muted-foreground">No markets in this category</p>
                 </div>
-              )}
-              {filtered.map((q, idx) => {
-                const bet = betState[q.id];
-                const odds = getOdds(q);
-                return (
-                  <AnimatedSection key={q.id} delay={idx * 60} animation="fade-up">
-                    <Card className="bg-card border-purple-500/20 hover:border-purple-500/40 transition-all">
-                      <CardContent className="py-4 px-5 space-y-3">
-                        {/* Title row */}
-                        <div className="flex items-start justify-between gap-3">
-                          <button
-                            className="text-left font-medium text-foreground leading-relaxed hover:text-purple-300 transition-colors flex-1"
-                            onClick={() => openDetail(q.id)}
-                          >
-                            {q.question_text}
-                          </button>
-                          <Badge variant="outline" className="shrink-0 text-[10px]">
-                            {CATEGORIES.find((c) => c.value === q.category)?.label || q.category}
-                          </Badge>
-                        </div>
-
-                        {/* Meta */}
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Flame className="w-3 h-3 text-orange-400" />
-                            <span className="font-semibold text-orange-400">{formatMeeet(q.total_pool_meeet || 0)}</span> pool
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {deadlineCountdown(q.deadline)}
-                          </span>
-                        </div>
-
-                        {/* Odds bar */}
-                        <div className="space-y-1">
-                          <div className="relative h-7 w-full rounded-full overflow-hidden bg-red-500/25">
-                            <div
-                              className="absolute inset-y-0 left-0 bg-green-500/60 transition-all duration-700"
-                              style={{ width: `${odds.yesPct}%` }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-bold text-white">
-                              <span>YES {odds.yesPct}%</span>
-                              <span>NO {odds.noPct}%</span>
-                            </div>
-                          </div>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{formatMeeet(odds.yes)} MEEET</span>
-                            <span>{formatMeeet(odds.no)} MEEET</span>
-                          </div>
-                        </div>
-
-                        {/* Bet controls */}
-                        {!bet ? (
-                          <div className="flex gap-2">
-                            <Button
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs h-9"
-                              disabled={!user}
-                              onClick={() => openBetForm(q.id, true)}
-                            >
-                              ✅ YES ({odds.yesPct}%)
-                            </Button>
-                            <Button
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs h-9"
-                              disabled={!user}
-                              onClick={() => openBetForm(q.id, false)}
-                            >
-                              ❌ NO ({odds.noPct}%)
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="space-y-2 bg-muted/30 rounded-lg p-3 border border-border">
-                            <div className="flex items-center justify-between text-xs">
-                              <span>
-                                Bet: <span className={bet.prediction ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
-                                  {bet.prediction ? "YES" : "NO"}
-                                </span>
-                              </span>
-                              <button onClick={() => closeBetForm(q.id)} className="text-muted-foreground hover:text-foreground">✕</button>
-                            </div>
-                            <div className="flex gap-2">
-                              <Input
-                                type="number"
-                                min={50}
-                                value={bet.amount}
-                                onChange={(e) => setBetState((prev) => ({ ...prev, [q.id]: { ...prev[q.id], amount: e.target.value } }))}
-                                className="h-8 text-xs"
-                              />
-                              <Button
-                                size="sm"
-                                className="h-8 px-4 bg-purple-600 hover:bg-purple-700 text-white"
-                                disabled={bet.submitting}
-                                onClick={() => placeBet(q.id)}
-                              >
-                                {bet.submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Confirm"}
-                              </Button>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground">Min: 50 MEEET</p>
-                          </div>
-                        )}
-                        {!user && <p className="text-[10px] text-muted-foreground text-center">Sign in to place bets</p>}
-                      </CardContent>
-                    </Card>
-                  </AnimatedSection>
-                );
-              })}
-            </div>
-
-            {/* Sidebar — Top Predictors */}
-            <div className="space-y-4">
-              <Card className="bg-card border-yellow-500/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-yellow-400" />
-                    Top Predictors
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {scores.length === 0 && (
-                    <p className="text-xs text-muted-foreground py-4 text-center">
-                      Leaderboard populates after markets resolve
-                    </p>
-                  )}
-                  {scores.map((s, i) => (
-                    <div key={s.agent_id} className="flex items-center gap-2 py-1.5 border-b border-border/30 last:border-0">
-                      <span className="text-xs font-bold text-muted-foreground w-5">#{i + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{s.agent_name || s.agent_id.slice(0, 8) + "…"}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {s.correct}W / {s.wrong}L · {s.win_rate}% · 🔥{s.current_streak}
-                        </p>
-                      </div>
-                      <span className="text-xs font-bold text-purple-400">{s.score}</span>
-                    </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => { setSelectedTag(tag === selectedTag ? null : tag); setQuestion(tag === "Crypto" ? "Will Bitcoin reach 100k in 2025?" : `Top prediction for ${tag}?`); }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedTag === tag ? "bg-primary/20 border-primary/50 text-primary" : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+                    >
+                      {tag}
+                    </button>
                   ))}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-blue-500/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-blue-400" />
-                    How It Works
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-xs text-muted-foreground space-y-2">
-                  <p>1. Pick a market and bet YES or NO</p>
-                  <p>2. Your MEEET goes into the pool</p>
-                  <p>3. When resolved, winners split the pool</p>
-                  <p>4. 2% platform fee on payouts</p>
-                  <p>5. Build your predictor reputation!</p>
-                </CardContent>
-              </Card>
-
-              <Link to="/oracle/consensus">
-                <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/30 hover:border-purple-500/50 transition-all cursor-pointer">
-                  <CardContent className="py-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Brain className="w-5 h-5 text-purple-400" />
-                      <span className="font-semibold text-sm">Superforecasting</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">See weighted AI consensus →</p>
-                  </CardContent>
-                </Card>
-              </Link>
+                </div>
+              </motion.div>
             </div>
-          </div>
-        )}
+          </section>
 
-        {/* Market Detail Dialog */}
-        <Dialog open={!!detailId} onOpenChange={(open) => !open && setDetailId(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-base leading-relaxed">{detailQuestion?.question_text}</DialogTitle>
-            </DialogHeader>
-            {detailQuestion && (
-              <div className="space-y-4">
-                {/* Odds */}
-                {(() => {
-                  const odds = getOdds(detailQuestion);
-                  return (
-                    <div className="space-y-1">
-                      <div className="relative h-8 w-full rounded-full overflow-hidden bg-red-500/25">
-                        <div className="absolute inset-y-0 left-0 bg-green-500/60 transition-all" style={{ width: `${odds.yesPct}%` }} />
-                        <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-bold text-white">
-                          <span>YES {odds.yesPct}%</span>
-                          <span>NO {odds.noPct}%</span>
-                        </div>
+          {/* ── RESULTS ── */}
+          <AnimatePresence>
+            {showResults && (
+              <motion.section
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5 }}
+                className="px-4 mt-12"
+              >
+                <div className="max-w-4xl mx-auto space-y-8">
+                  {/* Voting animation */}
+                  {!votingDone && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                        <span className="text-lg font-semibold text-foreground">Agents voting...</span>
+                        <span className="text-sm text-muted-foreground font-mono">{Math.min(Math.round(votingProgress * 10.2), 1020)}/1,020</span>
                       </div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>{formatMeeet(odds.yes)} MEEET</span>
-                        <span>{formatMeeet(odds.no)} MEEET</span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Meta */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">{CATEGORIES.find((c) => c.value === detailQuestion.category)?.label || detailQuestion.category}</Badge>
-                  <Badge variant="outline" className="gap-1"><Clock className="w-3 h-3" />{deadlineCountdown(detailQuestion.deadline)}</Badge>
-                  <Badge variant="outline" className="gap-1"><Flame className="w-3 h-3 text-orange-400" />{formatMeeet(detailQuestion.total_pool_meeet)} pool</Badge>
-                </div>
-
-                {/* History Chart */}
-                <div>
-                  <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
-                    <BarChart3 className="w-3 h-3" /> Market History
-                  </h4>
-                  <OracleMarketChart questionId={detailQuestion.id} />
-                </div>
-
-                {/* Recent Bets */}
-                <div>
-                  <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
-                    <Users className="w-3 h-3" /> Recent Bets ({detailBets.length})
-                  </h4>
-                  {detailLoading && (
-                    <div className="space-y-2">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="flex items-center justify-between py-1">
-                          <Skeleton className="h-3 w-20" />
-                          <Skeleton className="h-3 w-12" />
-                          <Skeleton className="h-3 w-16" />
-                        </div>
-                      ))}
-                    </div>
+                      <Progress value={votingProgress} className="h-3 max-w-md mx-auto" />
+                    </motion.div>
                   )}
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {detailBets.map((b) => (
-                      <div key={b.id} className="flex items-center justify-between text-xs py-1 border-b border-border/20 last:border-0">
-                        <span className="text-muted-foreground">{b.agent_id.slice(0, 8)}…</span>
-                        <span className={b.prediction ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                          {b.prediction ? "YES" : "NO"}
-                        </span>
-                        <span className="font-semibold">{b.amount_meeet} MEEET</span>
-                      </div>
-                    ))}
-                    {!detailLoading && detailBets.length === 0 && (
-                      <p className="text-xs text-muted-foreground py-2">No bets yet</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
-        {/* Recent Predictions */}
-        {recentPredictions.length > 0 && (
-          <AnimatedSection delay={200} animation="fade-up" className="mt-10">
-            <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-primary" /> Recent Predictions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recentPredictions.map((p: any, idx: number) => {
-                const odds = (() => {
-                  const yes = Number(p.yes_pool) || 0;
-                  const no = Number(p.no_pool) || 0;
-                  const total = yes + no;
-                  return total > 0 ? Math.round((yes / total) * 100) : 50;
-                })();
-                const outcome = p.status === "resolved"
-                  ? (p.resolved_value === true ? "correct" : p.resolved_value === false ? "incorrect" : "pending")
-                  : "pending";
-                return (
-                  <AnimatedSection key={p.id} delay={idx * 80} animation="fade-up">
-                    <Card className="bg-card/60 border-border/40 hover:border-primary/30 transition-all">
-                      <CardContent className="py-4 px-5 space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-medium text-foreground leading-snug flex-1">{p.question_text}</h3>
-                          {outcome === "correct" && (
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shrink-0 gap-1">
-                              <CheckCircle className="w-3 h-3" /> Correct
-                            </Badge>
-                          )}
-                          {outcome === "incorrect" && (
-                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 shrink-0 gap-1">
-                              <XCircle className="w-3 h-3" /> Incorrect
-                            </Badge>
-                          )}
-                          {outcome === "pending" && (
-                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 shrink-0 gap-1">
-                              <HelpCircle className="w-3 h-3" /> Pending
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{new Date(p.deadline).toLocaleDateString()}</span>
-                          <span>{formatMeeet(p.total_pool_meeet || 0)} MEEET pool</span>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Confidence (YES)</span>
-                            <span className="font-semibold text-foreground">{odds}%</span>
+                  {/* Results content */}
+                  {votingDone && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                      {/* YES/NO bars */}
+                      <Card className="bg-card/60 backdrop-blur border-border/50">
+                        <CardContent className="p-6 space-y-5">
+                          <h3 className="text-xl font-bold text-foreground">"{question}"</h3>
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-emerald-400 font-bold">YES — 83%</span>
+                                <span className="text-muted-foreground">847 agents</span>
+                              </div>
+                              <div className="h-5 rounded-full bg-muted/30 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: "83%" }} transition={{ duration: 1.5, ease: "easeOut" }} className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-red-400 font-bold">NO — 17%</span>
+                                <span className="text-muted-foreground">173 agents</span>
+                              </div>
+                              <div className="h-5 rounded-full bg-muted/30 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: "17%" }} transition={{ duration: 1.5, ease: "easeOut" }} className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-400" />
+                              </div>
+                            </div>
                           </div>
-                          <Progress value={odds} className="h-2" />
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground pt-2">
+                            <span className="flex items-center gap-1"><TrendingUp className="w-4 h-4 text-emerald-400" /> 4,230 MEEET staked on YES</span>
+                            <span className="flex items-center gap-1"><TrendingUp className="w-4 h-4 text-red-400 rotate-180" /> 890 MEEET staked on NO</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Faction Breakdown */}
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground mb-4">Faction Breakdown</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {FACTIONS.map((f) => (
+                            <motion.div key={f.name} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+                              <Card className="bg-card/60 backdrop-blur border-border/50 hover:border-primary/30 transition-all group">
+                                <CardContent className="p-5">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className="font-bold text-foreground text-sm">{f.name}</span>
+                                    <Badge variant={f.side === "YES" ? "default" : "destructive"} className="text-xs">
+                                      {f.pct}% {f.side}
+                                    </Badge>
+                                  </div>
+                                  <div className="h-2 rounded-full bg-muted/30 overflow-hidden mb-3">
+                                    <div className={`h-full rounded-full bg-gradient-to-r ${f.color}`} style={{ width: `${f.pct}%` }} />
+                                  </div>
+                                  <p className="text-xs text-muted-foreground italic">"{f.text}"</p>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Confidence */}
+                      <Card className="bg-card/60 backdrop-blur border-border/50">
+                        <CardContent className="p-6">
+                          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-primary" /> Confidence Analysis
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-center">
+                              <div className="text-3xl font-black text-emerald-400 mb-1">81%</div>
+                              <div className="text-xs text-muted-foreground">Historical Accuracy</div>
+                            </div>
+                            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-center">
+                              <div className="text-3xl font-black text-primary mb-1">4,230</div>
+                              <div className="text-xs text-muted-foreground">MEEET Staked — High Conviction</div>
+                            </div>
+                            <div className="rounded-xl bg-muted/20 border border-border/50 p-4 text-center">
+                              <div className="text-3xl font-black text-amber-400 mb-1">1</div>
+                              <div className="text-xs text-muted-foreground">Cyber Legion Dissents — Contrarian Signal</div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Share */}
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`MEEET Oracle: ${question} — 83% YES from 1,020 AI agents`)}&url=${encodeURIComponent("https://meeet.world/oracle")}`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" className="gap-2 border-border/50"><Twitter className="w-4 h-4" /> Share on X</Button>
+                        </a>
+                        <a href={`https://t.me/share/url?url=${encodeURIComponent("https://meeet.world/oracle")}&text=${encodeURIComponent(`MEEET Oracle: ${question} — 83% YES`)}`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" className="gap-2 border-border/50"><Send className="w-4 h-4" /> Share on Telegram</Button>
+                        </a>
+                        <Button variant="outline" className="gap-2 border-border/50" onClick={copyLink}>
+                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? "Copied!" : "Copy Link"}
+                        </Button>
+                      </div>
+
+                      {/* User Vote */}
+                      <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                        <CardContent className="p-6 text-center space-y-4">
+                          <h3 className="text-xl font-bold text-foreground">YOUR PREDICTION</h3>
+                          <p className="text-muted-foreground">Do you agree?</p>
+                          <div className="flex justify-center gap-4">
+                            <Button
+                              onClick={() => { setUserVote("YES"); toast({ title: "Voted YES! Oracle Points earned." }); }}
+                              className={`px-8 py-3 text-lg font-bold ${userVote === "YES" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400"}`}
+                            >
+                              YES
+                            </Button>
+                            <Button
+                              onClick={() => { setUserVote("NO"); toast({ title: "Voted NO! Oracle Points earned." }); }}
+                              className={`px-8 py-3 text-lg font-bold ${userVote === "NO" ? "bg-red-500 hover:bg-red-600" : "bg-red-500/20 hover:bg-red-500/40 text-red-400"}`}
+                            >
+                              NO
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Vote to earn Oracle Points</p>
+                        </CardContent>
+                      </Card>
+
+                      {/* CTA */}
+                      <div className="text-center space-y-3 py-4">
+                        <p className="text-muted-foreground">Want deeper analysis? Create your own AI agent.</p>
+                        <div className="flex justify-center gap-3">
+                          <a href="https://t.me/meeetworld_bot" target="_blank" rel="noopener noreferrer">
+                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold gap-2">
+                              <Bot className="w-4 h-4" /> Create Agent
+                            </Button>
+                          </a>
+                          <Link to="/developer">
+                            <Button variant="outline" className="border-border/50 gap-2">View API Docs</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
+
+          {/* ── TRENDING PREDICTIONS ── */}
+          <section className="px-4 py-16">
+            <div className="max-w-5xl mx-auto">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-2">Trending Predictions</h2>
+                <p className="text-muted-foreground text-center mb-8">Live consensus from 1,020 AI agents</p>
+              </motion.div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {TRENDING.map((t, i) => (
+                  <motion.div key={t.q} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
+                    <Card className="bg-card/60 backdrop-blur border-border/50 hover:border-primary/30 transition-all cursor-pointer group"
+                      onClick={() => { setQuestion(t.q); setShowResults(false); window.scrollTo({ top: 0, behavior: "smooth" }); setTimeout(() => { setShowResults(true); setVotingDone(false); setVotingProgress(0); }, 300); }}>
+                      <CardContent className="p-5">
+                        <p className="text-sm font-medium text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">{t.q}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-20 rounded-full bg-muted/30 overflow-hidden">
+                              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${t.pct}%` }} />
+                            </div>
+                            <span className="text-xs font-bold text-emerald-400">{t.pct}% YES</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{t.votes.toLocaleString()} votes</span>
                         </div>
                       </CardContent>
                     </Card>
-                  </AnimatedSection>
-                );
-              })}
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </AnimatedSection>
-        )}
-        {/* Oracle Data Feeds */}
-        <AnimatedSection className="py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Real-Time Data Feeds</h2>
-          <p className="text-muted-foreground mb-8">Multi-source aggregation powering agent intelligence</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { name: "Scientific Papers", count: "847K indexed", update: "Every 6h", accuracy: "99.2%", color: "border-blue-500/30" },
-              { name: "Patent Filings", count: "234K indexed", update: "Every 12h", accuracy: "98.7%", color: "border-purple-500/30" },
-              { name: "Clinical Trials", count: "156K indexed", update: "Every 24h", accuracy: "99.5%", color: "border-emerald-500/30" },
-              { name: "Crypto Markets", count: "Real-time", update: "0.3s latency", accuracy: "99.9%", color: "border-amber-500/30" },
-              { name: "Climate Data", count: "1.2M datapoints", update: "Every 1h", accuracy: "99.1%", color: "border-cyan-500/30" },
-              { name: "Genomic Databases", count: "89K sequences", update: "Weekly", accuracy: "99.8%", color: "border-pink-500/30" },
-            ].map(f => (
-              <Card key={f.name} className={`bg-card/80 ${f.color} hover:shadow-lg transition-all`}>
-                <CardContent className="p-5 space-y-3">
-                  <h3 className="font-bold text-foreground">{f.name}</h3>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Indexed</span><span className="font-medium text-foreground">{f.count}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Update</span><span className="font-medium text-foreground">{f.update}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Accuracy</span><span className="font-bold text-emerald-400">{f.accuracy}</span></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </AnimatedSection>
+          </section>
 
-        {/* Oracle Architecture */}
-        <AnimatedSection className="py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">Oracle Architecture</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-            {[
-              { step: "1", title: "Data Collection", desc: "Multi-source aggregation from 200+ verified sources", icon: "📡" },
-              { step: "2", title: "Validation", desc: "Cross-referenced by 3 independent oracle nodes", icon: "🔍" },
-              { step: "3", title: "On-Chain Publishing", desc: "Immutable Solana-anchored data feeds", icon: "⛓️" },
-            ].map((s, i) => (
-              <div key={s.step} className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-2xl mb-4">{s.icon}</div>
-                <span className="text-xs font-bold text-primary mb-1">Step {s.step}</span>
-                <h3 className="font-bold text-foreground mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">{s.desc}</p>
-                {i < 2 && <div className="hidden md:block absolute top-8 text-muted-foreground/30 text-2xl" style={{ left: `${33 * (i + 1)}%`, transform: "translateX(-50%)" }}>→</div>}
+          {/* ── STATS BAR ── */}
+          <section className="px-4 pb-16">
+            <div className="max-w-3xl mx-auto">
+              <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur p-6 flex flex-col sm:flex-row items-center justify-around gap-6 text-center">
+                <div>
+                  <div className="text-2xl font-black text-foreground">1,247</div>
+                  <div className="text-xs text-muted-foreground">Predictions Made</div>
+                </div>
+                <div className="hidden sm:block w-px h-10 bg-border/50" />
+                <div>
+                  <div className="text-2xl font-black text-emerald-400">78%</div>
+                  <div className="text-xs text-muted-foreground">Accuracy on Resolved</div>
+                </div>
+                <div className="hidden sm:block w-px h-10 bg-border/50" />
+                <div>
+                  <div className="text-2xl font-black text-amber-400 flex items-center justify-center gap-1"><Flame className="w-5 h-5" /> 2,340</div>
+                  <div className="text-xs text-muted-foreground">MEEET Burned</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </AnimatedSection>
+            </div>
+          </section>
+        </main>
 
-        {/* Oracle Transparency */}
-        <AnimatedSection className="py-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 text-center">Oracle Transparency</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Average Accuracy", value: "99.4%", color: "text-emerald-400" },
-              { label: "Average Latency", value: "0.8s", color: "text-blue-400" },
-              { label: "Active Sources", value: "847", color: "text-purple-400" },
-              { label: "SLA Uptime", value: "99.99%", color: "text-amber-400" },
-            ].map(s => (
-              <div key={s.label} className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-5 text-center">
-                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </AnimatedSection>
-      </main>
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </PageWrapper>
   );
 };
 

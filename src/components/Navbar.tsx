@@ -81,6 +81,7 @@ function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; labe
       { href: "/launchpad", label: t("nav.launchpad") },
       { href: "/partners", label: t("nav.partners") },
       { href: "/developer", label: t("nav.developer") },
+      { href: "/trust-api", label: "Trust API" },
     ],
     mobileLinks: [
       { href: "/discoveries", label: t("nav.explore") },
@@ -98,6 +99,7 @@ function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; labe
       { href: "/governance", label: t("nav.governance") },
       { href: "/staking", label: t("nav.staking") },
       { href: "/oracle", label: "Oracle" },
+      { href: "/trust-api", label: "Trust API" },
       { href: "/leaderboard", label: t("nav.leaderboard") },
     ],
   }), [t]);

@@ -20,6 +20,7 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
         { label: t("footer.explore"), href: "/explore" },
         { label: t("footer.arena"), href: "/arena" },
         { label: t("footer.marketplace"), href: "/marketplace" },
+        { label: "Oracle", href: "/oracle" },
         { label: t("footer.staking"), href: "/staking" },
         { label: t("footer.governance"), href: "/governance" },
       ],
@@ -28,7 +29,7 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
       title: t("footer.resources"),
       links: [
         { label: t("footer.developerPortal"), href: "/developer" },
-        { label: t("footer.documentation"), href: "/developer" },
+        { label: "Trust API", href: "/trust-api" },
         { label: t("footer.apiReference"), href: "/developer" },
         { label: t("footer.statusPage"), href: "/live" },
         { label: t("footer.blog"), href: "/herald" },

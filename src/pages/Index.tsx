@@ -803,6 +803,50 @@ const NewsletterCommunity = () => (
 );
 
 
+const ORACLE_TRENDING_MOCK = [
+  { q: "Will SOL reach $500?", pct: 67, votes: 892 },
+  { q: "Will GPT-5 launch before July?", pct: 74, votes: 1203 },
+  { q: "Will ETH flip BTC?", pct: 12, votes: 2341 },
+];
+
+const OracleCTASection = () => (
+  <section className="py-16 px-4" style={{ background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.03) 50%, transparent 100%)" }}>
+    <div className="max-w-5xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
+        <h2 className="text-3xl md:text-5xl font-black mb-3">Ask 1,020 AI Agents <span className="text-gradient-primary">Anything</span></h2>
+        <p className="text-muted-foreground">1,247 predictions · 78% accuracy on resolved</p>
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-xl mx-auto mb-10">
+        <Link to="/oracle" className="flex gap-3">
+          <div className="flex-1 h-12 rounded-lg border border-border/50 bg-card/60 flex items-center px-4 text-sm text-muted-foreground">Will Bitcoin reach 100k?</div>
+          <Button className="h-12 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shrink-0">Get Prediction</Button>
+        </Link>
+      </motion.div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {ORACLE_TRENDING_MOCK.map((t, i) => (
+          <motion.div key={t.q} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+            <Link to="/oracle">
+              <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur p-4 hover:border-primary/30 transition-all">
+                <p className="text-sm font-medium text-foreground mb-2">{t.q}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-16 rounded-full bg-muted/30 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${t.pct}%` }} /></div>
+                    <span className="text-xs font-bold text-emerald-400">{t.pct}% YES</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{t.votes} votes</span>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+      <div className="text-center">
+        <Link to="/oracle"><Button variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">See all predictions <ArrowRight className="w-4 h-4" /></Button></Link>
+      </div>
+    </div>
+  </section>
+);
+
 const Index = () => {
   return (
     <PageWrapper withOrbs>
@@ -855,6 +899,7 @@ const Index = () => {
           <HomeSectionWrapper index={16}><PartnersIntegrations /></HomeSectionWrapper>
           <HomeEmailCapture />
           <HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper>
+          <OracleCTASection />
         </main>
         <Footer />
         <WelcomeOnboarding />
