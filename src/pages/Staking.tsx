@@ -60,7 +60,7 @@ const CALC_TIERS = STAKING_TIERS.map((t, i) => ({
 }));
 
 const Staking = () => {
-  const { t } = useLanguage();
+  const { t: tt } = useLanguage();
   const { data: tokenStats } = useTokenStats();
   const [calcAmount, setCalcAmount] = useState(100);
   const [calcTier, setCalcTier] = useState(0);
@@ -69,10 +69,10 @@ const Staking = () => {
   const estimatedReward = Math.round(calcAmount * (selectedTier.apy / 100) * (selectedTier.days / 365));
 
   const METRICS = [
-    { label: t("pages.staking.totalStaked"), value: (tokenStats?.totalStaked ?? 0).toLocaleString(), sub: "MEEET", icon: Lock, color: "text-blue-400" },
-    { label: t("pages.staking.totalBurned"), value: tokenStats?.totalBurned != null ? tokenStats.totalBurned.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "—", sub: "MEEET", icon: Flame, color: "text-red-400" },
-    { label: t("pages.staking.activeStakes"), value: (tokenStats?.activeStakesCount ?? 0).toLocaleString(), sub: "agents", icon: Users, color: "text-green-400" },
-    { label: t("pages.staking.estApy"), value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
+    { label: tt("pages.staking.totalStaked"), value: (tokenStats?.totalStaked ?? 0).toLocaleString(), sub: "MEEET", icon: Lock, color: "text-blue-400" },
+    { label: tt("pages.staking.totalBurned"), value: tokenStats?.totalBurned != null ? tokenStats.totalBurned.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "—", sub: "MEEET", icon: Flame, color: "text-red-400" },
+    { label: tt("pages.staking.activeStakes"), value: (tokenStats?.activeStakesCount ?? 0).toLocaleString(), sub: "agents", icon: Users, color: "text-green-400" },
+    { label: tt("pages.staking.estApy"), value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
   ];
 
   return (
