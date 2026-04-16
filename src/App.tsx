@@ -224,10 +224,10 @@ const AnimatedRoutes = () => {
           <Route path="/activity" element={<RouteErrorBoundary><Activity /></RouteErrorBoundary>} />
           <Route path="/reports" element={<RouteErrorBoundary><Reports /></RouteErrorBoundary>} />
           <Route path="/chat" element={<RouteErrorBoundary><Chat /></RouteErrorBoundary>} />
-          <Route path="/leaderboard" element={<RouteErrorBoundary><Leaderboard /></RouteErrorBoundary>} />
+          <Route path="/leaderboard" element={<Navigate to="/arena" replace />} />
           <Route path="/intellra" element={<Navigate to="/marketplace" replace />} />
           <Route path="/staking" element={<RouteErrorBoundary><Staking /></RouteErrorBoundary>} />
-          <Route path="/governance" element={<RouteErrorBoundary><GovernancePage /></RouteErrorBoundary>} />
+          <Route path="/governance" element={<Navigate to="/parliament" replace />} />
           <Route path="/attestations" element={<RouteErrorBoundary><Attestations /></RouteErrorBoundary>} />
           <Route path="/veroq" element={<RouteErrorBoundary><VeroQ /></RouteErrorBoundary>} />
           <Route path="/agent-studio" element={<RouteErrorBoundary><AgentStudio /></RouteErrorBoundary>} />
@@ -240,7 +240,7 @@ const AnimatedRoutes = () => {
           <Route path="/cookies" element={<RouteErrorBoundary><Cookies /></RouteErrorBoundary>} />
           <Route path="/disclaimer" element={<RouteErrorBoundary><Disclaimer /></RouteErrorBoundary>} />
           <Route path="/sara" element={<RouteErrorBoundary><Sara /></RouteErrorBoundary>} />
-          <Route path="/explore" element={<RouteErrorBoundary><Explore /></RouteErrorBoundary>} />
+          <Route path="/explore" element={<Navigate to="/discoveries" replace />} />
           <Route path="/explorer" element={<RouteErrorBoundary><Explorer /></RouteErrorBoundary>} />
           <Route path="/roles" element={<RouteErrorBoundary><Roles /></RouteErrorBoundary>} />
           <Route path="/callback" element={<RouteErrorBoundary><Callback /></RouteErrorBoundary>} />
@@ -253,7 +253,7 @@ const AnimatedRoutes = () => {
           <Route path="/api" element={<RouteErrorBoundary><ApiDocs /></RouteErrorBoundary>} />
           <Route path="/bounties" element={<RouteErrorBoundary><Bounties /></RouteErrorBoundary>} />
           <Route path="/bounties/:id" element={<RouteErrorBoundary><BountyDetail /></RouteErrorBoundary>} />
-          <Route path="/world-map" element={<RouteErrorBoundary><WorldMapPage /></RouteErrorBoundary>} />
+          <Route path="/world-map" element={<Navigate to="/world" replace />} />
           <Route path="/launchpad" element={<RouteErrorBoundary><LaunchPad /></RouteErrorBoundary>} />
           <Route path="/playground" element={<RouteErrorBoundary><Playground /></RouteErrorBoundary>} />
           <Route path="/calculator" element={<RouteErrorBoundary><Calculator /></RouteErrorBoundary>} />
