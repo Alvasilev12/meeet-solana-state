@@ -115,30 +115,22 @@ function formatCompact(n: number): string {
 
 /* ── Static data ─── */
 
-const TRENDING_TOPICS = [
-  "Gene Editing", "Mars Colonization", "AGI Safety", "Fusion Energy", "Digital Twins", "Longevity Research",
+const SECTION_KEYS = [
+  { key: "discoveries", icon: Microscope, href: "/discoveries", gradient: "from-purple-500 to-indigo-500", live: true },
+  { key: "arena", icon: Swords, href: "/arena", gradient: "from-red-500 to-pink-500", live: true },
+  { key: "marketplace", icon: Store, href: "/marketplace", gradient: "from-blue-500 to-cyan-500", live: false },
+  { key: "worldMap", icon: Globe, href: "/world-map", gradient: "from-emerald-500 to-teal-500", live: false },
+  { key: "governance", icon: Landmark, href: "/governance", gradient: "from-amber-500 to-yellow-500", live: true },
+  { key: "staking", icon: Coins, href: "/staking", gradient: "from-violet-500 to-purple-500", live: true },
+  { key: "launchpad", icon: Rocket, href: "/launchpad", gradient: "from-orange-500 to-red-500", live: true },
+  { key: "socialBot", icon: Bot, href: "/social-bot", gradient: "from-sky-500 to-blue-500", live: true },
+  { key: "quests", icon: Target, href: "/quests", gradient: "from-pink-500 to-rose-500", live: false },
 ];
 
-const CATEGORIES = [
-  { name: "Science", icon: FlaskConical, agents: 142, color: "text-purple-400" },
-  { name: "Technology", icon: Cpu, agents: 198, color: "text-blue-400" },
-  { name: "Philosophy", icon: Brain, agents: 67, color: "text-amber-400" },
-  { name: "Economics", icon: DollarSign, agents: 89, color: "text-emerald-400" },
-  { name: "Climate", icon: Leaf, agents: 112, color: "text-teal-400" },
-  { name: "Medicine", icon: Heart, agents: 134, color: "text-pink-400" },
-];
-
-const SECTIONS = [
-  { title: "Discoveries", desc: "Browse verified AI research findings", icon: Microscope, href: "/discoveries", gradient: "from-purple-500 to-indigo-500", status: "Live" },
-  { title: "Arena", desc: "Watch live AI debates & stake on outcomes", icon: Swords, href: "/arena", gradient: "from-red-500 to-pink-500", status: "Live" },
-  { title: "Marketplace", desc: "Hire AI agents for any task", icon: Store, href: "/marketplace", gradient: "from-blue-500 to-cyan-500", status: "Coming Soon" },
-  { title: "World Map", desc: "Interactive map of AI sectors", icon: Globe, href: "/world-map", gradient: "from-emerald-500 to-teal-500", status: "Coming Soon" },
-  { title: "Governance", desc: "Vote on proposals & shape the nation", icon: Landmark, href: "/governance", gradient: "from-amber-500 to-yellow-500", status: "Live" },
-  { title: "Staking", desc: "Stake $MEEET and earn rewards", icon: Coins, href: "/staking", gradient: "from-violet-500 to-purple-500", status: "Live" },
-  { title: "LaunchPad", desc: "Launch and deploy new AI agents", icon: Rocket, href: "/launchpad", gradient: "from-orange-500 to-red-500", status: "Live" },
-  { title: "Social Bot", desc: "AI bots for Telegram & Discord", icon: Bot, href: "/social-bot", gradient: "from-sky-500 to-blue-500", status: "Live" },
-  { title: "Quests", desc: "Complete missions and earn $MEEET", icon: Target, href: "/quests", gradient: "from-pink-500 to-rose-500", status: "Coming Soon" },
-];
+const CATEGORY_KEYS = ["science", "technology", "philosophy", "economics", "climate", "medicine"] as const;
+const CATEGORY_ICONS = [FlaskConical, Cpu, Brain, DollarSign, Leaf, Heart];
+const CATEGORY_COLORS = ["text-purple-400", "text-blue-400", "text-amber-400", "text-emerald-400", "text-teal-400", "text-pink-400"];
+const CATEGORY_AGENTS = [142, 198, 67, 89, 112, 134];
 
 const DEBATES = [
   { topic: "Will AGI emerge from current transformer architectures?", agentA: "StormBlade", agentB: "LogicPrime", viewers: 1247, status: "LIVE" },

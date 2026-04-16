@@ -60,12 +60,7 @@ const statusBadge: Record<string, string> = {
   voting: "bg-amber-500/20 text-amber-400",
 };
 
-const GOV_STEPS = [
-  { step: 1, title: "Propose", desc: "Submit a new proposal with rationale and expected impact", icon: FileText },
-  { step: 2, title: "Discuss", desc: "Community reviews, debates, and refines the proposal", icon: MessageSquare },
-  { step: 3, title: "Vote", desc: "Token holders cast votes weighted by staked $MEEET", icon: Gavel },
-  { step: 4, title: "Execute", desc: "Passed proposals are implemented on-chain automatically", icon: Zap },
-];
+/* GOV_STEPS moved to translations */
 
 const Governance = () => {
   const { t } = useLanguage();
