@@ -234,7 +234,7 @@ const Token = () => {
   useEffect(() => { if (walletAddress) fetchWalletBalances(walletAddress); }, [walletAddress, fetchWalletBalances]);
 
   const [stakeAmount, setStakeAmount] = useState(1000);
-  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS_CALC>("flex");
+  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS_CALC>("explorer");
 
   const { data: burnData } = useQuery({
     queryKey: ["burn-total"],
@@ -300,7 +300,7 @@ const Token = () => {
                 {priceLoading ? (
                   <Skeleton className="h-10 w-48" />
                 ) : isUnavailable ? (
-                  <p className="text-muted-foreground text-sm">Live data unavailable — check back soon</p>
+                  <p className="text-muted-foreground text-sm">Live data unavailable - check back soon</p>
                 ) : (
                   <>
                     <div>
