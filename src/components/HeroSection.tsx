@@ -10,13 +10,6 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import JoinedTodayCounter from "@/components/JoinedTodayCounter";
 
-const WorldMap = lazy(() => import("@/components/WorldMap"));
-
-class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() { return this.state.hasError ? null : this.props.children; }
-}
 
 interface HeroStats {
   agents: number;
