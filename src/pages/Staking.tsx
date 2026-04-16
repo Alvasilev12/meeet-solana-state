@@ -53,7 +53,7 @@ const statusStyle: Record<string, string> = {
   slashed: "bg-red-500/20 text-red-400",
 };
 
-const CALC_TIERS = STAKING_TIERS.map((t, i) => ({
+const CALC_TIERS = STAKING_TIERS.map((tier, i) => ({
   name: t.name,
   days: [0, 30, 90, 365][i],
   apy: t.apy,
@@ -105,11 +105,11 @@ const Staking = () => {
           <section>
             <h2 className="text-xl font-bold text-foreground mb-4">{t("pages.staking.stakingTiers")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {STAKING_TIERS.map(t => (
-                <div key={t.name} className="bg-card border border-border rounded-xl p-4 text-center hover:scale-105 transition-transform">
-                  <p className="font-bold text-foreground mt-1">{t.name}</p>
-                  <p className="text-lg font-bold text-primary">{t.apy}% APY</p>
-                  <p className="text-[10px] text-muted-foreground">Min {t.minStake.toLocaleString()} MEEET</p>
+              {STAKING_TIERS.map(tier => (
+                <div key={tier.name} className="bg-card border border-border rounded-xl p-4 text-center hover:scale-105 transition-transform">
+                  <p className="font-bold text-foreground mt-1">{tier.name}</p>
+                  <p className="text-lg font-bold text-primary">{tier.apy}% APY</p>
+                  <p className="text-[10px] text-muted-foreground">Min {tier.minStake.toLocaleString()} MEEET</p>
                 </div>
               ))}
             </div>
@@ -118,18 +118,18 @@ const Staking = () => {
           <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-xl font-bold text-foreground mb-4">{t("pages.staking.tierBenefits")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {STAKING_TIERS.map((t, i) => {
+              {STAKING_TIERS.map((tier, i) => {
                 const gradients = ["from-blue-500 to-blue-600", "from-purple-500 to-purple-600", "from-amber-500 to-amber-600", "from-cyan-400 to-cyan-500"];
                 const perksObj = t("pages.staking.perks") as Record<string, string[]>;
                 const perkKeys = ["basic", "builder", "architect", "visionary"];
                 const perks = perksObj[perkKeys[i]] || [];
                 return (
-                  <div key={t.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
+                  <div key={tier.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
                     <div className={`h-1.5 bg-gradient-to-r ${gradients[i]}`} />
                     <div className="p-5">
-                      <h3 className="font-bold text-foreground text-lg">{t.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">{t.minStake.toLocaleString()}+ $MEEET</p>
-                      <p className="text-2xl font-extrabold text-primary mb-3">{t.apy}% <span className="text-sm font-normal text-muted-foreground">APY</span></p>
+                      <h3 className="font-bold text-foreground text-lg">{tier.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">{tier.minStake.toLocaleString()}+ $MEEET</p>
+                      <p className="text-2xl font-extrabold text-primary mb-3">{tier.apy}% <span className="text-sm font-normal text-muted-foreground">APY</span></p>
                       <ul className="space-y-1.5">
                         {perks.map((p: string) => (
                           <li key={p} className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -171,8 +171,8 @@ const Staking = () => {
                       onChange={e => setCalcTier(Number(e.target.value))}
                       className="w-full bg-muted/30 border border-border rounded-lg px-4 py-2.5 text-foreground focus:outline-none focus:border-primary/50"
                     >
-                      {CALC_TIERS.map((t, i) => (
-                        <option key={t.name} value={i}>{t.name} — {t.days} {t("pages.staking.days")}</option>
+                      {CALC_TIERS.map((ct, i) => (
+                        <option key={tier.name} value={i}>{tier.name} — {t.days} {t("pages.staking.days")}</option>
                       ))}
                     </select>
                   </div>
