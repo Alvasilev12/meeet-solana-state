@@ -1,48 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/runtime-client";
 import { Users, Flame, TrendingUp, Lock, BarChart3 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { useDiscoveryStats } from "@/hooks/useDiscoveryStats";
+import { useTokenStats } from "@/hooks/useTokenStats";
 
 const CommunityMetrics = () => {
-  const { data: agentCount } = useQuery({
-    queryKey: ["cm-agents"],
-    queryFn: async () => {
-      const { count } = await supabase.from("agents_public").select("id", { count: "exact" }).limit(0);
-      return count ?? 1020;
-    },
-    refetchInterval: 60000,
-  });
+  const { data: agentData } = useAgentStats();
+  const { data: discoveryData } = useDiscoveryStats();
+  const { totalStaked, totalBurned } = useTokenStats();
 
-  const { data: discoveryCount } = useQuery({
-    queryKey: ["cm-discoveries"],
-    queryFn: async () => {
-      const { count } = await supabase.from("discoveries").select("id", { count: "exact" }).limit(0);
-      return count ?? 2053;
-    },
-    refetchInterval: 60000,
-  });
+  const agentCount = agentData?.totalAgents ?? 0;
+  const discoveryCount = discoveryData?.totalDiscoveries ?? 0;
 
-  const { data: stakeData } = useQuery({
-    queryKey: ["cm-stakes"],
-    queryFn: async () => {
-      const { data } = await supabase.from("agent_stakes").select("amount_meeet").eq("status", "active");
-      return (data || []).reduce((s: number, r: any) => s + (r.amount_meeet || 0), 0);
-    },
-    refetchInterval: 60000,
-  });
-
-  const { data: burnTotal } = useQuery({
-    queryKey: ["cm-burns"],
-    queryFn: async () => {
-      const { data } = await supabase.from("burn_log").select("amount").limit(500);
-      return (data || []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
-    },
-    refetchInterval: 60000,
-  });
-
-  // Fake 30-day growth chart data (mixed with real counts)
+  // 30-day growth chart data (mixed with real counts)
   const chartData = Array.from({ length: 30 }, (_, i) => {
-    const base = (agentCount ?? 1020) * 0.7;
+    const base = agentCount * 0.7;
     const growth = base + (base * 0.3 * (i / 29));
     return {
       day: `D${i + 1}`,
@@ -51,10 +23,10 @@ const CommunityMetrics = () => {
   });
 
   const metrics = [
-    { icon: Users, label: "Total Agents", value: (agentCount ?? 1020).toLocaleString(), color: "text-purple-400" },
-    { icon: BarChart3, label: "Discoveries", value: (discoveryCount ?? 2053).toLocaleString(), color: "text-blue-400" },
-    { icon: Lock, label: "Total Staked", value: `${((stakeData ?? 145000) / 1000).toFixed(0)}K MEEET`, color: "text-emerald-400" },
-    { icon: Flame, label: "Total Burned", value: `${((burnTotal ?? 89000) / 1000).toFixed(0)}K MEEET`, color: "text-orange-400" },
+    { icon: Users, label: "Total Agents", value: agentCount.toLocaleString(), color: "text-purple-400" },
+    { icon: BarChart3, label: "Discoveries", value: discoveryCount.toLocaleString(), color: "text-blue-400" },
+    { icon: Lock, label: "Total Staked", value: totalStaked > 0 ? `${(totalStaked / 1000).toFixed(0)}K MEEET` : "0 MEEET", color: "text-emerald-400" },
+    { icon: Flame, label: "Total Burned", value: totalBurned > 0 ? `${(totalBurned / 1000).toFixed(0)}K MEEET` : "0 MEEET", color: "text-orange-400" },
   ];
 
   return (

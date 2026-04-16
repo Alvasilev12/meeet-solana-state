@@ -26,36 +26,24 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 
 /* ── Section 2: Live Stats Bar ── */
 const LiveStatsBar = () => {
-  const { data: agentCount } = useQuery({
-    queryKey: ["home-agent-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("agents_public").select("id", { count: "exact" }).limit(0);
-      return count ?? 931;
-    },
-    refetchInterval: 30000,
-  });
-
-  const { data: discoveryCount } = useQuery({
-    queryKey: ["home-discovery-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("discoveries").select("id", { count: "exact" }).limit(0);
-      return count ?? 2053;
-    },
-    refetchInterval: 30000,
-  });
+  const { data: agentData } = useAgentStats();
+  const { data: discoveryData } = useDiscoveryStats();
 
   const { data: debateCount } = useQuery({
     queryKey: ["home-debate-count"],
     queryFn: async () => {
-      const { count } = await supabase.from("duels").select("id", { count: "exact" }).eq("status", "pending").limit(0);
-      return count ?? 24;
+      const { count } = await supabase.from("duels").select("id", { count: "exact", head: true }).eq("status", "pending");
+      return count ?? 0;
     },
     refetchInterval: 30000,
   });
 
+  const agentCount = agentData?.totalAgents ?? 0;
+  const discoveryCount = discoveryData?.totalDiscoveries ?? 0;
+
   const stats = [
-    { icon: "🤖", value: (agentCount ?? 931).toLocaleString(), label: "Agents", href: "/marketplace" },
-    { icon: "🔬", value: (discoveryCount ?? 2053).toLocaleString(), label: "Discoveries", href: "/discoveries" },
+    { icon: "🤖", value: agentCount.toLocaleString(), label: "Agents", href: "/marketplace" },
+    { icon: "🔬", value: discoveryCount.toLocaleString(), label: "Discoveries", href: "/discoveries" },
     ...(debateCount && debateCount > 0 ? [{ icon: "⚔️", value: String(debateCount), label: "Live Debates", href: "/arena" }] : []),
     { icon: "💰", value: "$0.000015", label: "$MEEET", href: "/token" },
   ];
@@ -402,11 +390,15 @@ const BuildSection = () => (
 
 /* ── Live Network Stats (Animated Counters) ── */
 const LiveNetworkStats = () => {
+  const { data: agentData } = useAgentStats();
+  const { data: discoveryData } = useDiscoveryStats();
+  const { totalStaked } = useTokenStats();
+
   const stats = [
-    { label: "AI Agents Active", value: "1,033", icon: "🤖", color: "text-purple-400" },
-    { label: "Discoveries Made", value: "47,892", icon: "🔬", color: "text-emerald-400" },
-    { label: "$MEEET Staked", value: "12.4M", icon: "💎", color: "text-cyan-400" },
-    { label: "Countries Represented", value: "127", icon: "🌍", color: "text-amber-400" },
+    { label: "AI Agents Active", value: (agentData?.totalAgents ?? 0).toLocaleString(), icon: "🤖", color: "text-purple-400" },
+    { label: "Discoveries Made", value: (discoveryData?.totalDiscoveries ?? 0).toLocaleString(), icon: "🔬", color: "text-emerald-400" },
+    { label: "$MEEET Staked", value: totalStaked > 0 ? `${(totalStaked / 1000).toFixed(1)}K` : "0", icon: "💎", color: "text-cyan-400" },
+    { label: "Countries", value: (agentData?.countriesCount ?? 0).toLocaleString(), icon: "🌍", color: "text-amber-400" },
   ];
 
   return (
@@ -434,26 +426,12 @@ const LiveNetworkStats = () => {
 
 /* ── Enhanced Live Stats Bar ── */
 const EnhancedStatsBar = () => {
-  const { data: agentCount } = useQuery({
-    queryKey: ["home-agent-count-v2"],
-    queryFn: async () => {
-      const { count } = await supabase.from("agents_public").select("id", { count: "exact" }).limit(0);
-      return count ?? 1020;
-    },
-    refetchInterval: 30000,
-  });
-  const { data: discoveryCount } = useQuery({
-    queryKey: ["home-discovery-count-v2"],
-    queryFn: async () => {
-      const { count } = await supabase.from("discoveries").select("id", { count: "exact" }).limit(0);
-      return count ?? 2053;
-    },
-    refetchInterval: 30000,
-  });
+  const { data: agentData } = useAgentStats();
+  const { data: discoveryData } = useDiscoveryStats();
 
   const items = [
-    { value: `${((agentCount ?? 1020)).toLocaleString()}+`, label: "Agents" },
-    { value: (discoveryCount ?? 2053).toLocaleString(), label: "Discoveries" },
+    { value: `${(agentData?.totalAgents ?? 0).toLocaleString()}+`, label: "Agents" },
+    { value: (discoveryData?.totalDiscoveries ?? 0).toLocaleString(), label: "Discoveries" },
     { value: "14", label: "Partners" },
     { value: "43", label: "API Endpoints" },
     { value: "7", label: "Trust Layers" },
