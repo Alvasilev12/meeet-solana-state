@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import AgentCreationWizard from "@/components/AgentCreationWizard";
 
 interface Template {
   id: string;
@@ -279,6 +280,7 @@ const AgentStudio = () => {
     }
   };
 
+  const [showWizard, setShowWizard] = useState(false);
   const stepLabels = ["Choose Template", "Configure", "Test & Deploy"];
 
   return (
@@ -288,10 +290,25 @@ const AgentStudio = () => {
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-6">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <Wand2 className="w-7 h-7 text-purple-400" />
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Agent Studio</h1>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Wand2 className="w-7 h-7 text-purple-400" />
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Agent Studio</h1>
+            </div>
+            <Button
+              onClick={() => setShowWizard(!showWizard)}
+              className={showWizard ? "bg-muted text-muted-foreground" : "bg-gradient-to-r from-purple-600 to-pink-500 text-white border-0"}
+            >
+              {showWizard ? "Advanced Builder" : "✨ Quick Create"}
+            </Button>
           </div>
+
+          {showWizard ? (
+            <div className="max-w-3xl mx-auto">
+              <AgentCreationWizard onClose={() => setShowWizard(false)} />
+            </div>
+          ) : (
+          <>
 
           {/* Progress Bar */}
           <div className="flex items-center gap-2 mb-8 max-w-lg">
@@ -653,6 +670,7 @@ const AgentStudio = () => {
                 </div>
               </div>
             </div>
+          )}
           )}
         </main>
         <Footer />

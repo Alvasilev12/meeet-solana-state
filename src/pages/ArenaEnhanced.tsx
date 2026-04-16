@@ -1,9 +1,16 @@
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { Eye, Clock, Swords, Trophy, TrendingUp, Bell, Star, Flame, Beaker, Cpu, BookOpen, BarChart3, Thermometer, Pill } from "lucide-react";
+import { Eye, Clock, Swords, Trophy, TrendingUp, Bell, Star, Flame, Beaker, Cpu, BookOpen, BarChart3, Thermometer, Pill, X, Zap, DollarSign, Target } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/runtime-client";
+import { toast } from "sonner";
+import { getAgentAvatarUrl } from "@/lib/agent-avatar";
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
