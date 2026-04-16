@@ -1,19 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Eye, Swords, Search, User } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const HIDDEN_ON = ["/live", "/tg"];
 
-const ITEMS = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/oracle", icon: Eye, label: "Oracle" },
-  { href: "/arena", icon: Swords, label: "Arena" },
-  { href: "/discoveries", icon: Search, label: "Explore" },
-  { href: "/dashboard", icon: User, label: "Profile" },
-];
-
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
+  const { t } = useLanguage();
   if (HIDDEN_ON.some(p => pathname.startsWith(p))) return null;
+
+  const ITEMS = [
+    { href: "/", icon: Home, label: t("nav.home") },
+    { href: "/oracle", icon: Eye, label: "Oracle" },
+    { href: "/arena", icon: Swords, label: t("nav.arenaNav") },
+    { href: "/discoveries", icon: Search, label: t("nav.explore") },
+    { href: "/dashboard", icon: User, label: t("profile.passport") },
+  ];
 
   return (
     <>
