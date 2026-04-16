@@ -273,19 +273,6 @@ export default function LiveDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Uptime", value: "99.9%", color: "text-emerald-400" },
-            { label: "Avg Response", value: "120ms", color: "text-emerald-400" },
-            { label: "WebSocket", value: "847", color: "text-foreground" },
-            { label: "Chain Integrity", value: "100%", color: "text-emerald-400" },
-          ].map(h => (
-            <div key={h.label} className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">{h.label}</p>
-              <p className={`text-xl font-bold ${h.color}`}>{h.value}</p>
-            </div>
-          ))}
-        </div>
       </div>
       <Footer />
       <style>{`@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>

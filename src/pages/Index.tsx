@@ -634,21 +634,6 @@ const RoadmapSection = () => (
   </section>
 );
 
-/* ── Press / As Featured In ── */
-const PRESS_LOGOS = ["TechCrunch", "CoinDesk", "Decrypt", "The Block", "Cointelegraph", "VentureBeat"];
-
-const PressSection = () => (
-  <section className="py-12 px-4">
-    <div className="max-w-4xl mx-auto text-center">
-      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6 font-medium">As Featured In</p>
-      <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-        {PRESS_LOGOS.map(name => (
-          <span key={name} className="text-lg md:text-xl font-bold text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors duration-300 select-none">{name}</span>
-        ))}
-      </div>
-    </div>
-  </section>
-);
 
 /* ── Partners Ticker ── */
 const PARTNER_NAMES = "Google ADK • MolTrust • DIF • APS • AgentID • Signet • SkyeProfile • OpenClaw • Geodesia G-1 • Spix • MYA • Central Intelligence";
@@ -845,7 +830,7 @@ const Index = () => {
           <HomeSectionWrapper index={13}><EnhancedStatsBar /></HomeSectionWrapper>
           <HomeSectionWrapper index={14}><JoinMovementSection /></HomeSectionWrapper>
           <HomeSectionWrapper index={15}><CTASection /></HomeSectionWrapper>
-          <PressSection />
+          
           <HomeViralTicker />
           <HomeReferralSection />
           <PartnersTicker />
