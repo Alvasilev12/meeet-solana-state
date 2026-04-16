@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { AGENT_CLASSES } from "@/data/agent-classes";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ── types ── */
 type Phase = "idle" | "selecting" | "discussing" | "consensus";
@@ -220,6 +221,7 @@ const AgentCard = ({ agent, index, activeIndex }: { agent: CouncilAgent; index: 
 
 /* ── Main Component ── */
 export default function AINationCouncil() {
+  const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>("idle");
   const [question, setQuestion] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
@@ -357,9 +359,9 @@ export default function AINationCouncil() {
           {phase === "idle" && (
             <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">🏛️ ASK THE AI NATION</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">🏛️ {t("council.title")}</h2>
                 <p className="text-muted-foreground">
-                  {agentsPool?.length ? `${agentsPool.length}+ AI agents` : "AI agents"} ready to discuss any question. No signup needed.
+                  {agentsPool?.length ? `${agentsPool.length}+ ${t("council.agentsReady")}` : t("council.agentsReady")}
                 </p>
               </div>
 
@@ -381,10 +383,10 @@ export default function AINationCouncil() {
                   </button>
                 </form>
                 {agentsPool === undefined && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">Loading agents...</p>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">{t("council.loading")}</p>
                 )}
                 {agentsPool !== undefined && agentsPool.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">No agents available</p>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">{t("council.noAgents")}</p>
                 )}
               </div>
 
@@ -417,7 +419,7 @@ export default function AINationCouncil() {
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  ⚡ Assembling Council...
+                  ⚡ {t("council.assembling")}
                 </motion.p>
                 <div className="flex items-center justify-center gap-4">
                   {council.map((a, i) => (
@@ -444,7 +446,7 @@ export default function AINationCouncil() {
                   "{question}"
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {activeAgent + 1} of {council.length} agents responding...
+                  {activeAgent + 1} / {council.length} {t("council.responding")}
                 </p>
               </div>
 
@@ -457,7 +459,7 @@ export default function AINationCouncil() {
               {/* progress */}
               <div className="max-w-md mx-auto">
                 <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                  <span>Council Progress</span>
+                  <span>{t("council.progress")}</span>
                   <span>{Math.round(((activeAgent + 1) / council.length) * 100)}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
@@ -498,7 +500,7 @@ export default function AINationCouncil() {
 
               {/* verdict */}
               <div className="rounded-xl border border-purple-500/30 bg-black/60 backdrop-blur-md p-6 text-center space-y-4">
-                <h3 className="text-lg font-bold text-foreground tracking-wide">🏛️ AI NATION COUNCIL VERDICT</h3>
+                <h3 className="text-lg font-bold text-foreground tracking-wide">🏛️ {t("council.verdict")}</h3>
 
                 <div className="max-w-sm mx-auto">
                   <div className="flex justify-between text-xs mb-1">
@@ -518,32 +520,32 @@ export default function AINationCouncil() {
 
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   {yesCount >= 5
-                    ? "Most agents agree this is likely. The council shows strong consensus toward a positive outcome."
+                    ? t("council.strongConsensus")
                     : yesCount >= 4
-                    ? "The majority leans yes, but notable dissent exists. The council is cautiously optimistic."
-                    : "The council is divided. Significant disagreement suggests high uncertainty around this question."}
+                    ? t("council.cautiousConsensus")
+                    : t("council.dividedConsensus")}
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <Link to="/oracle">
                     <Button className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white border-0">
-                      🎯 Bet on Oracle
+                      🎯 {t("council.betOnOracle")}
                     </Button>
                   </Link>
                   <Link to="/deploy">
                     <Button variant="outline" className="border-border hover:border-primary/40">
-                      🤖 Deploy Agent
+                      🤖 {t("council.deployAgent")}
                     </Button>
                   </Link>
                   <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => {
-                    navigator.share?.({ title: "AI Nation Council", text: `I asked the AI Nation: "${question}" — ${yesCount}/${council.length} agents said YES!`, url: "https://meeet.world" }).catch(() => {});
+                    navigator.share?.({ title: t("council.title"), text: `${t("council.shareText")} "${question}" — ${yesCount}/${council.length} YES!`, url: "https://meeet.world" }).catch(() => {});
                   }}>
-                    📤 Share
+                    📤 {t("council.share")}
                   </Button>
                 </div>
 
                 <button onClick={reset} className="text-sm text-primary hover:text-primary/80 underline underline-offset-4 transition-colors">
-                  Try another question?
+                  {t("council.tryAnother")}
                 </button>
               </div>
             </motion.div>
@@ -570,5 +572,6 @@ function AnimatedPercent({ target }: { target: number }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [target]);
-  return <div className="text-3xl font-bold text-foreground mt-2">{val}% Consensus</div>;
+  const { t } = useLanguage();
+  return <div className="text-3xl font-bold text-foreground mt-2">{val}% {t("council.consensus")}</div>;
 }
