@@ -222,13 +222,16 @@ const AgentCard = ({ agent, index, activeIndex }: { agent: CouncilAgent; index: 
 
 /* ── Main Component ── */
 export default function AINationCouncil() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [phase, setPhase] = useState<Phase>("idle");
   const [question, setQuestion] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [council, setCouncil] = useState<CouncilAgent[]>([]);
   const [activeAgent, setActiveAgent] = useState(-1);
-  const [_consensusPct, setConsensusPct] = useState(0); // kept for effect cleanup
+  const [_consensusPct, setConsensusPct] = useState(0);
+  const [questionType, setQuestionType] = useState<QuestionType>("open");
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiError, setAiError] = useState<string>("");
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Rotate placeholder
@@ -252,7 +255,33 @@ export default function AINationCouncil() {
     staleTime: 300000,
   });
 
-  const startCouncil = useCallback(() => {
+  // Fallback when AI is unavailable
+  const fallbackResponses = useCallback((picked: any[]) => {
+    const cat = detectCategory(question);
+    const bank = RESPONSES[cat] || RESPONSES.general;
+    const yesCount = 3 + Math.floor(Math.random() * 3); // 3-5 (more balanced)
+    const filled: CouncilAgent[] = picked.map((a, i) => {
+      const leansYes = i < yesCount;
+      const pool = leansYes ? bank.yes : bank.no;
+      return {
+        id: a.id,
+        name: a.name,
+        agentClass: (a as any).class || "researcher",
+        reputation: (a as any).reputation ?? 100,
+        answer: pool[Math.floor(Math.random() * pool.length)],
+        leansYes,
+      };
+    });
+    for (let i = filled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [filled[i], filled[j]] = [filled[j], filled[i]];
+    }
+    setCouncil(filled);
+    setPhase("discussing");
+    setActiveAgent(0);
+  }, [question]);
+
+  const startCouncil = useCallback(async () => {
     if (!question.trim() || !agentsPool?.length) return;
 
     // Pick 7 agents with class diversity
@@ -266,66 +295,98 @@ export default function AINationCouncil() {
 
     const selected: typeof agentsPool = [];
     const classes = Array.from(byClass.keys());
-    // Pick one from each class first (up to 7)
     for (const cls of classes) {
       if (selected.length >= 7) break;
       const pool = byClass.get(cls)!;
       const pick = pool[Math.floor(Math.random() * pool.length)];
       selected.push(pick);
     }
-    // Fill remaining from pool
     const remaining = agentsPool.filter(a => !selected.some(s => s.id === a.id));
     while (selected.length < 7 && remaining.length > 0) {
       const idx = Math.floor(Math.random() * remaining.length);
       selected.push(remaining.splice(idx, 1)[0]);
     }
 
-    const cat = detectCategory(question);
-    const bank = RESPONSES[cat] || RESPONSES.general;
-    const yesCount = 4 + Math.floor(Math.random() * 3); // 4-6
-
-    const councilAgents: CouncilAgent[] = selected.slice(0, 7).map((a, i) => {
-      const leansYes = i < yesCount;
-      const pool = leansYes ? bank.yes : bank.no;
-      return {
-        id: a.id,
-        name: a.name,
-        agentClass: (a as any).class || "researcher",
-        reputation: (a as any).reputation ?? 100,
-        answer: pool[Math.floor(Math.random() * pool.length)],
-        leansYes,
-      };
-    });
-
-    // Shuffle so yes/no aren't grouped
-    for (let i = councilAgents.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [councilAgents[i], councilAgents[j]] = [councilAgents[j], councilAgents[i]];
-    }
-
-    setCouncil(councilAgents);
+    const picked = selected.slice(0, 7);
+    setCouncil(picked.map(a => ({
+      id: a.id,
+      name: a.name,
+      agentClass: (a as any).class || "researcher",
+      reputation: (a as any).reputation ?? 100,
+      answer: "",
+      leansYes: false,
+    })));
     setActiveAgent(-1);
     setConsensusPct(0);
+    setAiSummary("");
+    setAiError("");
     setPhase("selecting");
 
-    // After 1.5s → discussing
-    timerRef.current = setTimeout(() => {
-      setPhase("discussing");
-      setActiveAgent(0);
+    timerRef.current = setTimeout(async () => {
+      setPhase("analyzing");
+      try {
+        const { data, error } = await supabase.functions.invoke("council-analyze", {
+          body: {
+            question,
+            language,
+            agents: picked.map(a => ({
+              name: a.name,
+              class: (a as any).class || "researcher",
+              reputation: (a as any).reputation ?? 100,
+            })),
+          },
+        });
+        if (error) throw error;
+        if (data?.error === "rate_limited") {
+          setAiError("Слишком много запросов. Попробуйте через минуту.");
+          fallbackResponses(picked);
+          return;
+        }
+        if (data?.error === "credits_exhausted") {
+          setAiError("AI-кредиты исчерпаны. Используется резервный анализ.");
+          fallbackResponses(picked);
+          return;
+        }
+
+        const responses = data?.responses || [];
+        const filled: CouncilAgent[] = picked.map((a, i) => {
+          const r = responses[i] || {};
+          return {
+            id: a.id,
+            name: a.name,
+            agentClass: (a as any).class || "researcher",
+            reputation: (a as any).reputation ?? 100,
+            answer: r.answer || "Анализирую...",
+            leansYes: !!r.leansYes,
+          };
+        });
+        for (let i = filled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [filled[i], filled[j]] = [filled[j], filled[i]];
+        }
+        setCouncil(filled);
+        setQuestionType((data?.question_type as QuestionType) || "open");
+        setAiSummary(data?.summary || "");
+        setPhase("discussing");
+        setActiveAgent(0);
+      } catch (e: any) {
+        console.error("Council AI error:", e);
+        setAiError("Не удалось получить анализ. Используется резервный режим.");
+        fallbackResponses(picked);
+      }
     }, 1500);
-  }, [question, agentsPool]);
+  }, [question, agentsPool, language, fallbackResponses]);
 
   // Sequential agent reveal
   useEffect(() => {
     if (phase !== "discussing" || activeAgent < 0) return;
 
     const avgChars = council[activeAgent]?.answer.length || 80;
-    const typeDuration = avgChars * 25 + 800; // typing time + pause
+    const typeDuration = avgChars * 22 + 600;
 
     if (activeAgent < council.length - 1) {
       timerRef.current = setTimeout(() => setActiveAgent(a => a + 1), typeDuration);
     } else {
-      // Last agent done → consensus
       timerRef.current = setTimeout(() => {
         const yesC = council.filter(a => a.leansYes).length;
         setConsensusPct(Math.round((yesC / council.length) * 100));
@@ -343,11 +404,16 @@ export default function AINationCouncil() {
     setCouncil([]);
     setActiveAgent(-1);
     setConsensusPct(0);
+    setAiSummary("");
+    setAiError("");
   };
 
   const yesCount = council.filter(a => a.leansYes).length;
   const noCount = council.length - yesCount;
-  const computedPct = council.length > 0 ? Math.round((Math.max(yesCount, noCount) / council.length) * 100) : 0;
+  // Consensus = % of agents agreeing with majority position (not always YES)
+  const majorityCount = Math.max(yesCount, noCount);
+  const computedPct = council.length > 0 ? Math.round((majorityCount / council.length) * 100) : 0;
+  const majorityIsYes = yesCount >= noCount;
 
   return (
     <section className="relative py-16 md:py-24 px-4 overflow-hidden">
