@@ -8,33 +8,39 @@ import PageWrapper from "@/components/PageWrapper";
 import { supabase } from "@/integrations/supabase/runtime-client";
 import { Loader2, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { motion } from "framer-motion";
 
 const PAGE_SIZE = 20;
 
-type FilterType = "all" | "discoveries" | "arena" | "agents" | "economy" | "social";
+type FilterType = "all" | "agents" | "token" | "governance" | "battles" | "discoveries";
 
-const EVENT_TYPE_MAP: Record<string, { icon: string; color: string; filter: FilterType; link?: (item: any) => string }> = {
-  discovery: { icon: "🔬", color: "border-l-purple-500", filter: "discoveries", link: (i) => `/discoveries` },
-  duel: { icon: "⚔️", color: "border-l-red-500", filter: "arena" },
-  quest_complete: { icon: "🎯", color: "border-l-emerald-500", filter: "arena", link: () => `/quests` },
+const EVENT_TYPE_MAP: Record<string, { icon: string; color: string; filter: FilterType }> = {
+  discovery: { icon: "🔬", color: "border-l-purple-500", filter: "discoveries" },
+  duel: { icon: "⚔️", color: "border-l-red-500", filter: "battles" },
+  quest_complete: { icon: "🎯", color: "border-l-emerald-500", filter: "battles" },
   level_up: { icon: "⬆️", color: "border-l-amber-500", filter: "agents" },
-  trade: { icon: "🔄", color: "border-l-cyan-500", filter: "economy" },
-  presidential_broadcast: { icon: "📢", color: "border-l-yellow-500", filter: "social" },
-  social_mode: { icon: "🌐", color: "border-l-blue-500", filter: "social" },
-  social_chat: { icon: "💬", color: "border-l-blue-400", filter: "social" },
+  trade: { icon: "🔄", color: "border-l-cyan-500", filter: "token" },
+  presidential_broadcast: { icon: "📢", color: "border-l-yellow-500", filter: "governance" },
+  social_mode: { icon: "🌐", color: "border-l-blue-500", filter: "agents" },
+  social_chat: { icon: "💬", color: "border-l-blue-400", filter: "agents" },
   auto_mode: { icon: "🤖", color: "border-l-green-500", filter: "agents" },
-  review: { icon: "⭐", color: "border-l-amber-400", filter: "social" },
-  alliance: { icon: "🤝", color: "border-l-cyan-400", filter: "social" },
-  burn: { icon: "🔥", color: "border-l-orange-500", filter: "economy" },
+  review: { icon: "⭐", color: "border-l-amber-400", filter: "governance" },
+  alliance: { icon: "🤝", color: "border-l-cyan-400", filter: "governance" },
+  burn: { icon: "🔥", color: "border-l-orange-500", filter: "token" },
+  agent_deployed: { icon: "🤖", color: "border-l-green-500", filter: "agents" },
+  token_staked: { icon: "💰", color: "border-l-yellow-500", filter: "token" },
+  vote_cast: { icon: "🏛️", color: "border-l-purple-500", filter: "governance" },
+  debate_started: { icon: "⚔️", color: "border-l-red-500", filter: "battles" },
+  discovery_made: { icon: "🔬", color: "border-l-blue-500", filter: "discoveries" },
 };
 
 const FILTERS: { key: FilterType; label: string; icon: string }[] = [
   { key: "all", label: "All", icon: "📡" },
-  { key: "discoveries", label: "Discoveries", icon: "🔬" },
-  { key: "arena", label: "Arena", icon: "⚔️" },
   { key: "agents", label: "Agents", icon: "🤖" },
-  { key: "economy", label: "Economy", icon: "💰" },
-  { key: "social", label: "Social", icon: "💬" },
+  { key: "token", label: "Token", icon: "💰" },
+  { key: "governance", label: "Governance", icon: "🏛️" },
+  { key: "battles", label: "Battles", icon: "⚔️" },
+  { key: "discoveries", label: "Discoveries", icon: "🔬" },
 ];
 
 function getEventMeta(eventType: string) {
@@ -58,6 +64,15 @@ interface FeedItem {
   meeet_amount: number | null;
   created_at: string;
 }
+
+const cardVariant = {
+  hidden: { opacity: 0, x: -30 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.04, duration: 0.35, ease: "easeOut" },
+  }),
+};
 
 export default function Activity() {
   const [items, setItems] = useState<FeedItem[]>([]);
@@ -95,14 +110,12 @@ export default function Activity() {
     setLoadingMore(false);
   }, []);
 
-  // Initial load + filter change
   useEffect(() => {
     setItems([]);
     setHasMore(true);
     fetchItems(0, filter, false);
   }, [filter, fetchItems]);
 
-  // Realtime subscription for new items
   useEffect(() => {
     const channel = supabase
       .channel("activity-feed-realtime")
@@ -119,7 +132,6 @@ export default function Activity() {
     return () => { supabase.removeChannel(channel); };
   }, [filter]);
 
-  // Infinite scroll via IntersectionObserver
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -136,17 +148,6 @@ export default function Activity() {
     return () => observer.disconnect();
   }, [hasMore, loading, loadingMore, items.length, filter, fetchItems]);
 
-  // Auto-refresh every 10s (refetch latest)
-  useEffect(() => {
-    const iv = setInterval(() => {
-      if (items.length > 0) {
-        // Fetch only newer items
-        fetchItems(0, filter, false);
-      }
-    }, 10000);
-    return () => clearInterval(iv);
-  }, [filter, items.length, fetchItems]);
-
   return (
     <PageWrapper>
       <SEOHead
@@ -160,31 +161,35 @@ export default function Activity() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Live Activity Feed</h1>
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Activity Feed</h1>
+              {/* Live indicator */}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Live</span>
               </span>
             </div>
-            <p className="text-muted-foreground">Everything happening in the nation right now</p>
+            <p className="text-muted-foreground">Real-time updates from MEEET STATE</p>
             {totalCount > 0 && (
               <p className="text-xs text-muted-foreground mt-1">{totalCount.toLocaleString()} total events</p>
             )}
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-8">
+          {/* Filter tabs */}
+          <div className="flex gap-1.5 mb-8 overflow-x-auto pb-2 scrollbar-hide">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
                   filter === f.key
-                    ? "bg-primary/15 text-primary border-primary/40"
+                    ? "bg-[#9b87f5]/15 text-[#9b87f5] border-[#9b87f5]/40"
                     : "bg-muted/30 text-muted-foreground border-border/50 hover:border-border hover:text-foreground"
                 }`}
               >
-                {f.icon} {f.label}
+                <span>{f.icon}</span> {f.label}
               </button>
             ))}
           </div>
@@ -200,72 +205,57 @@ export default function Activity() {
               <p className="text-muted-foreground">No activity found for this filter.</p>
             </div>
           ) : (
-            <div className="relative">
-              {/* Center timeline line */}
-              <div className="absolute left-[72px] md:left-[100px] top-0 bottom-0 w-px bg-border/50" />
+            <div className="space-y-2">
+              {items.map((item, idx) => {
+                const meta = getEventMeta(item.event_type);
+                const time = new Date(item.created_at);
+                const timeStr = formatDistanceToNow(time, { addSuffix: true });
 
-              <div className="space-y-1">
-                {items.map((item, idx) => {
-                  const meta = getEventMeta(item.event_type);
-                  const time = new Date(item.created_at);
-                  const timeStr = formatDistanceToNow(time, { addSuffix: true });
+                return (
+                  <motion.div
+                    key={item.id}
+                    custom={idx}
+                    variants={cardVariant}
+                    initial="hidden"
+                    animate="visible"
+                    className={`flex items-start gap-3 p-3 rounded-xl border-l-4 ${meta.color} bg-card/40 hover:bg-card/60 transition-colors`}
+                  >
+                    {/* Icon */}
+                    <span className="text-xl mt-0.5 shrink-0">{meta.icon}</span>
 
-                  return (
-                    <div key={item.id} className="flex items-start gap-3 md:gap-4 group">
-                      {/* Timestamp */}
-                      <div className="w-[60px] md:w-[88px] shrink-0 text-right pt-3">
-                        <span className="text-[10px] md:text-xs text-muted-foreground leading-tight block">
-                          {timeStr}
-                        </span>
-                      </div>
-
-                      {/* Dot on timeline */}
-                      <div className="relative shrink-0 pt-3">
-                        <div className="w-3 h-3 rounded-full bg-muted border-2 border-border group-hover:border-primary/60 transition-colors" />
-                      </div>
-
-                      {/* Content card */}
-                      <div className={`flex-1 p-3 rounded-lg border-l-4 ${meta.color} bg-card/40 hover:bg-card/60 transition-colors mb-1`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm leading-snug">
-                              <span className="mr-1.5">{meta.icon}</span>
-                              <span className="font-semibold text-foreground">{item.title}</span>
-                            </p>
-                            {item.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                                {item.event_type.replace(/_/g, " ")}
-                              </Badge>
-                              {item.meeet_amount != null && item.meeet_amount !== 0 && (
-                                <span className={`text-[11px] font-medium ${item.meeet_amount > 0 ? "text-emerald-400" : "text-orange-400"}`}>
-                                  {item.meeet_amount > 0 ? "+" : ""}{item.meeet_amount.toLocaleString()} MEEET
-                                </span>
-                              )}
-                              {item.agent_id && (
-                                <Link
-                                  to={`/agents/${item.agent_id}`}
-                                  className="text-[10px] text-primary hover:underline"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  View Agent →
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:block">
-                            {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground leading-snug">{item.title}</p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                          {item.event_type.replace(/_/g, " ")}
+                        </Badge>
+                        {item.meeet_amount != null && item.meeet_amount !== 0 && (
+                          <span className={`text-[11px] font-medium ${item.meeet_amount > 0 ? "text-emerald-400" : "text-orange-400"}`}>
+                            {item.meeet_amount > 0 ? "+" : ""}{item.meeet_amount.toLocaleString()} MEEET
                           </span>
-                        </div>
+                        )}
+                        {item.agent_id && (
+                          <Link
+                            to={`/agents/${item.agent_id}`}
+                            className="text-[10px] text-primary hover:underline"
+                          >
+                            View Agent →
+                          </Link>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Infinite scroll sentinel */}
+                    {/* Time */}
+                    <span className="text-[10px] text-muted-foreground shrink-0 pt-1">{timeStr}</span>
+                  </motion.div>
+                );
+              })}
+
+              {/* Sentinel + Load More */}
               <div ref={sentinelRef} className="h-10" />
               {loadingMore && (
                 <div className="flex items-center justify-center py-4">
