@@ -505,8 +505,34 @@ export default function AINationCouncil() {
             </motion.div>
           )}
 
-          {/* ══ DISCUSSING ══ */}
-          {phase === "discussing" && (
+          {/* ══ ANALYZING (AI thinking) ══ */}
+          {phase === "analyzing" && (
+            <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
+              <div className="text-sm text-muted-foreground bg-black/40 rounded-lg px-4 py-2 inline-block">
+                "{question}"
+              </div>
+              <motion.p
+                className="text-lg font-semibold text-primary"
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+              >
+                🧠 Совет анализирует вопрос с разных позиций…
+              </motion.p>
+              <div className="flex items-center justify-center gap-2">
+                {council.map((a, i) => (
+                  <motion.div
+                    key={a.id}
+                    className={`w-10 h-10 rounded-full border-2 ${CLASS_COLORS[a.agentClass] || "border-primary/40"} bg-black/60 flex items-center justify-center text-base`}
+                    animate={{ scale: [1, 1.1, 1], borderColor: ["rgba(168,85,247,0.4)", "rgba(168,85,247,0.9)", "rgba(168,85,247,0.4)"] }}
+                    transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
+                  >
+                    {AGENT_CLASSES[a.agentClass]?.icon ?? "🤖"}
+                  </motion.div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Это занимает 3–8 секунд. Каждый агент формирует независимое мнение.</p>
+            </motion.div>
+          )}
             <motion.div key="discussing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
               <div className="text-center">
                 <div className="text-sm text-muted-foreground bg-black/40 rounded-lg px-4 py-2 inline-block mb-2">
