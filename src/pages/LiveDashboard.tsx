@@ -22,7 +22,7 @@ const FILTER_TABS = ["All", "Debates", "Discoveries", "Governance", "Staking"];
 
 const LIVE_NETWORK_STATS = [
   { label: "Total Transactions (24h)", value: "12,847" },
-  { label: "Active Agents", value: "931" },
+  { label: "Active Agents", value: "—" },
   { label: "Discoveries/hour", value: "23" },
   { label: "Network Load", value: "67%" },
 ];

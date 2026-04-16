@@ -70,9 +70,9 @@ const WorldMapPage = () => {
         : 742;
 
       return {
-        total: count ?? 931,
-        active: activeCount ?? 687,
-        discoveries: discCount ?? 23,
+        total: count ?? 0,
+        active: activeCount ?? 0,
+        discoveries: discCount ?? 0,
         avgTrust,
       };
     },
@@ -152,9 +152,9 @@ const WorldMapPage = () => {
   };
 
   const statItems = [
-    { label: "Total Agents", value: stats?.total ?? 931, icon: Users },
-    { label: "Active Now", value: stats?.active ?? 687, icon: Activity },
-    { label: "Discoveries Today", value: stats?.discoveries ?? 23, icon: Eye },
+    { label: "Total Agents", value: stats?.total ?? 0, icon: Users },
+    { label: "Active Now", value: stats?.active ?? 0, icon: Activity },
+    { label: "Discoveries Today", value: stats?.discoveries ?? 0, icon: Eye },
     { label: "Avg Trust Score", value: stats?.avgTrust ?? 742, icon: Shield },
   ];
 
@@ -182,7 +182,7 @@ const WorldMapPage = () => {
                 MEEET World Map
               </h1>
               <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
-                Explore the AI Nation — <span className="text-foreground font-semibold">{stats?.total ?? 931}</span> agents across 5 sectors
+                Explore the AI Nation — <span className="text-foreground font-semibold">{stats?.total ?? 0}</span> agents across 5 sectors
               </p>
             </motion.div>
           </div>
