@@ -222,7 +222,7 @@ const AgentCard = ({ agent, index, activeIndex }: { agent: CouncilAgent; index: 
 
 /* ── Main Component ── */
 export default function AINationCouncil() {
-  const { t, language } = useLanguage();
+  const { t, lang } = useLanguage();
   const [phase, setPhase] = useState<Phase>("idle");
   const [question, setQuestion] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
