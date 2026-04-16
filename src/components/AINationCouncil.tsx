@@ -9,7 +9,8 @@ import { AGENT_CLASSES } from "@/data/agent-classes";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ── types ── */
-type Phase = "idle" | "selecting" | "discussing" | "consensus";
+type Phase = "idle" | "selecting" | "analyzing" | "discussing" | "consensus";
+type QuestionType = "yes_no" | "timing" | "open";
 
 interface CouncilAgent {
   id: string;
@@ -221,13 +222,16 @@ const AgentCard = ({ agent, index, activeIndex }: { agent: CouncilAgent; index: 
 
 /* ── Main Component ── */
 export default function AINationCouncil() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [phase, setPhase] = useState<Phase>("idle");
   const [question, setQuestion] = useState("");
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [council, setCouncil] = useState<CouncilAgent[]>([]);
   const [activeAgent, setActiveAgent] = useState(-1);
-  const [_consensusPct, setConsensusPct] = useState(0); // kept for effect cleanup
+  const [_consensusPct, setConsensusPct] = useState(0);
+  const [questionType, setQuestionType] = useState<QuestionType>("open");
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiError, setAiError] = useState<string>("");
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Rotate placeholder
@@ -251,7 +255,33 @@ export default function AINationCouncil() {
     staleTime: 300000,
   });
 
-  const startCouncil = useCallback(() => {
+  // Fallback when AI is unavailable
+  const fallbackResponses = useCallback((picked: any[]) => {
+    const cat = detectCategory(question);
+    const bank = RESPONSES[cat] || RESPONSES.general;
+    const yesCount = 3 + Math.floor(Math.random() * 3); // 3-5 (more balanced)
+    const filled: CouncilAgent[] = picked.map((a, i) => {
+      const leansYes = i < yesCount;
+      const pool = leansYes ? bank.yes : bank.no;
+      return {
+        id: a.id,
+        name: a.name,
+        agentClass: (a as any).class || "researcher",
+        reputation: (a as any).reputation ?? 100,
+        answer: pool[Math.floor(Math.random() * pool.length)],
+        leansYes,
+      };
+    });
+    for (let i = filled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [filled[i], filled[j]] = [filled[j], filled[i]];
+    }
+    setCouncil(filled);
+    setPhase("discussing");
+    setActiveAgent(0);
+  }, [question]);
+
+  const startCouncil = useCallback(async () => {
     if (!question.trim() || !agentsPool?.length) return;
 
     // Pick 7 agents with class diversity
@@ -265,66 +295,98 @@ export default function AINationCouncil() {
 
     const selected: typeof agentsPool = [];
     const classes = Array.from(byClass.keys());
-    // Pick one from each class first (up to 7)
     for (const cls of classes) {
       if (selected.length >= 7) break;
       const pool = byClass.get(cls)!;
       const pick = pool[Math.floor(Math.random() * pool.length)];
       selected.push(pick);
     }
-    // Fill remaining from pool
     const remaining = agentsPool.filter(a => !selected.some(s => s.id === a.id));
     while (selected.length < 7 && remaining.length > 0) {
       const idx = Math.floor(Math.random() * remaining.length);
       selected.push(remaining.splice(idx, 1)[0]);
     }
 
-    const cat = detectCategory(question);
-    const bank = RESPONSES[cat] || RESPONSES.general;
-    const yesCount = 4 + Math.floor(Math.random() * 3); // 4-6
-
-    const councilAgents: CouncilAgent[] = selected.slice(0, 7).map((a, i) => {
-      const leansYes = i < yesCount;
-      const pool = leansYes ? bank.yes : bank.no;
-      return {
-        id: a.id,
-        name: a.name,
-        agentClass: (a as any).class || "researcher",
-        reputation: (a as any).reputation ?? 100,
-        answer: pool[Math.floor(Math.random() * pool.length)],
-        leansYes,
-      };
-    });
-
-    // Shuffle so yes/no aren't grouped
-    for (let i = councilAgents.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [councilAgents[i], councilAgents[j]] = [councilAgents[j], councilAgents[i]];
-    }
-
-    setCouncil(councilAgents);
+    const picked = selected.slice(0, 7);
+    setCouncil(picked.map(a => ({
+      id: a.id,
+      name: a.name,
+      agentClass: (a as any).class || "researcher",
+      reputation: (a as any).reputation ?? 100,
+      answer: "",
+      leansYes: false,
+    })));
     setActiveAgent(-1);
     setConsensusPct(0);
+    setAiSummary("");
+    setAiError("");
     setPhase("selecting");
 
-    // After 1.5s → discussing
-    timerRef.current = setTimeout(() => {
-      setPhase("discussing");
-      setActiveAgent(0);
+    timerRef.current = setTimeout(async () => {
+      setPhase("analyzing");
+      try {
+        const { data, error } = await supabase.functions.invoke("council-analyze", {
+          body: {
+            question,
+            language: lang,
+            agents: picked.map(a => ({
+              name: a.name,
+              class: (a as any).class || "researcher",
+              reputation: (a as any).reputation ?? 100,
+            })),
+          },
+        });
+        if (error) throw error;
+        if (data?.error === "rate_limited") {
+          setAiError("Слишком много запросов. Попробуйте через минуту.");
+          fallbackResponses(picked);
+          return;
+        }
+        if (data?.error === "credits_exhausted") {
+          setAiError("AI-кредиты исчерпаны. Используется резервный анализ.");
+          fallbackResponses(picked);
+          return;
+        }
+
+        const responses = data?.responses || [];
+        const filled: CouncilAgent[] = picked.map((a, i) => {
+          const r = responses[i] || {};
+          return {
+            id: a.id,
+            name: a.name,
+            agentClass: (a as any).class || "researcher",
+            reputation: (a as any).reputation ?? 100,
+            answer: r.answer || "Анализирую...",
+            leansYes: !!r.leansYes,
+          };
+        });
+        for (let i = filled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [filled[i], filled[j]] = [filled[j], filled[i]];
+        }
+        setCouncil(filled);
+        setQuestionType((data?.question_type as QuestionType) || "open");
+        setAiSummary(data?.summary || "");
+        setPhase("discussing");
+        setActiveAgent(0);
+      } catch (e: any) {
+        console.error("Council AI error:", e);
+        setAiError("Не удалось получить анализ. Используется резервный режим.");
+        fallbackResponses(picked);
+      }
     }, 1500);
-  }, [question, agentsPool]);
+  }, [question, agentsPool, lang, fallbackResponses]);
 
   // Sequential agent reveal
   useEffect(() => {
     if (phase !== "discussing" || activeAgent < 0) return;
 
     const avgChars = council[activeAgent]?.answer.length || 80;
-    const typeDuration = avgChars * 25 + 800; // typing time + pause
+    const typeDuration = avgChars * 22 + 600;
 
     if (activeAgent < council.length - 1) {
       timerRef.current = setTimeout(() => setActiveAgent(a => a + 1), typeDuration);
     } else {
-      // Last agent done → consensus
       timerRef.current = setTimeout(() => {
         const yesC = council.filter(a => a.leansYes).length;
         setConsensusPct(Math.round((yesC / council.length) * 100));
@@ -342,11 +404,16 @@ export default function AINationCouncil() {
     setCouncil([]);
     setActiveAgent(-1);
     setConsensusPct(0);
+    setAiSummary("");
+    setAiError("");
   };
 
   const yesCount = council.filter(a => a.leansYes).length;
   const noCount = council.length - yesCount;
-  const computedPct = council.length > 0 ? Math.round((Math.max(yesCount, noCount) / council.length) * 100) : 0;
+  // Consensus = % of agents agreeing with majority position (not always YES)
+  const majorityCount = Math.max(yesCount, noCount);
+  const computedPct = council.length > 0 ? Math.round((majorityCount / council.length) * 100) : 0;
+  const majorityIsYes = yesCount >= noCount;
 
   return (
     <section className="relative py-16 md:py-24 px-4 overflow-hidden">
@@ -438,6 +505,35 @@ export default function AINationCouncil() {
             </motion.div>
           )}
 
+          {/* ══ ANALYZING (AI thinking) ══ */}
+          {phase === "analyzing" && (
+            <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center space-y-6">
+              <div className="text-sm text-muted-foreground bg-black/40 rounded-lg px-4 py-2 inline-block">
+                "{question}"
+              </div>
+              <motion.p
+                className="text-lg font-semibold text-primary"
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+              >
+                🧠 Совет анализирует вопрос с разных позиций…
+              </motion.p>
+              <div className="flex items-center justify-center gap-2">
+                {council.map((a, i) => (
+                  <motion.div
+                    key={a.id}
+                    className={`w-10 h-10 rounded-full border-2 ${CLASS_COLORS[a.agentClass] || "border-primary/40"} bg-black/60 flex items-center justify-center text-base`}
+                    animate={{ scale: [1, 1.1, 1], borderColor: ["rgba(168,85,247,0.4)", "rgba(168,85,247,0.9)", "rgba(168,85,247,0.4)"] }}
+                    transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
+                  >
+                    {AGENT_CLASSES[a.agentClass]?.icon ?? "🤖"}
+                  </motion.div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Это занимает 3–8 секунд. Каждый агент формирует независимое мнение.</p>
+            </motion.div>
+          )}
+
           {/* ══ DISCUSSING ══ */}
           {phase === "discussing" && (
             <motion.div key="discussing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
@@ -502,29 +598,55 @@ export default function AINationCouncil() {
               <div className="rounded-xl border border-purple-500/30 bg-black/60 backdrop-blur-md p-6 text-center space-y-4">
                 <h3 className="text-lg font-bold text-foreground tracking-wide">🏛️ {t("council.verdict")}</h3>
 
+                {questionType === "timing" && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                    ⏱️ Вопрос о сроках — YES = «скоро/в обозримом будущем», NO = «не скоро / маловероятно»
+                  </div>
+                )}
+                {questionType === "open" && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold">
+                    💭 Открытый вопрос — YES = «оптимистичный сценарий», NO = «скептический»
+                  </div>
+                )}
+
                 <div className="max-w-sm mx-auto">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-emerald-400 font-bold">YES {yesCount}/{council.length}</span>
                     <span className="text-red-400 font-bold">NO {noCount}/{council.length}</span>
                   </div>
-                  <div className="h-3 rounded-full bg-red-500/30 overflow-hidden">
+                  <div className={`h-3 rounded-full overflow-hidden ${majorityIsYes ? "bg-red-500/30" : "bg-emerald-500/30"}`}>
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      className={`h-full rounded-full ${
+                        majorityIsYes
+                          ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                          : "bg-gradient-to-r from-red-500 to-red-400"
+                      }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${computedPct}%` }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
                     />
                   </div>
-                  <AnimatedPercent target={computedPct} />
+                  <AnimatedPercent target={computedPct} majorityIsYes={majorityIsYes} />
                 </div>
 
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {yesCount >= 5
-                    ? t("council.strongConsensus")
-                    : yesCount >= 4
-                    ? t("council.cautiousConsensus")
-                    : t("council.dividedConsensus")}
-                </p>
+                {aiSummary ? (
+                  <div className="max-w-xl mx-auto bg-black/40 border border-white/10 rounded-lg p-4 text-left">
+                    <p className="text-xs uppercase tracking-wider text-primary mb-2 font-bold">📋 Аналитический вывод совета</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{aiSummary}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    {computedPct >= 70
+                      ? majorityIsYes ? t("council.strongConsensus") : "Большинство склоняется к «нет». Совет видит серьёзные препятствия."
+                      : computedPct >= 55
+                      ? majorityIsYes ? t("council.cautiousConsensus") : "Совет осторожно скептичен — преобладает мнение «нет», но есть оптимисты."
+                      : t("council.dividedConsensus")}
+                  </p>
+                )}
+
+                {aiError && (
+                  <p className="text-xs text-amber-400/80">{aiError}</p>
+                )}
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <Link to="/oracle">
@@ -557,10 +679,9 @@ export default function AINationCouncil() {
 }
 
 /* ── Animated Percent Counter ── */
-function AnimatedPercent({ target }: { target: number }) {
+function AnimatedPercent({ target, majorityIsYes = true }: { target: number; majorityIsYes?: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
-    let start = 0;
     const duration = 1500;
     const startTime = performance.now();
     let raf: number;
@@ -573,5 +694,13 @@ function AnimatedPercent({ target }: { target: number }) {
     return () => cancelAnimationFrame(raf);
   }, [target]);
   const { t } = useLanguage();
-  return <div className="text-3xl font-bold text-foreground mt-2">{val}% {t("council.consensus")}</div>;
+  return (
+    <div className="text-3xl font-bold mt-2">
+      <span className={majorityIsYes ? "text-emerald-400" : "text-red-400"}>{val}%</span>{" "}
+      <span className="text-foreground">{t("council.consensus")}</span>{" "}
+      <span className={`text-base ${majorityIsYes ? "text-emerald-400" : "text-red-400"}`}>
+        {majorityIsYes ? "(YES)" : "(NO)"}
+      </span>
+    </div>
+  );
 }
