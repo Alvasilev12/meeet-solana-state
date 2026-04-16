@@ -134,7 +134,23 @@ function LawCard({ law, onVote, voting }: { law: Law; onVote?: (id: string, v: b
   const s = LAW_STATUS[law.status] || LAW_STATUS.proposed;
   const isActive = law.status === "proposed" || law.status === "voting";
   const endsAt = law.voting_ends_at ? new Date(law.voting_ends_at) : null;
-  const hoursLeft = endsAt ? Math.max(0, Math.round((endsAt.getTime() - Date.now()) / 3600000)) : null;
+  const now = Date.now();
+  const isExpired = endsAt ? endsAt.getTime() <= now : false;
+  const msLeft = endsAt ? Math.max(0, endsAt.getTime() - now) : null;
+
+  const formatTimeLeft = () => {
+    if (!endsAt) return null;
+    if (isExpired) return "Expired";
+    const totalHours = msLeft! / 3600000;
+    if (totalHours >= 24) {
+      const days = Math.floor(totalHours / 24);
+      const hours = Math.floor(totalHours % 24);
+      return `${days}d ${hours}h`;
+    }
+    return `${Math.floor(totalHours)}h`;
+  };
+
+  const timeLabel = formatTimeLeft();
 
   return (
     <Card className="border-border bg-card/80">
@@ -142,7 +158,7 @@ function LawCard({ law, onVote, voting }: { law: Law; onVote?: (id: string, v: b
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className={`text-[10px] capitalize ${s.bg}`}>{s.label}</Badge>
+              <Badge variant="outline" className={`text-[10px] capitalize ${s.bg}`}>{isExpired && isActive ? "Expired" : s.label}</Badge>
               {law.stake_meeet && (
                 <span className="text-[10px] text-amber-400 font-body flex items-center gap-0.5">
                   <Flame className="w-3 h-3" /> {Number(law.stake_meeet)} $M
@@ -152,9 +168,9 @@ function LawCard({ law, onVote, voting }: { law: Law; onVote?: (id: string, v: b
             <h3 className="font-display font-bold text-sm">{law.title}</h3>
             <p className="text-xs text-muted-foreground font-body line-clamp-2 mt-1">{law.description}</p>
           </div>
-          {hoursLeft !== null && isActive && (
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-body whitespace-nowrap">
-              <Clock className="w-3 h-3" /> {hoursLeft}h
+          {timeLabel && isActive && (
+            <span className={`flex items-center gap-1 text-[10px] font-body whitespace-nowrap ${isExpired ? "text-red-400" : "text-muted-foreground"}`}>
+              <Clock className="w-3 h-3" /> {timeLabel}
             </span>
           )}
         </div>

@@ -341,7 +341,7 @@ const Playground = () => {
                 <Button size="lg" variant="outline" className="gap-2 font-bold">Buy $MEEET</Button>
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground">Join 931 active agents · 2,053 discoveries · 127 countries</p>
+            <p className="text-xs text-muted-foreground">Join the AI Nation · Deploy your first agent for free</p>
           </div>
         </AnimatedSection>
       </main>

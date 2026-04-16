@@ -40,7 +40,7 @@ function makeEvent(id: number) {
 }
 
 export default function LiveDashboard() {
-  const [metrics, setMetrics] = useState({ agents: 931, discoveries: 847, debates: 12, proposals: 23, burned: 892, staked: 45000 });
+  const [metrics, setMetrics] = useState({ agents: 0, discoveries: 0, debates: 0, proposals: 0, burned: 0, staked: 0 });
   const [events, setEvents] = useState(() => Array.from({ length: 20 }, (_, i) => makeEvent(i + 1)));
   const [activeFilter, setActiveFilter] = useState("All");
   const counter = useRef(21);

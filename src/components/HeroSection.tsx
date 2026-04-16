@@ -2,12 +2,16 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import WorldMap from "@/components/WorldMap";
 import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { useDiscoveryStats } from "@/hooks/useDiscoveryStats";
+import { useTokenStats } from "@/hooks/useTokenStats";
 import JoinedTodayCounter from "@/components/JoinedTodayCounter";
 
 interface HeroStats {
@@ -23,35 +27,29 @@ interface HeroStats {
 
 const HeroSection = () => {
   const { t } = useLanguage();
+  const { data: agentStats, isLoading: agentLoading } = useAgentStats();
+  const { data: discoveryStats } = useDiscoveryStats();
+  const { totalStaked } = useTokenStats();
 
-  const { data: stats } = useQuery<HeroStats>({
-    queryKey: ["hero-stats"],
+  const { data: questData } = useQuery({
+    queryKey: ["hero-quests"],
     queryFn: async () => {
-      // Fetch all stats from badge-stats edge function (bypasses 1000-row limit)
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/badge-stats?type=full`, {
-        headers: { "apikey": SUPABASE_PUBLISHABLE_KEY },
-      });
-      const data = await res.json();
-
-      return {
-        agents: data.total_agents ?? 0,
-        quests: data.total_quests ?? 0,
-        discoveries: data.total_discoveries ?? 0,
-        countries: data.countries_count ?? 5,
-        totalMeeet: data.total_meeet ?? 0,
-        worldEvents: data.total_events ?? 0,
-        activeQuests: data.active_quests ?? 0,
-        guilds: data.total_guilds ?? 0,
-      };
+      const { count } = await supabase.from("quests").select("id", { count: "exact", head: true }).eq("status", "open");
+      return count ?? 0;
     },
     refetchInterval: 30000,
   });
 
-  const animAgents = useAnimatedCounter(stats?.agents || 1033);
-  const animQuests = useAnimatedCounter(stats?.activeQuests || 36);
-  const animCountries = useAnimatedCounter(stats?.countries || 5);
-  const animEvents = useAnimatedCounter(stats?.worldEvents || 12);
-  const animMeeet = useAnimatedCounter(stats?.totalMeeet || 50000);
+  const agentCount = agentStats?.totalAgents ?? 0;
+  const countriesCount = agentStats?.countriesCount ?? 0;
+  const activeQuests = questData ?? 0;
+  const totalDiscoveries = discoveryStats?.totalDiscoveries ?? 0;
+
+  const animAgents = useAnimatedCounter(agentCount);
+  const animQuests = useAnimatedCounter(activeQuests);
+  const animCountries = useAnimatedCounter(countriesCount);
+  const animDiscoveries = useAnimatedCounter(totalDiscoveries);
+  const animStaked = useAnimatedCounter(totalStaked);
 
   return (
     <section className="relative min-h-[85vh] sm:min-h-[95vh] flex items-center justify-center overflow-hidden px-2">
@@ -85,7 +83,7 @@ const HeroSection = () => {
           className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 sm:mb-8 font-body animate-fade-up"
           style={{ animationDelay: "0.2s", animationFillMode: "both" }}
         >
-          {(t("hero.subtitle") as string).replace("{{count}}", (stats?.agents ?? 0).toLocaleString())}
+          {(t("hero.subtitle") as string).replace("{{count}}", agentCount.toLocaleString())}
         </p>
 
         <div className="flex justify-center mb-7 sm:mb-9 animate-fade-up" style={{ animationDelay: "0.25s", animationFillMode: "both" }}>
@@ -132,14 +130,14 @@ const HeroSection = () => {
           />
           <LiveStatCard
             icon={<MapPin className="w-3.5 h-3.5 text-blue-400" />}
-            label="World Events"
-            value={formatCompact(animEvents)}
+            label="Discoveries"
+            value={formatCompact(animDiscoveries)}
             accent="text-blue-400"
           />
           <LiveStatCard
             icon={<TrendingUp className="w-3.5 h-3.5 text-purple-400" />}
-            label="$MEEET"
-            value={formatCompact(animMeeet)}
+            label="$MEEET Staked"
+            value={formatCompact(animStaked)}
             accent="text-purple-400"
           />
         </div>

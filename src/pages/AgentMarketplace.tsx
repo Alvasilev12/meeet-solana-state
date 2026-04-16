@@ -207,12 +207,12 @@ const AgentMarketplace = () => {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Listed Agents", value: "847" },
-                  { label: "Active Sellers", value: "234" },
-                  { label: "Total Volume", value: "$1.2M" },
-                  { label: "Avg Rating", value: "4.8★" },
+                  { label: "Listed Agents", value: String(AGENTS.length) },
+                  { label: "Categories", value: String(CATEGORIES.length - 1) },
+                  { label: "Avg Rating", value: `${(AGENTS.reduce((s, a) => s + a.rating, 0) / AGENTS.length).toFixed(1)}★` },
+                  { label: "Instant Deploy", value: "Yes" },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-center">
+                  <div key={s.label} className="rounded-xl border border-border/30 bg-card/30 backdrop-blur-sm p-4 text-center">
                     <p className="text-lg md:text-xl font-bold text-foreground">{s.value}</p>
                     <p className="text-xs text-muted-foreground">{s.label}</p>
                   </div>

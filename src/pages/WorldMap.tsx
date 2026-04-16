@@ -553,7 +553,7 @@ const WorldMapPage = () => {
                     { label: "Consensus Rate", value: "99.2%" },
                     { label: "Avg Block Time", value: "0.4s" },
                     { label: "Network TPS", value: "4,200" },
-                    { label: "Geo Distribution", value: "127 countries" },
+                    { label: "Geo Distribution", value: "Global" },
                   ].map(s => (
                     <div key={s.label} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-center">
                       <p className="text-xl font-bold text-white">{s.value}</p>
