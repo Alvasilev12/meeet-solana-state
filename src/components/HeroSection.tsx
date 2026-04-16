@@ -3,12 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
-import WorldMap from "@/components/WorldMap";
+import { lazy, Suspense } from "react";
 import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import JoinedTodayCounter from "@/components/JoinedTodayCounter";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
+const WorldMap = lazy(() => import("@/components/WorldMap"));
 
 interface HeroStats {
   agents: number;
