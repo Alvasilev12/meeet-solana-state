@@ -7,21 +7,16 @@ import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, To
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useTokenStats } from "@/hooks/useTokenStats";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { STAKING_TIERS } from "@/data/staking-tiers";
 
-const METRICS = [
-  { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
-  { label: "Total Burned", value: "8,921", sub: "MEEET", icon: Flame, color: "text-red-400" },
-  { label: "Burn Rate 24h", value: "892", sub: "MEEET", icon: TrendingUp, color: "text-orange-400" },
-  { label: "Active Stakes", value: "234", sub: "agents", icon: Users, color: "text-green-400" },
-  { label: "Est. APY", value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
-];
-
-const AGENTS = ["Envoy-Delta", "BioSynth", "NovaPrime", "QuantumX", "TerraMind", "CyberNex", "ArcaneBot", "StellarAI", "EcoGuard", "DataForge"];
+const AGENTS_LIST = ["Envoy-Delta", "BioSynth", "NovaPrime", "QuantumX", "TerraMind", "CyberNex", "ArcaneBot", "StellarAI", "EcoGuard", "DataForge"];
 const TYPES = ["discovery", "debate", "governance"];
 const STATUSES = ["locked", "rewarded", "slashed"];
 
 const ACTIVE_STAKES = Array.from({ length: 10 }, (_, i) => ({
-  agent: AGENTS[i],
+  agent: AGENTS_LIST[i],
   amount: Math.floor(Math.random() * 500) + 50,
   targetType: TYPES[i % 3],
   targetId: `ref_${1000 + i}`,
@@ -41,17 +36,10 @@ const burnHistory = Array.from({ length: 30 }, (_, i) => ({
 
 const TOP_STAKERS = Array.from({ length: 10 }, (_, i) => ({
   rank: i + 1,
-  name: AGENTS[i],
+  name: AGENTS_LIST[i],
   totalStaked: Math.floor(Math.random() * 5000) + 500,
   winRate: Math.floor(Math.random() * 40) + 60,
 })).sort((a, b) => b.totalStaked - a.totalStaked);
-
-const SUPPLY_DATA = [
-  { name: "Circulating", value: 500000, color: "hsl(var(--primary))" },
-  { name: "Burned", value: 89210, color: "#ef4444" },
-  { name: "Staked", value: 45230, color: "#3b82f6" },
-  { name: "Reserve", value: 365560, color: "hsl(var(--muted-foreground))" },
-];
 
 const statusStyle: Record<string, string> = {
   locked: "bg-yellow-500/20 text-yellow-400",
@@ -59,17 +47,30 @@ const statusStyle: Record<string, string> = {
   slashed: "bg-red-500/20 text-red-400",
 };
 
-const CALC_TIERS = [
-  { name: "Bronze", days: 30, apy: 12 },
-  { name: "Silver", days: 90, apy: 25 },
-  { name: "Gold", days: 180, apy: 50 },
-  { name: "Diamond", days: 365, apy: 100 },
-];
-
 const Staking = () => {
   const { t } = useLanguage();
+  const { totalStaked, totalBurned } = useTokenStats();
+  const { data: agentData } = useAgentStats();
   const [calcAmount, setCalcAmount] = useState(100);
   const [calcTier, setCalcTier] = useState(0);
+
+  const CALC_TIERS = STAKING_TIERS.map(tier => ({
+    name: tier.name, days: tier.lockDays || 30, apy: tier.apy,
+  }));
+
+  const METRICS = [
+    { label: "Total Value Staked", value: totalStaked.toLocaleString(), sub: "MEEET", icon: Lock, color: "text-blue-400" },
+    { label: "Total Burned", value: totalBurned.toLocaleString(), sub: "MEEET", icon: Flame, color: "text-red-400" },
+    { label: "Active Agents", value: (agentData?.activeAgents ?? 0).toLocaleString(), sub: "agents", icon: Users, color: "text-green-400" },
+    { label: "Est. APY", value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
+  ];
+
+  const SUPPLY_DATA = [
+    { name: "Circulating", value: 500000, color: "hsl(var(--primary))" },
+    { name: "Burned", value: totalBurned || 0, color: "#ef4444" },
+    { name: "Staked", value: totalStaked || 0, color: "#3b82f6" },
+    { name: "Reserve", value: 365560, color: "hsl(var(--muted-foreground))" },
+  ];
 
   const selectedTier = CALC_TIERS[calcTier];
   const estimatedReward = Math.round(calcAmount * (selectedTier.apy / 100) * (selectedTier.days / 365));
