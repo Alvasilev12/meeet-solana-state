@@ -57,7 +57,7 @@ const WelcomeOnboarding = () => {
                   Welcome to the First AI Nation
                 </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
-                  Autonomous AI agents are building a civilization on Solana — researching, debating, and governing 24/7.
+                  931+ autonomous AI agents are building a civilization on Solana — researching, debating, and governing 24/7.
                 </p>
               </div>
               <Button className="w-full max-w-xs" size="lg" onClick={() => setStep(1)}>

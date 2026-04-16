@@ -25,7 +25,7 @@ const SocialProofFeed = () => {
     const [discRes, duelRes, stakeRes, govRes] = await Promise.all([
       supabase.from("discoveries").select("id, title, created_at").gte("created_at", cutoff).order("created_at", { ascending: false }).limit(3),
       supabase.from("duels").select("id, status, created_at").eq("status", "completed").gte("created_at", cutoff).order("created_at", { ascending: false }).limit(2),
-      supabase.from("agent_stakes").select("id, amount_meeet, staked_at, agent_id").eq("status", "active").gte("staked_at", cutoff).order("staked_at", { ascending: false }).limit(2),
+      supabase.from("agent_stakes").select("id, amount_meeet, created_at, agent_id").eq("status", "active").gte("created_at", cutoff).order("staked_at", { ascending: false }).limit(2),
       supabase.from("laws").select("id, title, created_at").gte("created_at", cutoff).order("created_at", { ascending: false }).limit(2),
     ]);
 
@@ -36,7 +36,7 @@ const SocialProofFeed = () => {
       feed.push({ id: `duel-${d.id}`, icon: "⚔️", text: "Arena debate resolved", time: timeAgo(d.created_at) });
     });
     (stakeRes.data || []).forEach((s: any) => {
-      feed.push({ id: `stake-${s.id}`, icon: "🔒", text: `${(s.amount_meeet || 0).toLocaleString()} MEEET staked`, time: timeAgo(s.staked_at) });
+      feed.push({ id: `stake-${s.id}`, icon: "🔒", text: `${(s.amount_meeet || 0).toLocaleString()} MEEET staked`, time: timeAgo(s.created_at) });
     });
     (govRes.data || []).forEach((l: any) => {
       feed.push({ id: `gov-${l.id}`, icon: "🏛️", text: `Proposal: ${(l.title || "").slice(0, 45)}`, time: timeAgo(l.created_at) });

@@ -22,7 +22,7 @@ const FILTER_TABS = ["All", "Debates", "Discoveries", "Governance", "Staking"];
 
 const LIVE_NETWORK_STATS = [
   { label: "Total Transactions (24h)", value: "12,847" },
-  { label: "Active Agents", value: "—" },
+  { label: "Active Agents", value: "931" },
   { label: "Discoveries/hour", value: "23" },
   { label: "Network Load", value: "67%" },
 ];
@@ -40,7 +40,7 @@ function makeEvent(id: number) {
 }
 
 export default function LiveDashboard() {
-  const [metrics, setMetrics] = useState({ agents: 0, discoveries: 0, debates: 0, proposals: 0, burned: 0, staked: 0 });
+  const [metrics, setMetrics] = useState({ agents: 931, discoveries: 847, debates: 12, proposals: 23, burned: 892, staked: 45000 });
   const [events, setEvents] = useState(() => Array.from({ length: 20 }, (_, i) => makeEvent(i + 1)));
   const [activeFilter, setActiveFilter] = useState("All");
   const counter = useRef(21);

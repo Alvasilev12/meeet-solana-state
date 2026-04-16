@@ -122,7 +122,6 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapUnavailable, setMapUnavailable] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [totalDiscoveries, setTotalDiscoveries] = useState(0);
@@ -143,27 +142,6 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
     const s = document.createElement("style");
     s.id = id; s.textContent = POPUP_CSS;
     document.head.appendChild(s);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof Worker === "undefined") {
-      setMapUnavailable(true);
-      return;
-    }
-
-    let workerUrl: string | null = null;
-    try {
-      const blob = new Blob(["self.onmessage = function () {}"], { type: "application/javascript" });
-      workerUrl = URL.createObjectURL(blob);
-      const worker = new Worker(workerUrl);
-      worker.terminate();
-      setMapUnavailable(false);
-    } catch (error) {
-      console.error("WorldMap worker unavailable:", error);
-      setMapUnavailable(true);
-    } finally {
-      if (workerUrl) URL.revokeObjectURL(workerUrl);
-    }
   }, []);
 
   // Fetch agents
@@ -211,58 +189,23 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
 
   // Init map
   useEffect(() => {
-    if (mapUnavailable || !mapContainer.current || mapRef.current) return;
-
-    let map: maplibregl.Map | null = null;
-    let ro: ResizeObserver | null = null;
-
-    try {
-      map = new maplibregl.Map({
-        container: mapContainer.current,
-        style: MAP_STYLE,
-        center: isMobile ? [20, 15] : [30, 20],
-        zoom: isMobile ? 1.0 : 2,
-        maxZoom: 10,
-        minZoom: isMobile ? 0.5 : 1.5,
-        interactive,
-        pitchWithRotate: false,
-        dragRotate: false,
-        touchZoomRotate: true,
-      });
-
-      requestAnimationFrame(() => map?.resize());
-      ro = new ResizeObserver(() => {
-        if (map && !(map as any)._removed) map.resize();
-      });
-      ro.observe(mapContainer.current);
-      map.on("load", () => {
-        map?.resize();
-        setMapLoaded(true);
-      });
-      map.on("error", (event) => {
-        const message = event?.error instanceof Error ? event.error.message : String(event?.error ?? "");
-        if (message.toLowerCase().includes("insecure")) {
-          console.error("WorldMap disabled after map error:", event.error);
-          setMapUnavailable(true);
-        }
-      });
-
-      if (interactive) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-      mapRef.current = map;
-    } catch (error) {
-      console.error("WorldMap failed to initialize:", error);
-      setMapUnavailable(true);
-    }
-
-    return () => {
-      ro?.disconnect();
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      setMapLoaded(false);
-    };
-  }, [interactive, isMobile, mapUnavailable]);
+    if (!mapContainer.current || mapRef.current) return;
+    const map = new maplibregl.Map({
+      container: mapContainer.current, style: MAP_STYLE,
+      center: isMobile ? [20, 15] : [30, 20],
+      zoom: isMobile ? 1.0 : 2,
+      maxZoom: 10, minZoom: isMobile ? 0.5 : 1.5,
+      interactive, pitchWithRotate: false, dragRotate: false,
+      touchZoomRotate: true,
+    });
+    requestAnimationFrame(() => map.resize());
+    const ro = new ResizeObserver(() => { if (map && !(map as any)._removed) map.resize(); });
+    ro.observe(mapContainer.current);
+    map.on("load", () => { map.resize(); setMapLoaded(true); });
+    if (interactive) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    mapRef.current = map;
+    return () => { ro.disconnect(); map.remove(); mapRef.current = null; setMapLoaded(false); };
+  }, [interactive]);
 
   // Faction counts
   const factionCounts = useMemo(() => {
@@ -280,6 +223,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       const fk = classToFaction(a.class);
       if (groups[fk]) groups[fk].push(a);
     });
+    // Sort by reputation, limit to 20
     for (const key of Object.keys(groups)) {
       groups[key] = groups[key].sort((a, b) => b.reputation - a.reputation).slice(0, 20);
     }
@@ -304,10 +248,12 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       el.className = "faction-marker";
       el.style.cssText = `position:relative;width:${size}px;height:${size}px;`;
 
+      // Outer glow ring
       const glow = document.createElement("div");
       glow.style.cssText = `position:absolute;inset:-${size * 0.4}px;border-radius:50%;background:radial-gradient(circle,${faction.color}20 0%,${faction.color}08 40%,transparent 70%);pointer-events:none;`;
       el.appendChild(glow);
 
+      // Core circle
       const core = document.createElement("div");
       core.style.cssText = `
         width:100%;height:100%;border-radius:50%;
@@ -316,16 +262,19 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         display:flex;flex-direction:column;align-items:center;justify-content:center;
         box-shadow:0 0 ${size * 0.6}px ${faction.color}40, inset 0 0 ${size * 0.3}px ${faction.color}15;
       `;
+      // Count number
       const num = document.createElement("div");
       num.style.cssText = `font-size:${size * 0.34}px;font-weight:800;color:#fff;font-family:monospace;line-height:1;text-shadow:0 0 8px ${faction.color};`;
       num.textContent = String(count);
       core.appendChild(num);
+      // Label
       const lbl = document.createElement("div");
       lbl.style.cssText = `font-size:${Math.max(10, size * 0.14)}px;color:rgba(255,255,255,0.8);font-weight:700;letter-spacing:0.05em;margin-top:2px;`;
       lbl.textContent = faction.label.split(" ").slice(1).join(" ");
       core.appendChild(lbl);
       el.appendChild(core);
 
+      // Hover popup
       el.addEventListener("mouseenter", () => {
         if (popupRef.current) popupRef.current.remove();
         const topAgents = factionAgents[faction.key]?.slice(0, 5) || [];
@@ -346,6 +295,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
       });
 
+      // Click → show faction detail panel with full agent list
       el.addEventListener("click", () => {
         if (popupRef.current) popupRef.current.remove();
         if (isMobile) {
@@ -376,6 +326,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         map.flyTo({ center: [faction.lng, faction.lat], zoom: 4, duration: 800 });
       });
 
+      // Scatter small agent dots around the faction center
       const agentDots = factionAgents[faction.key] || [];
       agentDots.forEach((agent, i) => {
         const angle = (i / agentDots.length) * Math.PI * 2 + (i * 0.618);
@@ -400,6 +351,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
           setSelectedAgent(agent);
           setRightPanelOpen(true);
         });
+        // Tooltip
         dotEl.title = `${agent.name} · Lv${agent.level}`;
 
         const m = new maplibregl.Marker({ element: dotEl, anchor: "center" })
@@ -412,6 +364,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
       hubMarkersRef.current.push(marker);
     });
 
+    // ═══ Connection lines between factions ═══
     if (!lineLayerAdded.current) {
       const lines: GeoJSON.Feature[] = [];
       for (let i = 0; i < FACTIONS.length; i++) {
@@ -431,9 +384,7 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
           data: { type: "FeatureCollection", features: lines },
         });
         map.addLayer({
-          id: "faction-line-layer",
-          type: "line",
-          source: "faction-lines",
+          id: "faction-line-layer", type: "line", source: "faction-lines",
           paint: {
             "line-color": "rgba(153,69,255,0.15)",
             "line-width": 1,
@@ -443,29 +394,16 @@ const WorldMap = forwardRef<HTMLDivElement, WorldMapProps>(({ height = "100vh", 
         lineLayerAdded.current = true;
       }
     }
-  }, [factionCounts, factionAgents, isMobile, mapLoaded]);
+  }, [factionCounts, factionAgents, mapLoaded]);
 
+  // Faction leaderboard (sorted by count)
   const factionLeaderboard = useMemo(() => {
     return [...FACTIONS].sort((a, b) => (factionCounts[b.key] || 0) - (factionCounts[a.key] || 0));
   }, [factionCounts]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden" style={{ height, minHeight: "320px" }}>
-      {mapUnavailable && (
-        <div className="absolute inset-0 z-0 rounded-2xl border border-border/40 bg-card/80">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-background" />
-          <div className="relative flex h-full items-center justify-center px-6 text-center">
-            <div className="max-w-md">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">MEEET World</p>
-              <h3 className="mt-3 text-2xl font-bold text-foreground">Interactive map unavailable</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                This environment blocks secure map workers, so the homepage now falls back safely instead of crashing.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      <div ref={mapContainer} className={`absolute inset-0 h-full w-full ${mapUnavailable ? "hidden" : ""}`} />
+    <div className="relative w-full h-full" style={{ height, minHeight: "320px" }}>
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
       {/* ═══ TOP LEFT: Title + Live ═══ */}
       <div className="absolute top-3 left-3 z-20 pointer-events-auto">
