@@ -21,7 +21,7 @@ export default function OracleSection() {
     (async () => {
       const [{ data: questions }, { count: betCount }] = await Promise.all([
         supabase.from("oracle_questions").select("id,question_text,total_pool_meeet,yes_pool,no_pool,status,deadline")
-          .eq("status", "open").order("total_pool_meeet", { ascending: false }).limit(6),
+          .in("status", ["open", "expired"]).order("status", { ascending: true }).order("total_pool_meeet", { ascending: false }).limit(6),
         supabase.from("oracle_bets").select("id", { count: "exact" }).limit(0),
       ]);
       if (questions) {
@@ -61,9 +61,15 @@ export default function OracleSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {markets.map((m) => {
             const noPct = 100 - m.yes_pct;
+            const isExpired = m.status === "expired";
             return (
-              <div key={m.id} className="rounded-xl border border-purple-500/15 bg-card/40 p-5 hover:border-purple-500/30 transition-all group">
-                <p className="text-foreground text-sm font-medium mb-4 line-clamp-2">{m.question_text}</p>
+              <div key={m.id} className={`rounded-xl border p-5 transition-all group ${isExpired ? "border-muted/30 bg-card/20 opacity-70" : "border-purple-500/15 bg-card/40 hover:border-purple-500/30"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-foreground text-sm font-medium line-clamp-2 flex-1">{m.question_text}</p>
+                  {isExpired && (
+                    <span className="text-[10px] ml-2 shrink-0 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">⏳ Awaiting Resolution</span>
+                  )}
+                </div>
                 {/* YES/NO bars */}
                 <div className="space-y-2 mb-3">
                   <div className="flex items-center gap-2">

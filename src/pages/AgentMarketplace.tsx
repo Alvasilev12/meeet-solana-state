@@ -185,7 +185,7 @@ const AgentMarketplace = () => {
 
   return (
     <PageWrapper>
-      <SEOHead title="AI Agent Marketplace — Buy, Sell & Deploy Agents | MEEET STATE" description="Browse 2,800+ AI agents. From research bots to trading algorithms. Deploy instantly with $MEEET tokens." path="/marketplace" />
+      <SEOHead title="AI Agent Marketplace — Browse & Deploy Agents | MEEET STATE" description="Browse AI agents for marketing, analytics, content, and support. Deploy instantly with $MEEET tokens." path="/marketplace" />
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Navbar />
         <main className="flex-1">
