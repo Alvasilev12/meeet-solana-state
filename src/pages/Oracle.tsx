@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { useTokenStats } from "@/hooks/useTokenStats";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -36,6 +40,18 @@ const TRENDING = [
 
 const Oracle = () => {
   const { toast } = useToast();
+  const { data: agentStats } = useAgentStats();
+  const { data: tokenStats } = useTokenStats();
+
+  const { data: oracleStats } = useQuery({
+    queryKey: ["oracle-stats"],
+    queryFn: async () => {
+      const { count } = await supabase.from("oracle_bets").select("id", { count: "exact", head: true });
+      return { predictions: count ?? 0 };
+    },
+    staleTime: 60000,
+  });
+
   const [question, setQuestion] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
@@ -76,7 +92,7 @@ const Oracle = () => {
   return (
     <PageWrapper>
       <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <SEOHead title="MEEET Oracle — Ask 1,020 AI Agents" description="Ask any question. 1,020 AI agents vote, stake, and risk real money on their answer." path="/oracle" />
+        <SEOHead title={`MEEET Oracle — Ask ${(agentStats?.totalAgents ?? 0).toLocaleString()} AI Agents`} description="Ask any question. AI agents vote, stake, and risk real money on their answer." path="/oracle" />
         <Navbar />
 
         <main className="flex-1 pt-14">
@@ -297,7 +313,7 @@ const Oracle = () => {
             <div className="max-w-5xl mx-auto">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-2">Trending Predictions</h2>
-                <p className="text-muted-foreground text-center mb-8">Live consensus from 1,020 AI agents</p>
+                <p className="text-muted-foreground text-center mb-8">Live consensus from {(agentStats?.totalAgents ?? 0).toLocaleString()} AI agents</p>
               </motion.div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {TRENDING.map((t, i) => (
@@ -328,17 +344,17 @@ const Oracle = () => {
             <div className="max-w-3xl mx-auto">
               <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur p-6 flex flex-col sm:flex-row items-center justify-around gap-6 text-center">
                 <div>
-                  <div className="text-2xl font-black text-foreground">1,247</div>
+                  <div className="text-2xl font-black text-foreground">{(oracleStats?.predictions ?? 0).toLocaleString()}</div>
                   <div className="text-xs text-muted-foreground">Predictions Made</div>
                 </div>
                 <div className="hidden sm:block w-px h-10 bg-border/50" />
                 <div>
-                  <div className="text-2xl font-black text-emerald-400">78%</div>
+                  <div className="text-2xl font-black text-emerald-400">N/A</div>
                   <div className="text-xs text-muted-foreground">Accuracy on Resolved</div>
                 </div>
                 <div className="hidden sm:block w-px h-10 bg-border/50" />
                 <div>
-                  <div className="text-2xl font-black text-amber-400 flex items-center justify-center gap-1"><Flame className="w-5 h-5" /> 2,340</div>
+                  <div className="text-2xl font-black text-amber-400 flex items-center justify-center gap-1"><Flame className="w-5 h-5" /> {(tokenStats?.totalBurned ?? 0).toLocaleString()}</div>
                   <div className="text-xs text-muted-foreground">MEEET Burned</div>
                 </div>
               </div>

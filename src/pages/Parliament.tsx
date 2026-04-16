@@ -134,7 +134,18 @@ function LawCard({ law, onVote, voting }: { law: Law; onVote?: (id: string, v: b
   const s = LAW_STATUS[law.status] || LAW_STATUS.proposed;
   const isActive = law.status === "proposed" || law.status === "voting";
   const endsAt = law.voting_ends_at ? new Date(law.voting_ends_at) : null;
-  const hoursLeft = endsAt ? Math.max(0, Math.round((endsAt.getTime() - Date.now()) / 3600000)) : null;
+  const now = Date.now();
+  const timeLabel = (() => {
+    if (!endsAt) return "Open";
+    const diff = endsAt.getTime() - now;
+    if (diff <= 0) return "Ended";
+    const days = Math.floor(diff / 86400000);
+    const hrs = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    if (days > 0) return `${days}d ${hrs}h`;
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
+  })();
 
   return (
     <Card className="border-border bg-card/80">
@@ -152,9 +163,9 @@ function LawCard({ law, onVote, voting }: { law: Law; onVote?: (id: string, v: b
             <h3 className="font-display font-bold text-sm">{law.title}</h3>
             <p className="text-xs text-muted-foreground font-body line-clamp-2 mt-1">{law.description}</p>
           </div>
-          {hoursLeft !== null && isActive && (
+          {isActive && (
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-body whitespace-nowrap">
-              <Clock className="w-3 h-3" /> {hoursLeft}h
+              <Clock className="w-3 h-3" /> {timeLabel}
             </span>
           )}
         </div>
