@@ -679,10 +679,9 @@ export default function AINationCouncil() {
 }
 
 /* ── Animated Percent Counter ── */
-function AnimatedPercent({ target }: { target: number }) {
+function AnimatedPercent({ target, majorityIsYes = true }: { target: number; majorityIsYes?: boolean }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
-    let start = 0;
     const duration = 1500;
     const startTime = performance.now();
     let raf: number;
@@ -695,5 +694,13 @@ function AnimatedPercent({ target }: { target: number }) {
     return () => cancelAnimationFrame(raf);
   }, [target]);
   const { t } = useLanguage();
-  return <div className="text-3xl font-bold text-foreground mt-2">{val}% {t("council.consensus")}</div>;
+  return (
+    <div className="text-3xl font-bold mt-2">
+      <span className={majorityIsYes ? "text-emerald-400" : "text-red-400"}>{val}%</span>{" "}
+      <span className="text-foreground">{t("council.consensus")}</span>{" "}
+      <span className={`text-base ${majorityIsYes ? "text-emerald-400" : "text-red-400"}`}>
+        {majorityIsYes ? "(YES)" : "(NO)"}
+      </span>
+    </div>
+  );
 }
