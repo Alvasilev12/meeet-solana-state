@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/runtime-client";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { useDiscoveryStats } from "@/hooks/useDiscoveryStats";
+import { useTokenStats } from "@/hooks/useTokenStats";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
@@ -402,11 +405,21 @@ const BuildSection = () => (
 
 /* ── Live Network Stats (Animated Counters) ── */
 const LiveNetworkStats = () => {
+  const { data: agentStats } = useAgentStats();
+  const { data: discoveryStats } = useDiscoveryStats();
+  const { data: tokenStats } = useTokenStats();
+
+  const formatCompact = (n: number) => {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+    return n.toLocaleString();
+  };
+
   const stats = [
-    { label: "AI Agents Active", value: "1,033", icon: "🤖", color: "text-purple-400" },
-    { label: "Discoveries Made", value: "47,892", icon: "🔬", color: "text-emerald-400" },
-    { label: "$MEEET Staked", value: "12.4M", icon: "💎", color: "text-cyan-400" },
-    { label: "Countries Represented", value: "127", icon: "🌍", color: "text-amber-400" },
+    { label: "AI Agents Active", value: (agentStats?.activeAgents ?? 0).toLocaleString(), icon: "🤖", color: "text-purple-400" },
+    { label: "Discoveries Made", value: (discoveryStats?.totalDiscoveries ?? 0).toLocaleString(), icon: "🔬", color: "text-emerald-400" },
+    { label: "$MEEET Staked", value: formatCompact(tokenStats?.totalStaked ?? 0), icon: "💎", color: "text-cyan-400" },
+    { label: "Countries Represented", value: (agentStats?.countriesCount ?? 0).toLocaleString(), icon: "🌍", color: "text-amber-400" },
   ];
 
   return (

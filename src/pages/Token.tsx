@@ -24,13 +24,14 @@ import {
 
 const CHART_URL = PUMP_FUN_URL;
 
-const STAKING_TIERS = {
-  flex: { min: 100, apy: 5, lock_days: 0, label: "Flex", bonus: "None" },
-  bronze: { min: 500, apy: 12, lock_days: 7, label: "Bronze", bonus: "+5% XP" },
-  silver: { min: 2000, apy: 25, lock_days: 30, label: "Silver", bonus: "+10% XP, priority arena" },
-  gold: { min: 10000, apy: 50, lock_days: 90, label: "Gold", bonus: "+20% XP, faction perks" },
-  diamond: { min: 50000, apy: 100, lock_days: 365, label: "Diamond", bonus: "All + Titan class + 2x governance" },
-};
+import { STAKING_TIERS as UNIFIED_TIERS } from "@/constants/stakingTiers";
+
+const STAKING_TIERS_CALC = Object.fromEntries(
+  UNIFIED_TIERS.map((t, i) => [
+    t.name.toLowerCase(),
+    { min: t.minStake, apy: t.apy, lock_days: [0, 30, 90, 365][i], label: t.name, bonus: ["None", "+5% XP", "+10% XP, governance", "All perks + revenue share"][i] },
+  ])
+) as Record<string, { min: number; apy: number; lock_days: number; label: string; bonus: string }>;
 
 const USE_CASES = [
   { icon: "💬", title: "AI Credits", desc: "1,000 MEEET = $1.00 · Power agent chat, discoveries & analysis" },
@@ -69,32 +70,12 @@ const VESTING_SCHEDULE = [
   { label: "Treasury", cliff: "Governance", vest: "Controlled", pct: 20, color: "from-blue-500 to-cyan-400" },
 ];
 
-const ECONOMY_STAKING_TIERS = [
-  {
-    name: "Explorer",
-    stake: "1,000 MEEET",
-    apy: "5% APY",
-    benefits: ["Basic analytics"],
-  },
-  {
-    name: "Builder",
-    stake: "10,000 MEEET",
-    apy: "12% APY",
-    benefits: ["Priority agent deployment"],
-  },
-  {
-    name: "Architect",
-    stake: "50,000 MEEET",
-    apy: "20% APY",
-    benefits: ["Governance voting power"],
-  },
-  {
-    name: "Visionary",
-    stake: "250,000 MEEET",
-    apy: "30% APY",
-    benefits: ["Revenue sharing"],
-  },
-];
+const ECONOMY_STAKING_TIERS = UNIFIED_TIERS.map(t => ({
+  name: t.name,
+  stake: `${t.minStake.toLocaleString()} MEEET`,
+  apy: `${t.apy}% APY`,
+  benefits: t.name === "Explorer" ? ["Basic analytics"] : t.name === "Builder" ? ["Priority agent deployment"] : t.name === "Architect" ? ["Governance voting power"] : ["Revenue sharing"],
+}));
 
 const GOVERNANCE_PROPOSALS = [
   {
@@ -253,7 +234,7 @@ const Token = () => {
   useEffect(() => { if (walletAddress) fetchWalletBalances(walletAddress); }, [walletAddress, fetchWalletBalances]);
 
   const [stakeAmount, setStakeAmount] = useState(1000);
-  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS>("flex");
+  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS_CALC>("flex");
 
   const { data: burnData } = useQuery({
     queryKey: ["burn-total"],
@@ -280,7 +261,7 @@ const Token = () => {
   });
 
   const totalBurned = burnData?.total ?? 333;
-  const tier = STAKING_TIERS[stakeTier];
+  const tier = STAKING_TIERS_CALC[stakeTier];
   const monthlyReward = Math.round((stakeAmount * tier.apy / 100) / 12);
 
   const priceChangePositive = (price.change24h ?? 0) >= 0;
@@ -329,7 +310,7 @@ const Token = () => {
                     <div className="border-l border-border pl-6">
                       <p className="text-xs text-muted-foreground mb-1">24h</p>
                       <p className={`text-lg font-bold flex items-center gap-1 ${price.change24h === 0 ? "text-muted-foreground" : priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
-                        {price.change24h === 0 ? "—" : (<>{priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%</>)}
+                        {price.change24h === 0 ? "N/A" : (<>{priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%</>)}
                       </p>
                     </div>
                     <div className="border-l border-border pl-6 hidden sm:block">
@@ -392,11 +373,11 @@ const Token = () => {
               </div>
               <div className="flex gap-6">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-foreground">{walletSol !== null ? walletSol.toFixed(4) : "—"}</p>
+                  <p className="text-2xl font-bold text-foreground">{walletSol !== null ? walletSol.toFixed(4) : "N/A"}</p>
                   <p className="text-xs text-muted-foreground">SOL</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString("en-US") : "—"}</p>
+                  <p className="text-2xl font-bold text-primary">{walletMeeet !== null ? walletMeeet.toLocaleString("en-US") : "N/A"}</p>
                   <p className="text-xs text-muted-foreground">$MEEET</p>
                 </div>
               </div>
@@ -585,10 +566,10 @@ const Token = () => {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">Tier</label>
-                    <Select value={stakeTier} onValueChange={v => setStakeTier(v as keyof typeof STAKING_TIERS)}>
+                    <Select value={stakeTier} onValueChange={v => setStakeTier(v as keyof typeof STAKING_TIERS_CALC)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(STAKING_TIERS).map(([k, v]) => (
+                        {Object.entries(STAKING_TIERS_CALC).map(([k, v]) => (
                           <SelectItem key={k} value={k}>{v.label} — {v.apy}% APY (min {v.min.toLocaleString("en-US")})</SelectItem>
                         ))}
                       </SelectContent>
@@ -605,12 +586,12 @@ const Token = () => {
               </div>
 
               {/* All tiers */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-border">
-                {Object.entries(STAKING_TIERS).map(([k, v]) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 pt-6 border-t border-border">
+                {Object.entries(STAKING_TIERS_CALC).map(([k, v]) => (
                   <div
                     key={k}
                     className={`rounded-lg border p-3 text-center cursor-pointer transition-colors ${stakeTier === k ? "border-primary bg-primary/10" : "border-border bg-card/40 hover:border-primary/30"}`}
-                    onClick={() => setStakeTier(k as keyof typeof STAKING_TIERS)}
+                    onClick={() => setStakeTier(k as keyof typeof STAKING_TIERS_CALC)}
                   >
                     <p className="text-sm font-bold">{v.label}</p>
                     <p className="text-lg font-display font-bold text-primary">{v.apy}%</p>

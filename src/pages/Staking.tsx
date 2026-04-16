@@ -7,6 +7,7 @@ import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, To
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { STAKING_TIERS } from "@/constants/stakingTiers";
 
 const METRICS = [
   { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
@@ -59,12 +60,11 @@ const statusStyle: Record<string, string> = {
   slashed: "bg-red-500/20 text-red-400",
 };
 
-const CALC_TIERS = [
-  { name: "Bronze", days: 30, apy: 12 },
-  { name: "Silver", days: 90, apy: 25 },
-  { name: "Gold", days: 180, apy: 50 },
-  { name: "Diamond", days: 365, apy: 100 },
-];
+const CALC_TIERS = STAKING_TIERS.map((t, i) => ({
+  name: t.name,
+  days: [0, 30, 90, 365][i],
+  apy: t.apy,
+}));
 
 const Staking = () => {
   const { t } = useLanguage();
@@ -103,51 +103,47 @@ const Staking = () => {
           {/* Staking Tiers */}
           <section>
             <h2 className="text-xl font-bold text-foreground mb-4">Staking Tiers</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {[
-                { name: "Flex", apy: "5%", lock: "No lock", icon: "🔓", border: "border-muted-foreground/30" },
-                { name: "Bronze", apy: "12%", lock: "7 days", icon: "🥉", border: "border-amber-700/40" },
-                { name: "Silver", apy: "25%", lock: "30 days", icon: "🥈", border: "border-slate-400/40" },
-                { name: "Gold", apy: "50%", lock: "90 days", icon: "🥇", border: "border-amber-400/40" },
-                { name: "Diamond", apy: "100%", lock: "365 days", icon: "💎", border: "border-cyan-400/40" },
-              ].map(t => (
-                <div key={t.name} className={`bg-card border ${t.border} rounded-xl p-4 text-center hover:scale-105 transition-transform`}>
-                  <span className="text-2xl">{t.icon}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {STAKING_TIERS.map(t => (
+                <div key={t.name} className="bg-card border border-border rounded-xl p-4 text-center hover:scale-105 transition-transform">
                   <p className="font-bold text-foreground mt-1">{t.name}</p>
-                  <p className="text-lg font-bold text-primary">{t.apy} APY</p>
-                  <p className="text-[10px] text-muted-foreground">{t.lock}</p>
+                  <p className="text-lg font-bold text-primary">{t.apy}% APY</p>
+                  <p className="text-[10px] text-muted-foreground">Min {t.minStake.toLocaleString()} MEEET</p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Advanced Staking Tiers */}
           <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-xl font-bold text-foreground mb-4">Tier Benefits</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { name: "Explorer", min: "100+", apy: "5%", gradient: "from-blue-500 to-blue-600", perks: ["Basic rewards", "Community badge", "Standard support"] },
-                { name: "Builder", min: "1,000+", apy: "8%", gradient: "from-purple-500 to-purple-600", perks: ["Enhanced rewards", "Builder badge", "Priority support"] },
-                { name: "Architect", min: "10,000+", apy: "12%", gradient: "from-amber-500 to-amber-600", perks: ["Premium rewards", "Architect badge", "Governance voting", "Early access"] },
-                { name: "Visionary", min: "100,000+", apy: "18%", gradient: "from-cyan-400 to-cyan-500", perks: ["Maximum rewards", "Visionary badge", "All perks", "Revenue share"] },
-              ].map(t => (
-                <div key={t.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
-                  <div className={`h-1.5 bg-gradient-to-r ${t.gradient}`} />
-                  <div className="p-5">
-                    <h3 className="font-bold text-foreground text-lg">{t.name}</h3>
-                    <p className="text-xs text-muted-foreground mb-2">{t.min} $MEEET</p>
-                    <p className="text-2xl font-extrabold text-primary mb-3">{t.apy} <span className="text-sm font-normal text-muted-foreground">APY</span></p>
-                    <ul className="space-y-1.5">
-                      {t.perks.map(p => (
-                        <li key={p} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
+              {STAKING_TIERS.map((t, i) => {
+                const gradients = ["from-blue-500 to-blue-600", "from-purple-500 to-purple-600", "from-amber-500 to-amber-600", "from-cyan-400 to-cyan-500"];
+                const perks = [
+                  ["Basic rewards", "Community badge", "Standard support"],
+                  ["Enhanced rewards", "Builder badge", "Priority support"],
+                  ["Premium rewards", "Architect badge", "Governance voting", "Early access"],
+                  ["Maximum rewards", "Visionary badge", "All perks", "Revenue share"],
+                ];
+                return (
+                  <div key={t.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
+                    <div className={`h-1.5 bg-gradient-to-r ${gradients[i]}`} />
+                    <div className="p-5">
+                      <h3 className="font-bold text-foreground text-lg">{t.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">{t.minStake.toLocaleString()}+ $MEEET</p>
+                      <p className="text-2xl font-extrabold text-primary mb-3">{t.apy}% <span className="text-sm font-normal text-muted-foreground">APY</span></p>
+                      <ul className="space-y-1.5">
+                        {perks[i].map(p => (
+                          <li key={p} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
+                            {p}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.section>
 

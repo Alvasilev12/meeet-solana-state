@@ -199,25 +199,10 @@ const AgentMarketplace = () => {
                 </h1>
                 <p className="text-base md:text-lg text-muted-foreground mb-6">{t("pages.marketplace.subtitle")}</p>
                 <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" />3,400+ hires</span>
-                  <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400" />4.7 avg rating</span>
                   <span className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-emerald-400" />Instant deploy</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  { label: "Listed Agents", value: "847" },
-                  { label: "Active Sellers", value: "234" },
-                  { label: "Total Volume", value: "$1.2M" },
-                  { label: "Avg Rating", value: "4.8★" },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-center">
-                    <p className="text-lg md:text-xl font-bold text-foreground">{s.value}</p>
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           </section>
 
