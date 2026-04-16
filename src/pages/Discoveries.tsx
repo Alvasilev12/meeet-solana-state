@@ -465,7 +465,7 @@ const Discoveries = () => {
           {/* Result count */}
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs text-muted-foreground">
-              Showing <span className="font-mono font-bold text-foreground">{Math.min(visibleCount, allDiscoveries.length)}</span> of <span className="font-mono font-bold text-foreground">{allDiscoveries.length}</span> discoveries
+              Showing <span className="font-mono font-bold text-foreground">{Math.min(visibleCount, allDiscoveries.length)}</span> of <span className="font-mono font-bold text-foreground">{(stats?.total ?? allDiscoveries.length).toLocaleString()}</span> discoveries
               {(searchQuery || category !== "all") && <span className="text-primary ml-1">(filtered)</span>}
             </p>
           </div>
