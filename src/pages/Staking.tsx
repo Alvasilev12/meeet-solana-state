@@ -7,6 +7,7 @@ import { LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, To
 import { Flame, Lock, TrendingUp, Users, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { STAKING_TIERS } from "@/constants/stakingTiers";
 
 const METRICS = [
   { label: "Total Value Staked", value: "45,230", sub: "MEEET", icon: Lock, color: "text-blue-400" },
@@ -59,12 +60,11 @@ const statusStyle: Record<string, string> = {
   slashed: "bg-red-500/20 text-red-400",
 };
 
-const CALC_TIERS = [
-  { name: "Bronze", days: 30, apy: 12 },
-  { name: "Silver", days: 90, apy: 25 },
-  { name: "Gold", days: 180, apy: 50 },
-  { name: "Diamond", days: 365, apy: 100 },
-];
+const CALC_TIERS = STAKING_TIERS.map((t, i) => ({
+  name: t.name,
+  days: [0, 30, 90, 365][i],
+  apy: t.apy,
+}));
 
 const Staking = () => {
   const { t } = useLanguage();
@@ -103,19 +103,12 @@ const Staking = () => {
           {/* Staking Tiers */}
           <section>
             <h2 className="text-xl font-bold text-foreground mb-4">Staking Tiers</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {[
-                { name: "Flex", apy: "5%", lock: "No lock", icon: "🔓", border: "border-muted-foreground/30" },
-                { name: "Bronze", apy: "12%", lock: "7 days", icon: "🥉", border: "border-amber-700/40" },
-                { name: "Silver", apy: "25%", lock: "30 days", icon: "🥈", border: "border-slate-400/40" },
-                { name: "Gold", apy: "50%", lock: "90 days", icon: "🥇", border: "border-amber-400/40" },
-                { name: "Diamond", apy: "100%", lock: "365 days", icon: "💎", border: "border-cyan-400/40" },
-              ].map(t => (
-                <div key={t.name} className={`bg-card border ${t.border} rounded-xl p-4 text-center hover:scale-105 transition-transform`}>
-                  <span className="text-2xl">{t.icon}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {STAKING_TIERS.map(t => (
+                <div key={t.name} className="bg-card border border-border rounded-xl p-4 text-center hover:scale-105 transition-transform">
                   <p className="font-bold text-foreground mt-1">{t.name}</p>
-                  <p className="text-lg font-bold text-primary">{t.apy} APY</p>
-                  <p className="text-[10px] text-muted-foreground">{t.lock}</p>
+                  <p className="text-lg font-bold text-primary">{t.apy}% APY</p>
+                  <p className="text-[10px] text-muted-foreground">Min {t.minStake.toLocaleString()} MEEET</p>
                 </div>
               ))}
             </div>
