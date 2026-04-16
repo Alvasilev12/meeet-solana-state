@@ -1,4 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAgentStats } from "@/hooks/useAgentStats";
+import { useDiscoveryStats } from "@/hooks/useDiscoveryStats";
+import { useTokenStats } from "@/hooks/useTokenStats";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -20,13 +25,6 @@ const NAMES = ["QuantumWolf", "BioSage", "NexusCore", "CryptoSage", "AuditHawk",
 
 const FILTER_TABS = ["All", "Debates", "Discoveries", "Governance", "Staking"];
 
-const LIVE_NETWORK_STATS = [
-  { label: "Total Transactions (24h)", value: "12,847" },
-  { label: "Active Agents", value: "931" },
-  { label: "Discoveries/hour", value: "23" },
-  { label: "Network Load", value: "67%" },
-];
-
 const RECENT_ACTIVITY_FEED = [
   { title: "Agent deployed", detail: "QuantumWolf launched a new research agent", time: "12s ago" },
   { title: "Discovery made", detail: "BioSage published a verified longevity finding", time: "27s ago" },
@@ -40,39 +38,55 @@ function makeEvent(id: number) {
 }
 
 export default function LiveDashboard() {
-  const [metrics, setMetrics] = useState({ agents: 931, discoveries: 847, debates: 12, proposals: 23, burned: 892, staked: 45000 });
+  const { data: agentStats } = useAgentStats();
+  const { data: discoveryStats } = useDiscoveryStats();
+  const { data: tokenStats } = useTokenStats();
+
+  const { data: activeDebates } = useQuery({
+    queryKey: ["live-active-debates"],
+    queryFn: async () => {
+      const { count } = await supabase.from("duels").select("id", { count: "exact", head: true }).eq("status", "active");
+      return count ?? 0;
+    },
+    staleTime: 30000,
+  });
+
+  const { data: burnedToday } = useQuery({
+    queryKey: ["live-burned-today"],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data } = await supabase.from("burn_log").select("amount").gte("created_at", today.toISOString());
+      return (data ?? []).reduce((s, r) => s + Math.abs(Number(r.amount || 0)), 0);
+    },
+    staleTime: 30000,
+  });
+
   const [events, setEvents] = useState(() => Array.from({ length: 20 }, (_, i) => makeEvent(i + 1)));
   const [activeFilter, setActiveFilter] = useState("All");
   const counter = useRef(21);
 
   useEffect(() => {
-    const t1 = setInterval(() => {
-      setMetrics(m => {
-        const keys = Object.keys(m) as (keyof typeof m)[];
-        const k = keys[Math.floor(Math.random() * keys.length)];
-        return { ...m, [k]: m[k] + 1 };
-      });
-    }, 3000);
     const t2 = setInterval(() => {
       setEvents(prev => [makeEvent(counter.current++), ...prev].slice(0, 30));
     }, 5000);
-    return () => { clearInterval(t1); clearInterval(t2); };
+    return () => { clearInterval(t2); };
   }, []);
 
   const heroStats = [
-    { label: "Agents Online", value: metrics.agents.toLocaleString("en-US") },
-    { label: "Debates Today", value: metrics.debates.toString() },
-    { label: "Discoveries", value: metrics.discoveries.toLocaleString("en-US") },
-    { label: "Proposals", value: metrics.proposals.toString() },
+    { label: "Agents Online", value: (agentStats?.activeAgents ?? 0).toLocaleString() },
+    { label: "Debates Today", value: String(activeDebates ?? 0) },
+    { label: "Discoveries", value: (discoveryStats?.totalDiscoveries ?? 0).toLocaleString() },
+    { label: "Proposals", value: "—" },
   ];
 
   const cards = [
-    { label: "Agents Online", value: metrics.agents.toLocaleString("en-US"), extra: <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" /> },
-    { label: "Discoveries Today", value: metrics.discoveries },
-    { label: "Active Debates", value: metrics.debates, badge: <span className="ml-2 px-1.5 py-0.5 text-[9px] font-bold rounded bg-red-500/20 text-red-400 animate-pulse">LIVE</span> },
-    { label: "Open Votes", value: metrics.proposals },
-    { label: "Burned 24h", value: `🔥 ${metrics.burned.toLocaleString("en-US")}` },
-    { label: "Total Staked", value: metrics.staked.toLocaleString("en-US") },
+    { label: "Agents Online", value: (agentStats?.activeAgents ?? 0).toLocaleString(), extra: <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" /> },
+    { label: "Discoveries Today", value: discoveryStats?.discoveriesToday ?? 0 },
+    { label: "Active Debates", value: activeDebates ?? 0, badge: <span className="ml-2 px-1.5 py-0.5 text-[9px] font-bold rounded bg-red-500/20 text-red-400 animate-pulse">LIVE</span> },
+    { label: "Open Votes", value: "—" },
+    { label: "Burned 24h", value: `🔥 ${(burnedToday ?? 0).toLocaleString()}` },
+    { label: "Total Staked", value: (tokenStats?.totalStaked ?? 0).toLocaleString() },
   ];
 
   return (
@@ -137,10 +151,10 @@ export default function LiveDashboard() {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground">Network Pulse</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {[
-              { label: "Active Agents", value: metrics.agents.toLocaleString(), accent: "border-emerald-500/40", dot: "bg-emerald-400", sub: "+12 in last hour" },
-              { label: "Discoveries Today", value: metrics.discoveries.toLocaleString(), accent: "border-blue-500/40", dot: "bg-blue-400", sub: "vs 38 yesterday" },
-              { label: "Debates in Progress", value: metrics.debates.toString(), accent: "border-purple-500/40", dot: "bg-purple-400", sub: "2 starting soon" },
-              { label: "$MEEET Distributed Today", value: "14,200", accent: "border-amber-500/40", dot: "bg-amber-400", sub: "+8.3% vs avg" },
+              { label: "Active Agents", value: (agentStats?.activeAgents ?? 0).toLocaleString(), accent: "border-emerald-500/40", dot: "bg-emerald-400" },
+              { label: "Discoveries Today", value: (discoveryStats?.discoveriesToday ?? 0).toLocaleString(), accent: "border-blue-500/40", dot: "bg-blue-400" },
+              { label: "Debates in Progress", value: String(activeDebates ?? 0), accent: "border-purple-500/40", dot: "bg-purple-400" },
+              { label: "$MEEET Burned Today", value: (burnedToday ?? 0).toLocaleString(), accent: "border-amber-500/40", dot: "bg-amber-400" },
             ].map(s => (
               <div key={s.label} className={`rounded-xl border ${s.accent} bg-card/80 backdrop-blur-sm p-5 hover:shadow-lg transition-all`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -148,7 +162,6 @@ export default function LiveDashboard() {
                   <p className="text-sm text-muted-foreground">{s.label}</p>
                 </div>
                 <p className="text-3xl font-bold text-foreground">{s.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
               </div>
             ))}
           </div>
