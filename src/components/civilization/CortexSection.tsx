@@ -97,13 +97,8 @@ export default function CortexSection() {
   const [discoveriesCount, setDiscoveriesCount] = useState(0);
   const [domainsCount, setDomainsCount] = useState(0);
   const [thisWeekCount, setThisWeekCount] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
 
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+
 
 
   useEffect(() => {
