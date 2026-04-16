@@ -3,12 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/runtime-client";
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
-import WorldMap from "@/components/WorldMap";
+import { Component, lazy, Suspense, type ReactNode } from "react";
 import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import JoinedTodayCounter from "@/components/JoinedTodayCounter";
+
+const WorldMap = lazy(() => import("@/components/WorldMap"));
+
+class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
 
 interface HeroStats {
   agents: number;
@@ -145,10 +153,14 @@ const HeroSection = () => {
         </div>
 
         {/* Mini World Map */}
-        <div className="mt-10 max-w-4xl mx-auto animate-fade-up hidden sm:block" style={{ animationDelay: "0.5s", animationFillMode: "both" }}>
+         <div className="mt-10 max-w-4xl mx-auto animate-fade-up hidden sm:block" style={{ animationDelay: "0.5s", animationFillMode: "both" }}>
           <Link to="/world" className="block group">
-            <div className="glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors relative">
-              <WorldMap height="420px" interactive={false} />
+            <div className="glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors relative" style={{ minHeight: "420px" }}>
+              <MapErrorBoundary>
+                <Suspense fallback={<div className="w-full" style={{ height: "420px" }} />}>
+                  <WorldMap height="420px" interactive={false} />
+                </Suspense>
+              </MapErrorBoundary>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/40 backdrop-blur-sm">
                 <div className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-display text-sm font-semibold">
                   <Globe className="w-4 h-4" />
