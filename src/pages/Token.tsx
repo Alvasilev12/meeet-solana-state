@@ -24,13 +24,13 @@ import {
 
 const CHART_URL = PUMP_FUN_URL;
 
-const STAKING_TIERS = {
-  flex: { min: 100, apy: 5, lock_days: 0, label: "Flex", bonus: "None" },
-  bronze: { min: 500, apy: 12, lock_days: 7, label: "Bronze", bonus: "+5% XP" },
-  silver: { min: 2000, apy: 25, lock_days: 30, label: "Silver", bonus: "+10% XP, priority arena" },
-  gold: { min: 10000, apy: 50, lock_days: 90, label: "Gold", bonus: "+20% XP, faction perks" },
-  diamond: { min: 50000, apy: 100, lock_days: 365, label: "Diamond", bonus: "All + Titan class + 2x governance" },
-};
+// Use canonical tiers from shared constants
+import { STAKING_TIERS as CANONICAL_TIERS } from "@/data/staking-tiers";
+
+const STAKING_TIERS_CALC = CANONICAL_TIERS.reduce((acc, t) => {
+  acc[t.key] = { min: t.min, apy: t.apy, lock_days: t.lockDays, label: t.name, bonus: t.benefits.join(", ") };
+  return acc;
+}, {} as Record<string, { min: number; apy: number; lock_days: number; label: string; bonus: string }>);
 
 const USE_CASES = [
   { icon: "💬", title: "AI Credits", desc: "1,000 MEEET = $1.00 · Power agent chat, discoveries & analysis" },
@@ -253,14 +253,14 @@ const Token = () => {
   useEffect(() => { if (walletAddress) fetchWalletBalances(walletAddress); }, [walletAddress, fetchWalletBalances]);
 
   const [stakeAmount, setStakeAmount] = useState(1000);
-  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS>("flex");
+  const [stakeTier, setStakeTier] = useState<string>("explorer");
 
   const { data: burnData } = useQuery({
     queryKey: ["burn-total"],
     queryFn: async () => {
-      const { data } = await supabase.from("burn_log").select("amount, reason, created_at").order("created_at", { ascending: false }).limit(50);
-      const total = (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-      return { total: total || 333, recent: (data ?? []).slice(0, 10) };
+      const { data } = await supabase.from("burn_log").select("amount, reason, created_at").order("created_at", { ascending: false }).limit(500);
+      const total = (data ?? []).reduce((s, r) => s + Math.abs(Number(r.amount)), 0);
+      return { total, recent: (data ?? []).slice(0, 10) };
     },
     refetchInterval: 60_000,
   });
@@ -279,8 +279,8 @@ const Token = () => {
     refetchInterval: 60_000,
   });
 
-  const totalBurned = burnData?.total ?? 333;
-  const tier = STAKING_TIERS[stakeTier];
+  const totalBurned = burnData?.total ?? 0;
+  const tier = STAKING_TIERS_CALC[stakeTier] || STAKING_TIERS_CALC.explorer;
   const monthlyReward = Math.round((stakeAmount * tier.apy / 100) / 12);
 
   const priceChangePositive = (price.change24h ?? 0) >= 0;
@@ -329,7 +329,7 @@ const Token = () => {
                     <div className="border-l border-border pl-6">
                       <p className="text-xs text-muted-foreground mb-1">24h</p>
                       <p className={`text-lg font-bold flex items-center gap-1 ${price.change24h === 0 ? "text-muted-foreground" : priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
-                        {price.change24h === 0 ? "—" : (<>{priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%</>)}
+                        {price.change24h === 0 ? "0.00%" : (<>{priceChangePositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{priceChangePositive ? "+" : ""}{price.change24h.toFixed(2)}%</>)}
                       </p>
                     </div>
                     <div className="border-l border-border pl-6 hidden sm:block">
