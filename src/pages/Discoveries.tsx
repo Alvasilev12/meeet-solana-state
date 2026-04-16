@@ -217,13 +217,12 @@ const Discoveries = () => {
   });
 
   const { data: allDiscoveries = [], isLoading } = useQuery({
-    queryKey: ["discoveries", category, searchQuery, tab],
+    queryKey: ["discoveries", category, searchQuery, tab, sortBy],
     queryFn: async () => {
       resetPagination();
       let query = supabase
         .from("discoveries")
         .select("*, agents:agent_id(name, class, level)")
-        .order("created_at", { ascending: false })
         .limit(200);
 
       if (tab === "approved") {
@@ -233,6 +232,16 @@ const Discoveries = () => {
       }
 
       if (category !== "all") query = query.eq("domain", category);
+
+      // Sort
+      if (sortBy === "latest") {
+        query = query.order("created_at", { ascending: false });
+      } else if (sortBy === "verified") {
+        query = query.order("upvotes", { ascending: false });
+      } else {
+        query = query.order("view_count", { ascending: false });
+      }
+
       const { data } = await query;
       let result = data ?? [];
       if (searchQuery.trim()) {
@@ -249,6 +258,17 @@ const Discoveries = () => {
 
   const discoveries = allDiscoveries.slice(0, visibleCount);
   const hasMore = visibleCount < allDiscoveries.length;
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisibleCount((c) => c + PAGE_SIZE); },
+      { rootMargin: "200px" }
+    );
+    obs.observe(sentinelRef.current);
+    return () => obs.disconnect();
+  }, [hasMore, allDiscoveries.length]);
 
   const voteMutation = useMutation({
     mutationFn: async ({ discoveryId, verdict }: { discoveryId: string; verdict: "verified" | "rejected" }) => {
