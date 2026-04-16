@@ -28,6 +28,7 @@ const CONFETTI_ITEMS = Array.from({ length: 30 }, (_, i) => ({
 }));
 
 export default function Onboarding() {
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<string | null>(null);
   const [walletConnected, setWalletConnected] = useState(false);

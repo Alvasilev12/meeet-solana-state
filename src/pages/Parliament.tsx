@@ -337,6 +337,7 @@ function ProposeLawDialog({ userId }: { userId: string }) {
 
 // ═════════════════════════════════════════════════════════════════
 const Parliament = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { data: laws = [], isLoading: lawsLoading } = useLaws();
   const { data: president } = usePresident();

@@ -196,6 +196,7 @@ function useQuestAction() {
 
 // ── Main page ────────────────────────────────────────────────────
 const Quests = () => {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<QuestCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const { data: quests = [], isLoading } = useQuests();
