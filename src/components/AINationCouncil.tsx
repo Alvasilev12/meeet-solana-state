@@ -598,29 +598,55 @@ export default function AINationCouncil() {
               <div className="rounded-xl border border-purple-500/30 bg-black/60 backdrop-blur-md p-6 text-center space-y-4">
                 <h3 className="text-lg font-bold text-foreground tracking-wide">🏛️ {t("council.verdict")}</h3>
 
+                {questionType === "timing" && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                    ⏱️ Вопрос о сроках — YES = «скоро/в обозримом будущем», NO = «не скоро / маловероятно»
+                  </div>
+                )}
+                {questionType === "open" && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold">
+                    💭 Открытый вопрос — YES = «оптимистичный сценарий», NO = «скептический»
+                  </div>
+                )}
+
                 <div className="max-w-sm mx-auto">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-emerald-400 font-bold">YES {yesCount}/{council.length}</span>
                     <span className="text-red-400 font-bold">NO {noCount}/{council.length}</span>
                   </div>
-                  <div className="h-3 rounded-full bg-red-500/30 overflow-hidden">
+                  <div className={`h-3 rounded-full overflow-hidden ${majorityIsYes ? "bg-red-500/30" : "bg-emerald-500/30"}`}>
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      className={`h-full rounded-full ${
+                        majorityIsYes
+                          ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                          : "bg-gradient-to-r from-red-500 to-red-400"
+                      }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${computedPct}%` }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
                     />
                   </div>
-                  <AnimatedPercent target={computedPct} />
+                  <AnimatedPercent target={computedPct} majorityIsYes={majorityIsYes} />
                 </div>
 
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {yesCount >= 5
-                    ? t("council.strongConsensus")
-                    : yesCount >= 4
-                    ? t("council.cautiousConsensus")
-                    : t("council.dividedConsensus")}
-                </p>
+                {aiSummary ? (
+                  <div className="max-w-xl mx-auto bg-black/40 border border-white/10 rounded-lg p-4 text-left">
+                    <p className="text-xs uppercase tracking-wider text-primary mb-2 font-bold">📋 Аналитический вывод совета</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">{aiSummary}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    {computedPct >= 70
+                      ? majorityIsYes ? t("council.strongConsensus") : "Большинство склоняется к «нет». Совет видит серьёзные препятствия."
+                      : computedPct >= 55
+                      ? majorityIsYes ? t("council.cautiousConsensus") : "Совет осторожно скептичен — преобладает мнение «нет», но есть оптимисты."
+                      : t("council.dividedConsensus")}
+                  </p>
+                )}
+
+                {aiError && (
+                  <p className="text-xs text-amber-400/80">{aiError}</p>
+                )}
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <Link to="/oracle">
