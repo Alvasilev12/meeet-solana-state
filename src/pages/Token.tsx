@@ -234,7 +234,7 @@ const Token = () => {
   useEffect(() => { if (walletAddress) fetchWalletBalances(walletAddress); }, [walletAddress, fetchWalletBalances]);
 
   const [stakeAmount, setStakeAmount] = useState(1000);
-  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS>("flex");
+  const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS_CALC>("flex");
 
   const { data: burnData } = useQuery({
     queryKey: ["burn-total"],
@@ -261,7 +261,7 @@ const Token = () => {
   });
 
   const totalBurned = burnData?.total ?? 333;
-  const tier = STAKING_TIERS[stakeTier];
+  const tier = STAKING_TIERS_CALC[stakeTier];
   const monthlyReward = Math.round((stakeAmount * tier.apy / 100) / 12);
 
   const priceChangePositive = (price.change24h ?? 0) >= 0;
@@ -566,10 +566,10 @@ const Token = () => {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-1 block">Tier</label>
-                    <Select value={stakeTier} onValueChange={v => setStakeTier(v as keyof typeof STAKING_TIERS)}>
+                    <Select value={stakeTier} onValueChange={v => setStakeTier(v as keyof typeof STAKING_TIERS_CALC)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(STAKING_TIERS).map(([k, v]) => (
+                        {Object.entries(STAKING_TIERS_CALC).map(([k, v]) => (
                           <SelectItem key={k} value={k}>{v.label} — {v.apy}% APY (min {v.min.toLocaleString("en-US")})</SelectItem>
                         ))}
                       </SelectContent>
@@ -587,11 +587,11 @@ const Token = () => {
 
               {/* All tiers */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-border">
-                {Object.entries(STAKING_TIERS).map(([k, v]) => (
+                {Object.entries(STAKING_TIERS_CALC).map(([k, v]) => (
                   <div
                     key={k}
                     className={`rounded-lg border p-3 text-center cursor-pointer transition-colors ${stakeTier === k ? "border-primary bg-primary/10" : "border-border bg-card/40 hover:border-primary/30"}`}
-                    onClick={() => setStakeTier(k as keyof typeof STAKING_TIERS)}
+                    onClick={() => setStakeTier(k as keyof typeof STAKING_TIERS_CALC)}
                   >
                     <p className="text-sm font-bold">{v.label}</p>
                     <p className="text-lg font-display font-bold text-primary">{v.apy}%</p>
