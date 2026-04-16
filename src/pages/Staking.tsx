@@ -69,10 +69,10 @@ const Staking = () => {
   const estimatedReward = Math.round(calcAmount * (selectedTier.apy / 100) * (selectedTier.days / 365));
 
   const METRICS = [
-    { label: "Total Value Staked", value: (tokenStats?.totalStaked ?? 0).toLocaleString(), sub: "MEEET", icon: Lock, color: "text-blue-400" },
-    { label: "Total Burned", value: tokenStats?.totalBurned != null ? tokenStats.totalBurned.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "—", sub: "MEEET", icon: Flame, color: "text-red-400" },
-    { label: "Active Stakes", value: (tokenStats?.activeStakesCount ?? 0).toLocaleString(), sub: "agents", icon: Users, color: "text-green-400" },
-    { label: "Est. APY", value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
+    { label: t("pages.staking.totalStaked"), value: (tokenStats?.totalStaked ?? 0).toLocaleString(), sub: "MEEET", icon: Lock, color: "text-blue-400" },
+    { label: t("pages.staking.totalBurned"), value: tokenStats?.totalBurned != null ? tokenStats.totalBurned.toLocaleString(undefined, { maximumFractionDigits: 4 }) : "—", sub: "MEEET", icon: Flame, color: "text-red-400" },
+    { label: t("pages.staking.activeStakes"), value: (tokenStats?.activeStakesCount ?? 0).toLocaleString(), sub: "agents", icon: Users, color: "text-green-400" },
+    { label: t("pages.staking.estApy"), value: "12.4", sub: "%", icon: Percent, color: "text-purple-400" },
   ];
 
   return (
@@ -103,7 +103,7 @@ const Staking = () => {
 
           {/* Staking Tiers */}
           <section>
-            <h2 className="text-xl font-bold text-foreground mb-4">Staking Tiers</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">{t("pages.staking.stakingTiers")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {STAKING_TIERS.map(t => (
                 <div key={t.name} className="bg-card border border-border rounded-xl p-4 text-center hover:scale-105 transition-transform">
@@ -116,16 +116,13 @@ const Staking = () => {
           </section>
 
           <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-xl font-bold text-foreground mb-4">Tier Benefits</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">{t("pages.staking.tierBenefits")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {STAKING_TIERS.map((t, i) => {
                 const gradients = ["from-blue-500 to-blue-600", "from-purple-500 to-purple-600", "from-amber-500 to-amber-600", "from-cyan-400 to-cyan-500"];
-                const perks = [
-                  ["Basic rewards", "Community badge", "Standard support"],
-                  ["Enhanced rewards", "Builder badge", "Priority support"],
-                  ["Premium rewards", "Architect badge", "Governance voting", "Early access"],
-                  ["Maximum rewards", "Visionary badge", "All perks", "Revenue share"],
-                ];
+                const perksObj = t("pages.staking.perks") as Record<string, string[]>;
+                const perkKeys = ["basic", "builder", "architect", "visionary"];
+                const perks = perksObj[perkKeys[i]] || [];
                 return (
                   <div key={t.name} className="bg-card border border-border rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-200">
                     <div className={`h-1.5 bg-gradient-to-r ${gradients[i]}`} />
@@ -134,7 +131,7 @@ const Staking = () => {
                       <p className="text-xs text-muted-foreground mb-2">{t.minStake.toLocaleString()}+ $MEEET</p>
                       <p className="text-2xl font-extrabold text-primary mb-3">{t.apy}% <span className="text-sm font-normal text-muted-foreground">APY</span></p>
                       <ul className="space-y-1.5">
-                        {perks[i].map(p => (
+                        {perks.map((p: string) => (
                           <li key={p} className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-primary shrink-0" />
                             {p}
@@ -150,12 +147,12 @@ const Staking = () => {
 
           {/* Staking Calculator */}
           <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-xl font-bold text-foreground mb-4">Staking Calculator</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">{t("pages.staking.stakingCalculator")}</h2>
             <div className="rounded-xl p-[1px] bg-gradient-to-r from-purple-500/50 to-blue-500/50">
               <div className="rounded-[11px] bg-card p-6 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-muted-foreground mb-1 block">Amount to Stake</label>
+                    <label className="text-sm text-muted-foreground mb-1 block">{t("pages.staking.amountToStake")}</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -168,14 +165,14 @@ const Staking = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground mb-1 block">Select Tier</label>
+                    <label className="text-sm text-muted-foreground mb-1 block">{t("pages.staking.selectTier")}</label>
                     <select
                       value={calcTier}
                       onChange={e => setCalcTier(Number(e.target.value))}
                       className="w-full bg-muted/30 border border-border rounded-lg px-4 py-2.5 text-foreground focus:outline-none focus:border-primary/50"
                     >
                       {CALC_TIERS.map((t, i) => (
-                        <option key={t.name} value={i}>{t.name} — {t.days} days</option>
+                        <option key={t.name} value={i}>{t.name} — {t.days} {tt("pages.staking.days")}</option>
                       ))}
                     </select>
                   </div>
