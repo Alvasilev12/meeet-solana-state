@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTokenStats } from "@/hooks/useTokenStats";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useSolanaWallet } from "@/hooks/useSolanaWallet";
@@ -236,12 +237,13 @@ const Token = () => {
   const [stakeAmount, setStakeAmount] = useState(1000);
   const [stakeTier, setStakeTier] = useState<keyof typeof STAKING_TIERS_CALC>("explorer");
 
+  const { data: tokenStats } = useTokenStats();
+
   const { data: burnData } = useQuery({
-    queryKey: ["burn-total"],
+    queryKey: ["burn-recent"],
     queryFn: async () => {
-      const { data } = await supabase.from("burn_log").select("amount, reason, created_at").order("created_at", { ascending: false }).limit(50);
-      const total = (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-      return { total: total || 333, recent: (data ?? []).slice(0, 10) };
+      const { data } = await supabase.from("burn_log").select("amount, reason, created_at").order("created_at", { ascending: false }).limit(10);
+      return { recent: data ?? [] };
     },
     refetchInterval: 60_000,
   });
@@ -260,7 +262,7 @@ const Token = () => {
     refetchInterval: 60_000,
   });
 
-  const totalBurned = burnData?.total ?? 333;
+  const totalBurned = tokenStats?.totalBurned ?? 0;
   const tier = STAKING_TIERS_CALC[stakeTier];
   const monthlyReward = Math.round((stakeAmount * tier.apy / 100) / 12);
 
