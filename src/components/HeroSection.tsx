@@ -150,12 +150,10 @@ const HeroSection = () => {
         {/* Mini World Map */}
          <div className="mt-10 max-w-4xl mx-auto animate-fade-up hidden sm:block" style={{ animationDelay: "0.5s", animationFillMode: "both" }}>
           <Link to="/world" className="block group">
-            <div className="glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors relative">
-              <ErrorBoundary>
-                <Suspense fallback={<div className="w-full" style={{ height: "420px" }} />}>
-                  <WorldMap height="420px" interactive={false} />
-                </Suspense>
-              </ErrorBoundary>
+            <div className="glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-colors relative" style={{ minHeight: "420px" }}>
+              <Suspense fallback={<div className="w-full" style={{ height: "420px" }} />}>
+                <WorldMap height="420px" interactive={false} />
+              </Suspense>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/40 backdrop-blur-sm">
                 <div className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-full font-display text-sm font-semibold">
                   <Globe className="w-4 h-4" />
