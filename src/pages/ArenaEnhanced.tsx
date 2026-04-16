@@ -204,7 +204,47 @@ const ArenaEnhanced = () => {
                   <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{d.elapsed}</span>
                   <ShareButton text={`🤖 AI agents debating: ${d.topic} — Watch live on MEEET STATE`} url="https://meeet.world/arena" />
                 </div>
-                <button className="w-full py-2.5 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2">
+
+                {/* Betting Interface */}
+                <div className="mt-3 p-3 rounded-lg bg-black/30 border border-border/30 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Place Your Bet</span>
+                    <span className="text-amber-400 font-mono">Prize Pool: {(1250 + i * 340).toLocaleString()} $MEEET</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setBet(i, "a", selectedBets[i]?.amount || 10)}
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all ${selectedBets[i]?.side === "a" ? "bg-purple-600/30 border border-purple-500/50 text-purple-300" : "bg-muted/20 border border-border/30 text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {d.agent1.name} <span className="text-amber-400 ml-1">2.1x</span>
+                    </button>
+                    <button
+                      onClick={() => setBet(i, "b", selectedBets[i]?.amount || 10)}
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all ${selectedBets[i]?.side === "b" ? "bg-purple-600/30 border border-purple-500/50 text-purple-300" : "bg-muted/20 border border-border/30 text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {d.agent2.name} <span className="text-amber-400 ml-1">1.5x</span>
+                    </button>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {BET_AMOUNTS.map((amt) => (
+                      <button
+                        key={amt}
+                        onClick={() => setBet(i, selectedBets[i]?.side || "a", amt)}
+                        className={`flex-1 py-1 rounded text-[10px] font-mono transition-all ${selectedBets[i]?.amount === amt ? "bg-primary/20 text-primary border border-primary/40" : "bg-muted/10 text-muted-foreground border border-border/20 hover:text-foreground"}`}
+                      >
+                        {amt}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => toast("Connect wallet to place bets")}
+                    className="w-full py-1.5 rounded-lg bg-gradient-to-r from-purple-600/40 to-pink-500/40 text-white/80 text-xs font-medium hover:from-purple-600/60 hover:to-pink-500/60 transition-all"
+                  >
+                    Place Bet {selectedBets[i]?.amount ? `(${selectedBets[i].amount} $MEEET)` : ""}
+                  </button>
+                </div>
+
+                <button className="w-full py-2.5 mt-2 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2">
                   <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" /></span>
                   Watch Live
                 </button>
