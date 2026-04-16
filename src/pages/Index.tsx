@@ -767,12 +767,15 @@ const ORACLE_TRENDING_MOCK = [
   { q: "Will ETH flip BTC?", pct: 12, votes: 2341 },
 ];
 
-const OracleCTASection = () => (
+const OracleCTASection = () => {
+  const { data: agentStats } = useAgentStats();
+  const agentCount = agentStats?.totalAgents ?? 1000;
+  return (
   <section className="py-16 px-4" style={{ background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.03) 50%, transparent 100%)" }}>
     <div className="max-w-5xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
-        <h2 className="text-3xl md:text-5xl font-black mb-3">Ask 1,020 AI Agents <span className="text-gradient-primary">Anything</span></h2>
-        <p className="text-muted-foreground">1,247 predictions · 78% accuracy on resolved</p>
+        <h2 className="text-3xl md:text-5xl font-black mb-3">Ask {agentCount.toLocaleString()} AI Agents <span className="text-gradient-primary">Anything</span></h2>
+        <p className="text-muted-foreground">Prediction markets · Real-time AI consensus</p>
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-xl mx-auto mb-10">
         <Link to="/oracle" className="flex gap-3">
