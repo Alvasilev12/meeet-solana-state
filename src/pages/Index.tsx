@@ -19,6 +19,7 @@ import CommunityMetrics from "@/components/CommunityMetrics";
 import HomeViralTicker from "@/components/HomeViralTicker";
 import HomeReferralSection from "@/components/HomeReferralSection";
 import HomeEmailCapture from "@/components/HomeEmailCapture";
+import AINationCouncil from "@/components/AINationCouncil";
 
 import HomeSectionWrapper from "@/components/HomeSectionWrapper";
 import { motion } from "framer-motion";
@@ -826,8 +827,8 @@ const Index = () => {
         <main className="pt-16 pb-6">
            {/* Hero section fix - April 11 */}
            <HeroSection />
+          <AINationCouncil />
           <CortexSection />
-          <LiveTicker />
           <HomeSectionWrapper index={1}><LiveStatsBar /></HomeSectionWrapper>
           <HomeSectionWrapper index={2}><BondingCurveProgress /></HomeSectionWrapper>
           <HomeSectionWrapper index={3}><FeatureCards /></HomeSectionWrapper>
