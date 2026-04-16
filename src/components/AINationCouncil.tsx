@@ -533,6 +533,9 @@ export default function AINationCouncil() {
               <p className="text-xs text-muted-foreground">Это занимает 3–8 секунд. Каждый агент формирует независимое мнение.</p>
             </motion.div>
           )}
+
+          {/* ══ DISCUSSING ══ */}
+          {phase === "discussing" && (
             <motion.div key="discussing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
               <div className="text-center">
                 <div className="text-sm text-muted-foreground bg-black/40 rounded-lg px-4 py-2 inline-block mb-2">
