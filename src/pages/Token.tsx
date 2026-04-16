@@ -586,7 +586,7 @@ const Token = () => {
               </div>
 
               {/* All tiers */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-border">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 pt-6 border-t border-border">
                 {Object.entries(STAKING_TIERS_CALC).map(([k, v]) => (
                   <div
                     key={k}
