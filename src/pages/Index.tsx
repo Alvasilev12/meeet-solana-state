@@ -21,6 +21,7 @@ import HomeViralTicker from "@/components/HomeViralTicker";
 import HomeReferralSection from "@/components/HomeReferralSection";
 import HomeEmailCapture from "@/components/HomeEmailCapture";
 import AINationCouncil from "@/components/AINationCouncil";
+import { useMeeetPrice } from "@/hooks/useMeeetPrice";
 
 import HomeSectionWrapper from "@/components/HomeSectionWrapper";
 import { motion } from "framer-motion";
@@ -33,6 +34,7 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
 const LiveStatsBar = () => {
   const { data: agentStats } = useAgentStats();
   const { data: discoveryStats } = useDiscoveryStats();
+  const { price } = useMeeetPrice();
 
   const { data: debateCount } = useQuery({
     queryKey: ["home-debate-count"],
@@ -43,11 +45,13 @@ const LiveStatsBar = () => {
     staleTime: 60000,
   });
 
+  const priceStr = price.priceUsd > 0 ? `$${price.priceUsd.toFixed(6)}` : "—";
+
   const stats = [
     { icon: "🤖", value: (agentStats?.totalAgents ?? 0).toLocaleString(), label: "Agents", href: "/marketplace" },
     { icon: "🔬", value: (discoveryStats?.totalDiscoveries ?? 0).toLocaleString(), label: "Discoveries", href: "/discoveries" },
     ...(debateCount && debateCount > 0 ? [{ icon: "⚔️", value: String(debateCount), label: "Live Debates", href: "/arena" }] : []),
-    { icon: "💰", value: "$0.000015", label: "$MEEET", href: "/token" },
+    { icon: "💰", value: priceStr, label: "$MEEET", href: "/token" },
   ];
 
   return (
@@ -299,54 +303,67 @@ const ArenaSection = () => {
 };
 
 /* ── Section 6: Economy ── */
-const EconomySection = () => (
-  <section className="py-20 px-4">
-    <div className="max-w-5xl mx-auto">
-      <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.6 }} className="text-center mb-10">
-        <span className="inline-block text-[10px] uppercase tracking-[0.2em] text-primary font-bold bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">Section 03 — The Economy</span>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">$MEEET Token</h2>
-        <p className="text-muted-foreground max-w-lg mx-auto">The fuel of the first AI civilization on Solana</p>
-      </motion.div>
-      <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.6, delay: 0.1 }}
-        className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm p-8 mb-8"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</div>
-            <div className="text-2xl font-bold text-foreground">$0.000005</div>
+const EconomySection = () => {
+  const { price } = useMeeetPrice();
+  const priceStr = price.priceUsd > 0 ? `$${price.priceUsd.toFixed(6)}` : "—";
+  const mcapStr = price.marketCap > 0 ? `$${price.marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—";
+  const bcProgress = price.bondingCurveProgress ?? 0;
+
+  return (
+    <section className="py-20 px-4">
+      <div className="max-w-5xl mx-auto">
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.6 }} className="text-center mb-10">
+          <span className="inline-block text-[10px] uppercase tracking-[0.2em] text-primary font-bold bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">Section 03 — The Economy</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">$MEEET Token</h2>
+          <p className="text-muted-foreground max-w-lg mx-auto">The fuel of the first AI civilization on Solana</p>
+        </motion.div>
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.6, delay: 0.1 }}
+          className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm p-8 mb-8"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</div>
+              <div className="text-2xl font-bold text-foreground">{priceStr}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Market Cap</div>
+              <div className="text-2xl font-bold text-foreground">{mcapStr}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Supply</div>
+              <div className="text-2xl font-bold text-foreground">1B $MEEET</div>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Market Cap</div>
-            <div className="text-2xl font-bold text-foreground">$5,000</div>
+          <div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>Bonding Curve Progress</span>
+              <span className="text-primary font-semibold">{bcProgress.toFixed(1)}%</span>
+            </div>
+            <div className="w-full h-2.5 rounded-full bg-muted/30 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-purple-600 to-violet-500"
+                initial={{ width: 0 }}
+                whileInView={{ width: `${bcProgress}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+              />
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Supply</div>
-            <div className="text-2xl font-bold text-foreground">1B $MEEET</div>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-            <span>Bonding Curve Progress</span>
-            <span className="text-primary font-semibold">8.2%</span>
-          </div>
-          <div className="w-full h-2.5 rounded-full bg-muted/30 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-purple-600 to-violet-500" style={{ width: "8.2%" }} />
-          </div>
-        </div>
-      </motion.div>
-      <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-wrap justify-center gap-3">
-        <Link to="/token">
-          <Button className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white border-0 px-8 h-11">
-            Buy $MEEET <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        </Link>
-        <Link to="/token">
-          <Button variant="outline" className="border-border hover:border-primary/40 px-8 h-11">View Tokenomics</Button>
-        </Link>
-      </motion.div>
-    </div>
-  </section>
-);
+        </motion.div>
+        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-wrap justify-center gap-3">
+          <Link to="/token">
+            <Button className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white border-0 px-8 h-11">
+              Buy $MEEET <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+          <Link to="/token">
+            <Button variant="outline" className="border-border hover:border-primary/40 px-8 h-11">View Tokenomics</Button>
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 /* ── Section 7: Build ── */
 const BuildSection = () => (
@@ -372,7 +389,7 @@ const BuildSection = () => (
 
 # Response
 {
-  "agents": 931,
+  "agents": 1033,
   "discoveries": 2053,
   "status": "online"
 }`}
@@ -750,12 +767,15 @@ const ORACLE_TRENDING_MOCK = [
   { q: "Will ETH flip BTC?", pct: 12, votes: 2341 },
 ];
 
-const OracleCTASection = () => (
+const OracleCTASection = () => {
+  const { data: agentStats } = useAgentStats();
+  const agentCount = agentStats?.totalAgents ?? 1000;
+  return (
   <section className="py-16 px-4" style={{ background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.03) 50%, transparent 100%)" }}>
     <div className="max-w-5xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
-        <h2 className="text-3xl md:text-5xl font-black mb-3">Ask 1,020 AI Agents <span className="text-gradient-primary">Anything</span></h2>
-        <p className="text-muted-foreground">1,247 predictions · 78% accuracy on resolved</p>
+        <h2 className="text-3xl md:text-5xl font-black mb-3">Ask {agentCount.toLocaleString()} AI Agents <span className="text-gradient-primary">Anything</span></h2>
+        <p className="text-muted-foreground">Prediction markets · Real-time AI consensus</p>
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-xl mx-auto mb-10">
         <Link to="/oracle" className="flex gap-3">
@@ -786,7 +806,8 @@ const OracleCTASection = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 const Index = () => {
   return (

@@ -9,7 +9,6 @@ const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function generateQuestProof(agentName: string, agentClass: string, questTitle: string): Promise<string> {
-  // Try OpenAI first
   if (OPENAI_API_KEY) {
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -21,34 +20,23 @@ async function generateQuestProof(agentName: string, agentClass: string, questTi
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: [
-            {
-              role: "system",
-              content: "You are an autonomous AI agent in MEEET STATE, a decentralized AI nation on Solana.",
-            },
-            {
-              role: "user",
-              content: `You are agent ${agentName} (class: ${agentClass}). Generate a 2-sentence proof of completing this quest: "${questTitle}". Be specific and professional.`,
-            },
+            { role: "system", content: "You are an autonomous AI agent in MEEET STATE, a decentralized AI nation on Solana." },
+            { role: "user", content: `You are agent ${agentName} (class: ${agentClass}). Generate a 2-sentence proof of completing this quest: "${questTitle}". Be specific and professional.` },
           ],
           max_tokens: 120,
           temperature: 0.7,
         }),
       });
-
       if (response.ok) {
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content?.trim();
         if (content) return content;
-      } else {
-        console.error("OpenAI error:", response.status, await response.text());
       }
     } catch (err) {
       console.error("OpenAI proof generation failed:", err);
     }
   }
-
-  // Fallback to generic proof text
-  return `Agent ${agentName} (${agentClass}) successfully executed the mission "${questTitle}" using advanced tactical protocols. All objectives were achieved within operational parameters — the MEEET STATE infrastructure is stronger for it.`;
+  return `Agent ${agentName} (${agentClass}) successfully executed the mission "${questTitle}" using advanced tactical protocols. All objectives were achieved within operational parameters.`;
 }
 
 async function sendTelegramNotification(agentName: string, agentClass: string, earnings: number, questTitle: string) {
@@ -58,11 +46,7 @@ async function sendTelegramNotification(agentName: string, agentClass: string, e
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "Markdown",
-      }),
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: "Markdown" }),
     });
   } catch (err) {
     console.error("Telegram notification failed:", err);
@@ -71,13 +55,12 @@ async function sendTelegramNotification(agentName: string, agentClass: string, e
 
 Deno.serve(async (req) => {
   try {
-    // Auth: require internal service secret
     const secret = req.headers.get("x-internal-service");
     const expected = Deno.env.get("INTERNAL_SERVICE_SECRET");
     if (!secret || secret !== expected) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
-    // Fetch all running deployed agents with their agent info
+
     const { data: deployedAgents, error: daError } = await supabase
       .from("deployed_agents")
       .select("*, agents(*)")
@@ -88,7 +71,6 @@ Deno.serve(async (req) => {
       return Response.json({ processed: 0, total_earned: 0, message: "No running agents" });
     }
 
-    // Fetch open quests
     const { data: quests, error: qError } = await supabase
       .from("quests")
       .select("*")
@@ -97,7 +79,6 @@ Deno.serve(async (req) => {
 
     if (qError) throw qError;
 
-    // Group quests by category for smarter matching
     const questsByCategory: Record<string, any[]> = {};
     for (const q of quests ?? []) {
       const cat = q.category || "general";
@@ -105,7 +86,6 @@ Deno.serve(async (req) => {
       questsByCategory[cat].push(q);
     }
 
-    // Class-to-category affinity for smarter quest matching
     const classAffinity: Record<string, string[]> = {
       warrior: ["combat", "defense", "security"],
       trader: ["economics", "finance", "market"],
@@ -125,11 +105,9 @@ Deno.serve(async (req) => {
       const agent = da.agents;
       if (!agent) continue;
 
-      // Smart quest matching: prefer quests matching agent's class affinity
       const affinities = classAffinity[agent.class] || [];
       let quest: any = null;
 
-      // Try to find a quest matching agent's class affinity
       for (const aff of affinities) {
         if (questsByCategory[aff]?.length) {
           quest = questsByCategory[aff][processed % questsByCategory[aff].length];
@@ -137,11 +115,21 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Fallback: pick any available quest
       if (!quest && quests && quests.length > 0) {
         quest = quests[processed % quests.length];
       }
-      // Record in agent_earnings
+
+      // Calculate earnings based on quest or passive income
+      const baseEarning = quest ? (quest.reward_meeet ?? 50) : 10;
+      const earnings = Math.floor(baseEarning * (0.8 + Math.random() * 0.4));
+
+      // Generate proof text
+      const proofText = await generateQuestProof(
+        agent.name,
+        agent.class,
+        quest?.title ?? "passive network operations"
+      );
+
       const { error: earningError } = await supabase.from("agent_earnings").insert({
         agent_id: agent.id,
         user_id: agent.user_id,
@@ -155,7 +143,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Update deployed agent stats
       await supabase
         .from("deployed_agents")
         .update({
@@ -164,14 +151,12 @@ Deno.serve(async (req) => {
         })
         .eq("id", da.id);
 
-      // Update agent balance
       const newBalance = Number(agent.balance_meeet ?? 0) + Number(earnings);
       await supabase
         .from("agents")
         .update({ balance_meeet: newBalance })
         .eq("id", agent.id);
 
-      // Record impact metric with proof text
       await supabase.from("agent_impact").insert({
         agent_id: agent.id,
         metric_type: "quest_proof",
@@ -179,7 +164,15 @@ Deno.serve(async (req) => {
         period: proofText.slice(0, 500),
       });
 
-      // Send Telegram notification for high-value earnings (> 100 MEEET)
+      // Log to activity feed for realtime updates
+      await supabase.from("activity_feed").insert({
+        event_type: "quest_complete",
+        title: `${agent.name} completed ${quest?.title ?? "passive task"}`,
+        agent_id: agent.id,
+        meeet_amount: earnings,
+        description: proofText.slice(0, 200),
+      });
+
       if (Number(earnings) > 100) {
         await sendTelegramNotification(agent.name, agent.class, Number(earnings), quest?.title ?? "passive activities");
       }
