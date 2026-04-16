@@ -173,7 +173,6 @@ export default function CortexSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 blur-[120px] pointer-events-none"
         style={{
           background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)",
-          transform: `translate(-50%, calc(-50% + ${scrollY * 0.15}px))`,
         }} />
 
       <div className="max-w-6xl mx-auto w-full relative z-10">
