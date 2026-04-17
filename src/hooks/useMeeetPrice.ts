@@ -29,11 +29,43 @@ const FALLBACK: MeeetPrice = {
   unavailable: true,
 };
 
+const CACHE_KEY = "meeet-price-cache-v1";
+const CACHE_TTL_MS = 5 * 60_000; // 5 min — used as stale-while-revalidate seed
+
+function readCache(): MeeetPrice | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as MeeetPrice;
+    if (!parsed.fetchedAt || Date.now() - parsed.fetchedAt > CACHE_TTL_MS) return null;
+    if (parsed.priceUsd <= 0) return null;
+    return { ...parsed, cached: true };
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(data: MeeetPrice) {
+  try {
+    if (data.priceUsd > 0 && !data.unavailable) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, fetchedAt: Date.now() }));
+    }
+  } catch { /* quota / SSR */ }
+}
+
 async function fetchMeeetPrice(): Promise<MeeetPrice> {
   const { data, error } = await supabase.functions.invoke("get-meeet-price");
-  if (error || !data) return FALLBACK;
-  if (data.unavailable) return { ...FALLBACK, ...data };
-  return data as MeeetPrice;
+  if (error || !data) {
+    const cached = readCache();
+    return cached ?? FALLBACK;
+  }
+  if (data.unavailable) {
+    const cached = readCache();
+    return cached ?? { ...FALLBACK, ...data };
+  }
+  const fresh = data as MeeetPrice;
+  writeCache(fresh);
+  return fresh;
 }
 
 export function useMeeetPrice() {
@@ -42,7 +74,7 @@ export function useMeeetPrice() {
     queryFn: fetchMeeetPrice,
     staleTime: 30_000,
     refetchInterval: 60_000,
-    placeholderData: FALLBACK,
+    placeholderData: () => readCache() ?? FALLBACK,
   });
 
   const price = query.data ?? FALLBACK;
