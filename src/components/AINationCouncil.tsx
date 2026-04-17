@@ -289,59 +289,116 @@ export default function AINationCouncil() {
     setActiveAgent(0);
   }, [question]);
 
-  const startCouncil = useCallback(async () => {
-    if (!question.trim() || !agentsPool?.length) return;
+  const startCouncil = useCallback(async (opts?: { followUp?: boolean; followUpQuestion?: string }) => {
+    const isFollowUp = !!opts?.followUp;
+    const currentQuestion = isFollowUp ? (opts?.followUpQuestion || "").trim() : question.trim();
+    if (!currentQuestion) return;
+    if (!isFollowUp && !agentsPool?.length) return;
 
-    // Pick 7 agents with class diversity
-    const byClass = new Map<string, typeof agentsPool>();
-    agentsPool.forEach(a => {
-      const key = (a as any).class || "unknown";
-      const arr = byClass.get(key) || [];
-      arr.push(a);
-      byClass.set(key, arr);
-    });
+    let picked: any[];
 
-    const selected: typeof agentsPool = [];
-    const classes = Array.from(byClass.keys());
-    for (const cls of classes) {
-      if (selected.length >= 7) break;
-      const pool = byClass.get(cls)!;
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      selected.push(pick);
+    if (isFollowUp && council.length > 0) {
+      // Reuse the same council for continuity
+      picked = council.map(a => ({
+        id: a.id,
+        name: a.name,
+        class: a.agentClass,
+        reputation: a.reputation,
+      }));
+      // Push previous round into history before resetting answers
+      setHistory(prev => [
+        ...prev,
+        {
+          question,
+          summary: aiSummary,
+          responses: council.map(a => ({
+            name: a.name,
+            class: a.agentClass,
+            leansYes: a.leansYes,
+            answer: a.answer,
+          })),
+        },
+      ]);
+      setQuestion(currentQuestion);
+      setCouncil(picked.map(a => ({
+        id: a.id,
+        name: a.name,
+        agentClass: a.class || "researcher",
+        reputation: a.reputation ?? 100,
+        answer: "",
+        leansYes: false,
+      })));
+    } else {
+      // Pick 7 agents with class diversity
+      const byClass = new Map<string, typeof agentsPool>();
+      agentsPool!.forEach(a => {
+        const key = (a as any).class || "unknown";
+        const arr = byClass.get(key) || [];
+        arr.push(a);
+        byClass.set(key, arr);
+      });
+
+      const selected: typeof agentsPool = [];
+      const classes = Array.from(byClass.keys());
+      for (const cls of classes) {
+        if (selected.length >= 7) break;
+        const pool = byClass.get(cls)!;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        selected.push(pick);
+      }
+      const remaining = agentsPool!.filter(a => !selected.some(s => s.id === a.id));
+      while (selected.length < 7 && remaining.length > 0) {
+        const idx = Math.floor(Math.random() * remaining.length);
+        selected.push(remaining.splice(idx, 1)[0]);
+      }
+
+      picked = selected.slice(0, 7);
+      setCouncil(picked.map(a => ({
+        id: a.id,
+        name: a.name,
+        agentClass: (a as any).class || "researcher",
+        reputation: (a as any).reputation ?? 100,
+        answer: "",
+        leansYes: false,
+      })));
     }
-    const remaining = agentsPool.filter(a => !selected.some(s => s.id === a.id));
-    while (selected.length < 7 && remaining.length > 0) {
-      const idx = Math.floor(Math.random() * remaining.length);
-      selected.push(remaining.splice(idx, 1)[0]);
-    }
 
-    const picked = selected.slice(0, 7);
-    setCouncil(picked.map(a => ({
-      id: a.id,
-      name: a.name,
-      agentClass: (a as any).class || "researcher",
-      reputation: (a as any).reputation ?? 100,
-      answer: "",
-      leansYes: false,
-    })));
     setActiveAgent(-1);
     setConsensusPct(0);
     setAiSummary("");
     setAiError("");
     setPhase("selecting");
 
+    // Snapshot history at this moment for the request
+    const historyForRequest = isFollowUp
+      ? [
+          ...history,
+          {
+            question,
+            summary: aiSummary,
+            responses: council.map(a => ({
+              name: a.name,
+              class: a.agentClass,
+              leansYes: a.leansYes,
+              answer: a.answer,
+            })),
+          },
+        ]
+      : [];
+
     timerRef.current = setTimeout(async () => {
       setPhase("analyzing");
       try {
         const { data, error } = await supabase.functions.invoke("council-analyze", {
           body: {
-            question,
+            question: currentQuestion,
             language: lang,
-            agents: picked.map(a => ({
+            agents: picked.map((a: any) => ({
               name: a.name,
-              class: (a as any).class || "researcher",
+              class: (a as any).class || a.agentClass || "researcher",
               reputation: (a as any).reputation ?? 100,
             })),
+            history: historyForRequest,
           },
         });
         if (error) throw error;
@@ -357,20 +414,22 @@ export default function AINationCouncil() {
         }
 
         const responses = data?.responses || [];
-        const filled: CouncilAgent[] = picked.map((a, i) => {
+        const filled: CouncilAgent[] = picked.map((a: any, i: number) => {
           const r = responses[i] || {};
           return {
             id: a.id,
             name: a.name,
-            agentClass: (a as any).class || "researcher",
+            agentClass: (a as any).class || a.agentClass || "researcher",
             reputation: (a as any).reputation ?? 100,
             answer: r.answer || "Анализирую...",
             leansYes: !!r.leansYes,
           };
         });
-        for (let i = filled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [filled[i], filled[j]] = [filled[j], filled[i]];
+        if (!isFollowUp) {
+          for (let i = filled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [filled[i], filled[j]] = [filled[j], filled[i]];
+          }
         }
         setCouncil(filled);
         setQuestionType((data?.question_type as QuestionType) || "open");
@@ -383,7 +442,7 @@ export default function AINationCouncil() {
         fallbackResponses(picked);
       }
     }, 1500);
-  }, [question, agentsPool, lang, fallbackResponses]);
+  }, [question, agentsPool, lang, fallbackResponses, council, history, aiSummary]);
 
   // Sequential agent reveal
   useEffect(() => {
