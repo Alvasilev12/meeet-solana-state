@@ -473,6 +473,16 @@ export default function AINationCouncil() {
     setConsensusPct(0);
     setAiSummary("");
     setAiError("");
+    setHistory([]);
+    setFollowUp("");
+  };
+
+  const handleFollowUp = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = followUp.trim();
+    if (!q) return;
+    setFollowUp("");
+    startCouncil({ followUp: true, followUpQuestion: q });
   };
 
   const yesCount = council.filter(a => a.leansYes).length;
