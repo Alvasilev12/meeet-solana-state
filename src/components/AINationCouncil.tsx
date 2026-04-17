@@ -743,6 +743,53 @@ export default function AINationCouncil() {
                   </Button>
                 </div>
 
+                {/* ── Follow-up: deepen the conversation ── */}
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <span>💬</span>
+                    <span>Углубитесь в тему — задайте уточняющий вопрос тому же совету</span>
+                    {history.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 font-semibold">
+                        Раунд {history.length + 1}
+                      </span>
+                    )}
+                  </div>
+                  <form onSubmit={handleFollowUp} className="relative max-w-2xl mx-auto">
+                    <div className="relative rounded-xl border border-purple-500/40 bg-black/60 backdrop-blur-md focus-within:border-purple-500/70 transition-all">
+                      <input
+                        type="text"
+                        value={followUp}
+                        onChange={e => setFollowUp(e.target.value)}
+                        placeholder="А что если…? Уточните, углубите, оспорьте…"
+                        className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 py-3 pr-12 text-sm outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!followUp.trim()}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:hover:bg-purple-600 flex items-center justify-center transition-colors"
+                        aria-label="Отправить уточняющий вопрос"
+                      >
+                        <Send className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  </form>
+                  {history.length > 0 && (
+                    <details className="max-w-2xl mx-auto text-left">
+                      <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                        📜 История диалога ({history.length} {history.length === 1 ? "раунд" : "раундов"})
+                      </summary>
+                      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto pr-2">
+                        {history.map((h, idx) => (
+                          <div key={idx} className="text-xs bg-black/30 rounded-lg p-2 border border-white/5">
+                            <div className="text-purple-300 font-semibold mb-1">Раунд {idx + 1}: "{h.question}"</div>
+                            {h.summary && <div className="text-muted-foreground italic">{h.summary}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+
                 <button onClick={reset} className="text-sm text-primary hover:text-primary/80 underline underline-offset-4 transition-colors">
                   {t("council.tryAnother")}
                 </button>
