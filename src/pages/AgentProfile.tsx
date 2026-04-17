@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgentSkillTree from "@/components/AgentSkillTree";
 import PersonalityRadar from "@/components/PersonalityRadar";
+import AgentContactEndpoint from "@/components/AgentContactEndpoint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -287,6 +288,9 @@ const AgentProfile = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Agent Contact Endpoint */}
+              <AgentContactEndpoint agentId={agent.id} isOnline={true} />
 
               {/* Achievements / Badges */}
               {badges.length > 0 && (
