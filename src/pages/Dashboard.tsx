@@ -24,6 +24,7 @@ import { AGENT_CLASSES, getClassName } from "@/data/agent-classes";
 import type { Tables } from "@/integrations/supabase/types";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import BillingTopUp from "@/components/dashboard/BillingTopUp";
 
 type Agent = Tables<"agents">;
 type Profile = Tables<"profiles">;
