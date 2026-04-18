@@ -807,7 +807,6 @@ const NewsletterCommunity = () => {
 
 
 const ORACLE_TRENDING_MOCK = [
-const ORACLE_TRENDING_MOCK = [
   { q: "Will SOL reach $500?", pct: 67, votes: 892 },
   { q: "Will GPT-5 launch before July?", pct: 74, votes: 1203 },
   { q: "Will ETH flip BTC?", pct: 12, votes: 2341 },
