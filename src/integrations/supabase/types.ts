@@ -6545,38 +6545,38 @@ export type Database = {
         Row: {
           agent_id: string | null
           bot_name: string | null
-          bot_token_status: string | null
           bot_username: string | null
           created_at: string | null
+          has_token: boolean | null
+          has_webhook_secret: boolean | null
           id: string | null
           status: string | null
           updated_at: string | null
           user_id: string | null
-          webhook_secret_status: string | null
         }
         Insert: {
           agent_id?: string | null
           bot_name?: string | null
-          bot_token_status?: never
           bot_username?: string | null
           created_at?: string | null
+          has_token?: never
+          has_webhook_secret?: never
           id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
-          webhook_secret_status?: never
         }
         Update: {
           agent_id?: string | null
           bot_name?: string | null
-          bot_token_status?: never
           bot_username?: string | null
           created_at?: string | null
+          has_token?: never
+          has_webhook_secret?: never
           id?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
-          webhook_secret_status?: never
         }
         Relationships: [
           {
