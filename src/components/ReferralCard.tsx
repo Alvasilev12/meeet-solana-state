@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Copy, Check, Users, Coins, QrCode } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Copy, Check, Users, QrCode } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -12,13 +12,24 @@ const ReferralCard = () => {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [refCode, setRefCode] = useState<string>("");
 
-  const refCode = useMemo(() => {
-    if (!user?.id) return "anon";
-    return user.id.slice(0, 8);
-  }, [user]);
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("referral_code")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setRefCode((data as any)?.referral_code || user.id.slice(0, 8));
+      });
+  }, [user?.id]);
 
-  const shareUrl = `https://meeet.world?ref=${refCode}`;
+  const shareUrl = useMemo(
+    () => `https://meeet.world?ref=${refCode || (user?.id?.slice(0, 8) ?? "anon")}`,
+    [refCode, user?.id]
+  );
 
   const { data: stats } = useQuery({
     queryKey: ["referral-stats", user?.id],
@@ -27,14 +38,16 @@ const ReferralCard = () => {
       const uid = user!.id;
       const { count } = await supabase
         .from("referrals" as any)
-        .select("id", { count: "exact" })
-        .eq("referrer_id", uid)
-        .limit(0);
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_user_id", uid);
       const { data: earned } = await supabase
         .from("referrals" as any)
-        .select("reward_amount")
-        .eq("referrer_id", uid);
-      const totalEarned = (earned || []).reduce((s: number, r: any) => s + (r.reward_amount || 0), 0);
+        .select("total_earned_meeet")
+        .eq("referrer_user_id", uid);
+      const totalEarned = (earned || []).reduce(
+        (s: number, r: any) => s + Number(r.total_earned_meeet || 0),
+        0
+      );
       return { invited: count || 0, earned: totalEarned };
     },
     staleTime: 30_000,
