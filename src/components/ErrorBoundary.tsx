@@ -23,6 +23,12 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("ErrorBoundary caught:", error, errorInfo);
   }
 
+  public componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState({ hasError: false, error: null, showDetails: false });
+    }
+  }
+
   public render() {
     if (this.state.hasError) {
       return (
