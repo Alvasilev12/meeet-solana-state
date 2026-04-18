@@ -55,6 +55,7 @@ const FloatingSara = () => {
         body: {
           messages: next.map((m) => ({ role: m.role, content: m.content })),
           context: ctx,
+          stream: false,
         },
       });
       if (error) throw error;

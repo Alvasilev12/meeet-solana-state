@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await sc.auth.getUser(authHeader.replace("Bearer ", ""));
     if (!user) return error("Invalid session", 401);
 
-    const { messages, module_slug } = await req.json();
+    const { messages, module_slug, context, stream = true } = await req.json();
     if (!Array.isArray(messages)) return error("messages array required", 400);
 
     // Fetch module context if provided
@@ -42,8 +42,9 @@ Deno.serve(async (req) => {
         moduleContext = `\n\n## Текущий модуль пользователя\n**${mod.title}** (трек: ${mod.track})\n${mod.subtitle || ""}\n\n${mod.content_md.slice(0, 800)}`;
       }
     }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (context) {
+      moduleContext += `\n\n## Текущий контекст пользователя\n${String(context).slice(0, 400)}`;
+    }
     if (!LOVABLE_API_KEY) return error("AI not configured", 500);
 
     // Save user message
@@ -67,9 +68,9 @@ Deno.serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT + moduleContext },
-          ...messages.slice(-10), // last 10 messages for context
+          ...messages.slice(-10),
         ],
-        stream: true,
+        stream,
       }),
     });
 
@@ -77,6 +78,19 @@ Deno.serve(async (req) => {
       if (aiResponse.status === 429) return error("Rate limit. Try again in a moment.", 429);
       if (aiResponse.status === 402) return error("AI credits exhausted. Contact admin.", 402);
       return error("AI gateway error", 500);
+    }
+
+    if (!stream) {
+      const data = await aiResponse.json();
+      const reply = data?.choices?.[0]?.message?.content ?? "";
+      // Persist assistant reply
+      await sc.from("academy_chat_messages").insert({
+        user_id: user.id,
+        module_slug: module_slug ?? null,
+        role: "assistant",
+        content: String(reply).slice(0, 4000),
+      });
+      return json({ reply });
     }
 
     return new Response(aiResponse.body, {
