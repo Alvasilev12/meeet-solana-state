@@ -21,6 +21,8 @@ const Footer = forwardRef<HTMLElement>((_props, ref) => {
         { label: t("footer.arena"), href: "/arena" },
         { label: t("footer.marketplace"), href: "/marketplace" },
         { label: "Oracle", href: "/oracle" },
+        { label: "Sectors", href: "/sectors" },
+        { label: "Collaborations", href: "/collaborations" },
         { label: t("footer.staking"), href: "/staking" },
         { label: t("footer.governance"), href: "/governance" },
       ],

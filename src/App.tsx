@@ -66,6 +66,9 @@ const Launch = React.lazy(() => import("./pages/Launch.tsx"));
 const SimulationLab = React.lazy(() => import("./pages/SimulationLab.tsx"));
 const Skills = React.lazy(() => import("./pages/Skills.tsx"));
 const Sectors = React.lazy(() => import("./pages/Sectors.tsx"));
+const SectorDetail = React.lazy(() => import("./pages/SectorDetail.tsx"));
+const MinisterElection = React.lazy(() => import("./pages/MinisterElection.tsx"));
+const Collaborations = React.lazy(() => import("./pages/Collaborations.tsx"));
 const Activity = React.lazy(() => import("./pages/Activity.tsx"));
 const Reports = React.lazy(() => import("./pages/Reports.tsx"));
 const Chat = React.lazy(() => import("./pages/Chat.tsx"));
@@ -240,6 +243,9 @@ const AnimatedRoutes = () => {
           <Route path="/simulation" element={<RouteErrorBoundary><SimulationLab /></RouteErrorBoundary>} />
           <Route path="/skills" element={<RouteErrorBoundary><Skills /></RouteErrorBoundary>} />
           <Route path="/sectors" element={<RouteErrorBoundary><Sectors /></RouteErrorBoundary>} />
+          <Route path="/sectors/:sectorId" element={<RouteErrorBoundary><SectorDetail /></RouteErrorBoundary>} />
+          <Route path="/sectors/:sectorId/election" element={<RouteErrorBoundary><MinisterElection /></RouteErrorBoundary>} />
+          <Route path="/collaborations" element={<RouteErrorBoundary><Collaborations /></RouteErrorBoundary>} />
           <Route path="/partners" element={<RouteErrorBoundary><Partners /></RouteErrorBoundary>} />
           <Route path="/discord" element={<RouteErrorBoundary><Discord /></RouteErrorBoundary>} />
           <Route path="/install" element={<RouteErrorBoundary><Install /></RouteErrorBoundary>} />
