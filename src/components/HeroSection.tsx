@@ -247,9 +247,14 @@ function formatCompact(n: number): string {
   return n.toLocaleString();
 }
 
-const LiveStatCard = React.forwardRef<HTMLDivElement, {
-  icon: React.ReactNode; label: string; value: string | null; accent: string;
-}>(({ icon, label, value, accent }, ref) => (
+type LiveStatCardProps = {
+  icon: React.ReactNode;
+  label: string;
+  value: string | null;
+  accent: string;
+};
+
+const LiveStatCard = React.forwardRef<HTMLDivElement, LiveStatCardProps>(({ icon, label, value, accent }, ref) => (
   <div ref={ref} className="glass-card px-3 sm:px-4 py-3 sm:py-3.5 text-center group hover:border-primary/20 transition-colors">
     <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
       {icon}
