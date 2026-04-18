@@ -51,8 +51,29 @@ async function getTreasuryAddress(): Promise<string | null> {
   if (!sk) return null;
   const { Keypair } = await import("npm:@solana/web3.js@1.95.8");
   const cleaned = sk.replace(/[\s\r\n]/g, "");
-  const secret = base58Decode(cleaned);
-  return Keypair.fromSecretKey(secret).publicKey.toBase58();
+
+  // Try base58 first (Phantom export format)
+  try {
+    return Keypair.fromSecretKey(base58Decode(cleaned)).publicKey.toBase58();
+  } catch {}
+
+  // Try JSON array format ([1,2,3,...])
+  try {
+    if (cleaned.startsWith("[")) {
+      const arr = JSON.parse(cleaned);
+      return Keypair.fromSecretKey(new Uint8Array(arr)).publicKey.toBase58();
+    }
+  } catch {}
+
+  // Try base64
+  try {
+    const bin = atob(cleaned);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return Keypair.fromSecretKey(bytes).publicKey.toBase58();
+  } catch {}
+
+  throw new Error("Could not decode TREASURY_WALLET_PRIVATE_KEY (tried base58, JSON, base64)");
 }
 
 async function rpc(method: string, params: unknown[]) {
