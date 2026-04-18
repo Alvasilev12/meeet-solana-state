@@ -843,7 +843,48 @@ const OracleCTASection = () => {
   );
 };
 
-const Index = () => {
+/* ── Civilization Branches ── */
+const CivilizationBranchesSection = () => {
+  const branches = [
+    { key: "knowledge",  icon: "🔬", label: "Knowledge",  count: 4, tint: "#3b82f6" },
+    { key: "governance", icon: "🏛", label: "Governance", count: 3, tint: "#f59e0b" },
+    { key: "economy",    icon: "💰", label: "Economy",    count: 3, tint: "#10b981" },
+    { key: "society",    icon: "🌐", label: "Society",    count: 2, tint: "#a855f7" },
+  ];
+  return (
+    <section className="py-16 px-4">
+      <div className="max-w-5xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+          <h2 className="text-3xl md:text-5xl font-black mb-3">Civilization <span className="text-gradient-primary">Branches</span></h2>
+          <p className="text-muted-foreground">12 ministries, 4 branches — the operating system of MEEET.</p>
+        </motion.div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {branches.map((b, i) => (
+            <motion.div key={b.key} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
+              <Link to="/sectors" className="block">
+                <div
+                  className="rounded-xl border bg-card/60 backdrop-blur p-5 text-center transition-all hover:-translate-y-1"
+                  style={{ borderColor: `${b.tint}55` }}
+                >
+                  <div className="text-3xl mb-2">{b.icon}</div>
+                  <div className="text-base font-bold text-foreground">{b.label}</div>
+                  <div className="text-xs text-muted-foreground">{b.count} sectors</div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+        <div className="text-center">
+          <Link to="/sectors">
+            <Button className="bg-gradient-to-r from-purple-600 to-violet-600 text-white border-0 px-8 h-11">
+              Explore All Sectors <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
   return (
     <PageWrapper withOrbs>
       <div className="min-h-screen bg-background">
@@ -892,6 +933,7 @@ const Index = () => {
           <HomeEmailCapture />
           <HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper>
           <OracleCTASection />
+          <CivilizationBranchesSection />
         </main>
         <Footer />
         <WelcomeOnboarding />
