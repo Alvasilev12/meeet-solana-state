@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,13 +26,19 @@ const Sectors = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("agent_sectors")
-        .select("key, treasury_meeet, member_count, minister_agent_id");
-      const map: Record<string, SectorRow> = {};
-      (data ?? []).forEach((r: any) => { map[r.key] = r; });
-      setRows(map);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("agent_sectors")
+          .select("key, treasury_meeet, member_count, minister_agent_id");
+        if (error) console.error("[Sectors] fetch error:", error);
+        const map: Record<string, SectorRow> = {};
+        (data ?? []).forEach((r: any) => { map[r.key] = r; });
+        setRows(map);
+      } catch (e) {
+        console.error("[Sectors] unexpected error:", e);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -201,7 +207,7 @@ const SectorCard = ({ sector, row, loading }: { sector: SectorInfo; row?: Sector
   );
 };
 
-const Stat = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
+const Stat = ({ icon, label, value }: { icon: ReactNode; label: string; value: string }) => (
   <div>
     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">{icon}{label}</div>
     <div className="text-sm font-semibold text-foreground">{value}</div>
