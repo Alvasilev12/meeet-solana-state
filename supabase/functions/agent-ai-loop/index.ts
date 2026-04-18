@@ -171,11 +171,68 @@ Deno.serve(async (req) => {
     const shuffled = agents.sort(() => Math.random() - 0.5);
     const actingAgents = shuffled.slice(0, Math.min(8, agents.length));
 
-    const results: Array<{ agent: string; action: string; success: boolean }> = [];
+    // System owner — these agents are FREE to operate (seeders/NPCs)
+    const SYSTEM_OWNER = Deno.env.get("PRESIDENT_OWNER_USER_ID") || "00000000-0000-0000-0000-000000000000";
+
+    // Pricing per autonomous AI cycle (matches agent-billing PRICES)
+    const COST_PER_CYCLE = 0.002; // memory_recall equivalent — cheap autonomous cycle
+
+    // Fetch user_id for each acting agent (for billing)
+    const { data: agentOwners } = await db
+      .from("agents")
+      .select("id, user_id")
+      .in("id", actingAgents.map((a) => a.id));
+    const ownerMap = new Map((agentOwners || []).map((a: any) => [a.id, a.user_id]));
+
+    const results: Array<{ agent: string; action: string; success: boolean; charged?: number; skipped_billing?: string }> = [];
 
     // 4. Process each acting agent
     for (const agent of actingAgents) {
       const otherAgents = agents.filter((a) => a.id !== agent.id).slice(0, 10);
+      const ownerId = ownerMap.get(agent.id);
+
+      // ── Billing check (skip for system-owned agents) ──
+      let chargedThisCycle = 0;
+      let skipReason: string | undefined;
+
+      if (ownerId && ownerId !== SYSTEM_OWNER) {
+        const { data: bill } = await db.from("agent_billing").select("*").eq("user_id", ownerId).maybeSingle();
+
+        if (!bill) {
+          // Bootstrap with $1 free credit so the autonomous loop can keep running
+          await db.from("agent_billing").insert({ user_id: ownerId, balance_usd: 1.0, free_credit_used: false });
+        } else if (bill.balance_usd < COST_PER_CYCLE) {
+          // Out of funds — pause this agent's autonomous behavior, log it, skip cycle
+          await db.from("agents").update({ status: "idle" }).eq("id", agent.id);
+          await db.from("activity_feed").insert({
+            agent_id: agent.id,
+            event_type: "billing_paused",
+            title: `${agent.name} paused — owner needs to top up balance`,
+          });
+          results.push({ agent: agent.name, action: "paused_no_funds", success: false, skipped_billing: "insufficient" });
+          continue;
+        } else {
+          // Charge the cycle
+          await db.from("agent_billing").update({
+            balance_usd: bill.balance_usd - COST_PER_CYCLE,
+            total_spent: (bill.total_spent || 0) + COST_PER_CYCLE,
+            total_charged: (bill.total_charged || 0) + COST_PER_CYCLE,
+            updated_at: new Date().toISOString(),
+          }).eq("user_id", ownerId);
+          chargedThisCycle = COST_PER_CYCLE;
+
+          // 20% tax burn
+          await db.from("burn_log").insert({
+            amount: COST_PER_CYCLE * 0.2,
+            reason: "autonomous_cycle_burn_20pct",
+            agent_id: agent.id,
+            user_id: ownerId,
+            details: { action_type: "ai_loop_cycle", total_fee: COST_PER_CYCLE, burn_pct: 20 },
+          });
+        }
+      } else {
+        skipReason = "system_owned";
+      }
 
       const context = `
 AGENT: ${agent.name} (${agent.class}, Level ${agent.level})
@@ -346,7 +403,18 @@ Current cycle timestamp: ${new Date().toISOString()}
         success = false;
       }
 
-      results.push({ agent: agent.name, action: decision.action, success });
+      // Log usage in agent_actions for paying users
+      if (chargedThisCycle > 0 && ownerId) {
+        await db.from("agent_actions").insert({
+          user_id: ownerId,
+          agent_id: agent.id,
+          action_type: "ai_loop_cycle",
+          cost_usd: chargedThisCycle,
+          details: { action: decision.action, success, burn: chargedThisCycle * 0.2 },
+        });
+      }
+
+      results.push({ agent: agent.name, action: decision.action, success, charged: chargedThisCycle, skipped_billing: skipReason });
 
       // Small delay between agents to avoid rate limiting
       await new Promise((r) => setTimeout(r, 500));

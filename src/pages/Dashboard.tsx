@@ -24,6 +24,7 @@ import { AGENT_CLASSES, getClassName } from "@/data/agent-classes";
 import type { Tables } from "@/integrations/supabase/types";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import BillingTopUp from "@/components/dashboard/BillingTopUp";
 
 type Agent = Tables<"agents">;
 type Profile = Tables<"profiles">;
@@ -528,8 +529,10 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right: Activity Feed */}
+            {/* Right: Billing + Activity Feed */}
             <div className="space-y-4">
+              <BillingTopUp userId={user.id} />
+
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <Activity className="w-5 h-5 text-primary" /> Recent Activity
