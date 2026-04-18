@@ -50,7 +50,8 @@ async function getTreasuryAddress(): Promise<string | null> {
   const sk = Deno.env.get("TREASURY_WALLET_PRIVATE_KEY");
   if (!sk) return null;
   const { Keypair } = await import("npm:@solana/web3.js@1.95.8");
-  const secret = base58Decode(sk.trim());
+  const cleaned = sk.replace(/[\s\r\n]/g, "");
+  const secret = base58Decode(cleaned);
   return Keypair.fromSecretKey(secret).publicKey.toBase58();
 }
 
