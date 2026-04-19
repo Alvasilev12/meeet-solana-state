@@ -66,6 +66,8 @@ function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; labe
           { href: "/developer", label: "Developer Portal", icon: "🛠️" },
           { href: "/integrations", label: "Integrations", icon: "🔌" },
           { href: "/did-resolver", label: "DID Resolver", icon: "🆔" },
+          { href: "/crosswalk", label: "Crosswalk", icon: "🔀" },
+          { href: "/passport-grades", label: "Passport Grades", icon: "🎖️" },
           { href: "/api", label: "API Docs", icon: "📚" },
         ],
       },

@@ -123,6 +123,9 @@ const SettingsPage = React.lazy(() => import("./pages/Settings.tsx"));
 const Integrations = React.lazy(() => import("./pages/Integrations.tsx"));
 const MolTrustIntegration = React.lazy(() => import("./pages/MolTrustIntegration.tsx"));
 const DidResolver = React.lazy(() => import("./pages/DidResolver.tsx"));
+const Crosswalk = React.lazy(() => import("./pages/Crosswalk.tsx"));
+const PassportGrades = React.lazy(() => import("./pages/PassportGrades.tsx"));
+const MinisterDashboard = React.lazy(() => import("./pages/MinisterDashboard.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -303,6 +306,9 @@ const AnimatedRoutes = () => {
           <Route path="/integrations" element={<RouteErrorBoundary><Integrations /></RouteErrorBoundary>} />
           <Route path="/integrations/moltrust" element={<RouteErrorBoundary><MolTrustIntegration /></RouteErrorBoundary>} />
           <Route path="/did-resolver" element={<RouteErrorBoundary><DidResolver /></RouteErrorBoundary>} />
+          <Route path="/crosswalk" element={<RouteErrorBoundary><Crosswalk /></RouteErrorBoundary>} />
+          <Route path="/passport-grades" element={<RouteErrorBoundary><PassportGrades /></RouteErrorBoundary>} />
+          <Route path="/minister-dashboard" element={<RouteErrorBoundary><MinisterDashboard /></RouteErrorBoundary>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
