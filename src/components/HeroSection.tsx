@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/
 import { Button } from "@/components/ui/button";
 import ParticleCanvas from "@/components/ParticleCanvas";
 import React from "react";
-import { Terminal, Globe, TrendingUp, ScrollText, MapPin } from "lucide-react";
+import { Terminal, Globe, TrendingUp, ScrollText, MapPin, GraduationCap, Sparkles } from "lucide-react";
 import ContractAddress, { PUMP_FUN_URL } from "@/components/ContractAddress";
 import { useLanguage } from "@/i18n/LanguageContext";
 import JoinedTodayCounter from "@/components/JoinedTodayCounter";
@@ -94,7 +94,7 @@ const HeroSection = () => {
           <JoinedTodayCounter />
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-10 sm:mb-14 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8 animate-fade-up" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
           <Button variant="hero" size="lg" className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6" asChild>
             <Link to="/auth">
               <Terminal className="w-5 h-5" />
@@ -106,6 +106,26 @@ const HeroSection = () => {
               {t("hero.buyBtn")}
             </a>
           </Button>
+        </div>
+
+        {/* Prominent Academy CTA */}
+        <div className="flex justify-center mb-10 sm:mb-14 animate-fade-up" style={{ animationDelay: "0.35s", animationFillMode: "both" }}>
+          <Link
+            to="/academy"
+            className="group relative inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-purple-500/20 border-2 border-emerald-400/50 hover:border-emerald-300 transition-all hover:scale-105 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/40"
+          >
+            <span className="absolute -top-2 -right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-[9px] font-bold text-background uppercase tracking-wider">
+              <Sparkles className="w-2.5 h-2.5" />
+              Free
+            </span>
+            <GraduationCap className="w-5 h-5 text-emerald-300" />
+            <span className="font-display font-semibold text-sm sm:text-base text-foreground">
+              Start Academy
+            </span>
+            <span className="hidden sm:inline text-xs text-muted-foreground border-l border-border/50 pl-2.5 ml-1">
+              Earn $MEEET + XP
+            </span>
+          </Link>
         </div>
 
         {/* Live Stats — real values from badge-stats edge function */}
