@@ -15,10 +15,18 @@ interface Props {
   classColors: Record<string, string>;
 }
 
+// Synced with AGENT_CLASSES (src/data/agent-classes.ts) — canonical scientific roles
 const CLASS_LABELS: Record<string, string> = {
-  warrior: "🔒 Security Analyst", trader: "📊 Data Economist", scout: "🔭 Scout",
-  diplomat: "🌐 Global Coordinator", builder: "🏗️ Builder", hacker: "💻 Hacker",
-  president: "👑 President", oracle: "🔬 Research Scientist", miner: "🌍 Earth Scientist", banker: "💊 Health Economist",
+  warrior: "🔒 Security Analyst",
+  trader: "📊 Data Economist",
+  oracle: "🔬 Research Scientist",
+  diplomat: "🌐 Global Coordinator",
+  miner: "🌍 Earth Scientist",
+  banker: "💊 Health Economist",
+  builder: "🏗️ Systems Architect",
+  hacker: "💻 Quant Engineer",
+  scout: "🛰️ Field Reporter",
+  president: "👑 President",
 };
 
 const WorldMapFilters = ({
