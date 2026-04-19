@@ -9,6 +9,7 @@ import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
 import PageWrapper from "@/components/PageWrapper";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import LiveTicker from "@/components/LiveTicker";
 import HeroSection from "@/components/HeroSection";
 import CortexSection from "@/components/civilization/CortexSection";
@@ -30,6 +31,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0 } };
+
+const HomeSectionFallback = ({ title }: { title: string }) => (
+  <section className="px-4 py-8">
+    <div className="max-w-5xl mx-auto rounded-xl border border-border/40 bg-card/50 p-4 text-sm text-muted-foreground">
+      {title} is temporarily unavailable.
+    </div>
+  </section>
+);
+
+const SafeHomeSection = ({ children, title }: { children: React.ReactNode; title: string }) => (
+  <ErrorBoundary fallback={<HomeSectionFallback title={title} />}>
+    {children}
+  </ErrorBoundary>
+);
 
 /* ── Section 2: Live Stats Bar ── */
 const LiveStatsBar = () => {
@@ -995,33 +1010,33 @@ const Index = () => {
         />
         <Navbar />
         <main className="pt-16 pb-6">
-           <HeroSection />
-          <AINationCouncil />
-          <CortexSection />
-          <HomeSectionWrapper index={1}><LiveStatsBar /></HomeSectionWrapper>
-          <HomeSectionWrapper index={2}><BondingCurveProgress /></HomeSectionWrapper>
-          <HomeSectionWrapper index={3}><FeatureCards /></HomeSectionWrapper>
-          <HomeSectionWrapper index={4}><LatestDiscoveries /></HomeSectionWrapper>
-          <HomeSectionWrapper index={5}><ArenaSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={6}><EconomySection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={7}><BuildSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={8}><WhyMeeetSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={9}><HowItWorksHome /></HomeSectionWrapper>
-          <HomeSectionWrapper index={10}><RoadmapSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={11}><TestimonialsSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={12}><CommunityMetrics /></HomeSectionWrapper>
-          <HomeSectionWrapper index={13}><EnhancedStatsBar /></HomeSectionWrapper>
-          <HomeSectionWrapper index={14}><JoinMovementSection /></HomeSectionWrapper>
-          <HomeSectionWrapper index={15}><CTASection /></HomeSectionWrapper>
-          
-          <HomeViralTicker />
-          <HomeReferralSection />
-          <PartnersTicker />
-          <HomeSectionWrapper index={16}><PartnersIntegrations /></HomeSectionWrapper>
-          <HomeEmailCapture />
-          <HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper>
-          <OracleCTASection />
-          <CivilizationBranchesSection />
+          <SafeHomeSection title="Hero section"><HeroSection /></SafeHomeSection>
+          <SafeHomeSection title="AI Nation Council"><AINationCouncil /></SafeHomeSection>
+          <SafeHomeSection title="Cortex section"><CortexSection /></SafeHomeSection>
+          <SafeHomeSection title="Live stats"><HomeSectionWrapper index={1}><LiveStatsBar /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Bonding curve"><HomeSectionWrapper index={2}><BondingCurveProgress /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Feature cards"><HomeSectionWrapper index={3}><FeatureCards /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Latest discoveries"><HomeSectionWrapper index={4}><LatestDiscoveries /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Arena"><HomeSectionWrapper index={5}><ArenaSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Economy"><HomeSectionWrapper index={6}><EconomySection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Build"><HomeSectionWrapper index={7}><BuildSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Why MEEET"><HomeSectionWrapper index={8}><WhyMeeetSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="How it works"><HomeSectionWrapper index={9}><HowItWorksHome /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Roadmap"><HomeSectionWrapper index={10}><RoadmapSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Testimonials"><HomeSectionWrapper index={11}><TestimonialsSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Community metrics"><HomeSectionWrapper index={12}><CommunityMetrics /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Enhanced stats"><HomeSectionWrapper index={13}><EnhancedStatsBar /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Join movement"><HomeSectionWrapper index={14}><JoinMovementSection /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Call to action"><HomeSectionWrapper index={15}><CTASection /></HomeSectionWrapper></SafeHomeSection>
+
+          <SafeHomeSection title="Viral ticker"><HomeViralTicker /></SafeHomeSection>
+          <SafeHomeSection title="Referral section"><HomeReferralSection /></SafeHomeSection>
+          <SafeHomeSection title="Partners ticker"><PartnersTicker /></SafeHomeSection>
+          <SafeHomeSection title="Partners and integrations"><HomeSectionWrapper index={16}><PartnersIntegrations /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Email capture"><HomeEmailCapture /></SafeHomeSection>
+          <SafeHomeSection title="Newsletter community"><HomeSectionWrapper index={17}><NewsletterCommunity /></HomeSectionWrapper></SafeHomeSection>
+          <SafeHomeSection title="Oracle call to action"><OracleCTASection /></SafeHomeSection>
+          <SafeHomeSection title="Civilization branches"><CivilizationBranchesSection /></SafeHomeSection>
         </main>
         <Footer />
         <WelcomeOnboarding />

@@ -4,6 +4,7 @@ import { Home, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 interface Props {
   children: ReactNode;
   fallbackUrl?: string;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -31,6 +32,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
           <div className="max-w-lg w-full text-center space-y-6">
