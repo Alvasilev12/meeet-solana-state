@@ -130,7 +130,8 @@ const WorldRankings = () => {
               </h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              5 factions competing for AI supremacy — join your country and earn for your team
+              5 class-based factions competing for AI supremacy. For the 12 official ministries, see{" "}
+              <a href="/sectors" className="text-primary hover:underline">Ministries →</a>
             </p>
           </div>
 
