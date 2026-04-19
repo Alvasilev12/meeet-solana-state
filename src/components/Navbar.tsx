@@ -68,6 +68,7 @@ function useNavItems(): { navItems: NavItem[]; mobileLinks: { href: string; labe
           { href: "/did-resolver", label: "DID Resolver", icon: "🆔" },
           { href: "/crosswalk", label: "Crosswalk", icon: "🔀" },
           { href: "/passport-grades", label: "Passport Grades", icon: "🎖️" },
+          { href: "/api-playground", label: "API Playground", icon: "🧪" },
           { href: "/api", label: "API Docs", icon: "📚" },
         ],
       },

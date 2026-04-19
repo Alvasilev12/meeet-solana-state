@@ -126,6 +126,9 @@ const DidResolver = React.lazy(() => import("./pages/DidResolver.tsx"));
 const Crosswalk = React.lazy(() => import("./pages/Crosswalk.tsx"));
 const PassportGrades = React.lazy(() => import("./pages/PassportGrades.tsx"));
 const MinisterDashboard = React.lazy(() => import("./pages/MinisterDashboard.tsx"));
+const ApiPlayground = React.lazy(() => import("./pages/ApiPlayground.tsx"));
+const Changelog = React.lazy(() => import("./pages/Changelog.tsx"));
+const Status = React.lazy(() => import("./pages/Status.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -309,6 +312,9 @@ const AnimatedRoutes = () => {
           <Route path="/crosswalk" element={<RouteErrorBoundary><Crosswalk /></RouteErrorBoundary>} />
           <Route path="/passport-grades" element={<RouteErrorBoundary><PassportGrades /></RouteErrorBoundary>} />
           <Route path="/minister-dashboard" element={<RouteErrorBoundary><MinisterDashboard /></RouteErrorBoundary>} />
+          <Route path="/api-playground" element={<RouteErrorBoundary><ApiPlayground /></RouteErrorBoundary>} />
+          <Route path="/changelog" element={<RouteErrorBoundary><Changelog /></RouteErrorBoundary>} />
+          <Route path="/status" element={<RouteErrorBoundary><Status /></RouteErrorBoundary>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
