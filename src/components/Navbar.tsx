@@ -242,6 +242,15 @@ const Navbar = () => {
           {/* Desktop right links */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             <NavAcademyProgress />
+            <Link
+              to="/academy"
+              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-display font-bold text-white bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 shadow-md shadow-purple-500/40 hover:scale-105 transition-transform"
+            >
+              <span className="absolute inset-0 rounded-md ring-2 ring-fuchsia-400/70 animate-pulse pointer-events-none" aria-hidden="true" />
+              <span className="relative">🎓</span>
+              <span className="relative">Academy</span>
+              <span className="relative px-1.5 py-0.5 rounded-full bg-amber-400 text-background text-[9px] uppercase tracking-wider">Free</span>
+            </Link>
             <Link to="/dashboard" className={`px-2.5 py-1 text-sm rounded-md transition-colors ${location.pathname === "/dashboard" ? "text-foreground bg-muted/50" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.dashboard")}</Link>
           </div>
 
