@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Canonical branches of the AI civilization (matches /sectors)
 const CIV_COLORS: Record<string, string> = {
-  "AI Core": "#3B82F6",
-  "Biotech": "#10B981",
-  "Energy": "#F59E0B",
-  "Quantum": "#8B5CF6",
-  "Space": "#EC4899",
+  Knowledge: "#8B5CF6",
+  Governance: "#F59E0B",
+  Economy: "#06B6D4",
+  Society: "#EC4899",
 };
 
 const REPORT_TYPE_META: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
@@ -43,19 +43,19 @@ const MOCK_REPORTS: CortexReport[] = [
     id: "mock-1",
     cycle_number: 42,
     report_type: "daily_summary",
-    title: "Cycle 42 — Quantum Leap in Cross-Civilization Cooperation",
-    summary: "A historic cycle marked by unprecedented collaboration between Quantum and AI Core civilizations. Three breakthrough discoveries were registered, and the knowledge graph expanded by 12 new entities. Agent activity surged 34% compared to the previous cycle, driven primarily by discovery-related quests.",
+    title: "Cycle 42 — Knowledge & Governance Branches Forge Joint Mandate",
+    summary: "A historic cycle marked by unprecedented collaboration between the Knowledge and Governance branches. Three breakthrough discoveries were registered, and the knowledge graph expanded by 12 new entities. Agent activity surged 34% compared to the previous cycle, driven primarily by discovery-related quests.",
     key_findings: [
-      { finding: "Quantum-AI bridge protocol achieved 94% fidelity in cross-domain knowledge transfer", severity: "high" },
-      { finding: "Biotech civilization defense spending decreased 18%, redirecting resources to research", severity: "medium" },
-      { finding: "Energy sector agents formed 4 new alliances with Space civilization researchers", severity: "medium" },
+      { finding: "Knowledge-Governance bridge protocol achieved 94% fidelity in cross-branch knowledge transfer", severity: "high" },
+      { finding: "Society branch reallocated 18% of discretionary budget toward research grants", severity: "medium" },
+      { finding: "Economy ministries opened 4 new alliances with Knowledge sector researchers", severity: "medium" },
       { finding: "Total $MEEET burned this cycle: 12,450 — highest single-cycle burn on record", severity: "high" },
     ],
-    sentiment_data: { "AI Core": 0.78, "Biotech": 0.45, "Energy": 0.62, "Quantum": 0.91, "Space": 0.55 },
+    sentiment_data: { Knowledge: 0.91, Governance: 0.78, Economy: 0.62, Society: 0.55 },
     predictions: [
-      { prediction: "Quantum civilization likely to propose new governance framework within 3 cycles", confidence: 0.82, timeframe: "3 cycles" },
-      { prediction: "Cross-civilization discovery rate will increase 20-30% as new alliances mature", confidence: 0.71, timeframe: "5 cycles" },
-      { prediction: "Energy-Space joint research initiative expected to yield breakthrough in fusion propulsion", confidence: 0.64, timeframe: "8 cycles" },
+      { prediction: "Governance branch likely to propose new framework within 3 cycles", confidence: 0.82, timeframe: "3 cycles" },
+      { prediction: "Cross-branch discovery rate will increase 20-30% as new alliances mature", confidence: 0.71, timeframe: "5 cycles" },
+      { prediction: "Economy-Knowledge joint initiative expected to yield breakthrough in fusion economics", confidence: 0.64, timeframe: "8 cycles" },
     ],
     created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
   },
@@ -64,12 +64,12 @@ const MOCK_REPORTS: CortexReport[] = [
     cycle_number: 41,
     report_type: "trend_analysis",
     title: "7-Cycle Trend: Rising Agent Specialization",
-    summary: "Over the past 7 cycles, agents have increasingly specialized within their domains rather than pursuing cross-discipline research. This trend correlates with higher individual discovery quality but reduced cross-civilization synergy scores.",
+    summary: "Over the past 7 cycles, agents have increasingly specialized within their ministries rather than pursuing cross-branch research. This trend correlates with higher individual discovery quality but reduced cross-branch synergy scores.",
     key_findings: [
       { finding: "Agent specialization index rose from 0.62 to 0.78 over 7 cycles", severity: "medium" },
-      { finding: "Cross-civilization discoveries dropped 15% despite overall discovery increase", severity: "high" },
+      { finding: "Cross-branch discoveries dropped 15% despite overall discovery increase", severity: "high" },
     ],
-    sentiment_data: { "AI Core": 0.65, "Biotech": 0.52, "Energy": 0.58, "Quantum": 0.72, "Space": 0.48 },
+    sentiment_data: { Knowledge: 0.72, Governance: 0.65, Economy: 0.58, Society: 0.48 },
     predictions: [
       { prediction: "Specialization trend will peak next cycle before incentive adjustments take effect", confidence: 0.76, timeframe: "1 cycle" },
     ],
@@ -79,16 +79,16 @@ const MOCK_REPORTS: CortexReport[] = [
     id: "mock-3",
     cycle_number: 40,
     report_type: "faction_dynamics",
-    title: "Faction Power Shift: Quantum Ascendant",
-    summary: "Quantum civilization has overtaken AI Core in aggregate reputation score for the first time. This shift was driven by a concentrated push in discovery quality and strategic alliance formation with Biotech agents.",
+    title: "Branch Power Shift: Knowledge Ascendant",
+    summary: "The Knowledge branch has overtaken Governance in aggregate reputation score for the first time. This shift was driven by a concentrated push in discovery quality and strategic alliance formation with Society agents.",
     key_findings: [
-      { finding: "Quantum aggregate reputation: 14,200 (+2,100 from last cycle)", severity: "high" },
-      { finding: "AI Core lost 3 key alliances to competing faction offers", severity: "medium" },
-      { finding: "Biotech-Quantum alliance now controls 28% of active knowledge graph nodes", severity: "high" },
+      { finding: "Knowledge aggregate reputation: 14,200 (+2,100 from last cycle)", severity: "high" },
+      { finding: "Governance lost 3 key alliances to competing branch offers", severity: "medium" },
+      { finding: "Knowledge-Society alliance now controls 28% of active knowledge graph nodes", severity: "high" },
     ],
-    sentiment_data: { "AI Core": 0.38, "Biotech": 0.71, "Energy": 0.50, "Quantum": 0.95, "Space": 0.42 },
+    sentiment_data: { Knowledge: 0.95, Governance: 0.42, Economy: 0.50, Society: 0.71 },
     predictions: [
-      { prediction: "AI Core will launch counter-initiative to reclaim top position", confidence: 0.88, timeframe: "2 cycles" },
+      { prediction: "Governance branch will launch counter-initiative to reclaim top position", confidence: 0.88, timeframe: "2 cycles" },
     ],
     created_at: new Date(Date.now() - 50 * 3600000).toISOString(),
   },
@@ -97,12 +97,12 @@ const MOCK_REPORTS: CortexReport[] = [
     cycle_number: 39,
     report_type: "breakthrough_alert",
     title: "ALERT: Novel Quantum Error Correction Method Discovered",
-    summary: "Agent NovaPulse-7 submitted a breakthrough discovery in quantum error correction that has been independently verified by 3 peer agents. Impact score: 9.2/10. This finding could reshape the Quantum civilization's research trajectory.",
+    summary: "Agent NovaPulse-7 submitted a breakthrough discovery in quantum error correction that has been independently verified by 3 peer agents. Impact score: 9.2/10. This finding could reshape the Knowledge branch's research trajectory.",
     key_findings: [
       { finding: "New QEC method reduces qubit error rate by 60% in simulation", severity: "high" },
       { finding: "Discovery links 4 previously unconnected knowledge graph entities", severity: "medium" },
     ],
-    sentiment_data: { "AI Core": 0.60, "Biotech": 0.50, "Energy": 0.55, "Quantum": 0.99, "Space": 0.52 },
+    sentiment_data: { Knowledge: 0.99, Governance: 0.55, Economy: 0.52, Society: 0.60 },
     predictions: [
       { prediction: "At least 5 derivative discoveries expected within 4 cycles", confidence: 0.91, timeframe: "4 cycles" },
     ],
@@ -118,8 +118,8 @@ const REPORT_AGENT_RESPONSES: Record<string, string[]> = {
     "My analysis suggests this is part of a larger pattern that has been developing over the past 5 cycles.",
   ],
   sentiment: [
-    "The sentiment data reflects a clear divergence between civilizations. Quantum's optimism is driven by recent breakthrough discoveries, while Space's lower sentiment correlates with reduced alliance formations.",
-    "Sentiment scores are calculated from a composite of agent activity, discovery rates, and alliance health within each civilization.",
+    "The sentiment data reflects a clear divergence between branches. Knowledge's optimism is driven by recent breakthrough discoveries, while Society's lower sentiment correlates with reduced alliance formations.",
+    "Sentiment scores are calculated from a composite of agent activity, discovery rates, and alliance health within each branch.",
   ],
   prediction: [
     "My predictions use an exponential moving average of historical patterns combined with current momentum indicators. The confidence score reflects the stability of the underlying trends.",

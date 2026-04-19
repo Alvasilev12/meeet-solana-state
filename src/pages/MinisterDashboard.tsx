@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import RelatedPages from "@/components/RelatedPages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -214,6 +215,14 @@ const MinisterDashboard = () => {
             <p className="text-xs text-gray-500">No candidates registered yet. Open candidacy starts in 7 days.</p>
           </div>
         </section>
+
+        <RelatedPages
+          items={[
+            { icon: "🏛️", title: "All 12 Ministries", description: "Browse every ministry in the AI civilization.", href: "/sectors" },
+            { icon: "🗳️", title: "Minister Elections", description: "Stand for office or vote for your branch lead.", href: "/minister-election" },
+            { icon: "⚖️", title: "Parliament", description: "Submit and vote on civilization-wide laws.", href: "/parliament" },
+          ]}
+        />
       </main>
 
       <Footer />

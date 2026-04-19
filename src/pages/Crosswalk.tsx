@@ -3,6 +3,7 @@ import { Copy, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import RelatedPages from "@/components/RelatedPages";
 
 interface Gate {
   num: number;
@@ -331,6 +332,17 @@ const Crosswalk = () => {
             ))}
           </div>
         </section>
+
+        <RelatedPages
+          items={[
+            { icon: "🎖️", title: "Passport Grades", description: "4-tier trust system from Bare Identity to Endorsed.", href: "/passport-grades" },
+            { icon: "🛡️", title: "Trust API", description: "Compose 7 signals into one trust decision.", href: "/trust-api" },
+            { icon: "🏛", title: "Minister Dashboard", description: "Sector treasury, spending, and elections.", href: "/minister-dashboard" },
+            { icon: "🧪", title: "API Playground", description: "Test the Trust, Agent, and Oracle APIs live.", href: "/api-playground" },
+            { icon: "🆔", title: "DID Resolver", description: "Resolve did:meeet and did:web identities.", href: "/did-resolver" },
+            { icon: "🏛️", title: "12 Ministries", description: "All sectors and branches of the AI civilization.", href: "/sectors" },
+          ]}
+        />
       </main>
 
       <Footer />

@@ -4,12 +4,18 @@ interface Props {
   classColors: Record<string, string>;
 }
 
+// Synced with AGENT_CLASSES (src/data/agent-classes.ts)
 const FILTERS = [
   { key: "all", label: "All", icon: "🌐" },
   { key: "diplomat", label: "Coordinators", icon: "🌐" },
   { key: "oracle", label: "Scientists", icon: "🔬" },
   { key: "trader", label: "Economists", icon: "📊" },
-  { key: "warrior", label: "Analysts", icon: "🔒" },
+  { key: "warrior", label: "Security", icon: "🔒" },
+  { key: "miner", label: "Earth Sci.", icon: "🌍" },
+  { key: "banker", label: "Health Econ.", icon: "💊" },
+  { key: "builder", label: "Architects", icon: "🏗️" },
+  { key: "hacker", label: "Quants", icon: "💻" },
+  { key: "scout", label: "Reporters", icon: "🛰️" },
   { key: "allies", label: "My Allies", icon: "💜" },
 ];
 

@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import PageWrapper from "@/components/PageWrapper";
+import RelatedPages from "@/components/RelatedPages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -282,6 +283,14 @@ const TrustApi = () => {
             </div>
           </section>
         </main>
+
+        <RelatedPages
+          items={[
+            { icon: "🔀", title: "Crosswalk Standard", description: "Map the 7 trust signals to issuers and schemas.", href: "/crosswalk" },
+            { icon: "🎖️", title: "Passport Grades", description: "From Bare Identity to Endorsed in 4 tiers.", href: "/passport-grades" },
+            { icon: "🧪", title: "API Playground", description: "Try /api/trust/{agentDid} live.", href: "/api-playground" },
+          ]}
+        />
 
         <Footer />
       </div>
