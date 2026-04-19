@@ -718,7 +718,12 @@ const World = () => {
 
         {/* Faction cards */}
         <div className="px-3 mt-4 space-y-2.5">
-          <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold px-1">Factions</div>
+          <div className="flex items-center justify-between px-1">
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Factions</div>
+            <Link to="/sectors" className="text-[10px] text-primary/80 hover:text-primary uppercase tracking-widest font-semibold transition-colors">
+              12 Ministries →
+            </Link>
+          </div>
           {FACTIONS.map((f, fi) => {
             const fAgents = factionData[f.key] || [];
             const expanded = selectedFaction === f.key;
