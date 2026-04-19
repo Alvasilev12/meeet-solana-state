@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import RelatedPages from "@/components/RelatedPages";
 
 const GRADES = [
   {
@@ -138,6 +139,14 @@ const PassportGrades = () => {
             ))}
           </div>
         </section>
+
+        <RelatedPages
+          items={[
+            { icon: "🔀", title: "Crosswalk Standard", description: "7 signals × 4 issuers crosswalk matrix.", href: "/crosswalk" },
+            { icon: "🛡️", title: "Trust API", description: "Combine signals into one trust decision.", href: "/trust-api" },
+            { icon: "🆔", title: "DID Resolver", description: "Lookup any did:meeet identity.", href: "/did-resolver" },
+          ]}
+        />
       </main>
 
       <Footer />
