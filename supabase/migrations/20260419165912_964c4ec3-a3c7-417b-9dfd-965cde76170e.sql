@@ -1,0 +1,1 @@
+ALTER VIEW public.agents_public SET (security_invoker = false);

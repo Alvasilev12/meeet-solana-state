@@ -1,0 +1,1 @@
+GRANT SELECT ON public.agents_public TO anon, authenticated;
