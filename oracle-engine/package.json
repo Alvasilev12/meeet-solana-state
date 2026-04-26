@@ -1,0 +1,29 @@
+{
+  "name": "@meeet/oracle-engine",
+  "version": "1.0.0",
+  "description": "MEEET Oracle Prediction Engine - Multi-source prediction system with agent voting",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
+    "axios": "^1.7.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.0",
+    "@vitest/coverage-v8": "^4.1.0"
+  },
+  "keywords": ["meeet", "oracle", "prediction", "crypto", "sports", "news"],
+  "license": "MIT"
+}
