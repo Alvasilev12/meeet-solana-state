@@ -1,7 +1,8 @@
 import { hi } from "./translations-hi";
+import { de } from "./translations-de";
 import { fr } from "./translations-fr";
 
-export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr";
+export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr" | "de";
 
 export const LANG_LABELS: Record<Lang, string> = {
   en: "English",
@@ -11,6 +12,7 @@ export const LANG_LABELS: Record<Lang, string> = {
   ar: "العربية",
   hi: "हिन्दी",
   fr: "Français",
+  de: "Deutsch",
 };
 
 export const LANG_FLAGS: Record<Lang, string> = {
@@ -21,10 +23,12 @@ export const LANG_FLAGS: Record<Lang, string> = {
   ar: "🇸🇦",
   hi: "🇮🇳",
   fr: "🇫🇷",
+  de: "🇩🇪",
 };
 
 // Deep nested translation keys
 export const translations: Record<string, Record<string, any>> = {
+  de,
   en: {
     nav: {
       home: "Home",
