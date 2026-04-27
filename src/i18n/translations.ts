@@ -1,7 +1,8 @@
 import { hi } from "./translations-hi";
 import { fr } from "./translations-fr";
+import { ja, jaExt, jaDashboardExt } from "./translations-ja";
 
-export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr";
+export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr" | "ja";
 
 export const LANG_LABELS: Record<Lang, string> = {
   en: "English",
@@ -11,6 +12,7 @@ export const LANG_LABELS: Record<Lang, string> = {
   ar: "العربية",
   hi: "हिन्दी",
   fr: "Français",
+  ja: "日本語",
 };
 
 export const LANG_FLAGS: Record<Lang, string> = {
@@ -21,6 +23,7 @@ export const LANG_FLAGS: Record<Lang, string> = {
   ar: "🇸🇦",
   hi: "🇮🇳",
   fr: "🇫🇷",
+  ja: "🇯🇵",
 };
 
 // Deep nested translation keys
@@ -5225,5 +5228,22 @@ for (const lang of Object.keys(ext) as Lang[]) {
     for (const section of Object.keys(ext[lang])) {
       translations[lang][section] = { ...(translations[lang][section] || {}), ...ext[lang][section] };
     }
+  }
+}
+
+// Add Japanese base translations
+(translations as any).ja = ja;
+
+// Merge Japanese extended translations
+for (const section of Object.keys(jaExt)) {
+  if ((translations as any).ja) {
+    (translations as any).ja[section] = { ...((translations as any).ja[section] || {}), ...jaExt[section] };
+  }
+}
+
+// Merge Japanese dashboard translations
+for (const section of Object.keys(jaDashboardExt)) {
+  if ((translations as any).ja) {
+    (translations as any).ja[section] = { ...((translations as any).ja[section] || {}), ...jaDashboardExt[section] };
   }
 }
