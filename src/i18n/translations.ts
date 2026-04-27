@@ -1,7 +1,9 @@
 import { hi } from "./translations-hi";
 import { fr } from "./translations-fr";
+import { ko } from "./translations-ko";
+import { pt } from "./translations-pt";
 
-export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr";
+export type Lang = "en" | "ru" | "zh" | "es" | "ar" | "hi" | "fr" | "ko" | "pt";
 
 export const LANG_LABELS: Record<Lang, string> = {
   en: "English",
@@ -11,6 +13,8 @@ export const LANG_LABELS: Record<Lang, string> = {
   ar: "العربية",
   hi: "हिन्दी",
   fr: "Français",
+  ko: "한국어",
+  pt: "Português (BR)",
 };
 
 export const LANG_FLAGS: Record<Lang, string> = {
@@ -21,6 +25,8 @@ export const LANG_FLAGS: Record<Lang, string> = {
   ar: "🇸🇦",
   hi: "🇮🇳",
   fr: "🇫🇷",
+  ko: "🇰🇷",
+  pt: "🇧🇷",
 };
 
 // Deep nested translation keys
@@ -5196,6 +5202,8 @@ const dashboardExt: Record<string, any> = {
 // Add Hindi and French base translations
 (translations as any).hi = hi;
 (translations as any).fr = fr;
+(translations as any).ko = ko;
+(translations as any).pt = pt;
 
 // Merge extended translations
 for (const lang of Object.keys(ext) as Lang[]) {
@@ -5218,6 +5226,8 @@ for (const lang of Object.keys(dashboardExt)) {
 // Add Hindi and French base translations
 (translations as any).hi = hi;
 (translations as any).fr = fr;
+(translations as any).ko = ko;
+(translations as any).pt = pt;
 
 // Merge extended translations
 for (const lang of Object.keys(ext) as Lang[]) {
