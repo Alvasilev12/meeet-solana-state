@@ -74,7 +74,7 @@
     "react-hook-form": "^7.61.1",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
-    "react-router-dom": "^6.30.1",
+    "react-router-dom": "^6.30.4",
     "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
     "rolldown": "^1.0.0-beta.8",
